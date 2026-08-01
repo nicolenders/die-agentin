@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { requireAdmin, ForbiddenError } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { serializeDocument, sanitizeDocument } from "@/lib/content/sanitize";
@@ -79,7 +80,8 @@ export async function saveDossier(input: SaveDossierInput): Promise<SaveDossierR
 
   try {
     const dossier = await db.dossier.upsert({
-      where: { id: input.dossierId ?? "__new__" },
+      // Neuer Datensatz: nicht existierender Lookup-Wert → sicherer create-Zweig.
+      where: { id: input.dossierId ?? `new-${randomUUID()}` },
       create: {
         id: input.dossierId,
         status,

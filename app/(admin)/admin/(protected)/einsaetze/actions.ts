@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { requireAdmin, ForbiddenError } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
@@ -70,7 +71,8 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
 
   try {
     const mission = await db.mission.upsert({
-      where: { id: input.missionId ?? "__new__" },
+      // Neuer Datensatz: nicht existierender Lookup-Wert → sicherer create-Zweig.
+      where: { id: input.missionId ?? `new-${randomUUID()}` },
       create: {
         id: input.missionId,
         eventName: input.eventName,

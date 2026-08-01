@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { requireAdmin, ForbiddenError } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { serializeDocument, sanitizeDocument } from "@/lib/content/sanitize";
@@ -148,7 +149,11 @@ export async function savePost(input: SavePostInput): Promise<SavePostResult> {
       : null;
 
     const post = await db.post.upsert({
-      where: { id: input.postId ?? "__new__" },
+      // Für neue Beiträge ein garantiert nicht existierender Lookup-Wert, damit
+      // upsert sicher den create-Zweig nimmt (die tatsächliche id wird unten in
+      // `create` als cuid vergeben). Verhindert das versehentliche Überschreiben
+      // eines real existierenden Datensatzes über einen Sentinel-Wert.
+      where: { id: input.postId ?? `new-${randomUUID()}` },
       create: {
         id: input.postId,
         type,

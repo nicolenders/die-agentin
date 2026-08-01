@@ -6,8 +6,27 @@ import { assetUrl } from "@/lib/media/url";
 import { validateUpload } from "@/lib/media/detect";
 import { processImage } from "@/lib/media/process";
 import { storeFile } from "@/lib/media/storage";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+// Prüft, dass ein zustandsändernder Request vom eigenen Ursprung kommt
+// (Defense-in-Depth gegen CSRF, zusätzlich zu SameSite=Lax des Session-Cookies).
+function sameOrigin(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true; // Same-Origin-fetch sendet i. d. R. Origin; Nicht-Browser-Clients ohne Origin durchlassen
+  try {
+    const originHost = new URL(origin).host;
+    const host = request.headers.get("host");
+    if (originHost === host) return true;
+    // Robust hinter einem Proxy: auch die konfigurierte Site-URL akzeptieren.
+    const site = process.env.NEXT_PUBLIC_SITE_URL;
+    if (site && new URL(site).host === originHost) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 // Medienbibliothek-API (SPEC M2). Nur Admin. Upload validiert den echten Typ
 // (Magic Bytes), entfernt Metadaten, erzeugt WebP-Varianten und verlangt einen
@@ -43,6 +62,17 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user?.isAdmin) {
     return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
+  }
+  if (!sameOrigin(request)) {
+    return NextResponse.json({ error: "Ungültiger Ursprung." }, { status: 403 });
+  }
+  // Rate Limiting der Upload-Route (SPEC §13): 30 Uploads / 5 Min. je Nutzer.
+  const limit = rateLimit(`upload:${user.oid ?? "admin"}`, 30, 5 * 60 * 1000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Zu viele Uploads. Bitte kurz warten." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
   }
 
   const form = await request.formData();

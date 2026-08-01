@@ -24,15 +24,23 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
   const width = meta.width ?? 0;
   const height = meta.height ?? 0;
 
+  // Zielbreiten: die responsiven Stufen unterhalb der Originalbreite plus eine
+  // Variante in Originalgröße (gedeckelt auf die größte Stufe). So bleibt für
+  // mittelgroße Bilder (z. B. 700 px) die volle Auflösung erhalten, statt nur
+  // eine kleine Stufe zu behalten. Kein Hochskalieren.
+  const maxWidth = VARIANT_WIDTHS[VARIANT_WIDTHS.length - 1] ?? 1600;
+  const effectiveWidth = width || maxWidth;
+  const targets = new Set<number>(VARIANT_WIDTHS.filter((w) => w < effectiveWidth));
+  targets.add(Math.min(effectiveWidth, maxWidth));
+
   const variants: ProcessedVariant[] = [];
-  for (const w of VARIANT_WIDTHS) {
-    if (width && w > width && variants.length > 0) break; // nicht hochskalieren
+  for (const w of [...targets].sort((a, b) => a - b)) {
     const buffer = await sharp(input)
       .rotate()
-      .resize({ width: Math.min(w, width || w), withoutEnlargement: true })
+      .resize({ width: w, withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer();
-    variants.push({ w: Math.min(w, width || w), format: "webp", buffer });
+    variants.push({ w, format: "webp", buffer });
   }
 
   return { width, height, variants };

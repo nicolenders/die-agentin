@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { locales } from "@/lib/i18n/config";
 import { getPublishedPosts } from "@/lib/queries/posts";
+import { getPublishedDossiers } from "@/lib/queries/dossiers";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -41,6 +42,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       entries.push({
         url: `${SITE}/${locale}/signale/${post.slug}`,
         lastModified: post.publishedAt ?? undefined,
+        changeFrequency: "monthly",
+        priority: 0.6,
+      });
+    }
+    const dossiers = await getPublishedDossiers(locale);
+    for (const dossier of dossiers) {
+      entries.push({
+        url: `${SITE}/${locale}/dossiers/${dossier.slug}`,
+        lastModified: dossier.reviewedAt ?? undefined,
         changeFrequency: "monthly",
         priority: 0.6,
       });

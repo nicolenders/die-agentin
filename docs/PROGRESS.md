@@ -305,3 +305,30 @@ bereit.
 migrate → staging → production (manuelle Freigabe)" ist als Pipeline definiert;
 Rollback ist als Traffic-Switch angelegt. Die Ausführung gegen Azure steht noch
 aus (kein Azure-Zugang in dieser Umsetzung).
+
+---
+
+## Review-Härtung (Senior-Architektur- & Security-Review)
+
+Nach dem PR durchgeführte, gezielte Verbesserungen:
+- **Rate Limiting** der Upload-Route (`lib/rate-limit.ts`, unit-getestet;
+  30 Uploads / 5 Min. je Nutzer) — schließt die von SPEC §9/§13 geforderte,
+  bislang fehlende Absicherung. In-Memory (pro Instanz), bewusst dokumentiert.
+- **CSRF-Härtung**: Same-Origin-Prüfung auf der Upload-Route (Defense-in-Depth
+  zusätzlich zu SameSite=Lax des Session-Cookies), robust hinter Proxy.
+- **Korrektheit**: `upsert`-Sentinel `"__new__"` in `savePost`/`saveDossier`/
+  `saveMission` durch einen garantiert nicht kollidierenden Lookup-Wert ersetzt
+  (kein versehentliches Überschreiben möglich).
+- **Bildvarianten**: `processImage` behält für mittelgroße Bilder die volle
+  Auflösung, statt nur eine kleine Stufe zu erzeugen.
+- **Caching**: `Cache-Control` (s-maxage) auf den RSS-Feeds; Sitemap um Dossiers
+  ergänzt.
+
+Auditiert und für in Ordnung befunden: alle Server Actions und Admin-API-Routen
+haben eine serverseitige Rollenprüfung als erste Zeile; kein
+`dangerouslySetInnerHTML`; keine SSRF-Oberfläche (kein serverseitiger Abruf von
+Nutzer-URLs); Preview-Token per HMAC; Job-Endpunkt mit konstantzeitigem
+Secret-Vergleich; Upload-Validierung per Magic Bytes. Die CSP-`unsafe-inline`
+(Script) bleibt der in ADR 0007 dokumentierte, bewusste Kompromiss (nonce
+erzwingt durchgängig dynamisches Rendering); primäre XSS-Abwehr ist der
+escapende Renderer.

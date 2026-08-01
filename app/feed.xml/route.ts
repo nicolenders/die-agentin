@@ -26,6 +26,10 @@ export async function GET() {
     items,
   });
   return new Response(xml, {
-    headers: { "Content-Type": "application/rss+xml; charset=utf-8" },
+    headers: {
+      "Content-Type": "application/rss+xml; charset=utf-8",
+      // Am Edge cachen, damit normale Abrufe die DB nicht berühren (SPEC §2.1).
+      "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600",
+    },
   });
 }

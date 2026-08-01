@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nicolenders.com — Mockup Leseransicht</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#05010D;
+  --ink-2:#0B0518;
+  --ink-3:#120A24;
+  --line:#2A1A4A;
+  --line-soft:#1C1030;
+  --violet:#8B5CF6;
+  --violet-bright:#A855F7;
+  --violet-text:#C4A2FC;
+  --magenta:#E879F9;
+  --signal:#38BDF8;
+  --text:#EDE9F8;
+  --muted:#A093C0;
+  --ok:#4ADE80;
+  --display:'Poppins','Century Gothic','Futura',system-ui,sans-serif;
+  --body:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+  --r:4px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--ink);color:var(--text);font-family:var(--body);
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(900px 500px at 12% -5%, rgba(139,92,246,.20), transparent 60%),
+    radial-gradient(700px 420px at 92% 8%, rgba(232,121,249,.11), transparent 62%),
+    linear-gradient(rgba(139,92,246,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,92,246,.045) 1px, transparent 1px);
+  background-size:auto,auto,52px 52px,52px 52px;
+}
+img{max-width:100%}
+a{color:var(--violet-text)}
+:focus-visible{outline:2px solid var(--magenta);outline-offset:3px;border-radius:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+
+/* ---------- Kopfzeile ---------- */
+header.top{position:sticky;top:0;z-index:60;backdrop-filter:blur(14px);
+  background:linear-gradient(180deg,rgba(5,1,13,.94),rgba(5,1,13,.72));border-bottom:1px solid var(--line-soft)}
+.topbar{display:flex;align-items:center;gap:20px;height:66px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;flex-shrink:0}
+.sigil{width:38px;height:38px;border:1px solid var(--violet);border-radius:50%;display:grid;place-items:center;
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--violet-bright);
+  box-shadow:0 0 18px rgba(168,85,247,.35) inset,0 0 12px rgba(168,85,247,.18)}
+.brand b{font-family:var(--display);font-weight:800;letter-spacing:.14em;font-size:15px;display:block;line-height:1.1}
+.brand span{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.18em}
+nav.main{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap}
+nav.main button{background:none;border:0;color:var(--muted);font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.13em;text-transform:uppercase;padding:9px 11px;cursor:pointer;border-bottom:2px solid transparent}
+nav.main button:hover{color:var(--text)}
+nav.main button[aria-current="page"]{color:var(--violet-bright);border-bottom-color:var(--violet-bright)}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;font-family:var(--mono);font-size:10.5px}
+.lang button{background:none;border:0;color:var(--muted);padding:6px 11px;cursor:pointer;letter-spacing:.1em}
+.lang button[aria-pressed="true"]{background:var(--violet);color:#fff}
+.menu-toggle{display:none}
+
+/* ---------- Bausteine ---------- */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--violet-bright);
+  display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.eyebrow::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+h1,h2,h3,h4{font-family:var(--display);font-weight:600;letter-spacing:-.01em;margin:0 0 14px;line-height:1.15}
+h1{font-size:clamp(38px,6.2vw,74px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3vw,34px)}
+h3{font-size:19px}
+p{margin:0 0 16px;color:#D9D2EE}
+.lead{font-size:18px;color:var(--muted);max-width:62ch}
+.mono{font-family:var(--mono)}
+section.page{display:none;padding:44px 0 90px;animation:fade .35s ease}
+section.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.card{position:relative;background:linear-gradient(180deg,rgba(18,10,36,.85),rgba(11,5,24,.85));
+  border:1px solid var(--line-soft);border-radius:var(--r);padding:22px;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--violet);transform:translateY(-2px)}
+/* Signatur: Zielmarken-Ecken */
+.bracket::before,.bracket::after{content:"";position:absolute;width:13px;height:13px;border:1px solid var(--violet-bright);opacity:.75}
+.bracket::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.bracket::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.grid{display:grid;gap:18px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.g3,.g2{grid-template-columns:1fr}}
+
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+.tag.signal{color:var(--signal);border-color:rgba(56,189,248,.4)}
+.tag.notiz{color:var(--violet-bright);border-color:rgba(168,85,247,.45)}
+.tag.backstage{color:var(--magenta);border-color:rgba(232,121,249,.4)}
+.tag.dossier{color:#FBBF24;border-color:rgba(251,191,36,.4)}
+.meta{font-family:var(--mono);font-size:11px;color:#7C6EA0;letter-spacing:.06em}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;padding:12px 20px;border:1px solid var(--violet);color:var(--violet-text);
+  background:rgba(139,92,246,.08);border-radius:var(--r);cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--violet);color:#fff}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.btn.ghost:hover{border-color:var(--violet);background:transparent;color:var(--text)}
+
+/* ---------- HQ / Hero ---------- */
+.hero{padding:56px 0 30px;position:relative}
+.status-strip{display:flex;flex-wrap:wrap;gap:8px 26px;font-family:var(--mono);font-size:11px;color:var(--muted);
+  letter-spacing:.12em;text-transform:uppercase;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
+  padding:11px 0;margin:26px 0 0}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:7px;
+  box-shadow:0 0 9px var(--ok);animation:pulse 2.4s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.hero h1 span{background:linear-gradient(92deg,var(--violet-bright),var(--magenta));-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.roles{display:flex;flex-wrap:wrap;gap:9px;margin:22px 0 0}
+.roles span{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--violet-text);
+  border:1px solid var(--line);padding:6px 12px;border-radius:var(--r)}
+
+/* ---------- Feed ---------- */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 24px}
+.chip{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;
+  border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--violet);border-color:var(--violet);color:#fff}
+.feed-item{display:grid;grid-template-columns:110px 1fr;gap:22px;padding:22px;border-bottom:1px solid var(--line-soft);
+  cursor:pointer;text-align:left;width:100%;background:none;border-left:0;border-right:0;border-top:0;color:inherit;font:inherit}
+.feed-item:hover{background:rgba(139,92,246,.06)}
+.feed-item .date{font-family:var(--mono);font-size:11px;color:#7C6EA0;line-height:1.8}
+.feed-item h3{margin:8px 0 8px}
+.quoted-link{border-left:2px solid var(--signal);padding:10px 14px;background:rgba(56,189,248,.05);margin:12px 0;
+  font-size:14px;color:var(--muted)}
+.quoted-link b{color:var(--text);font-weight:500;display:block;font-size:14.5px}
+
+/* ---------- Artikel mit Marginalspalte ---------- */
+.article{max-width:1000px}
+.art-head{border-bottom:1px solid var(--line-soft);padding-bottom:26px;margin-bottom:34px}
+.block{display:grid;grid-template-columns:1fr 300px;gap:34px;margin-bottom:30px;align-items:start}
+.block.left{grid-template-columns:300px 1fr}
+.block.left .txt{order:2}.block.left figure{order:1}
+.block.full{grid-template-columns:1fr}
+figure{margin:0}
+figure img,.ph{display:block;width:100%;border:1px solid var(--line);border-radius:var(--r)}
+.ph{aspect-ratio:4/3;background:
+   repeating-linear-gradient(45deg,rgba(139,92,246,.10) 0 10px,transparent 10px 20px),var(--ink-3);
+  display:grid;place-items:center;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:center;padding:10px}
+figcaption{font-family:var(--mono);font-size:10.5px;color:#7C6EA0;margin-top:8px;line-height:1.5}
+blockquote{border-left:2px solid var(--magenta);margin:22px 0;padding:6px 0 6px 20px;font-size:19px;
+  font-family:var(--display);font-weight:300;color:#E4DCFA}
+pre{background:#080314;border:1px solid var(--line);border-radius:var(--r);padding:16px;overflow:auto;
+  font-family:var(--mono);font-size:12.5px;color:#C9BEEB;line-height:1.6}
+pre .k{color:var(--magenta)}pre .s{color:var(--signal)}pre .c{color:#6B5D8C}
+table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
+th,td{border:1px solid var(--line-soft);padding:10px 13px;text-align:left}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--violet-bright);
+  background:rgba(139,92,246,.07)}
+ul.styled,ol.styled{padding-left:20px;color:#D9D2EE}
+ul.styled li,ol.styled li{margin-bottom:7px}
+ul.styled li::marker{color:var(--violet-bright)}
+ol.styled li::marker{color:var(--violet-bright);font-family:var(--mono);font-size:12px}
+
+/* ---------- Galerie & Video ---------- */
+.gallery{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 16px;scroll-snap-type:x mandatory}
+.gallery .ph{min-width:290px;scroll-snap-align:start;aspect-ratio:3/2}
+.video-consent{position:relative;aspect-ratio:16/9;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--ink-3);display:grid;place-items:center;text-align:center;padding:26px}
+.video-consent p{font-size:13.5px;color:var(--muted);max-width:44ch}
+
+/* ---------- Karte ---------- */
+.map-shell{position:relative;border:1px solid var(--line-soft);border-radius:var(--r);background:
+  radial-gradient(circle at 50% 45%,rgba(139,92,246,.13),transparent 65%),#07031244;overflow:hidden}
+svg.map{display:block;width:100%;height:auto}
+.landmass{fill:rgba(139,92,246,.16);stroke:rgba(168,85,247,.55);stroke-width:.7;vector-effect:non-scaling-stroke}
+.graticule{stroke:rgba(139,92,246,.13);stroke-width:.5;vector-effect:non-scaling-stroke;fill:none}
+.pin{cursor:pointer}
+.pin circle.core{fill:var(--magenta);stroke:#fff;stroke-width:.6}
+.pin circle.halo{fill:none;stroke:var(--magenta);stroke-width:.8;opacity:.55;animation:ping 2.8s ease-out infinite}
+.pin.future circle.core{fill:var(--signal)}
+.pin.future circle.halo{stroke:var(--signal)}
+@keyframes ping{0%{r:3;opacity:.7}100%{r:11;opacity:0}}
+.pin:hover circle.core,.pin:focus circle.core{r:5.5}
+.popup{position:absolute;width:264px;background:rgba(9,4,20,.97);border:1px solid var(--violet);border-radius:var(--r);
+  padding:15px;font-size:13px;box-shadow:0 18px 44px rgba(0,0,0,.65);z-index:5}
+.popup h4{margin:6px 0 6px;font-size:15px}
+.popup .close{position:absolute;top:6px;right:9px;background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px}
+.map-legend{display:flex;flex-wrap:wrap;gap:18px;padding:14px 18px;border-top:1px solid var(--line-soft);
+  font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.08em}
+.year-filter{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 18px}
+.counter{display:flex;gap:34px;flex-wrap:wrap;margin:26px 0}
+.counter div b{font-family:var(--display);font-size:34px;font-weight:800;display:block;line-height:1;
+  background:linear-gradient(92deg,var(--violet-bright),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+.counter div span{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- Listen / Tabellen-Layouts ---------- */
+.rank-row{display:grid;grid-template-columns:38px 1fr 90px 110px;gap:14px;align-items:center;padding:13px 0;
+  border-bottom:1px solid var(--line-soft)}
+.rank-row .n{font-family:var(--mono);font-size:18px;color:var(--violet-bright)}
+.bar{height:5px;background:var(--line-soft);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--magenta))}
+.lang-badge{font-family:var(--mono);font-size:10px;border:1px solid var(--line);padding:2px 7px;border-radius:3px;color:var(--muted)}
+.lang-badge.on{color:var(--ok);border-color:rgba(74,222,128,.4)}
+
+.cert{display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line-soft)}
+.cert .badge{width:42px;height:42px;flex:none;border:1px solid var(--violet);border-radius:50%;display:grid;place-items:center;
+  font-family:var(--mono);font-size:9px;color:var(--violet-bright)}
+
+/* ---------- Footer ---------- */
+footer{border-top:1px solid var(--line-soft);padding:44px 0 60px;margin-top:40px;background:rgba(8,3,18,.6)}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+@media(max-width:800px){.foot-grid{grid-template-columns:1fr 1fr}}
+footer h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--violet-bright)}
+footer a{display:block;color:var(--muted);text-decoration:none;font-size:14px;padding:4px 0}
+footer a:hover{color:var(--text)}
+.socials{display:flex;gap:10px;margin-top:14px}
+.socials a{width:38px;height:38px;border:1px solid var(--line);border-radius:var(--r);display:grid;place-items:center;
+  font-family:var(--mono);font-size:11px;color:var(--muted);padding:0}
+.socials a:hover{border-color:var(--violet);color:var(--violet-bright)}
+.note{font-family:var(--mono);font-size:10.5px;color:#6B5D8C;letter-spacing:.05em;margin-top:26px}
+.mockup-flag{position:fixed;left:0;bottom:0;z-index:99;background:var(--magenta);color:#1A0524;font-family:var(--mono);
+  font-size:10px;letter-spacing:.14em;padding:5px 12px;text-transform:uppercase}
+@media(max-width:820px){
+  nav.main{position:fixed;inset:66px 0 auto 0;background:rgba(5,1,13,.98);border-bottom:1px solid var(--line);
+    flex-direction:column;padding:10px;display:none}
+  nav.main.open{display:flex}
+  nav.main button{text-align:left;padding:12px;border-bottom:1px solid var(--line-soft)}
+  .menu-toggle{display:inline-flex;margin-left:auto}
+  .block,.block.left{grid-template-columns:1fr}
+  .block.left .txt,.block.left figure{order:initial}
+  .feed-item{grid-template-columns:1fr}
+  .rank-row{grid-template-columns:30px 1fr 80px;row-gap:6px}
+}
+</style>
+</head>
+<body>
+<div class="mockup-flag">Mockup · Leseransicht · Beispieldaten</div>
+
+<header class="top">
+  <div class="wrap topbar">
+    <a class="brand" href="#" onclick="go('hq');return false">
+      <span class="sigil">N.E</span>
+      <span><b>DIE AGENTIN</b><span>NICOLENDERS.COM</span></span>
+    </a>
+    <button class="btn ghost menu-toggle" onclick="document.querySelector('nav.main').classList.toggle('open')">Menü</button>
+    <nav class="main" id="nav">
+      <button data-p="hq" aria-current="page">HQ</button>
+      <button data-p="feed">Signale</button>
+      <button data-p="dossiers">Dossiers</button>
+      <button data-p="missions">Einsätze</button>
+      <button data-p="briefings">Briefings</button>
+      <button data-p="publications">Publikationen</button>
+      <button data-p="training">Ausbildung</button>
+      <button data-p="legende">Legende</button>
+    </nav>
+    <div class="lang" role="group" aria-label="Sprache wählen">
+      <button aria-pressed="true">DE</button><button aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ HQ ============ -->
+<section class="page active" id="hq">
+  <div class="hero">
+    <p class="eyebrow">Hauptquartier · Status aktiv</p>
+    <h1>Ich verbinde Menschen<br>mit <span>intelligenten Lösungen</span>.</h1>
+    <p class="lead">Nicole Enders — Microsoft MVP seit 2020, 7× in Folge. Ich entwerfe, baue und erkläre
+      Lösungen rund um Microsoft AI und Modern Work. Hier laufen meine Funde, Dossiers und Einsätze zusammen.</p>
+    <div class="roles"><span>ARCHITECT</span><span>ADVISOR</span><span>DEVELOPER</span><span>TRAINER</span><span>SPEAKER</span></div>
+    <div class="status-strip">
+      <span><i class="dot"></i>Nächster Einsatz: 12.09.2026 · Wien</span>
+      <span>Letztes Signal: vor 2 Tagen</span>
+      <span>47 Einsätze · 11 Länder</span>
+      <span>Klassifizierung: öffentlich</span>
+    </div>
+  </div>
+
+  <p class="eyebrow" style="margin-top:52px">Zuletzt eingegangen</p>
+  <div class="grid g3">
+    <article class="card bracket">
+      <span class="tag signal">Signal · geteilter Fund</span>
+      <h3 style="margin-top:12px">Microsoft Foundry bekommt Agent-Tracing</h3>
+      <p style="font-size:14.5px">Warum das für Produktions-Agents mehr verändert als das Feature-Listing vermuten lässt.</p>
+      <p class="meta">28.07.2026 · Quelle: Microsoft Tech Community</p>
+    </article>
+    <article class="card bracket">
+      <span class="tag notiz">Kurzmeldung</span>
+      <h3 style="margin-top:12px">Sensitivity Labels: Neue Auto-Labeling-Grenzen</h3>
+      <p style="font-size:14.5px">Was sich in Purview zum 1. August ändert — und was du vorher prüfen solltest.</p>
+      <p class="meta">26.07.2026 · 3 Min.</p>
+    </article>
+    <article class="card bracket">
+      <span class="tag backstage">Backstage</span>
+      <h3 style="margin-top:12px">Vorbereitung Einsatz Wien: 3 Demos, 1 Tenant</h3>
+      <p style="font-size:14.5px">Wie ich Demo-Umgebungen baue, die auch ohne WLAN überleben.</p>
+      <p class="meta">21.07.2026 · 5 Min.</p>
+    </article>
+  </div>
+
+  <div class="counter">
+    <div><b>47</b><span>Einsätze</span></div>
+    <div><b>11</b><span>Länder</span></div>
+    <div><b>23</b><span>Briefings im Repertoire</span></div>
+    <div><b>7×</b><span>MVP Award</span></div>
+    <div><b>2</b><span>Bücher</span></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:20px">
+    <article class="card bracket">
+      <p class="eyebrow">Nächster Einsatz</p>
+      <h3>Cloud Summit Austria · Wien</h3>
+      <p style="font-size:14.5px">Briefing: „Agents, die tatsächlich in Produktion gehen" — Copilot Studio trifft Microsoft Foundry.</p>
+      <p class="meta">12.09.2026 · Sprache: DE</p>
+      <button class="btn" onclick="go('mission-detail')">Einsatzakte öffnen</button>
+    </article>
+    <article class="card bracket">
+      <p class="eyebrow">Meistgefragtes Briefing</p>
+      <h3>Copilot Extensibility in der Praxis</h3>
+      <p style="font-size:14.5px">9× gehalten, davon 4× auf Englisch. Von Declarative Agents bis zu eigenen API-Plugins.</p>
+      <button class="btn ghost" onclick="go('briefings')">Alle Briefings</button>
+    </article>
+  </div>
+</section>
+
+<!-- ============ FEED ============ -->
+<section class="page" id="feed">
+  <p class="eyebrow">Signale · laufende Meldungen</p>
+  <h2>Was mir aufgefallen ist</h2>
+  <p class="lead">Kurze Meldungen aus der Microsoft- und KI-Welt, geteilte Funde mit Einordnung und Notizen aus dem Hintergrund.</p>
+
+  <div class="filters" role="group" aria-label="Nach Typ filtern" style="margin-top:26px">
+    <button class="chip" aria-pressed="true">Alle</button>
+    <button class="chip" aria-pressed="false">Signal (geteilter Link)</button>
+    <button class="chip" aria-pressed="false">Kurzmeldung</button>
+    <button class="chip" aria-pressed="false">Backstage</button>
+    <button class="chip" aria-pressed="false">Microsoft</button>
+    <button class="chip" aria-pressed="false">KI</button>
+    <button class="chip" aria-pressed="false">Software Development</button>
+  </div>
+
+  <button class="feed-item" onclick="go('article')">
+    <div class="date">28.07.2026<br>14:20</div>
+    <div>
+      <span class="tag signal">Signal</span>
+      <h3>Microsoft Foundry bekommt Agent-Tracing</h3>
+      <div class="quoted-link">
+        <b>Tracing for agents in Microsoft Foundry — Microsoft Tech Community</b>
+        <span class="meta">techcommunity.microsoft.com · 24.07.2026</span>
+      </div>
+      <p style="font-size:15px">Meine Einordnung: Wer Agents bisher mit selbstgebautem Logging betrieben hat, kann das jetzt
+        ersetzen. Interessant ist weniger das Tracing selbst als die Frage, was davon im Compliance-Kontext auswertbar bleibt.</p>
+      <p class="meta">Microsoft · Foundry · Observability</p>
+    </div>
+  </button>
+
+  <button class="feed-item" onclick="go('article')">
+    <div class="date">26.07.2026<br>08:05</div>
+    <div>
+      <span class="tag notiz">Kurzmeldung</span>
+      <h3>Sensitivity Labels: Neue Grenzen beim Auto-Labeling</h3>
+      <p style="font-size:15px">Ab 1. August gelten in Purview veränderte Limits für Auto-Labeling-Policies. Drei Dinge,
+        die du vorher in deinem Tenant prüfen solltest — inklusive der Frage, was mit bestehenden Simulationsläufen passiert.</p>
+      <p class="meta">Microsoft Purview · Information Protection · 3 Min.</p>
+    </div>
+  </button>
+
+  <button class="feed-item" onclick="go('article')">
+    <div class="date">21.07.2026<br>19:40</div>
+    <div>
+      <span class="tag backstage">Backstage</span>
+      <h3>Vorbereitung Einsatz Wien: 3 Demos, 1 Tenant</h3>
+      <p style="font-size:15px">Demo-Setups sind das, was auf der Bühne als Erstes kaputtgeht. Wie ich meine Umgebung
+        so baue, dass sie auch ohne funktionierendes Konferenz-WLAN durchhält.</p>
+      <p class="meta">Backstage · Speaking · Demo</p>
+    </div>
+  </button>
+
+  <button class="feed-item" onclick="go('article')">
+    <div class="date">14.07.2026<br>11:15</div>
+    <div>
+      <span class="tag backstage">Backstage</span>
+      <h3>Ziel erreicht: MVP Award zum siebten Mal</h3>
+      <p style="font-size:15px">Sieben Jahre in Folge — und der Grund ist jedes Mal derselbe: die Community, die mir
+        Fragen stellt, auf die ich allein nicht gekommen wäre.</p>
+      <p class="meta">Award · Community</p>
+    </div>
+  </button>
+
+  <div style="text-align:center;margin-top:34px"><button class="btn ghost">Weitere Signale laden</button></div>
+</section>
+
+<!-- ============ ARTIKEL ============ -->
+<section class="page" id="article">
+  <button class="btn ghost" onclick="go('feed')">← Zurück zu den Signalen</button>
+  <article class="article" style="margin-top:26px">
+    <div class="art-head">
+      <span class="tag notiz">Kurzmeldung</span>
+      <h1 style="font-size:clamp(30px,4.4vw,50px);margin-top:14px">Sensitivity Labels: Neue Grenzen beim Auto-Labeling</h1>
+      <p class="meta">Veröffentlicht 26.07.2026 · Lesezeit 3 Min. · Sprache DE / <a href="#">EN verfügbar</a></p>
+    </div>
+
+    <div class="block">
+      <div class="txt">
+        <p>Zum 1. August ändert Microsoft die Limits für Auto-Labeling-Policies in Purview. Das klingt nach einer
+          Fußnote im Message Center, hat aber Auswirkungen auf jeden Tenant, der Labels flächendeckend ausrollt.</p>
+        <p>Drei Punkte solltest du <b>vor</b> dem Stichtag prüfen. Sie kosten dich zusammen etwa zwanzig Minuten
+          und ersparen dir im Zweifel eine <i>Woche</i> Fehlersuche.</p>
+      </div>
+      <figure>
+        <div class="ph">Marginalbild rechts<br>zu diesem Absatz</div>
+        <figcaption>Policy-Simulation im Purview Portal. Bildposition pro Absatz wählbar: links, rechts oder volle Breite.</figcaption>
+      </figure>
+    </div>
+
+    <h3>Was du jetzt prüfen solltest</h3>
+    <ol class="styled">
+      <li>Anzahl aktiver Auto-Labeling-Policies pro Workload</li>
+      <li>Laufende Simulationsläufe — werden sie beim Umstellen zurückgesetzt?</li>
+      <li>Abhängigkeiten zu DLP-Policies, die auf Labels referenzieren</li>
+    </ol>
+
+    <div class="block left">
+      <figure>
+        <div class="ph">Marginalbild links<br>zu diesem Absatz</div>
+        <figcaption>Gleiche Mechanik, andere Seite — pro Absatz einstellbar.</figcaption>
+      </figure>
+      <div class="txt">
+        <p>Besonders relevant ist Punkt drei. Wenn eine DLP-Policy auf ein Label referenziert, das über eine
+          Auto-Labeling-Regel gesetzt wird, verschiebt sich der Zeitpunkt, zu dem die Regel greift.</p>
+        <blockquote>Labels sind kein Feature. Labels sind eine Entscheidung darüber, wer in deiner Organisation was sehen darf.</blockquote>
+      </div>
+    </div>
+
+    <h3>Die Grenzen im Überblick</h3>
+    <table>
+      <thead><tr><th>Workload</th><th>Bisher</th><th>Ab 01.08.</th><th>Handlungsbedarf</th></tr></thead>
+      <tbody>
+        <tr><td>SharePoint Online</td><td>100 Policies</td><td>50 Policies</td><td>Konsolidieren</td></tr>
+        <tr><td>Exchange Online</td><td>100 Policies</td><td>50 Policies</td><td>Konsolidieren</td></tr>
+        <tr><td>OneDrive</td><td>unbegrenzt</td><td>50 Policies</td><td>Prüfen</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Schnell prüfen per PowerShell</h3>
+    <pre><span class="c"># Verbindung zum Security &amp; Compliance PowerShell</span>
+<span class="k">Connect-IPPSSession</span>
+
+<span class="c"># Alle Auto-Labeling-Policies mit Status ausgeben</span>
+<span class="k">Get-AutoSensitivityLabelPolicy</span> | <span class="k">Select-Object</span> <span class="s">Name, Mode, Workload, Enabled</span></pre>
+
+    <p>Wenn du mehr als 50 Policies pro Workload zählst, plane die Konsolidierung ein. Details dazu stehen im
+      Dossier <a href="#" onclick="go('dossier');return false">Sensitivity Labels sauber ausrollen</a>.</p>
+
+    <div class="card bracket" style="margin-top:36px">
+      <p class="eyebrow">Weitergetragen</p>
+      <p class="meta">Dieser Beitrag wurde am 26.07.2026 automatisch auf LinkedIn und X veröffentlicht.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ============ DOSSIERS ============ -->
+<section class="page" id="dossiers">
+  <p class="eyebrow">Dossiers · Wissen mit Haltbarkeit</p>
+  <h2>Nachschlagen statt suchen</h2>
+  <p class="lead">Dossiers sind meine gepflegten Wissensseiten. Sie werden aktualisiert, wenn sich etwas ändert —
+    mit Änderungsdatum, damit du weißt, worauf du dich verlässt.</p>
+
+  <div class="filters" style="margin-top:26px">
+    <button class="chip" aria-pressed="true">Alle</button>
+    <button class="chip" aria-pressed="false">Copilot Studio</button>
+    <button class="chip" aria-pressed="false">Microsoft Foundry</button>
+    <button class="chip" aria-pressed="false">Purview</button>
+    <button class="chip" aria-pressed="false">Power Platform</button>
+    <button class="chip" aria-pressed="false">Development</button>
+  </div>
+
+  <div class="grid g3">
+    <article class="card bracket" onclick="go('dossier')" style="cursor:pointer">
+      <span class="tag dossier">Dossier</span>
+      <h3 style="margin-top:12px">Sensitivity Labels sauber ausrollen</h3>
+      <p style="font-size:14.5px">Von der Label-Taxonomie bis zum Rollout in vier Wellen. Mit Galerie und Video-Walkthrough.</p>
+      <p class="meta">Aktualisiert 12.07.2026 · 14 Min.</p>
+    </article>
+    <article class="card bracket"><span class="tag dossier">Dossier</span>
+      <h3 style="margin-top:12px">Copilot Studio: Agent-Architekturen</h3>
+      <p style="font-size:14.5px">Wann Topics reichen, wann du Generative Orchestration brauchst, wann Foundry.</p>
+      <p class="meta">Aktualisiert 30.06.2026 · 18 Min.</p></article>
+    <article class="card bracket"><span class="tag dossier">Dossier</span>
+      <h3 style="margin-top:12px">Copilot-ready PowerPoint</h3>
+      <p style="font-size:14.5px">Wie Foliensätze aufgebaut sein müssen, damit Copilot sie sinnvoll verwerten kann.</p>
+      <p class="meta">Aktualisiert 18.06.2026 · 9 Min.</p></article>
+  </div>
+</section>
+
+<!-- ============ DOSSIER-DETAIL ============ -->
+<section class="page" id="dossier">
+  <button class="btn ghost" onclick="go('dossiers')">← Zurück zu den Dossiers</button>
+  <article class="article" style="margin-top:26px">
+    <div class="art-head">
+      <span class="tag dossier">Dossier</span>
+      <h1 style="font-size:clamp(30px,4.4vw,50px);margin-top:14px">Sensitivity Labels sauber ausrollen</h1>
+      <p class="meta">Angelegt 04.02.2026 · Zuletzt aktualisiert 12.07.2026 · Lesezeit 14 Min.</p>
+    </div>
+
+    <div class="card bracket" style="margin-bottom:34px">
+      <p class="eyebrow">Inhalt</p>
+      <ul class="styled" style="margin:0">
+        <li><a href="#">Taxonomie festlegen</a></li>
+        <li><a href="#">Pilotgruppe und Simulation</a></li>
+        <li><a href="#">Rollout in vier Wellen</a></li>
+        <li><a href="#">Bildergalerie: Portal-Schritte</a></li>
+        <li><a href="#">Video-Walkthrough</a></li>
+      </ul>
+    </div>
+
+    <p>Ein Label-Rollout scheitert selten an der Technik. Er scheitert daran, dass niemand entschieden hat, was
+      „vertraulich" im eigenen Haus eigentlich bedeutet. Deshalb steht am Anfang keine Policy, sondern ein Gespräch.</p>
+
+    <h3>Bildergalerie: die Schritte im Portal</h3>
+    <p class="meta" style="margin-bottom:10px">Horizontal scrollbar — mit Tastatur über Pfeiltasten bedienbar.</p>
+    <div class="gallery" tabindex="0" role="region" aria-label="Bildergalerie: Schritte im Purview Portal">
+      <div class="ph">01 · Label anlegen</div>
+      <div class="ph">02 · Scope wählen</div>
+      <div class="ph">03 · Schutz definieren</div>
+      <div class="ph">04 · Policy veröffentlichen</div>
+      <div class="ph">05 · Simulation starten</div>
+    </div>
+
+    <h3>Video-Walkthrough</h3>
+    <div class="video-consent">
+      <div>
+        <p class="eyebrow" style="justify-content:center">Externes Video · YouTube</p>
+        <p>Beim Abspielen wird eine Verbindung zu YouTube hergestellt und Daten werden an Google übertragen.
+          Erst nach deiner Zustimmung wird das Video geladen.</p>
+        <button class="btn">Video laden</button>
+        <p class="meta" style="margin-top:12px">Alternativ: <a href="#">direkt bei YouTube ansehen</a></p>
+      </div>
+    </div>
+    <p class="meta" style="margin-top:12px">Videogalerie möglich: mehrere Videos, gleiche Zustimmungslogik, horizontal navigierbar.</p>
+  </article>
+</section>
+
+<!-- ============ EINSÄTZE / KARTE ============ -->
+<section class="page" id="missions">
+  <p class="eyebrow">Einsätze vor Ort</p>
+  <h2>Wo ich war. Wo ich hinfahre.</h2>
+  <p class="lead">Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Klick auf einen Pin öffnet
+    die Kurzinfo, von dort geht es in die vollständige Einsatzakte.</p>
+
+  <div class="year-filter" role="group" aria-label="Jahr filtern" style="margin-top:26px">
+    <button class="chip" aria-pressed="true">Alle</button>
+    <button class="chip" aria-pressed="false">Geplant</button>
+    <button class="chip" aria-pressed="false">2026</button>
+    <button class="chip" aria-pressed="false">2025</button>
+    <button class="chip" aria-pressed="false">2024</button>
+    <button class="chip" aria-pressed="false">2023</button>
+  </div>
+
+  <div class="map-shell" id="mapShell">
+    <svg class="map" id="worldmap" viewBox="0 0 1000 460" role="img" aria-label="Weltkarte mit Einsatzorten. Eine barrierefreie Liste aller Einsätze steht direkt unter der Karte.">
+      <g id="graticule"></g>
+      <g id="land"></g>
+      <g id="pins"></g>
+    </svg>
+    <div class="map-legend">
+      <span><span style="color:var(--magenta)">●</span> Abgeschlossener Einsatz</span>
+      <span><span style="color:var(--signal)">●</span> Geplant</span>
+      <span>Punktgröße = Anzahl Einsätze am Ort</span>
+      <span style="margin-left:auto">Karte: Beispieldaten</span>
+    </div>
+  </div>
+
+  <p class="eyebrow" style="margin-top:44px">Einsatzliste 2026</p>
+  <table>
+    <thead><tr><th>Datum</th><th>Veranstaltung</th><th>Ort</th><th>Briefing</th><th>Sprache</th></tr></thead>
+    <tbody>
+      <tr><td>12.09.2026</td><td>Cloud Summit Austria</td><td>Wien, AT</td><td>Agents in Produktion</td><td>DE</td></tr>
+      <tr><td>04.06.2026</td><td>Infinity 365</td><td>Salzburg, AT</td><td>Sensitivity Labels Workshop</td><td>DE</td></tr>
+      <tr><td>02.06.2026</td><td>Experts Live Austria</td><td>Linz, AT</td><td>AI Assistant für den Kundenservice</td><td>DE</td></tr>
+      <tr><td>19.03.2026</td><td>MVP Summit</td><td>Redmond, US</td><td>—</td><td>EN</td></tr>
+      <tr><td>28.01.2026</td><td>ESPC</td><td>Amsterdam, NL</td><td>Copilot Extensibility</td><td>EN</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ EINSATZAKTE ============ -->
+<section class="page" id="mission-detail">
+  <button class="btn ghost" onclick="go('missions')">← Zurück zur Karte</button>
+  <article class="article" style="margin-top:26px">
+    <div class="art-head">
+      <p class="eyebrow">Einsatzakte · AT-2026-014</p>
+      <h1 style="font-size:clamp(28px,4vw,46px)">Experts Live Austria · Linz</h1>
+      <p class="meta">02.06.2026 · Design Center Linz · Sprache DE · <a href="#">Veranstaltungswebsite</a></p>
+    </div>
+
+    <div class="grid g2">
+      <div class="card bracket">
+        <p class="eyebrow">Die Veranstaltung</p>
+        <p style="font-size:15px">Experts Live Austria bringt einmal im Jahr die österreichische Microsoft-Community
+          in Linz zusammen. Rund 400 Teilnehmende, acht parallele Tracks, viel Betrieb an den Community-Ständen.</p>
+        <p style="font-size:15px">Was mir aufgefallen ist: Die Fragen aus dem Publikum drehten sich dieses Jahr
+          kaum noch um „Was kann Copilot", sondern fast durchgehend um Governance.</p>
+      </div>
+      <div class="card bracket">
+        <p class="eyebrow">Mein Briefing</p>
+        <p style="font-size:15px"><b>Bauen wir einen AI Assistant für den Kundenservice</b></p>
+        <p style="font-size:15px">Kombination aus einem Copilot-Studio-Chatbot und einem Teams-Assistenten auf Basis
+          von Microsoft Foundry. Live-Demo mit echtem Ticket-Backend.</p>
+        <p class="meta">45 Min. · Level 300 · <a href="#" onclick="go('briefings');return false">Briefing im Repertoire ansehen</a></p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:38px">Bilder vom Einsatz</h3>
+    <div class="gallery" tabindex="0" role="region" aria-label="Fotos vom Einsatz in Linz">
+      <div class="ph">Bühne vor dem Start</div>
+      <div class="ph">Publikum</div>
+      <div class="ph">Demo-Setup</div>
+      <div class="ph">Speaker-Dinner</div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ BRIEFINGS ============ -->
+<section class="page" id="briefings">
+  <p class="eyebrow">Briefings · mein Vortragsrepertoire</p>
+  <h2>Was ich mitbringe</h2>
+  <p class="lead">Alle Vorträge gibt es auf Deutsch und Englisch. Die Kategorien pflege ich selbst — sie wachsen mit
+    dem, was gefragt ist.</p>
+
+  <div class="filters" style="margin-top:26px">
+    <button class="chip" aria-pressed="true">Alle Kategorien</button>
+    <button class="chip" aria-pressed="false">Copilot &amp; Agents</button>
+    <button class="chip" aria-pressed="false">Security &amp; Compliance</button>
+    <button class="chip" aria-pressed="false">Modern Work</button>
+    <button class="chip" aria-pressed="false">Development</button>
+  </div>
+
+  <p class="eyebrow">Copilot &amp; Agents</p>
+  <div class="grid g2">
+    <article class="card bracket">
+      <h3>Copilot Extensibility in der Praxis</h3>
+      <p style="font-size:14.5px">Declarative Agents, API-Plugins und die Frage, wann sich Eigenbau lohnt.</p>
+      <p class="meta">9× gehalten · Level 300 · 45–60 Min.</p>
+      <p><span class="lang-badge on">DE ✓ 5×</span> <span class="lang-badge on">EN ✓ 4×</span></p>
+    </article>
+    <article class="card bracket">
+      <h3>Bauen wir einen AI Assistant für den Kundenservice</h3>
+      <p style="font-size:14.5px">Copilot Studio trifft Microsoft Foundry — mit Live-Demo.</p>
+      <p class="meta">6× gehalten · Level 300 · 45 Min.</p>
+      <p><span class="lang-badge on">DE ✓ 5×</span> <span class="lang-badge">EN ✓ 1×</span></p>
+    </article>
+  </div>
+
+  <p class="eyebrow" style="margin-top:38px">Security &amp; Compliance</p>
+  <div class="grid g2">
+    <article class="card bracket">
+      <h3>Sensitivity Labels: Ganztages-Workshop</h3>
+      <p style="font-size:14.5px">Purview Information Protection von der Taxonomie bis zum Rollout, hands-on.</p>
+      <p class="meta">4× gehalten · Level 200 · Ganztag</p>
+      <p><span class="lang-badge on">DE ✓ 4×</span> <span class="lang-badge">EN — noch nicht</span></p>
+    </article>
+    <article class="card bracket">
+      <h3>Copilot-ready PowerPoint</h3>
+      <p style="font-size:14.5px">Wie Folien aufgebaut sein müssen, damit Copilot sie verwerten kann.</p>
+      <p class="meta">3× gehalten · Level 100 · 30 Min.</p>
+      <p><span class="lang-badge on">DE ✓ 3×</span> <span class="lang-badge">EN — noch nicht</span></p>
+    </article>
+  </div>
+
+  <p class="eyebrow" style="margin-top:44px">Ranking · nach Häufigkeit</p>
+  <div class="card bracket" style="padding:24px">
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+      <span class="meta">Zeitraum</span>
+      <input type="date" value="2024-01-01" style="background:var(--ink-3);border:1px solid var(--line);color:var(--text);padding:8px 11px;border-radius:4px;font-family:var(--mono);font-size:12px">
+      <span class="meta">bis</span>
+      <input type="date" value="2026-12-31" style="background:var(--ink-3);border:1px solid var(--line);color:var(--text);padding:8px 11px;border-radius:4px;font-family:var(--mono);font-size:12px">
+      <button class="btn" style="padding:9px 16px">Auswerten</button>
+    </div>
+    <div class="rank-row"><span class="n">01</span><div><b>Copilot Extensibility in der Praxis</b><div class="bar" style="margin-top:7px"><i style="width:100%"></i></div></div><span class="meta">9 Einsätze</span><span class="meta">DE 5 / EN 4</span></div>
+    <div class="rank-row"><span class="n">02</span><div><b>AI Assistant für den Kundenservice</b><div class="bar" style="margin-top:7px"><i style="width:67%"></i></div></div><span class="meta">6 Einsätze</span><span class="meta">DE 5 / EN 1</span></div>
+    <div class="rank-row"><span class="n">03</span><div><b>Sensitivity Labels Workshop</b><div class="bar" style="margin-top:7px"><i style="width:44%"></i></div></div><span class="meta">4 Einsätze</span><span class="meta">DE 4 / EN 0</span></div>
+    <div class="rank-row"><span class="n">04</span><div><b>Copilot-ready PowerPoint</b><div class="bar" style="margin-top:7px"><i style="width:33%"></i></div></div><span class="meta">3 Einsätze</span><span class="meta">DE 3 / EN 0</span></div>
+  </div>
+</section>
+
+<!-- ============ PUBLIKATIONEN ============ -->
+<section class="page" id="publications">
+  <p class="eyebrow">Publikationen</p>
+  <h2>Schriftlich festgehalten</h2>
+  <div class="grid g2" style="margin-top:26px">
+    <article class="card bracket" style="display:grid;grid-template-columns:120px 1fr;gap:20px">
+      <div class="ph" style="aspect-ratio:2/3">Cover</div>
+      <div>
+        <span class="tag">Buch</span>
+        <h3 style="margin-top:10px">Microsoft 365 Copilot in der Praxis</h3>
+        <p style="font-size:14.5px">Co-Autorin · Verlag · 2025 · ISBN 978-3-…</p>
+        <a class="btn ghost" href="#" style="margin-top:8px">Zum Verlag</a>
+      </div>
+    </article>
+    <article class="card bracket" style="display:grid;grid-template-columns:120px 1fr;gap:20px">
+      <div class="ph" style="aspect-ratio:2/3">Cover</div>
+      <div>
+        <span class="tag">Buch</span>
+        <h3 style="margin-top:10px">Governance für KI-Agents</h3>
+        <p style="font-size:14.5px">Autorin · Verlag · 2026 · ISBN 978-3-…</p>
+        <a class="btn ghost" href="#" style="margin-top:8px">Zum Verlag</a>
+      </div>
+    </article>
+  </div>
+  <p class="eyebrow" style="margin-top:40px">Weitere Veröffentlichungen</p>
+  <table>
+    <thead><tr><th>Jahr</th><th>Titel</th><th>Art</th><th>Medium</th></tr></thead>
+    <tbody>
+      <tr><td>2026</td><td>Agents in Produktion bringen</td><td>Fachartikel</td><td>Fachmagazin</td></tr>
+      <tr><td>2025</td><td>Sensitivity Labels im Mittelstand</td><td>Whitepaper</td><td>Eigenverlag</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ AUSBILDUNG ============ -->
+<section class="page" id="training">
+  <p class="eyebrow">Ausbildung · Zertifizierungen</p>
+  <h2>Eine Agentin bildet sich weiter</h2>
+  <p class="lead">Gruppiert nach Kategorien, die ich selbst pflege. Mit Ausstellungsdatum und — wo relevant — Gültigkeit.</p>
+
+  <p class="eyebrow" style="margin-top:32px">Auszeichnungen</p>
+  <div class="cert"><div class="badge">MVP</div><div><b>Microsoft MVP — M365 Apps &amp; Services</b>
+    <div class="meta">2020, 2021, 2022, 2023, 2024, 2025, 2026 · 7× in Folge</div></div></div>
+
+  <p class="eyebrow" style="margin-top:32px">Microsoft Azure &amp; KI</p>
+  <div class="cert"><div class="badge">AI-102</div><div><b>Azure AI Engineer Associate</b><div class="meta">Erworben 03/2025</div></div></div>
+  <div class="cert"><div class="badge">AZ-104</div><div><b>Azure Administrator Associate</b><div class="meta">Erworben 11/2023 · verlängert 10/2025</div></div></div>
+
+  <p class="eyebrow" style="margin-top:32px">Modern Work &amp; Security</p>
+  <div class="cert"><div class="badge">MS-102</div><div><b>Microsoft 365 Administrator Expert</b><div class="meta">Erworben 06/2024</div></div></div>
+  <div class="cert"><div class="badge">SC-400</div><div><b>Information Protection Administrator</b><div class="meta">Erworben 02/2024</div></div></div>
+
+  <p class="eyebrow" style="margin-top:32px">Power Platform</p>
+  <div class="cert"><div class="badge">PL-600</div><div><b>Power Platform Solution Architect Expert</b><div class="meta">Erworben 09/2023</div></div></div>
+</section>
+
+<!-- ============ LEGENDE / ÜBER ============ -->
+<section class="page" id="legende">
+  <p class="eyebrow">Die Legende · über mich</p>
+  <h2>Nicole Enders</h2>
+  <p class="lead">Microsoft MVP seit 2020. Ich arbeite an der Schnittstelle zwischen dem, was technisch geht,
+    und dem, was Menschen in ihrem Arbeitsalltag tatsächlich hilft.</p>
+
+  <div class="card bracket" style="margin:30px 0;padding:30px">
+    <p class="eyebrow">Meine Mission</p>
+    <p style="font-size:20px;font-family:var(--display);font-weight:300;line-height:1.5;margin:0">
+      Menschen und Organisationen mit intelligenten Lösungen <span style="color:var(--violet-bright)">verbinden</span>,
+      um <span style="color:var(--violet-bright)">zukunftssicher</span>, <span style="color:var(--violet-bright)">produktiv</span>
+      und <span style="color:var(--magenta)">smarter</span> zu arbeiten.</p>
+  </div>
+
+  <div class="grid g3">
+    <div class="card bracket"><p class="eyebrow">Strategie</p><p style="font-size:14.5px">Klar. Zielgerichtet.</p></div>
+    <div class="card bracket"><p class="eyebrow">Architektur</p><p style="font-size:14.5px">Sicher. Skalierbar.</p></div>
+    <div class="card bracket"><p class="eyebrow">Umsetzung</p><p style="font-size:14.5px">Pragmatisch. Effizient.</p></div>
+    <div class="card bracket"><p class="eyebrow">Adoption</p><p style="font-size:14.5px">Veränderung. Akzeptanz.</p></div>
+    <div class="card bracket"><p class="eyebrow">Enablement</p><p style="font-size:14.5px">Wissen. Fähigkeiten.</p></div>
+    <div class="card bracket"><p class="eyebrow">Impact</p><p style="font-size:14.5px">Erfolge. Mehrwert.</p></div>
+  </div>
+
+  <p class="eyebrow" style="margin-top:44px">Werkzeuge</p>
+  <div class="roles">
+    <span>MICROSOFT FOUNDRY</span><span>COPILOT STUDIO</span><span>MICROSOFT 365</span>
+    <span>MICROSOFT AZURE</span><span>MICROSOFT TEAMS</span><span>POWER PLATFORM</span>
+  </div>
+
+  <div class="card bracket" style="margin-top:44px;padding:30px">
+    <p class="eyebrow">Kontakt aufnehmen</p>
+    <h3>Am schnellsten über LinkedIn</h3>
+    <p style="font-size:15px">Für Anfragen zu Vorträgen, Workshops und Beratung schreib mir direkt auf LinkedIn.
+      Rechtlich verpflichtend ist zusätzlich eine E-Mail-Adresse — die findest du im Impressum.</p>
+    <a class="btn" href="#">Nachricht auf LinkedIn</a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="brand" style="margin-bottom:12px"><span class="sigil">N.E</span>
+        <span><b>DIE AGENTIN</b><span>NICOLENDERS.COM</span></span></div>
+      <p style="font-size:14px;color:var(--muted);max-width:34ch">Microsoft AI &amp; Modern Work.<br>Keine losen Enden.</p>
+      <div class="socials">
+        <a href="#" aria-label="LinkedIn">in</a><a href="#" aria-label="Instagram">ig</a>
+        <a href="#" aria-label="Facebook">fb</a><a href="#" aria-label="YouTube">yt</a><a href="#" aria-label="X">x</a>
+      </div>
+    </div>
+    <div><h4>Inhalte</h4><a href="#" onclick="go('feed');return false">Signale</a>
+      <a href="#" onclick="go('dossiers');return false">Dossiers</a>
+      <a href="#" onclick="go('missions');return false">Einsätze</a>
+      <a href="#" onclick="go('briefings');return false">Briefings</a></div>
+    <div><h4>Über</h4><a href="#" onclick="go('legende');return false">Die Legende</a>
+      <a href="#" onclick="go('publications');return false">Publikationen</a>
+      <a href="#" onclick="go('training');return false">Ausbildung</a>
+      <a href="#">RSS-Feed</a></div>
+    <div><h4>Rechtliches</h4><a href="#">Impressum</a><a href="#">Datenschutzerklärung</a>
+      <a href="#">Erklärung zur Barrierefreiheit</a><a href="#">Cookie-Einstellungen</a></div>
+  </div>
+  <div class="wrap"><p class="note">© 2026 Nicole Enders · Alle Inhalte in DE und EN verfügbar ·
+    Diese Seite ist ein Mockup mit Beispieldaten</p></div>
+</footer>
+
+<script>
+/* ---- Navigation ---- */
+function go(id){
+  document.querySelectorAll('section.page').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('nav.main button').forEach(b=>{
+    b.setAttribute('aria-current', b.dataset.p===id ? 'page':'false');
+  });
+  document.querySelector('nav.main').classList.remove('open');
+  window.scrollTo({top:0,behavior:'instant'});
+}
+document.querySelectorAll('nav.main button').forEach(b=>b.onclick=()=>go(b.dataset.p));
+
+/* ---- Chips / Filter ---- */
+document.querySelectorAll('.filters,.year-filter').forEach(group=>{
+  group.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    group.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+    c.setAttribute('aria-pressed','true');
+  });
+});
+
+/* ---- Weltkarte (equirektangular) ---- */
+const W=1000,H=460,LAT0=84,LAT1=-58;
+const px=lon=>(lon+180)/360*W;
+const py=lat=>(LAT0-lat)/(LAT0-LAT1)*H;
+const shapes={
+ nordamerika:[[-168,65],[-160,71],[-140,70],[-125,70],[-110,68],[-95,68],[-85,73],[-75,68],[-60,55],[-52,47],[-65,45],[-70,42],[-75,35],[-81,25],[-97,26],[-105,20],[-115,30],[-125,40],[-135,55],[-150,60]],
+ groenland:[[-45,60],[-20,70],[-25,83],[-60,83],[-58,70]],
+ suedamerika:[[-80,8],[-60,10],[-52,5],[-35,-5],[-38,-22],[-48,-25],[-58,-35],[-62,-42],[-68,-55],[-75,-50],[-72,-35],[-70,-18],[-80,-5]],
+ afrika:[[-17,21],[-6,36],[10,37],[20,32],[33,31],[35,22],[43,12],[51,12],[48,5],[41,-2],[40,-15],[35,-25],[25,-34],[18,-34],[12,-18],[9,4],[0,5],[-8,4],[-16,13]],
+ eurasien:[[-9,38],[-2,43],[0,49],[-5,58],[5,62],[15,68],[30,71],[45,68],[60,70],[90,75],[110,75],[140,73],[160,70],[170,66],[160,60],[145,55],[135,45],[122,40],[122,30],[110,20],[105,10],[100,5],[95,15],[88,22],[80,10],[72,20],[65,25],[58,25],[48,30],[45,40],[35,42],[28,41],[20,40],[16,45],[8,44]],
+ uk:[[-5,50],[-2,53],[-3,58],[-5,56],[-6,52]],
+ japan:[[130,33],[141,41],[145,44],[140,36],[133,33]],
+ australien:[[113,-22],[130,-12],[142,-11],[150,-25],[153,-28],[147,-38],[135,-35],[129,-32],[115,-35]],
+ neuseeland:[[172,-41],[178,-38],[174,-46],[167,-46]]
+};
+const land=document.getElementById('land');
+for(const k in shapes){
+  const p=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  p.setAttribute('points',shapes[k].map(c=>px(c[0]).toFixed(1)+','+py(c[1]).toFixed(1)).join(' '));
+  p.setAttribute('class','landmass');land.appendChild(p);
+}
+const grat=document.getElementById('graticule');
+for(let lon=-150;lon<=150;lon+=30){
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('x1',px(lon));l.setAttribute('x2',px(lon));l.setAttribute('y1',0);l.setAttribute('y2',H);
+  l.setAttribute('class','graticule');grat.appendChild(l);
+}
+[60,30,0,-30].forEach(lat=>{
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('y1',py(lat));l.setAttribute('y2',py(lat));l.setAttribute('x1',0);l.setAttribute('x2',W);
+  l.setAttribute('class','graticule');grat.appendChild(l);
+});
+
+const missions=[
+ {city:'Linz, AT',lat:48.31,lon:14.29,ev:'Experts Live Austria',topic:'AI Assistant für den Kundenservice',date:'02.06.2026',url:true},
+ {city:'Salzburg, AT',lat:47.81,lon:13.04,ev:'Infinity 365',topic:'Sensitivity Labels Workshop',date:'04.06.2026',url:true},
+ {city:'Wien, AT',lat:48.21,lon:16.37,ev:'Cloud Summit Austria',topic:'Agents in Produktion',date:'12.09.2026',future:true,url:true},
+ {city:'Köln, DE',lat:50.94,lon:6.96,ev:'M365 Community Day',topic:'Copilot Extensibility',date:'14.11.2025',n:4},
+ {city:'München, DE',lat:48.14,lon:11.58,ev:'Cloud &amp; Work Conference',topic:'Copilot-ready PowerPoint',date:'22.10.2025',n:2},
+ {city:'Hamburg, DE',lat:53.55,lon:9.99,ev:'Modern Workplace Days',topic:'Purview für Einsteiger',date:'08.05.2025'},
+ {city:'Amsterdam, NL',lat:52.37,lon:4.90,ev:'ESPC',topic:'Copilot Extensibility (EN)',date:'28.01.2026',n:2},
+ {city:'Zürich, CH',lat:47.38,lon:8.54,ev:'Experts Live Switzerland',topic:'Agent-Architekturen (EN)',date:'11.09.2025'},
+ {city:'Warschau, PL',lat:52.23,lon:21.01,ev:'365 EduCon',topic:'Sensitivity Labels (EN)',date:'19.04.2025'},
+ {city:'Lissabon, PT',lat:38.72,lon:-9.14,ev:'ESPC',topic:'Copilot Studio Deep Dive (EN)',date:'02.12.2024'},
+ {city:'Redmond, US',lat:47.67,lon:-122.12,ev:'MVP Summit',topic:'Teilnahme',date:'19.03.2026',n:3},
+ {city:'Las Vegas, US',lat:36.17,lon:-115.14,ev:'Microsoft Ignite',topic:'Community Booth',date:'19.11.2024'},
+ {city:'Singapur, SG',lat:1.35,lon:103.82,ev:'M365 Conference Asia',topic:'Agents in Produktion (EN)',date:'03.11.2026',future:true},
+ {city:'Kapstadt, ZA',lat:-33.92,lon:18.42,ev:'Azure Community Day',topic:'Foundry für Entwickler (EN)',date:'21.02.2027',future:true},
+ {city:'Sydney, AU',lat:-33.87,lon:151.21,ev:'Difinity',topic:'Copilot Extensibility (EN)',date:'14.03.2025'}
+];
+const pins=document.getElementById('pins');
+missions.forEach((m,i)=>{
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class','pin'+(m.future?' future':''));
+  g.setAttribute('tabindex','0');g.setAttribute('role','button');
+  g.setAttribute('aria-label',m.ev+' in '+m.city+' am '+m.date);
+  const x=px(m.lon),y=py(m.lat),r=m.n?2.6+m.n*0.5:3.1;
+  g.innerHTML='<circle class="halo" cx="'+x+'" cy="'+y+'" r="3"></circle>'+
+              '<circle class="core" cx="'+x+'" cy="'+y+'" r="'+r+'"></circle>';
+  const open=()=>showPopup(m,x,y);
+  g.addEventListener('click',open);
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+  pins.appendChild(g);
+});
+function showPopup(m,x,y){
+  document.querySelectorAll('.popup').forEach(p=>p.remove());
+  const shell=document.getElementById('mapShell');
+  const rect=document.getElementById('worldmap').getBoundingClientRect();
+  const sx=x/W*rect.width, sy=y/H*rect.height;
+  const d=document.createElement('div');
+  d.className='popup';
+  d.style.left=Math.min(Math.max(sx-132,8),rect.width-272)+'px';
+  d.style.top=Math.max(sy-160,8)+'px';
+  d.innerHTML='<button class="close" aria-label="Schließen">×</button>'+
+    '<p class="meta" style="margin:0">'+m.date+' · '+m.city+(m.future?' · GEPLANT':'')+'</p>'+
+    '<h4>'+m.ev+'</h4>'+
+    '<p style="margin:0 0 10px;font-size:13px;color:#C9BEEB">'+m.topic+'</p>'+
+    (m.url?'<p class="meta" style="margin:0 0 10px"><a href="#">Veranstaltungswebsite ↗</a></p>':'')+
+    '<button class="btn" style="padding:9px 14px;width:100%;justify-content:center">Einsatzakte öffnen</button>';
+  d.querySelector('.close').onclick=()=>d.remove();
+  d.querySelector('.btn').onclick=()=>{d.remove();go('mission-detail');};
+  shell.appendChild(d);
+  d.querySelector('.close').focus();
+}
+</script>
+</body>
+</html>

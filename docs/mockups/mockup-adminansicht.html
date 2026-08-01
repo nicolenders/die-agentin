@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nicolenders.com — Mockup Admin / Content Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#05010D;--ink-2:#0B0518;--ink-3:#120A24;--ink-4:#170E2C;
+  --line:#2A1A4A;--line-soft:#1C1030;
+  --violet:#8B5CF6;--violet-bright:#A855F7;--violet-text:#C4A2FC;--magenta:#E879F9;
+  --signal:#38BDF8;--ok:#4ADE80;--warn:#FBBF24;--text:#EDE9F8;--muted:#A093C0;
+  --display:'Poppins','Century Gothic',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.6}
+:focus-visible{outline:2px solid var(--magenta);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+h1,h2,h3,h4{font-family:var(--display);font-weight:600;margin:0 0 12px;line-height:1.2}
+h1{font-size:27px}h2{font-size:21px}h3{font-size:16px}
+p{margin:0 0 12px}
+.mono{font-family:var(--mono)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--violet-bright);margin:0 0 10px}
+.muted{color:var(--muted)}
+.meta{font-family:var(--mono);font-size:11px;color:#7C6EA0}
+
+/* ---------- Rahmen ---------- */
+.app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+aside{background:#08031499;border-right:1px solid var(--line-soft);padding:18px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+.sigil{width:36px;height:36px;border:1px solid var(--violet);border-radius:50%;display:grid;place-items:center;
+  font-family:var(--mono);font-size:11px;color:var(--violet-bright);box-shadow:0 0 16px rgba(168,85,247,.3) inset}
+.brand b{font-family:var(--display);font-weight:800;letter-spacing:.13em;font-size:13px;display:block}
+.brand span{font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:.16em}
+.role-chip{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--magenta);border:1px solid rgba(232,121,249,.4);
+  padding:3px 8px;border-radius:3px;display:inline-block;margin:10px 0 20px}
+aside nav{display:flex;flex-direction:column;gap:2px}
+aside nav button{background:none;border:0;color:var(--muted);text-align:left;padding:10px 12px;border-radius:4px;
+  cursor:pointer;font-family:var(--body);font-size:13.5px;display:flex;align-items:center;gap:10px;width:100%}
+aside nav button:hover{background:rgba(139,92,246,.1);color:var(--text)}
+aside nav button[aria-current="page"]{background:rgba(139,92,246,.18);color:var(--text);box-shadow:inset 2px 0 0 var(--violet-bright)}
+aside nav button i{font-family:var(--mono);font-style:normal;font-size:10px;color:var(--violet-bright);width:22px}
+aside .sec{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:#6B5D8C;text-transform:uppercase;margin:20px 0 8px 12px}
+.badge-count{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--violet);color:#fff;border-radius:999px;padding:1px 7px}
+
+main{min-width:0}
+.topbar{height:60px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;padding:0 24px;
+  position:sticky;top:0;background:rgba(5,1,13,.93);backdrop-filter:blur(12px);z-index:30}
+.content{padding:26px 24px 70px}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;padding:10px 16px;border:1px solid var(--violet);color:var(--violet-text);
+  background:rgba(139,92,246,.08);border-radius:4px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--violet);color:#fff}
+.btn.solid{background:var(--violet);color:#fff}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.btn.ghost:hover{background:transparent;border-color:var(--violet);color:var(--text)}
+.btn.sm{padding:7px 12px;font-size:10px}
+.card{background:linear-gradient(180deg,rgba(18,10,36,.8),rgba(11,5,24,.8));border:1px solid var(--line-soft);
+  border-radius:4px;padding:20px;position:relative}
+.bracket::before,.bracket::after{content:"";position:absolute;width:12px;height:12px;border:1px solid var(--violet-bright);opacity:.7}
+.bracket::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.bracket::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1100px){.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.g3,.g2{grid-template-columns:1fr}}
+.page{display:none}.page.active{display:block}
+
+.stat b{font-family:var(--display);font-size:31px;font-weight:800;display:block;line-height:1;
+  background:linear-gradient(92deg,var(--violet-bright),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat span{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- Status ---------- */
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;padding:3px 9px;border-radius:3px;
+  border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.st.draft{color:var(--warn);border-color:rgba(251,191,36,.4)}
+.st.sched{color:var(--signal);border-color:rgba(56,189,248,.4)}
+.st.live{color:var(--ok);border-color:rgba(74,222,128,.4)}
+.st.err{color:#F87171;border-color:rgba(248,113,113,.45)}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid var(--line-soft);padding:12px 12px;text-align:left;vertical-align:middle}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet-bright)}
+tbody tr:hover{background:rgba(139,92,246,.06)}
+.lng{font-family:var(--mono);font-size:9.5px;border:1px solid var(--line);padding:2px 6px;border-radius:3px;color:var(--muted)}
+.lng.on{color:var(--ok);border-color:rgba(74,222,128,.4)}
+.ch{display:inline-grid;place-items:center;width:24px;height:24px;border:1px solid var(--line);border-radius:4px;
+  font-family:var(--mono);font-size:9.5px;color:#5C4E7C}
+.ch.on{color:var(--violet-bright);border-color:var(--violet);background:rgba(139,92,246,.12)}
+.ch.done{color:var(--ok);border-color:rgba(74,222,128,.4)}
+
+/* ---------- Editor ---------- */
+.editor{display:grid;grid-template-columns:196px 1fr 300px;gap:0;border:1px solid var(--line-soft);border-radius:4px;overflow:hidden}
+@media(max-width:1200px){.editor{grid-template-columns:1fr}.ed-blocks,.ed-meta{display:none}}
+.ed-blocks{background:#0906164d;border-right:1px solid var(--line-soft);padding:16px 12px}
+.ed-meta{background:#0906164d;border-left:1px solid var(--line-soft);padding:16px 14px}
+.ed-canvas{padding:22px 26px;min-height:640px;background:rgba(6,2,15,.4)}
+.blk{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid transparent;border-radius:4px;cursor:grab;
+  font-size:12.5px;color:var(--muted)}
+.blk:hover{border-color:var(--line);color:var(--text);background:rgba(139,92,246,.08)}
+.blk i{font-family:var(--mono);font-style:normal;font-size:11px;color:var(--violet-bright);width:20px}
+.lang-tabs{display:flex;gap:0;border-bottom:1px solid var(--line-soft);margin-bottom:18px}
+.lang-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 15px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.13em;cursor:pointer}
+.lang-tabs button[aria-selected="true"]{color:var(--violet-bright);border-bottom-color:var(--violet-bright)}
+.toolbar{display:flex;flex-wrap:wrap;gap:4px;padding:8px;border:1px solid var(--line-soft);border-radius:4px;margin-bottom:16px;
+  background:rgba(9,4,20,.6);position:sticky;top:60px;z-index:10}
+.toolbar button{background:none;border:1px solid transparent;color:var(--muted);width:32px;height:30px;border-radius:3px;cursor:pointer;
+  font-size:12.5px;font-family:var(--body)}
+.toolbar button:hover{border-color:var(--line);color:var(--text);background:rgba(139,92,246,.1)}
+.toolbar .sep{width:1px;background:var(--line-soft);margin:3px 4px}
+.doc-title{width:100%;background:none;border:0;border-bottom:1px solid var(--line-soft);color:var(--text);
+  font-family:var(--display);font-size:30px;font-weight:600;padding:6px 0 12px;margin-bottom:18px}
+.doc-title::placeholder{color:#4A3D68}
+.para{position:relative;border:1px solid transparent;border-radius:4px;padding:10px 12px;margin-bottom:6px}
+.para:hover{border-color:var(--line-soft)}
+.para.sel{border-color:var(--violet);background:rgba(139,92,246,.06)}
+.para-tools{position:absolute;right:8px;top:8px;display:none;gap:4px}
+.para:hover .para-tools,.para.sel .para-tools{display:flex}
+.para-tools button{background:rgba(9,4,20,.9);border:1px solid var(--line);color:var(--muted);border-radius:3px;
+  font-family:var(--mono);font-size:9px;padding:3px 7px;cursor:pointer}
+.para-tools button:hover{border-color:var(--violet);color:var(--violet-bright)}
+.with-margin{display:grid;grid-template-columns:1fr 190px;gap:16px;align-items:start}
+.with-margin.left{grid-template-columns:190px 1fr}
+.ph{background:repeating-linear-gradient(45deg,rgba(139,92,246,.1) 0 9px,transparent 9px 18px),var(--ink-3);
+  border:1px solid var(--line);border-radius:4px;display:grid;place-items:center;font-family:var(--mono);
+  font-size:10px;color:var(--muted);text-align:center;padding:8px;aspect-ratio:4/3}
+label.f{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);margin:16px 0 6px}
+input.f,select.f,textarea.f{width:100%;background:var(--ink-3);border:1px solid var(--line);color:var(--text);
+  padding:9px 11px;border-radius:4px;font-family:var(--body);font-size:13.5px}
+input.f:focus,select.f:focus{border-color:var(--violet)}
+.switch{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.tgl{width:38px;height:21px;border-radius:999px;background:var(--ink-4);border:1px solid var(--line);position:relative;cursor:pointer}
+.tgl::after{content:"";position:absolute;width:15px;height:15px;border-radius:50%;background:#5C4E7C;top:2px;left:2px;transition:.2s}
+.tgl[aria-checked="true"]{background:rgba(139,92,246,.35);border-color:var(--violet)}
+.tgl[aria-checked="true"]::after{left:20px;background:var(--violet-bright)}
+
+/* Vorschau-Umschalter */
+.viewtoggle{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-left:auto}
+.viewtoggle button{background:none;border:0;color:var(--muted);padding:8px 13px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;cursor:pointer}
+.viewtoggle button[aria-pressed="true"]{background:var(--violet);color:#fff}
+.preview-frame{border:1px solid var(--violet);border-radius:4px;padding:0;overflow:hidden;background:var(--ink)}
+.preview-bar{background:rgba(139,92,246,.15);border-bottom:1px solid var(--line);padding:7px 14px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.14em;color:var(--violet-text);display:flex;gap:14px;align-items:center}
+.preview-body{padding:28px 30px}
+.preview-body h2{font-size:clamp(22px,3vw,34px)}
+.preview-body blockquote{border-left:2px solid var(--magenta);margin:18px 0;padding-left:16px;font-family:var(--display);
+  font-weight:300;font-size:17px;color:#E4DCFA}
+.device{display:flex;gap:6px}
+.device button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:3px;font-family:var(--mono);
+  font-size:9.5px;padding:4px 9px;cursor:pointer}
+.device button[aria-pressed="true"]{border-color:var(--violet);color:var(--violet-bright)}
+
+/* Karte im Admin */
+.mapwrap{position:relative;border:1px solid var(--line-soft);border-radius:4px;background:radial-gradient(circle at 50% 45%,rgba(139,92,246,.12),transparent 65%)}
+svg.map{display:block;width:100%;height:auto}
+.landmass{fill:rgba(139,92,246,.15);stroke:rgba(168,85,247,.5);stroke-width:.7;vector-effect:non-scaling-stroke}
+.crosshair{stroke:var(--magenta);stroke-width:.8;vector-effect:non-scaling-stroke}
+.pinA{fill:var(--magenta);stroke:#fff;stroke-width:.5}
+.pinA.f{fill:var(--signal)}
+
+/* Zeitleiste */
+.queue-item{display:grid;grid-template-columns:120px 1fr auto;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line-soft)}
+.timeline-dot{width:9px;height:9px;border-radius:50%;background:var(--signal);box-shadow:0 0 10px var(--signal)}
+
+/* Telefon */
+.phone{width:300px;border:1px solid var(--line);border-radius:26px;padding:12px;background:#08031499}
+.phone-inner{border:1px solid var(--line-soft);border-radius:18px;overflow:hidden;background:var(--ink)}
+.phone-bar{padding:9px 14px;border-bottom:1px solid var(--line-soft);font-family:var(--mono);font-size:9.5px;
+  color:var(--muted);display:flex;justify-content:space-between}
+.mockup-flag{position:fixed;left:0;bottom:0;z-index:99;background:var(--magenta);color:#1A0524;font-family:var(--mono);
+  font-size:10px;letter-spacing:.14em;padding:5px 12px;text-transform:uppercase}
+@media(max-width:860px){.app{grid-template-columns:1fr}aside{position:static;height:auto}}
+</style>
+</head>
+<body>
+<div class="mockup-flag">Mockup · Admin / Content Editor · Beispieldaten</div>
+
+<div class="app">
+<aside>
+  <div class="brand"><span class="sigil">N.E</span><span><b>DIE AGENTIN</b><span>ZENTRALE</span></span></div>
+  <span class="role-chip">ROLLE: ADMIN / EDITOR</span>
+  <nav id="nav">
+    <button data-p="dash" aria-current="page"><i>◈</i>Einsatzzentrale</button>
+    <div class="sec">Inhalte</div>
+    <button data-p="list"><i>≡</i>Alle Beiträge <span class="badge-count">3</span></button>
+    <button data-p="editor"><i>✎</i>Editor</button>
+    <button data-p="dossiers"><i>▤</i>Dossiers</button>
+    <div class="sec">Struktur</div>
+    <button data-p="missions"><i>◎</i>Einsätze</button>
+    <button data-p="briefings"><i>▶</i>Briefings</button>
+    <button data-p="records"><i>★</i>Publikationen &amp; Ausbildung</button>
+    <div class="sec">Ausspielung</div>
+    <button data-p="queue"><i>⧗</i>Zeitplan &amp; Kanäle</button>
+    <button data-p="media"><i>▣</i>Medien</button>
+    <div class="sec">System</div>
+    <button data-p="mobile"><i>▯</i>Mobil erfassen</button>
+    <button data-p="settings"><i>⚙</i>Einstellungen</button>
+  </nav>
+</aside>
+
+<main>
+<div class="topbar">
+  <strong class="mono" style="font-size:12px;letter-spacing:.14em;color:var(--muted)" id="crumb">EINSATZZENTRALE</strong>
+  <span class="st live" style="margin-left:8px">Angemeldet via Entra ID</span>
+  <button class="btn ghost sm" style="margin-left:auto">Website ansehen ↗</button>
+  <button class="btn solid sm" onclick="go('editor')">+ Neuer Beitrag</button>
+</div>
+
+<div class="content">
+
+<!-- ================= DASHBOARD ================= -->
+<section class="page active" id="dash">
+  <h1>Guten Morgen, Nicole.</h1>
+  <p class="muted">Drei Entwürfe warten, zwei Beiträge sind eingeplant, ein Einsatz steht in 42 Tagen an.</p>
+
+  <div class="grid g4" style="margin:22px 0 26px">
+    <div class="card bracket stat"><b>3</b><span>Entwürfe</span></div>
+    <div class="card bracket stat"><b>2</b><span>Eingeplant</span></div>
+    <div class="card bracket stat"><b>58</b><span>Veröffentlicht</span></div>
+    <div class="card bracket stat"><b>1</b><span>Kanal-Fehler</span></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card bracket">
+      <p class="eyebrow">Als Nächstes geplant</p>
+      <div class="queue-item">
+        <div><span class="timeline-dot" style="display:inline-block"></span> <span class="meta">02.08. 08:00</span></div>
+        <div><b>Microsoft Foundry bekommt Agent-Tracing</b>
+          <div class="meta">Signal · DE + EN</div></div>
+        <div><span class="ch on">in</span> <span class="ch on">X</span></div>
+      </div>
+      <div class="queue-item">
+        <div><span class="timeline-dot" style="display:inline-block;background:var(--violet-bright);box-shadow:0 0 10px var(--violet-bright)"></span> <span class="meta">05.08. 07:30</span></div>
+        <div><b>Dossier-Update: Label-Taxonomie</b>
+          <div class="meta">Dossier · nur DE</div></div>
+        <div><span class="ch on">in</span></div>
+      </div>
+      <button class="btn ghost sm" style="margin-top:14px" onclick="go('queue')">Zeitplan öffnen</button>
+    </div>
+
+    <div class="card bracket">
+      <p class="eyebrow">Achtung</p>
+      <div style="border-left:2px solid #F87171;padding-left:14px;margin-bottom:16px">
+        <b>X-Beitrag nicht zugestellt</b>
+        <div class="meta">28.07. 14:20 · Fehler: Token abgelaufen</div>
+        <button class="btn ghost sm" style="margin-top:8px">Erneut senden</button>
+      </div>
+      <div style="border-left:2px solid var(--warn);padding-left:14px">
+        <b>LinkedIn-Verbindung läuft in 9 Tagen ab</b>
+        <div class="meta">Neu autorisieren, sonst pausiert die automatische Veröffentlichung.</div>
+        <button class="btn ghost sm" style="margin-top:8px">Jetzt neu verbinden</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:16px">
+    <button class="card bracket" style="text-align:left;cursor:pointer;color:inherit;font:inherit" onclick="go('editor')">
+      <p class="eyebrow">Schnell erfassen</p><b>Signal anlegen</b>
+      <div class="meta">Link einfügen → Titel und Vorschau werden automatisch geholt</div></button>
+    <button class="card bracket" style="text-align:left;cursor:pointer;color:inherit;font:inherit" onclick="go('missions')">
+      <p class="eyebrow">Schnell erfassen</p><b>Einsatz nachtragen</b>
+      <div class="meta">Ort auf der Karte setzen, Briefing zuordnen</div></button>
+    <button class="card bracket" style="text-align:left;cursor:pointer;color:inherit;font:inherit" onclick="go('media')">
+      <p class="eyebrow">Schnell erfassen</p><b>Fotos hochladen</b>
+      <div class="meta">Alt-Texte werden beim Upload abgefragt</div></button>
+  </div>
+</section>
+
+<!-- ================= LISTE ================= -->
+<section class="page" id="list">
+  <h1>Alle Beiträge</h1>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0">
+    <input class="f" placeholder="Suchen …" style="max-width:260px">
+    <select class="f" style="max-width:170px"><option>Alle Typen</option><option>Signal</option><option>Kurzmeldung</option><option>Backstage</option><option>Dossier</option><option>Einsatz</option></select>
+    <select class="f" style="max-width:170px"><option>Alle Status</option><option>Entwurf</option><option>Eingeplant</option><option>Veröffentlicht</option></select>
+    <select class="f" style="max-width:150px"><option>Alle Sprachen</option><option>DE fehlt</option><option>EN fehlt</option></select>
+  </div>
+  <table>
+    <thead><tr><th>Titel</th><th>Typ</th><th>Status</th><th>Datum</th><th>Sprachen</th><th>Kanäle</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><b>Microsoft Foundry bekommt Agent-Tracing</b></td><td class="meta">Signal</td>
+        <td><span class="st sched">Eingeplant</span></td><td class="meta">02.08. 08:00</td>
+        <td><span class="lng on">DE</span> <span class="lng on">EN</span></td>
+        <td><span class="ch on">in</span><span class="ch on">X</span><span class="ch">ig</span><span class="ch">fb</span></td>
+        <td><button class="btn ghost sm" onclick="go('editor')">Bearbeiten</button></td></tr>
+      <tr><td><b>Dossier-Update: Label-Taxonomie</b></td><td class="meta">Dossier</td>
+        <td><span class="st draft">Entwurf</span></td><td class="meta">—</td>
+        <td><span class="lng on">DE</span> <span class="lng">EN</span></td>
+        <td><span class="ch on">in</span><span class="ch">X</span><span class="ch">ig</span><span class="ch">fb</span></td>
+        <td><button class="btn ghost sm" onclick="go('editor')">Bearbeiten</button></td></tr>
+      <tr><td><b>Sensitivity Labels: Neue Grenzen beim Auto-Labeling</b></td><td class="meta">Kurzmeldung</td>
+        <td><span class="st live">Veröffentlicht</span></td><td class="meta">26.07. 08:05</td>
+        <td><span class="lng on">DE</span> <span class="lng on">EN</span></td>
+        <td><span class="ch done">in</span><span class="ch done">X</span><span class="ch">ig</span><span class="ch">fb</span></td>
+        <td><button class="btn ghost sm" onclick="go('editor')">Bearbeiten</button></td></tr>
+      <tr><td><b>Vorbereitung Einsatz Wien: 3 Demos, 1 Tenant</b></td><td class="meta">Backstage</td>
+        <td><span class="st live">Veröffentlicht</span></td><td class="meta">21.07. 19:40</td>
+        <td><span class="lng on">DE</span> <span class="lng">EN</span></td>
+        <td><span class="ch done">in</span><span class="ch err" style="color:#F87171;border-color:rgba(248,113,113,.45)">X</span><span class="ch done">ig</span><span class="ch">fb</span></td>
+        <td><button class="btn ghost sm" onclick="go('editor')">Bearbeiten</button></td></tr>
+      <tr><td><b>Einsatzakte: Experts Live Austria, Linz</b></td><td class="meta">Einsatz</td>
+        <td><span class="st live">Veröffentlicht</span></td><td class="meta">05.06. 12:00</td>
+        <td><span class="lng on">DE</span> <span class="lng on">EN</span></td>
+        <td><span class="ch done">in</span><span class="ch done">ig</span><span class="ch">X</span><span class="ch">fb</span></td>
+        <td><button class="btn ghost sm" onclick="go('missions')">Bearbeiten</button></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ================= EDITOR ================= -->
+<section class="page" id="editor">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <h1 style="margin:0">Beitrag bearbeiten</h1>
+    <span class="st draft">Entwurf · automatisch gespeichert 14:32</span>
+    <div class="viewtoggle" role="group" aria-label="Ansicht wechseln">
+      <button aria-pressed="true" onclick="setView('edit',this)">Bearbeiten</button>
+      <button aria-pressed="false" onclick="setView('read',this)">Als Leser ansehen</button>
+    </div>
+  </div>
+
+  <!-- --- Bearbeitungsansicht --- -->
+  <div id="view-edit">
+  <div class="editor">
+    <div class="ed-blocks">
+      <p class="eyebrow">Bausteine</p>
+      <div class="blk"><i>¶</i>Absatz</div>
+      <div class="blk"><i>H</i>Überschrift</div>
+      <div class="blk"><i>•</i>Liste, unsortiert</div>
+      <div class="blk"><i>1.</i>Liste, sortiert</div>
+      <div class="blk"><i>❝</i>Zitat</div>
+      <div class="blk"><i>▦</i>Tabelle</div>
+      <div class="blk"><i>&lt;/&gt;</i>Code</div>
+      <div class="blk"><i>▣</i>Bild</div>
+      <div class="blk"><i>▤</i>Bildergalerie</div>
+      <div class="blk"><i>▶</i>Video (YouTube)</div>
+      <div class="blk"><i>⛓</i>Link-Karte</div>
+      <div class="blk"><i>—</i>Trenner</div>
+      <p class="eyebrow" style="margin-top:22px">Nur in Dossiers</p>
+      <div class="blk"><i>▤</i>Galerie horizontal</div>
+      <div class="blk"><i>▶</i>Videogalerie</div>
+      <div class="blk"><i>≡</i>Inhaltsverzeichnis</div>
+    </div>
+
+    <div class="ed-canvas">
+      <div class="lang-tabs" role="tablist">
+        <button role="tab" aria-selected="true">DEUTSCH</button>
+        <button role="tab" aria-selected="false">ENGLISH · 0 %</button>
+        <button class="btn ghost sm" style="margin-left:auto;align-self:center">Aus DE übernehmen</button>
+      </div>
+
+      <div class="toolbar" role="toolbar" aria-label="Textformatierung">
+        <button title="Fett"><b>B</b></button><button title="Kursiv"><i>I</i></button>
+        <button title="Unterstrichen"><u>U</u></button><button title="Durchgestrichen"><s>S</s></button>
+        <span class="sep"></span>
+        <button title="Überschrift 2">H2</button><button title="Überschrift 3">H3</button>
+        <span class="sep"></span>
+        <button title="Liste">•</button><button title="Nummerierte Liste">1.</button>
+        <button title="Zitat">❝</button><button title="Code">&lt;/&gt;</button><button title="Tabelle">▦</button>
+        <span class="sep"></span>
+        <button title="Link">⛓</button><button title="Bild">▣</button>
+        <span class="sep"></span>
+        <button title="Rückgängig">↶</button><button title="Wiederholen">↷</button>
+      </div>
+
+      <input class="doc-title" value="Sensitivity Labels: Neue Grenzen beim Auto-Labeling">
+
+      <div class="para sel">
+        <div class="para-tools"><button>Bild links</button><button>Bild rechts</button><button>Kein Bild</button><button>↑</button><button>↓</button><button>Löschen</button></div>
+        <div class="with-margin">
+          <div><p style="margin:0">Zum 1. August ändert Microsoft die Limits für Auto-Labeling-Policies in Purview.
+            Das klingt nach einer Fußnote im Message Center, hat aber Auswirkungen auf jeden Tenant, der Labels
+            flächendeckend ausrollt.</p></div>
+          <div><div class="ph">Bild rechts<br>purview-policies.png</div>
+            <div class="meta" style="margin-top:6px">Alt-Text ✓ gesetzt</div></div>
+        </div>
+      </div>
+
+      <div class="para">
+        <div class="para-tools"><button>Bild links</button><button>Bild rechts</button><button>Kein Bild</button><button>↑</button><button>↓</button><button>Löschen</button></div>
+        <h3 style="margin:0">Was du jetzt prüfen solltest</h3>
+      </div>
+
+      <div class="para">
+        <div class="para-tools"><button>Bild links</button><button>Bild rechts</button><button>Kein Bild</button><button>↑</button><button>↓</button><button>Löschen</button></div>
+        <ol style="margin:0;padding-left:20px">
+          <li>Anzahl aktiver Auto-Labeling-Policies pro Workload</li>
+          <li>Laufende Simulationsläufe</li>
+          <li>Abhängigkeiten zu DLP-Policies</li>
+        </ol>
+      </div>
+
+      <div class="para">
+        <div class="para-tools"><button>Bild links</button><button>Bild rechts</button><button>Kein Bild</button><button>↑</button><button>↓</button><button>Löschen</button></div>
+        <div class="with-margin left">
+          <div><div class="ph">Bild links<br>dlp-abhaengigkeit.png</div>
+            <div class="meta" style="margin-top:6px;color:#F87171">Alt-Text fehlt</div></div>
+          <div><p style="margin:0">Besonders relevant ist Punkt drei. Wenn eine DLP-Policy auf ein Label referenziert,
+            das über eine Auto-Labeling-Regel gesetzt wird, verschiebt sich der Zeitpunkt, zu dem die Regel greift.</p></div>
+        </div>
+      </div>
+
+      <div class="para">
+        <div class="para-tools"><button>↑</button><button>↓</button><button>Löschen</button></div>
+        <blockquote style="border-left:2px solid var(--magenta);margin:0;padding-left:16px;font-family:var(--display);font-weight:300;font-size:17px">
+          Labels sind kein Feature. Labels sind eine Entscheidung darüber, wer was sehen darf.</blockquote>
+      </div>
+
+      <div style="border:1px dashed var(--line);border-radius:4px;padding:18px;text-align:center;color:var(--muted);
+        font-family:var(--mono);font-size:11px;letter-spacing:.1em;margin-top:12px">
+        + Baustein hier einfügen
+      </div>
+    </div>
+
+    <div class="ed-meta">
+      <p class="eyebrow">Veröffentlichung</p>
+      <label class="f" for="typ">Beitragstyp</label>
+      <select class="f" id="typ"><option>Kurzmeldung</option><option>Signal (geteilter Link)</option><option>Backstage</option><option>Dossier</option></select>
+
+      <label class="f" for="dat">Veröffentlichen am</label>
+      <input class="f" id="dat" type="datetime-local" value="2026-08-02T08:00">
+      <p class="meta" style="margin-top:6px">Wird automatisch live geschaltet. Bis dahin: nur für dich sichtbar.</p>
+
+      <p class="eyebrow" style="margin-top:22px">Kanäle</p>
+      <div class="switch">LinkedIn<span class="tgl" role="switch" aria-checked="true" tabindex="0"></span></div>
+      <div class="switch">X<span class="tgl" role="switch" aria-checked="true" tabindex="0"></span></div>
+      <div class="switch">Instagram<span class="tgl" role="switch" aria-checked="false" tabindex="0"></span></div>
+      <div class="switch">Facebook<span class="tgl" role="switch" aria-checked="false" tabindex="0"></span></div>
+      <div class="switch">YouTube Community<span class="tgl" role="switch" aria-checked="false" tabindex="0"></span></div>
+      <p class="meta" style="margin-top:8px">Instagram braucht ein Bild — sonst wird der Kanal ausgegraut.</p>
+
+      <label class="f">Begleittext für Social</label>
+      <textarea class="f" rows="4">Ab 1. August gelten neue Limits für Auto-Labeling in Purview. Drei Dinge, die du vorher prüfen solltest 👇</textarea>
+      <button class="btn ghost sm" style="margin-top:8px;width:100%;justify-content:center">Vorschlag von Claude holen</button>
+
+      <p class="eyebrow" style="margin-top:22px">Einordnung</p>
+      <label class="f">Themen</label>
+      <input class="f" value="Microsoft, Purview, Information Protection">
+      <label class="f">Verknüpftes Dossier</label>
+      <select class="f"><option>Sensitivity Labels sauber ausrollen</option><option>— keins —</option></select>
+
+      <p class="eyebrow" style="margin-top:22px">Prüfung</p>
+      <p style="font-size:12.5px;margin:0 0 6px;color:var(--ok)">✓ Titel und Beschreibung gesetzt</p>
+      <p style="font-size:12.5px;margin:0 0 6px;color:#F87171">✗ 1 Bild ohne Alt-Text</p>
+      <p style="font-size:12.5px;margin:0 0 6px;color:var(--warn)">! Englische Fassung fehlt</p>
+
+      <div style="display:flex;gap:8px;margin-top:20px">
+        <button class="btn ghost sm" style="flex:1;justify-content:center">Entwurf speichern</button>
+        <button class="btn solid sm" style="flex:1;justify-content:center">Einplanen</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- --- Leservorschau --- -->
+  <div id="view-read" style="display:none">
+    <div class="preview-frame">
+      <div class="preview-bar">
+        <span>◉ LESERVORSCHAU — nicht veröffentlicht</span>
+        <span class="device" style="margin-left:auto">
+          <button aria-pressed="true">Desktop</button><button aria-pressed="false">Tablet</button><button aria-pressed="false">Smartphone</button>
+        </span>
+        <span>Sprache: DE</span>
+      </div>
+      <div class="preview-body">
+        <span class="st" style="color:var(--violet-bright);border-color:rgba(168,85,247,.45)">Kurzmeldung</span>
+        <h2 style="margin-top:14px">Sensitivity Labels: Neue Grenzen beim Auto-Labeling</h2>
+        <p class="meta">Vorschau für 02.08.2026 · Lesezeit 3 Min.</p>
+        <div class="with-margin" style="margin-top:22px">
+          <div><p>Zum 1. August ändert Microsoft die Limits für Auto-Labeling-Policies in Purview. Das klingt nach
+            einer Fußnote im Message Center, hat aber Auswirkungen auf jeden Tenant, der Labels flächendeckend ausrollt.</p></div>
+          <div><div class="ph">Marginalbild rechts</div></div>
+        </div>
+        <h3>Was du jetzt prüfen solltest</h3>
+        <ol style="padding-left:20px"><li>Anzahl aktiver Policies pro Workload</li><li>Laufende Simulationsläufe</li><li>Abhängigkeiten zu DLP-Policies</li></ol>
+        <div class="with-margin left" style="margin-top:22px">
+          <div><div class="ph">Marginalbild links</div></div>
+          <div><p>Besonders relevant ist Punkt drei. Wenn eine DLP-Policy auf ein Label referenziert, verschiebt sich
+            der Zeitpunkt, zu dem die Regel greift.</p></div>
+        </div>
+        <blockquote>Labels sind kein Feature. Labels sind eine Entscheidung darüber, wer was sehen darf.</blockquote>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn ghost" onclick="setView('edit',document.querySelectorAll('.viewtoggle button')[0])">Zurück zum Bearbeiten</button>
+      <button class="btn solid">Einplanen für 02.08. 08:00</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DOSSIERS ================= -->
+<section class="page" id="dossiers">
+  <h1>Dossiers</h1>
+  <p class="muted">Langlebige Wissensseiten. Gleiche Bausteine wie Beiträge, zusätzlich Galerien, Videos und Inhaltsverzeichnis.</p>
+  <table style="margin-top:18px">
+    <thead><tr><th>Titel</th><th>Kategorie</th><th>Status</th><th>Zuletzt aktualisiert</th><th>Sprachen</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><b>Sensitivity Labels sauber ausrollen</b></td><td class="meta">Purview</td><td><span class="st live">Live</span></td>
+        <td class="meta">12.07.2026</td><td><span class="lng on">DE</span> <span class="lng on">EN</span></td>
+        <td><button class="btn ghost sm" onclick="go('editor')">Bearbeiten</button></td></tr>
+      <tr><td><b>Copilot Studio: Agent-Architekturen</b></td><td class="meta">Copilot Studio</td><td><span class="st live">Live</span></td>
+        <td class="meta">30.06.2026</td><td><span class="lng on">DE</span> <span class="lng on">EN</span></td>
+        <td><button class="btn ghost sm" onclick="go('editor')">Bearbeiten</button></td></tr>
+      <tr><td><b>Microsoft Foundry für Entwickler</b></td><td class="meta">Foundry</td><td><span class="st draft">Entwurf</span></td>
+        <td class="meta">—</td><td><span class="lng on">DE</span> <span class="lng">EN</span></td>
+        <td><button class="btn ghost sm" onclick="go('editor')">Bearbeiten</button></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ================= EINSÄTZE ================= -->
+<section class="page" id="missions">
+  <h1>Einsatz erfassen</h1>
+  <p class="muted">Ort auf der Karte setzen oder Stadt suchen. Vergangene und geplante Einsätze werden gleich erfasst.</p>
+
+  <div class="grid" style="grid-template-columns:1.35fr 1fr;margin-top:20px" id="missionGrid">
+    <div class="mapwrap">
+      <svg class="map" id="admap" viewBox="0 0 1000 460" role="img" aria-label="Karte zur Auswahl des Einsatzortes">
+        <g id="adland"></g><g id="adpins"></g>
+        <g id="cross"><line class="crosshair" x1="0" y1="0" x2="0" y2="0"></line></g>
+      </svg>
+      <div style="padding:12px 16px;border-top:1px solid var(--line-soft);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <input class="f" placeholder="Stadt suchen, z. B. Wien" style="max-width:220px">
+        <span class="meta">oder direkt auf die Karte klicken</span>
+        <span class="meta" style="margin-left:auto">Gesetzt: 48.2100 N / 16.3700 O · Wien, AT</span>
+      </div>
+    </div>
+
+    <div class="card bracket">
+      <p class="eyebrow">Einsatzdaten</p>
+      <label class="f">Veranstaltung</label><input class="f" value="Cloud Summit Austria">
+      <label class="f">Ort</label><input class="f" value="Wien, Österreich">
+      <label class="f">Datum</label><input class="f" type="date" value="2026-09-12">
+      <label class="f">Status</label>
+      <select class="f"><option>Geplant</option><option>Abgeschlossen</option></select>
+      <label class="f">Website der Veranstaltung (optional)</label><input class="f" placeholder="https://…">
+      <label class="f">Gehaltenes Briefing</label>
+      <select class="f"><option>Agents, die tatsächlich in Produktion gehen</option><option>Copilot Extensibility in der Praxis</option></select>
+      <label class="f">Sprache des Vortrags</label>
+      <select class="f"><option>Deutsch</option><option>Englisch</option></select>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card bracket">
+      <p class="eyebrow">Text: Die Veranstaltung</p>
+      <textarea class="f" rows="6" placeholder="Wie war die Veranstaltung? Wer war da? Was war die Stimmung?"></textarea>
+    </div>
+    <div class="card bracket">
+      <p class="eyebrow">Text: Mein Briefing</p>
+      <textarea class="f" rows="6" placeholder="Worum ging es? Welche Fragen kamen? Was hat funktioniert?"></textarea>
+    </div>
+  </div>
+
+  <div class="card bracket" style="margin-top:16px">
+    <p class="eyebrow">Fotos vom Einsatz</p>
+    <div class="grid g4">
+      <div class="ph">buehne.jpg</div><div class="ph">publikum.jpg</div><div class="ph">demo.jpg</div>
+      <div class="ph" style="border-style:dashed">+ Hochladen<br>oder hierher ziehen</div>
+    </div>
+    <p class="meta" style="margin-top:10px">Beim Hochladen wird für jedes Bild ein Alt-Text abgefragt — Pflichtfeld.</p>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:18px">
+    <button class="btn ghost">Als Entwurf speichern</button>
+    <button class="btn ghost">Als Leser ansehen</button>
+    <button class="btn solid">Einsatzakte einplanen</button>
+  </div>
+</section>
+
+<!-- ================= BRIEFINGS ================= -->
+<section class="page" id="briefings">
+  <h1>Briefings verwalten</h1>
+  <p class="muted">Das Repertoire, seine Kategorien und die Auswertung, welche Vorträge tatsächlich gefragt sind.</p>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card bracket">
+      <p class="eyebrow">Kategorien</p>
+      <table>
+        <tbody>
+          <tr><td>Copilot &amp; Agents</td><td class="meta">4 Briefings</td><td><button class="btn ghost sm">Umbenennen</button></td></tr>
+          <tr><td>Security &amp; Compliance</td><td class="meta">3 Briefings</td><td><button class="btn ghost sm">Umbenennen</button></td></tr>
+          <tr><td>Modern Work</td><td class="meta">2 Briefings</td><td><button class="btn ghost sm">Umbenennen</button></td></tr>
+        </tbody>
+      </table>
+      <button class="btn ghost sm" style="margin-top:12px">+ Kategorie anlegen</button>
+    </div>
+    <div class="card bracket">
+      <p class="eyebrow">Neues Briefing</p>
+      <label class="f">Titel (DE)</label><input class="f" placeholder="z. B. Agents in Produktion">
+      <label class="f">Titel (EN)</label><input class="f" placeholder="e. g. Agents in production">
+      <label class="f">Kategorie</label><select class="f"><option>Copilot &amp; Agents</option></select>
+      <label class="f">Level / Dauer</label><input class="f" placeholder="300 · 45 Min.">
+      <button class="btn solid sm" style="margin-top:16px">Briefing anlegen</button>
+    </div>
+  </div>
+
+  <div class="card bracket" style="margin-top:16px">
+    <p class="eyebrow">Auswertung · beliebteste Briefings</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+      <span class="meta">Zeitraum</span>
+      <input class="f" type="date" value="2024-01-01" style="max-width:170px">
+      <span class="meta">bis</span>
+      <input class="f" type="date" value="2026-12-31" style="max-width:170px">
+      <button class="btn sm">Auswerten</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Briefing</th><th>Einsätze</th><th>DE</th><th>EN</th><th>Zuletzt</th></tr></thead>
+      <tbody>
+        <tr><td class="mono" style="color:var(--violet-bright)">01</td><td><b>Copilot Extensibility in der Praxis</b></td><td>9</td><td>5</td><td>4</td><td class="meta">28.01.2026</td></tr>
+        <tr><td class="mono" style="color:var(--violet-bright)">02</td><td>AI Assistant für den Kundenservice</td><td>6</td><td>5</td><td>1</td><td class="meta">02.06.2026</td></tr>
+        <tr><td class="mono" style="color:var(--violet-bright)">03</td><td>Sensitivity Labels Workshop</td><td>4</td><td>4</td><td>0</td><td class="meta">04.06.2026</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= PUBLIKATIONEN & AUSBILDUNG ================= -->
+<section class="page" id="records">
+  <h1>Publikationen &amp; Ausbildung</h1>
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card bracket">
+      <p class="eyebrow">Publikationen</p>
+      <table><tbody>
+        <tr><td><b>Microsoft 365 Copilot in der Praxis</b><div class="meta">Buch · 2025 · Co-Autorin</div></td><td><button class="btn ghost sm">Bearbeiten</button></td></tr>
+        <tr><td><b>Governance für KI-Agents</b><div class="meta">Buch · 2026 · Autorin</div></td><td><button class="btn ghost sm">Bearbeiten</button></td></tr>
+        <tr><td><b>Agents in Produktion bringen</b><div class="meta">Fachartikel · 2026</div></td><td><button class="btn ghost sm">Bearbeiten</button></td></tr>
+      </tbody></table>
+      <button class="btn ghost sm" style="margin-top:12px">+ Publikation anlegen</button>
+    </div>
+    <div class="card bracket">
+      <p class="eyebrow">Zertifizierungen &amp; Auszeichnungen</p>
+      <label class="f">Kategorie</label>
+      <select class="f"><option>Auszeichnungen</option><option>Microsoft Azure &amp; KI</option><option>Modern Work &amp; Security</option><option>Power Platform</option></select>
+      <label class="f">Bezeichnung</label><input class="f" placeholder="z. B. Azure AI Engineer Associate">
+      <label class="f">Kürzel</label><input class="f" placeholder="AI-102">
+      <label class="f">Erworben am</label><input class="f" type="month" value="2025-03">
+      <label class="f">Gültig bis (optional)</label><input class="f" type="month">
+      <label class="f">Nachweis-Link (Credly o. ä.)</label><input class="f" placeholder="https://…">
+      <button class="btn solid sm" style="margin-top:16px">Speichern</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ZEITPLAN & KANÄLE ================= -->
+<section class="page" id="queue">
+  <h1>Zeitplan &amp; Kanäle</h1>
+  <p class="muted">Alles, was noch kommt — und der Zustand der Verbindungen zu den Plattformen.</p>
+
+  <div class="card bracket" style="margin-top:20px">
+    <p class="eyebrow">Eingeplant</p>
+    <div class="queue-item">
+      <div class="meta">So 02.08. · 08:00</div>
+      <div><b>Microsoft Foundry bekommt Agent-Tracing</b><div class="meta">Signal · DE + EN · Website + LinkedIn + X</div></div>
+      <div style="display:flex;gap:6px"><button class="btn ghost sm">Verschieben</button><button class="btn ghost sm">Jetzt senden</button></div>
+    </div>
+    <div class="queue-item">
+      <div class="meta">Mi 05.08. · 07:30</div>
+      <div><b>Dossier-Update: Label-Taxonomie</b><div class="meta">Dossier · DE · Website + LinkedIn</div></div>
+      <div style="display:flex;gap:6px"><button class="btn ghost sm">Verschieben</button><button class="btn ghost sm">Jetzt senden</button></div>
+    </div>
+    <div class="queue-item">
+      <div class="meta">Fr 14.08. · 09:00</div>
+      <div><b>Backstage: Wie ich Demo-Tenants aufsetze</b><div class="meta">Backstage · DE · nur Website</div></div>
+      <div style="display:flex;gap:6px"><button class="btn ghost sm">Verschieben</button><button class="btn ghost sm">Jetzt senden</button></div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card bracket"><p class="eyebrow">LinkedIn</p><span class="st live">Verbunden</span>
+      <p class="meta" style="margin-top:10px">Persönliches Profil · Zugriff läuft am 09.08. ab</p>
+      <button class="btn ghost sm">Neu autorisieren</button></div>
+    <div class="card bracket"><p class="eyebrow">X</p><span class="st err">Token abgelaufen</span>
+      <p class="meta" style="margin-top:10px">1 Beitrag wartet auf Wiederholung</p>
+      <button class="btn ghost sm">Verbinden</button></div>
+    <div class="card bracket"><p class="eyebrow">Instagram</p><span class="st live">Verbunden</span>
+      <p class="meta" style="margin-top:10px">Creator-Konto · Beitrag benötigt immer ein Bild</p>
+      <button class="btn ghost sm">Trennen</button></div>
+    <div class="card bracket"><p class="eyebrow">Facebook-Seite</p><span class="st live">Verbunden</span>
+      <p class="meta" style="margin-top:10px">Seite „Die Agentin"</p><button class="btn ghost sm">Trennen</button></div>
+    <div class="card bracket"><p class="eyebrow">YouTube</p><span class="st draft">Nicht verbunden</span>
+      <p class="meta" style="margin-top:10px">Für Community-Beiträge und Video-Einbindung</p>
+      <button class="btn ghost sm">Verbinden</button></div>
+    <div class="card bracket"><p class="eyebrow">RSS &amp; Newsletter</p><span class="st live">Aktiv</span>
+      <p class="meta" style="margin-top:10px">Feed unter /feed.xml · 128 Abrufe/Woche</p></div>
+  </div>
+</section>
+
+<!-- ================= MEDIEN ================= -->
+<section class="page" id="media">
+  <h1>Medien</h1>
+  <p class="muted">Bilder werden beim Upload automatisch in mehreren Größen und als WebP abgelegt. Ohne Alt-Text kein Veröffentlichen.</p>
+  <div style="display:flex;gap:8px;margin:18px 0;flex-wrap:wrap">
+    <input class="f" placeholder="Suchen …" style="max-width:240px">
+    <select class="f" style="max-width:200px"><option>Alle</option><option>Einsatzfotos</option><option>Screenshots</option><option>Cover</option></select>
+    <button class="btn solid sm">Hochladen</button>
+  </div>
+  <div class="grid g4">
+    <div><div class="ph">linz-buehne.jpg</div><div class="meta" style="margin-top:6px;color:var(--ok)">✓ Alt-Text</div></div>
+    <div><div class="ph">purview-policies.png</div><div class="meta" style="margin-top:6px;color:var(--ok)">✓ Alt-Text</div></div>
+    <div><div class="ph">dlp-abhaengigkeit.png</div><div class="meta" style="margin-top:6px;color:#F87171">✗ Alt-Text fehlt</div></div>
+    <div><div class="ph">salzburg-workshop.jpg</div><div class="meta" style="margin-top:6px;color:var(--ok)">✓ Alt-Text</div></div>
+  </div>
+</section>
+
+<!-- ================= MOBIL ================= -->
+<section class="page" id="mobile">
+  <h1>Mobil erfassen</h1>
+  <p class="muted">Dieselbe Oberfläche, auf Daumenbedienung reduziert: Link einfügen, kurz kommentieren, einplanen.
+    Fotos direkt aus der Kamera, Einsatzort über GPS vorbelegt.</p>
+
+  <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:22px">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="phone-bar"><span>9:41</span><span>DIE AGENTIN</span></div>
+        <div style="padding:16px">
+          <p class="eyebrow">Schnell erfassen</p>
+          <div class="ph" style="aspect-ratio:auto;padding:14px;text-align:left;font-family:var(--body);font-size:12.5px;color:var(--text);background:var(--ink-3)">
+            https://techcommunity.microsoft.com/…
+          </div>
+          <p class="meta" style="margin-top:8px">Titel und Vorschau werden geholt …</p>
+          <label class="f">Deine Einordnung</label>
+          <textarea class="f" rows="4" style="font-size:13px">Wer Agents bisher mit selbstgebautem Logging betrieben hat, kann das jetzt ersetzen.</textarea>
+          <div class="switch" style="font-size:12.5px">LinkedIn<span class="tgl" role="switch" aria-checked="true"></span></div>
+          <div class="switch" style="font-size:12.5px">X<span class="tgl" role="switch" aria-checked="true"></span></div>
+          <label class="f">Veröffentlichen</label>
+          <select class="f" style="font-size:13px"><option>Morgen 08:00</option><option>Sofort</option><option>Datum wählen</option></select>
+          <button class="btn solid sm" style="width:100%;justify-content:center;margin-top:14px">Einplanen</button>
+          <button class="btn ghost sm" style="width:100%;justify-content:center;margin-top:8px">Als Leser ansehen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="phone-bar"><span>17:12</span><span>EINSATZ</span></div>
+        <div style="padding:16px">
+          <p class="eyebrow">Einsatz läuft</p>
+          <b style="font-family:var(--display)">Experts Live Austria</b>
+          <p class="meta">Linz, AT · heute</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr;margin:12px 0">
+            <div class="ph" style="aspect-ratio:1">Foto 1</div>
+            <div class="ph" style="aspect-ratio:1;border-style:dashed">+ Kamera</div>
+          </div>
+          <label class="f">Notiz zum Vortrag</label>
+          <textarea class="f" rows="3" style="font-size:13px">Fragen drehten sich fast nur um Governance.</textarea>
+          <button class="btn solid sm" style="width:100%;justify-content:center;margin-top:12px">In Einsatzakte speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bracket" style="flex:1;min-width:280px">
+      <p class="eyebrow">Was mobil bewusst fehlt</p>
+      <p style="font-size:14px">Tabellen und Code-Blöcke lassen sich am Telefon schlecht sauber setzen. Sie sind
+        deshalb mobil sichtbar, aber nur am Desktop bearbeitbar — statt einer Oberfläche, die überall halb funktioniert.</p>
+      <p class="eyebrow" style="margin-top:20px">Offline</p>
+      <p style="font-size:14px">Entwürfe werden lokal gepuffert und synchronisiert, sobald wieder Netz da ist.
+        Auf Konferenzen ist das der Normalfall.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EINSTELLUNGEN ================= -->
+<section class="page" id="settings">
+  <h1>Einstellungen</h1>
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card bracket">
+      <p class="eyebrow">Zugang</p>
+      <p style="font-size:14px">Anmeldung ausschließlich über Microsoft Entra ID mit MFA. Es gibt keine Passwörter
+        in der Anwendung und keine öffentliche Registrierung.</p>
+      <table><tbody>
+        <tr><td>nicole@…</td><td><span class="st live">Admin / Editor</span></td></tr>
+        <tr><td>Alle Besucher</td><td><span class="st">Leser (anonym)</span></td></tr>
+      </tbody></table>
+    </div>
+    <div class="card bracket">
+      <p class="eyebrow">Rechtliche Seiten</p>
+      <div class="switch">Impressum<span class="st live">Gepflegt</span></div>
+      <div class="switch">Datenschutzerklärung<span class="st live">Gepflegt</span></div>
+      <div class="switch">Erklärung zur Barrierefreiheit<span class="st draft">Entwurf</span></div>
+      <div class="switch">Cookie-/Consent-Banner<span class="st live">Aktiv</span></div>
+      <p class="meta" style="margin-top:10px">Consent wird nur für YouTube-Einbindungen benötigt. Ohne Video-Block
+        wird das Banner nicht angezeigt.</p>
+    </div>
+    <div class="card bracket">
+      <p class="eyebrow">Sprachen</p>
+      <div class="switch">Deutsch (Standard)<span class="tgl" role="switch" aria-checked="true"></span></div>
+      <div class="switch">Englisch<span class="tgl" role="switch" aria-checked="true"></span></div>
+      <p class="meta" style="margin-top:10px">Fehlt eine Übersetzung, wird auf Deutsch zurückgefallen — mit sichtbarem Hinweis.</p>
+    </div>
+    <div class="card bracket">
+      <p class="eyebrow">Betrieb</p>
+      <p style="font-size:14px">Letztes Deployment: 29.07.2026, 21:14 · Pipeline „main → production" · grün</p>
+      <p style="font-size:14px">Backup der Datenbank: täglich, 7 Tage Aufbewahrung</p>
+      <button class="btn ghost sm">Zum Build in Azure DevOps ↗</button>
+    </div>
+  </div>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+const crumbs={dash:'EINSATZZENTRALE',list:'ALLE BEITRÄGE',editor:'EDITOR',dossiers:'DOSSIERS',missions:'EINSÄTZE',
+ briefings:'BRIEFINGS',records:'PUBLIKATIONEN & AUSBILDUNG',queue:'ZEITPLAN & KANÄLE',media:'MEDIEN',
+ mobile:'MOBIL ERFASSEN',settings:'EINSTELLUNGEN'};
+function go(id){
+  document.querySelectorAll('.page').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.p===id?'page':'false'));
+  document.getElementById('crumb').textContent=crumbs[id]||'';
+  window.scrollTo({top:0,behavior:'instant'});
+}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.p));
+
+function setView(v,btn){
+  document.getElementById('view-edit').style.display = v==='edit'?'block':'none';
+  document.getElementById('view-read').style.display = v==='read'?'block':'none';
+  document.querySelectorAll('.viewtoggle button').forEach(b=>b.setAttribute('aria-pressed','false'));
+  btn.setAttribute('aria-pressed','true');
+}
+document.querySelectorAll('.tgl').forEach(t=>{
+  const flip=()=>t.setAttribute('aria-checked',t.getAttribute('aria-checked')==='true'?'false':'true');
+  t.onclick=flip;
+  t.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip();}};
+});
+document.querySelectorAll('.para').forEach(p=>p.onclick=()=>{
+  document.querySelectorAll('.para').forEach(x=>x.classList.remove('sel'));p.classList.add('sel');});
+document.querySelectorAll('.lang-tabs [role=tab]').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.lang-tabs [role=tab]').forEach(x=>x.setAttribute('aria-selected','false'));
+  t.setAttribute('aria-selected','true');});
+document.querySelectorAll('.device button,.viewtoggle button').forEach(b=>{});
+
+/* Karte */
+const W=1000,H=460,LAT0=84,LAT1=-58;
+const px=lon=>(lon+180)/360*W, py=lat=>(LAT0-lat)/(LAT0-LAT1)*H;
+const shapes={
+ na:[[-168,65],[-160,71],[-140,70],[-125,70],[-110,68],[-95,68],[-85,73],[-75,68],[-60,55],[-52,47],[-65,45],[-70,42],[-75,35],[-81,25],[-97,26],[-105,20],[-115,30],[-125,40],[-135,55],[-150,60]],
+ gr:[[-45,60],[-20,70],[-25,83],[-60,83],[-58,70]],
+ sa:[[-80,8],[-60,10],[-52,5],[-35,-5],[-38,-22],[-48,-25],[-58,-35],[-62,-42],[-68,-55],[-75,-50],[-72,-35],[-70,-18],[-80,-5]],
+ af:[[-17,21],[-6,36],[10,37],[20,32],[33,31],[35,22],[43,12],[51,12],[48,5],[41,-2],[40,-15],[35,-25],[25,-34],[18,-34],[12,-18],[9,4],[0,5],[-8,4],[-16,13]],
+ eu:[[-9,38],[-2,43],[0,49],[-5,58],[5,62],[15,68],[30,71],[45,68],[60,70],[90,75],[110,75],[140,73],[160,70],[170,66],[160,60],[145,55],[135,45],[122,40],[122,30],[110,20],[105,10],[100,5],[95,15],[88,22],[80,10],[72,20],[65,25],[58,25],[48,30],[45,40],[35,42],[28,41],[20,40],[16,45],[8,44]],
+ au:[[113,-22],[130,-12],[142,-11],[150,-25],[153,-28],[147,-38],[135,-35],[129,-32],[115,-35]],
+ jp:[[130,33],[141,41],[145,44],[140,36],[133,33]]
+};
+const adland=document.getElementById('adland');
+for(const k in shapes){
+  const p=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  p.setAttribute('points',shapes[k].map(c=>px(c[0]).toFixed(1)+','+py(c[1]).toFixed(1)).join(' '));
+  p.setAttribute('class','landmass');adland.appendChild(p);
+}
+const existing=[[48.31,14.29],[47.81,13.04],[50.94,6.96],[52.37,4.90],[47.38,8.54],[38.72,-9.14],[47.67,-122.12],[53.55,9.99]];
+const adpins=document.getElementById('adpins');
+existing.forEach(c=>{
+  const el=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  el.setAttribute('cx',px(c[1]));el.setAttribute('cy',py(c[0]));el.setAttribute('r',2.6);
+  el.setAttribute('class','pinA');el.setAttribute('opacity','.45');adpins.appendChild(el);
+});
+/* aktueller Pin: Wien */
+const cur=document.createElementNS('http://www.w3.org/2000/svg','circle');
+cur.setAttribute('cx',px(16.37));cur.setAttribute('cy',py(48.21));cur.setAttribute('r',4.6);
+cur.setAttribute('class','pinA f');adpins.appendChild(cur);
+const cg=document.getElementById('cross');
+cg.innerHTML='<line class="crosshair" x1="'+px(16.37)+'" y1="0" x2="'+px(16.37)+'" y2="'+H+'" opacity=".5"></line>'+
+             '<line class="crosshair" x1="0" y1="'+py(48.21)+'" x2="'+W+'" y2="'+py(48.21)+'" opacity=".5"></line>';
+document.getElementById('admap').addEventListener('click',e=>{
+  const r=e.currentTarget.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
+  cur.setAttribute('cx',x);cur.setAttribute('cy',y);
+  cg.innerHTML='<line class="crosshair" x1="'+x+'" y1="0" x2="'+x+'" y2="'+H+'" opacity=".5"></line>'+
+               '<line class="crosshair" x1="0" y1="'+y+'" x2="'+W+'" y2="'+y+'" opacity=".5"></line>';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Node
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# Umgebung
+.env
+.env.*
+!.env.example
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Tests / Tooling
+coverage/
+playwright-report/
+test-results/
+.lighthouseci/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Azure / Deployment
+*.publishsettings
+.azure/

@@ -10,7 +10,11 @@ import { buildChecklist } from "@/lib/content/checklist";
 import { POST_TYPES, type PostType } from "@/lib/domain";
 import RenderDocument from "@/components/content/RenderDocument";
 import MediaPicker, { type MediaItem } from "./MediaPicker";
-import { savePost, type SavePostInput } from "@/app/(admin)/admin/(protected)/editor/actions";
+import {
+  savePost,
+  createPreviewLink,
+  type SavePostInput,
+} from "@/app/(admin)/admin/(protected)/editor/actions";
 
 type Loc = "de" | "en";
 type PickMode = "image" | "gallery" | "margin-left" | "margin-right";
@@ -317,6 +321,27 @@ export default function PostEditor({ initial }: { initial: PostEditorInitial }) 
                 Veröffentlichen
               </button>
             </div>
+            {initial.postId ? (
+              <button
+                className="btn ghost sm"
+                style={{ marginTop: 8, width: "100%", justifyContent: "center" }}
+                onClick={async () => {
+                  const res = await createPreviewLink(initial.postId!);
+                  if (res.url) {
+                    try {
+                      await navigator.clipboard.writeText(res.url);
+                    } catch {
+                      /* Clipboard optional */
+                    }
+                    setStatus(`Vorschau-Link kopiert: ${res.url}`);
+                  } else {
+                    setStatus(res.error ?? "Fehler.");
+                  }
+                }}
+              >
+                Teilbaren Vorschau-Link erzeugen
+              </button>
+            ) : null}
             {status ? <p className="meta" style={{ marginTop: 10 }}>{status}</p> : null}
           </aside>
         </div>

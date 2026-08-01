@@ -9,6 +9,7 @@ import { slugify } from "@/lib/slug";
 import { berlinLocalToUtc } from "@/lib/time";
 import { invalidateTags, tags } from "@/lib/cache";
 import { POST_TYPES, isOneOf, type PostType } from "@/lib/domain";
+import { createPreviewToken } from "@/lib/preview/token";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface TranslationInput {
@@ -222,6 +223,19 @@ export async function savePost(input: SavePostInput): Promise<SavePostResult> {
     const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen.";
     return { ok: false, error: message };
   }
+}
+
+/** Erzeugt einen teilbaren, 7 Tage gültigen Vorschau-Link (SPEC §6). */
+export async function createPreviewLink(postId: string): Promise<{ url?: string; error?: string }> {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: error.message };
+    throw error;
+  }
+  const token = createPreviewToken("post", postId);
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  return { url: `${site}/preview/${token}` };
 }
 
 function safeParse(json: string): unknown {

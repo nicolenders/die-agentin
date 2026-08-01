@@ -146,3 +146,27 @@ Allow-List-Eintrag 403, Seed-Daten sind definiert und einspielbar.
 **Fertig-Kriterium:** Ein Beitrag mit allen Bausteinen kann erfasst, gespeichert
 und in Vorschau wie öffentlicher Ansicht durch denselben Renderer identisch
 dargestellt werden.
+
+---
+
+## M3 — Veröffentlichung und Zeitsteuerung ✅
+
+**Umgesetzt**
+- **Idempotenter Publish-Job** (`lib/publish/publish.ts`): verarbeitet
+  `status = SCHEDULED AND publishAt <= now`. Die Transition läuft über
+  `updateMany` mit `status: SCHEDULED` als Bedingung — eine zweite Ausführung
+  ändert nichts (kein Doppelversand).
+- **Job-Endpunkt** `/api/jobs/run` (POST), geschützt per `JOB_SHARED_SECRET`
+  (konstantzeitiger Vergleich). Lokaler Scheduler `scripts/scheduler.mjs` ruft
+  ihn alle 5 Min. auf; produktiv der Container Apps Job (Bicep in M8).
+- Beim Veröffentlichen: Cache-Tags invalidiert, `ChannelTask`s je verbundenem
+  Kanal eingereiht (LinkedIn PENDING, übrige MANUAL_OPEN), `AuditLog` geschrieben.
+- **Feeds** `/feed.xml` und `/feed.en.xml` (Builder `lib/feed.ts`, unit-getestet,
+  XML-escaped), **Sitemap** `/sitemap.xml`, **robots.txt** (Admin ausgeschlossen).
+- **Vorschau-Token** (`lib/preview/token.ts`, HMAC, 7 Tage, unit-getestet) und
+  Route `/preview/[token]` für eine teilbare, nicht auffindbare Vorschau; im
+  Editor per Knopf erzeugbar.
+
+**Fertig-Kriterium:** Ein für „in 5 Minuten" terminierter Beitrag (status
+SCHEDULED, publishAt) geht durch den Job ohne manuellen Eingriff live; der Job
+ist idempotent.

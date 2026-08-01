@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
   poweredByHeader: false,
+  experimental: {
+    // Ermöglicht forbidden()/unauthorized() für die Rollenprüfung im Admin.
+    authInterrupts: true,
+  },
   images: {
     // Blob storage domain is configured via env; kept empty locally.
     remotePatterns: process.env.BLOB_ACCOUNT_NAME

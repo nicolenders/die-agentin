@@ -1,8 +1,12 @@
-// Prisma-Schema — Ausgangspunkt (SPEC §3.1). In M0 nur Datasource und Generator;
-// das vollständige Datenmodell folgt in M1.
+// Prisma-Schema (SPEC §3.1, vollständig ausgebaut).
 //
-// Authentifizierung gegen Azure SQL: siehe docs/decisions/0002-db-auth.md.
-// Lokal läuft SQL Server im Container (docker compose).
+// Wichtige Anpassung ggü. SPEC §3.1: Der `sqlserver`-Connector von Prisma
+// unterstützt KEINE nativen Enums. Alle Enum-Felder sind deshalb als `String`
+// modelliert; die zulässigen Werte und ihre Typen liegen in `lib/domain.ts`
+// und werden in Server Actions / beim Seed validiert. Siehe
+// docs/decisions/0004-sqlserver-enums.md.
+//
+// Zeit: alle DateTime-Werte werden in UTC gespeichert (SPEC §6, CLAUDE.md).
 
 datasource db {
   provider = "sqlserver"
@@ -11,4 +15,375 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------------------------
+// Beiträge (Signale, Kurzmeldungen, Backstage)
+// ---------------------------------------------------------------------------
+
+model Post {
+  id          String    @id @default(cuid())
+  type        String // PostType: SIGNAL | NOTE | BACKSTAGE
+  status      String    @default("DRAFT") // ContentStatus
+  publishAt   DateTime? // geplanter Zeitpunkt, UTC
+  publishedAt DateTime?
+
+  // nur bei type = SIGNAL:
+  sourceUrl   String? @db.NVarChar(2048)
+  sourceTitle String?
+  sourceSite  String?
+  sourceImage String? @db.NVarChar(2048)
+
+  heroAssetId String?
+  heroAsset   MediaAsset? @relation("PostHero", fields: [heroAssetId], references: [id])
+
+  missionId String?
+  mission   Mission? @relation(fields: [missionId], references: [id])
+  dossierId String?
+  dossier   Dossier? @relation(fields: [dossierId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations PostTranslation[]
+  tasks        ChannelTask[]
+  tags         PostTag[]
+
+  @@index([status, publishAt])
+  @@index([type])
+}
+
+model PostTranslation {
+  id         String  @id @default(cuid())
+  postId     String
+  locale     String // Locale: de | en
+  slug       String
+  title      String
+  summary    String? @db.NVarChar(600) // Karten, Feed, OpenGraph
+  bodyJson   String  @db.NVarChar(Max) // TipTap-Dokument (JSON)
+  socialText String? @db.NVarChar(2000)
+  state      String  @default("MISSING") // TransState
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, locale])
+  @@unique([locale, slug])
+}
+
+// ---------------------------------------------------------------------------
+// Dossiers (langlebige Wissensseiten)
+// ---------------------------------------------------------------------------
+
+model Dossier {
+  id         String    @id @default(cuid())
+  status     String    @default("DRAFT") // ContentStatus
+  publishAt  DateTime?
+  categoryId String?
+  category   Taxonomy? @relation("DossierCategory", fields: [categoryId], references: [id])
+  reviewedAt DateTime? // „zuletzt geprüft am" – öffentlich sichtbar
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  translations DossierTranslation[]
+  posts        Post[]
+
+  @@index([status, publishAt])
+}
+
+model DossierTranslation {
+  id         String  @id @default(cuid())
+  dossierId  String
+  locale     String
+  slug       String
+  title      String
+  summary    String? @db.NVarChar(600)
+  bodyJson   String  @db.NVarChar(Max)
+  tocEnabled Boolean @default(true)
+  state      String  @default("MISSING")
+
+  dossier Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  @@unique([dossierId, locale])
+  @@unique([locale, slug])
+}
+
+// ---------------------------------------------------------------------------
+// Einsätze / Missionen (Reiseblog + Karte)
+// ---------------------------------------------------------------------------
+
+model Mission {
+  id            String    @id @default(cuid())
+  eventName     String
+  city          String
+  countryCode   String    @db.Char(2)
+  lat           Float
+  lon           Float
+  startDate     DateTime
+  endDate       DateTime?
+  status        String    @default("PLANNED") // MissionStatus
+  eventUrl      String?   @db.NVarChar(2048)
+  contentStatus String    @default("DRAFT") // ContentStatus
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  translations MissionTranslation[]
+  photos       MissionPhoto[]
+  deliveries   TalkDelivery[]
+  posts        Post[]
+
+  @@index([startDate])
+  @@index([contentStatus])
+}
+
+model MissionTranslation {
+  id        String @id @default(cuid())
+  missionId String
+  locale    String
+  slug      String
+  eventText String @db.NVarChar(Max) // Bereich 1: die Veranstaltung
+  talkText  String @db.NVarChar(Max) // Bereich 2: mein Vortrag
+  state     String @default("MISSING")
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([missionId, locale])
+  @@unique([locale, slug])
+}
+
+model MissionPhoto {
+  id        String  @id @default(cuid())
+  missionId String
+  assetId   String
+  sortOrder Int     @default(0)
+
+  mission Mission    @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  asset   MediaAsset @relation(fields: [assetId], references: [id])
+
+  @@index([missionId, sortOrder])
+}
+
+// ---------------------------------------------------------------------------
+// Briefings / Vorträge
+// ---------------------------------------------------------------------------
+
+model Talk {
+  id          String   @id @default(cuid())
+  categoryId  String
+  category    Taxonomy @relation("TalkCategory", fields: [categoryId], references: [id])
+  level       String? // "100" | "200" | "300" | "400"
+  durationMin Int?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  translations TalkTranslation[]
+  deliveries   TalkDelivery[]
+
+  @@index([categoryId])
+}
+
+model TalkTranslation {
+  id       String  @id @default(cuid())
+  talkId   String
+  locale   String
+  title    String
+  abstract String? @db.NVarChar(Max)
+
+  talk Talk @relation(fields: [talkId], references: [id], onDelete: Cascade)
+
+  @@unique([talkId, locale])
+}
+
+model TalkDelivery {
+  id        String   @id @default(cuid())
+  talkId    String
+  missionId String
+  language  String // Locale, in der gehalten wurde
+  heldOn    DateTime
+
+  talk    Talk    @relation(fields: [talkId], references: [id], onDelete: Cascade)
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([heldOn])
+  @@index([talkId, language])
+}
+
+// ---------------------------------------------------------------------------
+// Publikationen
+// ---------------------------------------------------------------------------
+
+model Publication {
+  id          String   @id @default(cuid())
+  type        String // PublicationType: BOOK | ARTICLE | WHITEPAPER
+  year        Int
+  isbn        String?
+  publisher   String?
+  coverAssetId String?
+  coverAsset  MediaAsset? @relation("PublicationCover", fields: [coverAssetId], references: [id])
+  url         String?  @db.NVarChar(2048)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  translations PublicationTranslation[]
+
+  @@index([year])
+}
+
+model PublicationTranslation {
+  id            String  @id @default(cuid())
+  publicationId String
+  locale        String
+  title         String
+  role          String? // z. B. „Co-Autorin"
+  description   String? @db.NVarChar(Max)
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, locale])
+}
+
+// ---------------------------------------------------------------------------
+// Zertifizierungen / Auszeichnungen
+// ---------------------------------------------------------------------------
+
+model Certification {
+  id         String    @id @default(cuid())
+  name       String
+  shortCode  String? // Kürzel, z. B. AI-102
+  categoryId String?
+  category   Taxonomy? @relation("CertificationCategory", fields: [categoryId], references: [id])
+  acquiredOn DateTime
+  validUntil DateTime?
+  proofUrl   String?   @db.NVarChar(2048)
+  series     String? // Reihe für Mehrfachauszeichnungen (z. B. „MVP")
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([categoryId])
+  @@index([series])
+}
+
+// ---------------------------------------------------------------------------
+// Taxonomie (Kategorien), Tags
+// ---------------------------------------------------------------------------
+
+model Taxonomy {
+  id        String @id @default(cuid())
+  kind      String // TaxonomyKind: DOSSIER | TALK | CERTIFICATION
+  nameDe    String
+  nameEn    String
+  slug      String
+  sortOrder Int    @default(0)
+
+  dossiers       Dossier[]       @relation("DossierCategory")
+  talks          Talk[]          @relation("TalkCategory")
+  certifications Certification[] @relation("CertificationCategory")
+
+  @@unique([kind, slug])
+  @@index([kind, sortOrder])
+}
+
+model Tag {
+  id     String    @id @default(cuid())
+  nameDe String
+  nameEn String
+  slug   String    @unique
+  posts  PostTag[]
+}
+
+model PostTag {
+  postId String
+  tagId  String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+}
+
+// ---------------------------------------------------------------------------
+// Medien
+// ---------------------------------------------------------------------------
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  blobPath  String // Original
+  width     Int
+  height    Int
+  mime      String
+  altDe     String // Pflicht (SPEC §11)
+  altEn     String?
+  decorative Boolean @default(false) // alt="" ausdrücklich (SPEC §11)
+  credit    String?
+  variants  String   @db.NVarChar(Max) // JSON: [{w,format,path}]
+  createdAt DateTime @default(now())
+
+  missionPhotos    MissionPhoto[]
+  postHeroes       Post[]         @relation("PostHero")
+  publicationCovers Publication[] @relation("PublicationCover")
+}
+
+// ---------------------------------------------------------------------------
+// Kanäle / Social Publishing
+// ---------------------------------------------------------------------------
+
+model ChannelAccount {
+  platform    String    @id // Platform: LINKEDIN | X | INSTAGRAM | FACEBOOK | YOUTUBE
+  displayName String
+  connected   Boolean   @default(false)
+  tokenRef    String? // Key-Vault-Secret-Name, nie das Token selbst
+  expiresAt   DateTime?
+  lastError   String?   @db.NVarChar(Max)
+}
+
+model ChannelTask {
+  id          String    @id @default(cuid())
+  postId      String
+  platform    String // Platform
+  state       String    @default("PENDING") // TaskState
+  scheduledAt DateTime
+  sentAt      DateTime?
+  remoteUrl   String?
+  attempts    Int       @default(0)
+  lastError   String?   @db.NVarChar(Max)
+  payload     String    @db.NVarChar(Max) // vorbereiteter Text + Asset-Referenz
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([state, scheduledAt])
+  @@index([postId])
+}
+
+// ---------------------------------------------------------------------------
+// Slug-Weiterleitungen (SPEC §5: eingefrorene Slugs → 301)
+// ---------------------------------------------------------------------------
+
+model Redirect {
+  id        String   @id @default(cuid())
+  locale    String
+  fromSlug  String
+  toSlug    String
+  entity    String // "post" | "dossier" | "mission"
+  createdAt DateTime @default(now())
+
+  @@unique([locale, fromSlug, entity])
+}
+
+// ---------------------------------------------------------------------------
+// Audit-Log
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  at       DateTime @default(now())
+  actor    String
+  action   String
+  entity   String
+  entityId String
+  detail   String?  @db.NVarChar(Max)
+
+  @@index([at])
+  @@index([entity, entityId])
 }

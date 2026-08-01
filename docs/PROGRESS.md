@@ -8,7 +8,7 @@ Sitzung zuerst hier weiterlesen.
 | Meilenstein | Status |
 |---|---|
 | M0 — Fundament | ✅ erledigt |
-| M1 — Daten und Auth | ⏳ offen |
+| M1 — Daten und Auth | ✅ erledigt |
 | M2 — Editor und Beiträge | ⏳ offen |
 | M3 — Veröffentlichung und Zeitsteuerung | ⏳ offen |
 | M4 — Dossiers und Zweisprachigkeit | ⏳ offen |
@@ -71,3 +71,42 @@ Vor jedem Commit sind `npm run lint`, `npm run typecheck` und `npm run test` gr�
 **Fertig-Kriterium erfüllt:** `npm run dev` und `npm run build` laufen lokal,
 die Startseite ist in DE (`/de`) und EN (`/en`) erreichbar; der Container-Build
 ist über den mehrstufigen `Dockerfile` definiert.
+
+---
+
+## M1 — Daten und Auth ✅
+
+**Umgesetzt**
+- Vollständiges Prisma-Schema (SPEC §3.1 + `Publication`, `Certification`,
+  `Taxonomy`, `Tag`/`PostTag`, `Redirect`, `AuditLog`). Erste Migration
+  (`prisma/migrations/…_init`) offline via `prisma migrate diff` erzeugt.
+- `lib/domain.ts`: App-seitige Enums als String-Unions (SQL-Server-Anpassung,
+  siehe 0004) mit `isOneOf`-Validierung. Unit-getestet.
+- Auth.js v5 (`auth.ts`) mit Microsoft-Entra-ID-Provider, JWT-Session,
+  Autorisierung über Allow-List von Entra Object IDs (`lib/auth/allowlist.ts`,
+  unit-getestet). `requireAdmin()`/`getSessionUser()` als serverseitige Guards.
+- Admin-Shell: eigene Route Group `(admin)` mit Sidebar-Navigation aus dem
+  Mockup, Topbar, Anmeldeseite. Geschützter Bereich `(protected)`: nicht
+  angemeldet → Anmeldung, angemeldet ohne Allow-List-Eintrag → **403**
+  (`forbidden()`), passend zur M1-Abnahme.
+- Dashboard liest Kennzahlen aus der DB mit „DB wird geweckt"-Fallback.
+- Seed (`prisma/seed.ts`) mit erfundenen Beispieldaten (Taxonomien, Tags, 4
+  Talks + Deliveries für das Ranking, 8 Missionen, 4 Beiträge, 1 Dossier,
+  Publikationen, Zertifizierungen, Kanäle).
+
+**Vorab-Aufgabe §3.2** in `docs/decisions/0002-db-auth.md` dokumentiert:
+ohne echten Azure-Zugang **Fallback** (SQL-Auth, Passwort nur im Key Vault via
+Secret-Referenz); der Managed-Identity-Pfad ist klar als **zu verifizieren**
+markiert.
+
+**Annahmen / Entscheidungen**
+- Enums als String gegen SQL Server (0004).
+- Migration offline generiert; gegen eine echte DB mit `prisma migrate dev`
+  bzw. `deploy` zu verifizieren (in dieser Umgebung lief keine DB).
+
+**Offene Punkte**
+- `npm run db:migrate` + `npm run db:seed` gegen laufende DB einmal ausführen
+  (docker compose). Entra-App-Registrierung + `ADMIN_OBJECT_IDS` setzen.
+
+**Fertig-Kriterium:** Login-Fluss steht (Entra ID), `/admin` liefert ohne
+Allow-List-Eintrag 403, Seed-Daten sind definiert und einspielbar.

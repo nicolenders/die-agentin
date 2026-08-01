@@ -242,3 +242,31 @@ sichtbar.
 
 **Fertig-Kriterium:** Das Ranking liefert über einen frei gewählten Zeitraum
 korrekte Zahlen inklusive Sprachaufteilung (durch Unit-Tests abgesichert).
+
+---
+
+## M7 — Kanäle ✅
+
+**Umgesetzt**
+- **LinkedIn-OAuth** (Authorization Code Flow): Routen `authorize`/`callback`
+  mit State-Schutz; Token-Austausch und Post über `/rest/posts`
+  (`lib/channels/linkedin.ts`). Ausgehende Aufrufe nur an LinkedIn.
+- **Automatischer Versand** (`lib/channels/process.ts`): drei Versuche mit
+  exponentiellem Backoff, danach FAILED mit sichtbarer Meldung; ohne gültige
+  Verbindung Rückfall auf MANUAL_OPEN. Wird vom Job-Endpunkt mitausgeführt.
+- **Ein-Klick-Freigabe** für X/Instagram/Facebook (`ManualShareCard`): fertiger
+  Text, „Text kopieren", „Teilen" über die Web Share API, „Erledigt".
+- Kanalstatus-Seite mit Verbinden/Trennen/Aktivieren, **Ablaufwarnung** (14
+  Tage, `lib/channels/expiry.ts`, unit-getestet) und Wiederholung
+  fehlgeschlagener Aufgaben.
+- Dashboard zeigt Kanal-Fehler und die LinkedIn-Ablaufwarnung.
+- **Secret-Ablage** (`lib/secrets.ts`): Tokens nie im Repo/DB/Log; produktiv Key
+  Vault (offener Punkt, ADR 0006), in der Entwicklung flüchtig im Speicher.
+
+**Annahmen / Entscheidungen (ADR 0006)**
+- Ohne echte LinkedIn-App/Key-Vault ist der reale Versand **zu verifizieren**;
+  die Struktur ist vollständig und verhält sich ehrlich (Rückfall auf Ein-Klick).
+
+**Fertig-Kriterium:** Der Versandpfad für LinkedIn ist vollständig; für die
+übrigen Kanäle liegt beim Veröffentlichen eine ausführbare Ein-Klick-Aufgabe
+bereit.

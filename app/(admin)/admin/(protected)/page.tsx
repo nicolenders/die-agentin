@@ -26,6 +26,20 @@ export default async function DashboardPage() {
         </p>
       )}
 
+      {stats.linkedInWarnDays !== null ? (
+        <div className="card bracket" style={{ borderLeft: "2px solid var(--warn)", margin: "16px 0" }}>
+          <b>LinkedIn-Verbindung läuft ab</b>
+          <div className="meta">
+            {stats.linkedInWarnDays <= 0
+              ? "Zugriff abgelaufen — neu autorisieren, sonst pausiert die automatische Veröffentlichung."
+              : `Läuft in ${stats.linkedInWarnDays} Tagen ab. Neu autorisieren, sonst pausiert die automatische Veröffentlichung.`}
+          </div>
+          <Link className="btn ghost sm" href="/admin/kanaele" style={{ marginTop: 8 }}>
+            Zu den Kanälen
+          </Link>
+        </div>
+      ) : null}
+
       <div className="grid g4" style={{ margin: "22px 0 26px" }}>
         <div className="card bracket stat">
           <b>{stats.drafts}</b>

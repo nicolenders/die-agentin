@@ -34,3 +34,6 @@ Thumbs.db
 
 # Next generated
 next-env.d.ts
+
+# Uploads (lokale Medien)
+public/uploads/

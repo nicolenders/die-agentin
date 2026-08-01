@@ -110,3 +110,39 @@ markiert.
 
 **Fertig-Kriterium:** Login-Fluss steht (Entra ID), `/admin` liefert ohne
 Allow-List-Eintrag 403, Seed-Daten sind definiert und einspielbar.
+
+---
+
+## M2 — Editor und Beiträge ✅
+
+**Umgesetzt**
+- Inhaltsmodell (`lib/content/schema.ts`) mit allen Node-Typen aus SPEC §4.
+- **Sanitizer** (`lib/content/sanitize.ts`): unbekannte/kontextfremde Nodes und
+  Marks werden beim Speichern verworfen, Links auf `rel=noopener` gezwungen,
+  `javascript:`-URLs entfernt. Umfangreich unit-getestet.
+- **Renderer** (`components/content/RenderDocument.tsx`): bildet Node-Typen auf
+  React-Komponenten ab, **kein** `dangerouslySetInnerHTML`. Wird von der
+  öffentlichen Seite UND der Editor-Vorschau genutzt → identische Darstellung.
+- TipTap-Editor mit Toolbar, DE/EN-Umschaltung, Marginalbild links/rechts pro
+  Absatz, Bild/Link-Karte-Einfügen, Leservorschau mit Geräteumschalter
+  (Desktop/Tablet/Smartphone) und Sprache.
+- Medienbibliothek: Upload-API (`/api/admin/media`) mit Magic-Byte-Prüfung,
+  Größenlimit, EXIF/GPS-Entfernung und WebP-Varianten (sharp); Alt-Text-Pflicht
+  (außer dekorativ). MediaPicker-Modal im Editor.
+- Öffentliche Beitragsseiten: Feed `/[locale]/signale` (Typfilter) und Detail
+  `/[locale]/signale/[slug]` mit Fallback-Hinweis (SPEC §8).
+- Veröffentlichungs-Prüfliste (`lib/content/checklist.ts`) und Zeit-Umrechnung
+  Europe/Berlin ↔ UTC (`lib/time.ts`) — beide unit-getestet.
+- Cache-Tag-Infrastruktur (`lib/cache.ts`); Publish invalidiert gezielt.
+- Admin-Beitragsliste (`/admin/beitraege`) mit echten Daten.
+
+**Annahmen / Entscheidungen**
+- Medienablage lokal unter `public/uploads/`; Azure-Blob-Upload braucht
+  `@azure/storage-blob` — offener Punkt (ADR 0005).
+- Öffentliche Beitragsseiten vorerst `force-dynamic` mit gecachten Datenzugriffen
+  (kein Build-DB verfügbar). Volles ISR-Prerendering, sobald eine Build-DB
+  bereitsteht.
+
+**Fertig-Kriterium:** Ein Beitrag mit allen Bausteinen kann erfasst, gespeichert
+und in Vorschau wie öffentlicher Ansicht durch denselben Renderer identisch
+dargestellt werden.

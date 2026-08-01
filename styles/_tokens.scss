@@ -1,0 +1,41 @@
+// ---------------------------------------------------------------------------
+// Design-Tokens — einzige Quelle für Farben und Typografie (SPEC §10, CLAUDE.md)
+// Übernommen aus dem Banner / den Mockups. Als CSS Custom Properties exponiert,
+// damit sie zur Laufzeit (Theme, Vorschau) referenzierbar bleiben.
+// ---------------------------------------------------------------------------
+
+:root {
+  // Flächen / Hintergründe
+  --ink: #05010d; // Seitenhintergrund
+  --ink-2: #0b0518; // Flächen
+  --ink-3: #120a24; // Eingabefelder
+  --ink-4: #170e2c;
+  --line: #2a1a4a;
+  --line-soft: #1c1030;
+
+  // Akzente
+  --violet: #8b5cf6;
+  --violet-bright: #a855f7;
+  --violet-text: #c4a2fc; // violetter Text auf dunklem Grund (kontrastgeprüft)
+  --magenta: #e879f9;
+  --signal: #38bdf8;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --danger: #f87171;
+
+  // Text
+  --text: #ede9f8;
+  --muted: #a093c0;
+
+  // Typografie (SPEC §10). Fonts werden self-hosted ausgeliefert — keine Google-
+  // Requests, kein Font-CDN. Bis die woff2-Dateien vorliegen (offener Punkt,
+  // siehe docs/PROGRESS.md) greift der System-Fallback. Sobald sie in app/fonts/
+  // liegen, werden sie über next/font/local als @font-face registriert; die
+  // Familiennamen unten bleiben dieselben.
+  --display: "Poppins", "Century Gothic", "Futura", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  // Radius
+  --r: 4px;
+}

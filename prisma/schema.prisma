@@ -1,0 +1,14 @@
+// Prisma-Schema — Ausgangspunkt (SPEC §3.1). In M0 nur Datasource und Generator;
+// das vollständige Datenmodell folgt in M1.
+//
+// Authentifizierung gegen Azure SQL: siehe docs/decisions/0002-db-auth.md.
+// Lokal läuft SQL Server im Container (docker compose).
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}

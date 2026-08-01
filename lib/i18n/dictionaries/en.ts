@@ -1,0 +1,95 @@
+import type { Dictionary } from "../index";
+
+// English translation. Must satisfy the shape of the German source dictionary.
+// Product names and proper nouns stay untranslated (SPEC §8).
+
+const en: Dictionary = {
+  brand: {
+    name: "DIE AGENTIN",
+    domain: "NICOLENDERS.COM",
+    tagline: "Microsoft AI & Modern Work. No loose ends.",
+  },
+  nav: {
+    hq: "HQ",
+    signale: "Signals",
+    dossiers: "Dossiers",
+    einsaetze: "Missions",
+    briefings: "Briefings",
+    publikationen: "Publications",
+    ausbildung: "Credentials",
+    legende: "Legend",
+    menu: "Menu",
+    skipToContent: "Skip to content",
+    selectLanguage: "Select language",
+    viewSite: "View site",
+  },
+  common: {
+    readMore: "Read more",
+    back: "Back",
+    loadMore: "Load more",
+    all: "All",
+    language: "Language",
+    published: "Published",
+    updated: "Updated",
+    readingTime: "Reading time",
+    minutes: "min",
+    source: "Source",
+    openEventSite: "Event website",
+    emptyTitle: "Nothing here yet",
+    loading: "Loading …",
+  },
+  langNotice: {
+    onlyGerman: "This article is only available in German.",
+    onlyGermanShort: "German only",
+  },
+  hq: {
+    eyebrow: "Headquarters · Status active",
+    titleLine1: "I connect people",
+    titleLine2Prefix: "with ",
+    titleHighlight: "intelligent solutions",
+    lead: "Nicole Enders — Microsoft MVP since 2020, 7 years running. I design, build and explain solutions around Microsoft AI and Modern Work. This is where my finds, dossiers and missions come together.",
+    roles: ["ARCHITECT", "ADVISOR", "DEVELOPER", "TRAINER", "SPEAKER"],
+    nextMission: "Next mission",
+    lastSignal: "Last signal",
+    classification: "Classification: public",
+    recent: "Latest intake",
+    countMissions: "Missions",
+    countCountries: "Countries",
+    countBriefings: "Briefings in repertoire",
+    countMvp: "MVP Award",
+    countBooks: "Books",
+    mostRequested: "Most requested briefing",
+    openMissionFile: "Open mission file",
+    allBriefings: "All briefings",
+    noMission: "No mission scheduled right now.",
+  },
+  feed: {
+    eyebrow: "Signals · running dispatches",
+    title: "What caught my eye",
+    lead: "Short dispatches from the Microsoft and AI world, shared finds with context, and notes from behind the scenes.",
+    filterByType: "Filter by type",
+    empty: "As soon as I share something, it shows up here. Check back soon.",
+    types: {
+      SIGNAL: "Signal",
+      NOTE: "Note",
+      BACKSTAGE: "Backstage",
+    },
+  },
+  footer: {
+    contentHeading: "Content",
+    aboutHeading: "About",
+    legalHeading: "Legal",
+    imprint: "Imprint",
+    privacy: "Privacy policy",
+    accessibility: "Accessibility statement",
+    cookies: "Cookie settings",
+    rss: "RSS feed",
+    rights: "All content available in DE and EN.",
+  },
+  errors: {
+    notFound: "This page does not exist.",
+    notFoundHint: "It may have moved. Back to HQ.",
+  },
+};
+
+export default en;

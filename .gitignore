@@ -31,3 +31,6 @@ Thumbs.db
 # Azure / Deployment
 *.publishsettings
 .azure/
+
+# Next generated
+next-env.d.ts

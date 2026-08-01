@@ -1,0 +1,45 @@
+# Lokale Entwicklung: App + SQL Server im Container (SPEC M0).
+# Start:  docker compose up --build
+# Die App wartet nicht auf einen Migrationslauf — führe nach dem ersten Start
+# `npm run db:migrate` gegen die laufende DB aus (siehe README).
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      # Nur lokale Entwicklung. Niemals in Produktion verwenden; produktiv
+      # kommt das Passwort aus dem Key Vault (SPEC §13).
+      MSSQL_SA_PASSWORD: "Local_Dev_Only_Change_Me1"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+  web:
+    build:
+      context: .
+      target: runner
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "sqlserver://db:1433;database=nicolenders;user=sa;password=Local_Dev_Only_Change_Me1;encrypt=true;trustServerCertificate=true"
+      NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+      AUTH_SECRET: "local-dev-secret-change-me"
+      NODE_ENV: "production"
+    ports:
+      - "3000:3000"
+
+volumes:
+  mssql-data:

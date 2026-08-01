@@ -3,40 +3,66 @@
 Persönliche Website und Publikationsplattform von Nicole Enders — „Die Agentin".
 Microsoft AI & Modern Work.
 
-> Status: Spezifikationsphase. Es existiert noch kein Anwendungscode.
+> Status: In Umsetzung (Meilensteine M0–M8, siehe `docs/PROGRESS.md`).
 
 ## Was hier drin liegt
 
 | Pfad | Inhalt |
 |---|---|
-| `docs/SPEC.md` | Vollständige Spezifikation: Architektur, Datenmodell, Workflows, Infrastruktur, Meilensteine |
-| `docs/mockups/` | Klickbare HTML-Mockups für Leser- und Adminansicht |
+| `app/` | Next.js 16 App Router — `(site)` öffentlich, `(admin)` Redaktion |
+| `components/` | Wiederverwendbare Komponenten |
+| `lib/` | Geschäftslogik, i18n, DB-Zugriff (Testabdeckung) |
+| `styles/` | Design-Tokens und globales Design-System (SCSS) |
+| `prisma/` | Schema, Migrationen, Seed |
+| `docs/SPEC.md` | Vollständige Spezifikation |
+| `docs/mockups/` | Klickbare HTML-Mockups (verbindliche visuelle Referenz) |
 | `docs/decisions/` | Architekturentscheidungen (ADRs) |
-| `CLAUDE.md` | Arbeitsregeln und Konventionen für Claude Code |
+| `docs/PROGRESS.md` | Fortschritt je Meilenstein |
 
-## Mockups ansehen
+## Lokal starten
 
-Beide Dateien sind eigenständig — im Browser öffnen, keine Installation nötig.
+Voraussetzungen: Node.js ≥ 22, npm. Für die Datenbank optional Docker.
 
-- `docs/mockups/mockup-leseransicht.html` — öffentliche Website
-- `docs/mockups/mockup-adminansicht.html` — Redaktionsoberfläche
+```bash
+# 1. Abhängigkeiten
+npm install
 
-Alle darin gezeigten Daten sind Beispieldaten.
+# 2. Umgebungsvariablen
+cp .env.example .env        # Platzhalter genügen für die öffentliche Ansicht
 
-## Nächster Schritt
-
-In Claude Code:
-
-```
-Lies docs/SPEC.md und CLAUDE.md. Setze anschließend Meilenstein M0 um.
+# 3. Entwicklungsserver
+npm run dev                 # http://localhost:3000  → leitet auf /de um
 ```
 
-Danach Meilenstein für Meilenstein weiterarbeiten — nicht mehrere gleichzeitig.
+Die öffentliche Startseite ist ohne Datenbank erreichbar (statisch gerendert).
+Für Admin, Editor und Seed wird eine Datenbank benötigt:
 
-## Geplanter Stack
+```bash
+# SQL Server + App im Container
+docker compose up --build
 
-Next.js 16 (App Router) · TypeScript · SCSS + CSS Modules · Prisma + Azure SQL ·
-Auth.js v5 mit Microsoft Entra ID · TipTap 3 · d3-geo · Azure Container Apps ·
-Bicep · Azure DevOps Pipelines
+# Migrationen und Seed gegen die laufende DB
+npm run db:migrate
+npm run db:seed
+```
 
-Begründungen stehen in `docs/SPEC.md`, Abschnitt 1.
+## Qualität
+
+```bash
+npm run lint         # ESLint (flat config)
+npm run typecheck    # tsc --noEmit
+npm run test         # Vitest (Unit, lib/)
+npm run test:coverage
+npm run test:e2e     # Playwright
+npm run test:a11y    # axe-core über die Hauptrouten
+```
+
+Vor jedem Commit laufen `lint`, `typecheck` und `test`.
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript strict · SCSS + CSS Modules ·
+Prisma + Azure SQL · Auth.js v5 (Microsoft Entra ID) · TipTap 3 · d3-geo ·
+Azure Container Apps · Bicep · Azure DevOps Pipelines.
+
+Begründungen: `docs/SPEC.md` §1 und `docs/decisions/`.

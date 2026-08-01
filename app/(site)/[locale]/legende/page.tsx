@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
+import { brandAsset } from "@/lib/brand-assets";
+import BrandImage from "@/components/BrandImage";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -44,13 +46,26 @@ export default async function LegendePage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{isDe ? "Die Legende · über mich" : "The legend · about me"}</p>
-      <h2>Nicole Enders</h2>
-      <p className="lead">
-        {isDe
-          ? "Microsoft MVP seit 2020. Ich arbeite an der Schnittstelle zwischen dem, was technisch geht, und dem, was Menschen im Arbeitsalltag hilft."
-          : "Microsoft MVP since 2020. I work at the intersection of what is technically possible and what actually helps people at work."}
-      </p>
+      <div className="hero-grid">
+        <div>
+          <p className="eyebrow">{isDe ? "Die Legende · über mich" : "The legend · about me"}</p>
+          <h2>Nicole Enders</h2>
+          <p className="lead">
+            {isDe
+              ? "Microsoft MVP seit 2020. Ich arbeite an der Schnittstelle zwischen dem, was technisch geht, und dem, was Menschen im Arbeitsalltag hilft."
+              : "Microsoft MVP since 2020. I work at the intersection of what is technically possible and what actually helps people at work."}
+          </p>
+        </div>
+        <div className="hero-visual">
+          <BrandImage
+            src={brandAsset("portrait.jpg")}
+            alt={isDe ? "Porträt von Nicole Enders" : "Portrait of Nicole Enders"}
+            label={isDe ? "Porträt" : "Portrait"}
+            sub={isDe ? "Nicole Enders" : "Nicole Enders"}
+            ratio="4 / 5"
+          />
+        </div>
+      </div>
 
       <div className="card bracket" style={{ margin: "30px 0", padding: 30 }}>
         <p className="eyebrow">{isDe ? "Meine Mission" : "My mission"}</p>

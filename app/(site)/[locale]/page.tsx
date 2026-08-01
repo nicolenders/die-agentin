@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { notFound } from "next/navigation";
+import { brandAsset } from "@/lib/brand-assets";
+import BrandImage from "@/components/BrandImage";
 import styles from "./hq.module.scss";
 
 // HQ / Startseite (SPEC §5). Statisch gerendert; ein Seitenaufruf berührt die
@@ -20,18 +23,31 @@ export default async function HQPage({
   return (
     <>
       <section className={styles.hero}>
-        <p className="eyebrow">{t.eyebrow}</p>
-        <h1>
-          {t.titleLine1}
-          <br />
-          {t.titleLine2Prefix}
-          <span>{t.titleHighlight}</span>.
-        </h1>
-        <p className="lead">{t.lead}</p>
-        <div className={styles.roles}>
-          {t.roles.map((role) => (
-            <span key={role}>{role}</span>
-          ))}
+        <div className="hero-grid">
+          <div>
+            <p className="eyebrow">{t.eyebrow}</p>
+            <h1>
+              {t.titleLine1}
+              <br />
+              {t.titleLine2Prefix}
+              <span>{t.titleHighlight}</span>.
+            </h1>
+            <p className="lead">{t.lead}</p>
+            <div className={styles.roles}>
+              {t.roles.map((role) => (
+                <span key={role}>{role}</span>
+              ))}
+            </div>
+          </div>
+          <div className="hero-visual">
+            <BrandImage
+              src={brandAsset("hero.jpg")}
+              alt={locale === "de" ? "Die Agentin — Markenbild" : "Die Agentin — brand visual"}
+              label="Die Agentin"
+              sub={locale === "de" ? "Hero-Bild" : "Hero image"}
+              ratio="4 / 5"
+            />
+          </div>
         </div>
         <div className={styles.statusStrip}>
           <span>
@@ -99,6 +115,34 @@ export default async function HQPage({
           <b>2</b>
           <span>{t.countBooks}</span>
         </div>
+      </div>
+
+      <div className="grid g2" style={{ marginTop: 20 }}>
+        <article className="card bracket">
+          <p className="eyebrow">{t.nextMission}</p>
+          <h3>Cloud Summit Austria · Wien</h3>
+          <p style={{ fontSize: "14.5px" }}>
+            {locale === "de"
+              ? "Briefing: Agents, die tatsächlich in Produktion gehen — Copilot Studio trifft Microsoft Foundry."
+              : "Briefing: Agents that actually make it to production — Copilot Studio meets Microsoft Foundry."}
+          </p>
+          <p className="meta">12.09.2026 · {dict.common.language} DE</p>
+          <Link className="btn" href={`/${locale}/einsaetze`}>
+            {t.openMissionFile}
+          </Link>
+        </article>
+        <article className="card bracket">
+          <p className="eyebrow">{t.mostRequested}</p>
+          <h3>Copilot Extensibility in der Praxis</h3>
+          <p style={{ fontSize: "14.5px" }}>
+            {locale === "de"
+              ? "9× gehalten, davon 4× auf Englisch. Von Declarative Agents bis zu eigenen API-Plugins."
+              : "Delivered 9 times, 4 in English. From declarative agents to custom API plugins."}
+          </p>
+          <Link className="btn ghost" href={`/${locale}/briefings`}>
+            {t.allBriefings}
+          </Link>
+        </article>
       </div>
     </>
   );

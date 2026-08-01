@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getPublications } from "@/lib/queries/records";
+import { brandAsset } from "@/lib/brand-assets";
+import BrandImage from "@/components/BrandImage";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +40,13 @@ export default async function PublikationenPage({
         <div className="grid g2" style={{ marginTop: 26 }}>
           {books.map((b) => (
             <article key={b.id} className="card bracket" style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 20 }}>
-              <div className="ph" style={{ aspectRatio: "2 / 3" }}>Cover</div>
+              <BrandImage
+                src={brandAsset(`cover-${b.id}.jpg`)}
+                alt={`Cover: ${b.title}`}
+                label="Cover"
+                sub={isDe ? "Buchcover" : "Book cover"}
+                ratio="2 / 3"
+              />
               <div>
                 <span className="tag">{typeLabel(b.type)}</span>
                 <h3 style={{ marginTop: 10 }}>{b.title}</h3>

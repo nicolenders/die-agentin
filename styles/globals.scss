@@ -780,6 +780,86 @@ svg.map {
   margin: 26px 0;
 }
 
+// ---------- Marken-Bildplatzhalter ----------
+// Bewusst gestalteter Platzhalter (kein leerer Kasten): dunkler Grund mit
+// violettem Glow, Zielmarken-Ecken und einer Mono-Metazeile — passt zur Marke,
+// bis ein echtes Bild eingesetzt wird (siehe docs/BILDPROMPTS.md).
+.brand-image {
+  position: relative;
+  display: block;
+  margin: 0;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.brand-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.brand-ph {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+  background:
+    radial-gradient(120% 100% at 28% 8%, rgba(168, 85, 247, 0.26), transparent 60%),
+    radial-gradient(120% 120% at 92% 96%, rgba(232, 121, 249, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(18, 10, 36, 0.92), rgba(8, 3, 20, 0.96));
+}
+.brand-ph::after {
+  // feines Raster wie im Seitenhintergrund
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.06) 1px, transparent 1px);
+  background-size: 26px 26px;
+  pointer-events: none;
+}
+.brand-ph .reticle {
+  color: var(--violet-bright);
+  opacity: 0.9;
+  margin-bottom: 12px;
+}
+.brand-ph .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--violet-text);
+}
+.brand-ph .sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+// ---------- HQ-Hero mit Bildspalte ----------
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+}
+.hero-visual {
+  align-self: stretch;
+}
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
 // ---------- Utility ----------
 .visually-hidden {
   position: absolute;

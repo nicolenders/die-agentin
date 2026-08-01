@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
 import { buildExtensions } from "@/lib/editor/extensions";
 import { sanitizeDocument } from "@/lib/content/sanitize";
 import type { TiptapDoc } from "@/lib/content/schema";
@@ -9,6 +9,7 @@ import type { AssetMap } from "@/lib/content/assets";
 import { buildChecklist } from "@/lib/content/checklist";
 import { POST_TYPES, type PostType } from "@/lib/domain";
 import RenderDocument from "@/components/content/RenderDocument";
+import EditorToolbar, { type PickMode } from "./EditorToolbar";
 import MediaPicker, { type MediaItem } from "./MediaPicker";
 import {
   savePost,
@@ -17,7 +18,6 @@ import {
 } from "@/app/(admin)/admin/(protected)/editor/actions";
 
 type Loc = "de" | "en";
-type PickMode = "image" | "gallery" | "margin-left" | "margin-right";
 
 const TYPE_LABEL: Record<PostType, string> = {
   SIGNAL: "Signal (geteilter Link)",
@@ -34,55 +34,6 @@ export interface PostEditorInitial {
   tags: string;
   de: { title: string; summary: string; social: string; doc: TiptapDoc };
   en: { title: string; summary: string; doc: TiptapDoc } | null;
-}
-
-function Toolbar({ editor, onInsert }: { editor: Editor | null; onInsert: (mode: PickMode) => void }) {
-  if (!editor) return null;
-  const btn = (label: string, title: string, action: () => void, active?: boolean) => (
-    <button
-      type="button"
-      title={title}
-      aria-pressed={active}
-      onClick={action}
-      style={{
-        background: active ? "rgba(139,92,246,.2)" : "none",
-        border: "1px solid var(--line-soft)",
-        color: "var(--text)",
-        borderRadius: 3,
-        minWidth: 32,
-        height: 30,
-        cursor: "pointer",
-      }}
-    >
-      {label}
-    </button>
-  );
-  return (
-    <div className="toolbar" role="toolbar" aria-label="Textformatierung" style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
-      {btn("B", "Fett", () => editor.chain().focus().toggleBold().run(), editor.isActive("bold"))}
-      {btn("I", "Kursiv", () => editor.chain().focus().toggleItalic().run(), editor.isActive("italic"))}
-      {btn("U", "Unterstrichen", () => editor.chain().focus().toggleUnderline().run(), editor.isActive("underline"))}
-      {btn("S", "Durchgestrichen", () => editor.chain().focus().toggleStrike().run(), editor.isActive("strike"))}
-      {btn("H2", "Überschrift 2", () => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive("heading", { level: 2 }))}
-      {btn("H3", "Überschrift 3", () => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive("heading", { level: 3 }))}
-      {btn("•", "Liste", () => editor.chain().focus().toggleBulletList().run(), editor.isActive("bulletList"))}
-      {btn("1.", "Nummerierte Liste", () => editor.chain().focus().toggleOrderedList().run(), editor.isActive("orderedList"))}
-      {btn("❝", "Zitat", () => editor.chain().focus().toggleBlockquote().run(), editor.isActive("blockquote"))}
-      {btn("</>", "Code", () => editor.chain().focus().toggleCodeBlock().run(), editor.isActive("codeBlock"))}
-      {btn("—", "Trenner", () => editor.chain().focus().setHorizontalRule().run())}
-      {btn("⛓", "Link", () => {
-        const url = window.prompt("Link-URL");
-        if (url) editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-      }, editor.isActive("link"))}
-      {btn("▣", "Bild", () => onInsert("image"))}
-      {btn("◧", "Bild links am Absatz", () => onInsert("margin-left"))}
-      {btn("◨", "Bild rechts am Absatz", () => onInsert("margin-right"))}
-      {btn("⛓K", "Link-Karte", () => {
-        const url = window.prompt("URL der Link-Karte");
-        if (url) editor.chain().focus().insertContent({ type: "linkCard", attrs: { url, title: url } }).run();
-      })}
-    </div>
-  );
 }
 
 export default function PostEditor({ initial }: { initial: PostEditorInitial }) {
@@ -261,7 +212,7 @@ export default function PostEditor({ initial }: { initial: PostEditorInitial }) 
               ) : null}
             </div>
 
-            <Toolbar editor={editor} onInsert={(m) => setPicker(m)} />
+            <EditorToolbar editor={editor} context="post" onPick={(m) => setPicker(m)} />
 
             <input
               className="f"

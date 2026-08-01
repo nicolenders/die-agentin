@@ -170,3 +170,31 @@ dargestellt werden.
 **Fertig-Kriterium:** Ein für „in 5 Minuten" terminierter Beitrag (status
 SCHEDULED, publishAt) geht durch den Job ohne manuellen Eingriff live; der Job
 ist idempotent.
+
+---
+
+## M4 — Dossiers und Zweisprachigkeit ✅
+
+**Umgesetzt**
+- Öffentliche Dossier-Seiten: Übersicht nach Kategorie `/[locale]/dossiers` und
+  Detail `/[locale]/dossiers/[slug]` mit TOC, Galerie und Video-Consent (über den
+  gemeinsamen Renderer aus M2).
+- **Foundry-Übersetzung** (`lib/translate/`): blockweise Extraktion/Rückschreibung
+  (`extract.ts`), Glossar mit Fachbegriffen (`config/glossary.json`,
+  `glossary.ts`), Chat-Aufruf an Microsoft Foundry (`foundry.ts`). Ergebnis ist
+  ein **KI-Entwurf** (`AI_DRAFT`), der nie automatisch veröffentlicht wird.
+  Extraktion, Glossar-Prompt und Parsing sind unit-getestet.
+- Dossier-Editor mit DE/EN-Tabs, Galerie/Video/TOC-Einfügen (gemeinsame
+  `EditorToolbar`), „EN-Rohübersetzung vorschlagen" → Entwurf → „EN bestätigen"
+  (REVIEWED) → Veröffentlichen.
+- Öffentliche Seiten zeigen nur `REVIEWED`-Übersetzungen; ein `AI_DRAFT` bleibt
+  intern und führt zum DE-Fallback mit sichtbarem Hinweis (SPEC §8).
+- Admin-Dossierliste mit Sprach-/Status-Anzeige.
+
+**Annahmen / Entscheidungen**
+- Foundry-Aufruf ist implementiert, aber ohne echten Endpunkt **zu verifizieren**
+  (ohne `FOUNDRY_*` liefert er einen klaren Fehler statt eines Fake-Ergebnisses).
+
+**Fertig-Kriterium:** Ein Dossier existiert in DE (Seed), eine EN-Rohübersetzung
+kann erzeugt, bestätigt und veröffentlicht werden; der KI-Entwurf ist bis zur
+Bestätigung deutlich markiert und nicht öffentlich.

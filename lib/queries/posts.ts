@@ -31,7 +31,10 @@ async function loadPublishedPosts(locale: Locale): Promise<PostCard[]> {
 
   const cards: PostCard[] = [];
   for (const post of posts) {
-    const picked = pickTranslation(post.translations, locale);
+    // Nur bestätigte Übersetzungen sind öffentlich; ein AI_DRAFT bleibt intern
+    // (SPEC §8) und führt zum DE-Fallback mit Hinweis.
+    const reviewed = post.translations.filter((t) => t.state === "REVIEWED");
+    const picked = pickTranslation(reviewed, locale);
     if (!picked) continue;
     cards.push({
       id: post.id,
@@ -81,7 +84,8 @@ async function loadPostBySlug(locale: Locale, slug: string): Promise<PostDetail 
   if (!translation) return null;
 
   const post = translation.post;
-  const picked = pickTranslation(post.translations, locale);
+  const reviewed = post.translations.filter((t) => t.state === "REVIEWED");
+  const picked = pickTranslation(reviewed, locale);
   if (!picked) return null;
 
   return {

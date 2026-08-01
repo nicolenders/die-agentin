@@ -27,14 +27,12 @@
   --text: #ede9f8;
   --muted: #a093c0;
 
-  // Typografie (SPEC §10). Fonts werden self-hosted ausgeliefert — keine Google-
-  // Requests, kein Font-CDN. Bis die woff2-Dateien vorliegen (offener Punkt,
-  // siehe docs/PROGRESS.md) greift der System-Fallback. Sobald sie in app/fonts/
-  // liegen, werden sie über next/font/local als @font-face registriert; die
-  // Familiennamen unten bleiben dieselben.
-  --display: "Poppins", "Century Gothic", "Futura", system-ui, sans-serif;
-  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  // Typografie (SPEC §10). Self-hosted über next/font/local (siehe lib/fonts.ts):
+  // keine Google-Requests, kein Font-CDN, kein Layout-Shift. Die --font-*-
+  // Variablen setzt next/font auf dem <body>; hier folgen robuste Fallbacks.
+  --display: var(--font-poppins), "Century Gothic", "Futura", system-ui, sans-serif;
+  --body: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: var(--font-jetbrains), "SFMono-Regular", Consolas, monospace;
 
   // Radius
   --r: 4px;

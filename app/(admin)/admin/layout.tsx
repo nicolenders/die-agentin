@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.scss";
 import "@/styles/admin.scss";
+import { fontVariables } from "@/lib/fonts";
 
 // Root-Layout des Admin-Bereichs (eigene Route Group, eigenes <html>).
 // Immer noindex (SPEC §5, §13).
@@ -15,7 +16,7 @@ export default function AdminRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de">
+    <html lang="de" className={fontVariables}>
       <body>{children}</body>
     </html>
   );

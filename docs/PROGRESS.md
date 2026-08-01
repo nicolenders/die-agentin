@@ -64,7 +64,9 @@ Vor jedem Commit sind `npm run lint`, `npm run typecheck` und `npm run test` gr�
   ESLint 9 mit nativer Flat-Config aus `eslint-config-next` 16.
 
 **Offene Punkte**
-- Self-hosted Font-Dateien ergänzen.
+- ~~Self-hosted Font-Dateien ergänzen.~~ ✅ erledigt: Poppins/Inter/JetBrains
+  Mono liegen als woff2 in `app/fonts/` und werden über `next/font/local`
+  (`lib/fonts.ts`) self-hosted eingebunden — keine Google-Requests, kein CDN.
 - HQ-Zähler/Vorschau später aus der DB speisen (aktuell Platzhalter aus dem
   Mockup, erfundene Beispieldaten).
 

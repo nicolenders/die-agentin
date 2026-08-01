@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.scss";
+import { fontVariables } from "@/lib/fonts";
 
 // Root-Layout der teilbaren Vorschau (eigene Route Group). Immer noindex —
 // Vorschauen sind nicht öffentlich auffindbar.
@@ -14,7 +15,7 @@ export default function PreviewRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de">
+    <html lang="de" className={fontVariables}>
       <body>{children}</body>
     </html>
   );

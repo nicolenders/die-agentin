@@ -4,6 +4,7 @@ import "@/styles/globals.scss";
 import { isLocale, locales, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { mainNav } from "@/lib/nav";
+import { fontVariables } from "@/lib/fonts";
 import SiteHeader, { type HeaderNavItem } from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 
@@ -62,7 +63,7 @@ export default async function LocaleLayout({
   }));
 
   return (
-    <html lang={typedLocale}>
+    <html lang={typedLocale} className={fontVariables}>
       <body>
         <a className="skip-link" href="#main-content">
           {dict.nav.skipToContent}

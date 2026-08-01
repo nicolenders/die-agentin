@@ -1,0 +1,27 @@
+# Bicep what-if, dann deploy (SPEC §15).
+parameters:
+  - name: azureServiceConnection
+    type: string
+  - name: resourceGroup
+    type: string
+
+jobs:
+  - job: infra
+    displayName: 'Bicep'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: ${{ parameters.azureServiceConnection }}
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            az deployment group what-if \
+              --resource-group ${{ parameters.resourceGroup }} \
+              --template-file infra/main.bicep \
+              --parameters infra/main.bicepparam containerImage=$(image)
+            az deployment group create \
+              --resource-group ${{ parameters.resourceGroup }} \
+              --template-file infra/main.bicep \
+              --parameters infra/main.bicepparam containerImage=$(image)

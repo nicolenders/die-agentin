@@ -372,6 +372,22 @@ model Redirect {
 }
 
 // ---------------------------------------------------------------------------
+// Rechtstexte (SPEC §12). Struktur und Felder werden hier gepflegt; der Inhalt
+// wird von Nicole beigestellt bzw. anwaltlich geprüft (keine Rechtstexte im Code).
+// ---------------------------------------------------------------------------
+
+model LegalDoc {
+  id        String   @id @default(cuid())
+  docKey    String // IMPRINT | PRIVACY | ACCESSIBILITY
+  locale    String
+  title     String
+  body      String   @db.NVarChar(Max)
+  updatedAt DateTime @updatedAt
+
+  @@unique([docKey, locale])
+}
+
+// ---------------------------------------------------------------------------
 // Audit-Log
 // ---------------------------------------------------------------------------
 

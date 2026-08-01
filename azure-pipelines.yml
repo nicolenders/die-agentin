@@ -1,0 +1,79 @@
+# Azure DevOps Pipeline (SPEC §15). Quelle: GitHub. Deployment: Azure DevOps.
+# In dieser Umsetzung geschrieben, aber nicht ausgeführt.
+#
+# Service Connection zu Azure über Workload Identity Federation (keine
+# Service-Principal-Secrets). Trigger auf main und Pull Requests.
+
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: ['*']
+
+variables:
+  azureServiceConnection: 'nicolenders-azure'
+  resourceGroup: 'nicolenders-prod-rg'
+  acrName: '' # aus Bicep-Output / Variablengruppe
+  imageRepository: 'web'
+
+stages:
+  - stage: validate
+    displayName: 'Validate (lint · typecheck · test · axe · audit)'
+    jobs:
+      - template: pipelines/templates/validate.yml
+
+  - stage: build
+    displayName: 'Build & Push Image'
+    dependsOn: validate
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - template: pipelines/templates/build.yml
+        parameters:
+          azureServiceConnection: $(azureServiceConnection)
+          acrName: $(acrName)
+          imageRepository: $(imageRepository)
+
+  - stage: infra
+    displayName: 'Infra (Bicep what-if → deploy)'
+    dependsOn: build
+    jobs:
+      - template: pipelines/templates/infra.yml
+        parameters:
+          azureServiceConnection: $(azureServiceConnection)
+          resourceGroup: $(resourceGroup)
+
+  - stage: migrate
+    displayName: 'DB-Migration (vor Traffic-Switch)'
+    dependsOn: infra
+    jobs:
+      - template: pipelines/templates/migrate.yml
+        parameters:
+          azureServiceConnection: $(azureServiceConnection)
+          resourceGroup: $(resourceGroup)
+
+  - stage: staging
+    displayName: 'Staging-Revision + Smoke-Test'
+    dependsOn: migrate
+    jobs:
+      - template: pipelines/templates/deploy.yml
+        parameters:
+          azureServiceConnection: $(azureServiceConnection)
+          resourceGroup: $(resourceGroup)
+          trafficWeight: 0
+
+  - stage: production
+    displayName: 'Production (manuelle Freigabe · Traffic 100 %)'
+    dependsOn: staging
+    jobs:
+      - deployment: production
+        environment: 'nicolenders-production' # verlangt manuelle Freigabe
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: pipelines/templates/promote.yml
+                  parameters:
+                    azureServiceConnection: $(azureServiceConnection)
+                    resourceGroup: $(resourceGroup)

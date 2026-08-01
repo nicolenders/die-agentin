@@ -1,0 +1,29 @@
+# Staging-Revision anlegen (0 % Traffic) + Smoke-Test (SPEC §15).
+parameters:
+  - name: azureServiceConnection
+    type: string
+  - name: resourceGroup
+    type: string
+  - name: trafficWeight
+    type: number
+    default: 0
+
+jobs:
+  - job: deploy
+    displayName: 'Staging-Revision'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: ${{ parameters.azureServiceConnection }}
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            # Neue Revision mit dem gebauten Image; Traffic bleibt bei 0 %.
+            az containerapp update \
+              --name nicolenders-prod-web \
+              --resource-group ${{ parameters.resourceGroup }} \
+              --image $(image)
+            # Smoke-Test gegen die neue Revision-URL (Platzhalter).
+            echo "Smoke-Test gegen Staging-Revision ausführen."

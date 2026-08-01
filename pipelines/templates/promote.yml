@@ -1,0 +1,23 @@
+# Production: Traffic auf die neue Revision schalten (100 %). Rollback = erneuter
+# Traffic-Switch auf die vorige Revision (SPEC §15, kein Redeploy).
+parameters:
+  - name: azureServiceConnection
+    type: string
+  - name: resourceGroup
+    type: string
+
+steps:
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        LATEST=$(az containerapp revision list \
+          --name nicolenders-prod-web \
+          --resource-group ${{ parameters.resourceGroup }} \
+          --query "[0].name" -o tsv)
+        az containerapp ingress traffic set \
+          --name nicolenders-prod-web \
+          --resource-group ${{ parameters.resourceGroup }} \
+          --revision-weight "$LATEST=100"

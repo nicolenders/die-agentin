@@ -1,11 +1,37 @@
 import type { NextConfig } from "next";
 
 /**
- * Security headers per SPEC §13. The Content-Security-Policy with nonce is set
- * per-request in middleware.ts; the static headers below are the constant ones.
+ * Content Security Policy (SPEC §13). Erlaubte externe Quellen: youtube-nocookie
+ * (nur nach Consent geladen) und die Blob-Storage-Domain für Bilder; alles
+ * andere 'self'. Hinweis: die ideal nonce-basierte script-src ohne
+ * 'unsafe-inline' erzwingt dynamisches Rendering aller Seiten und ist als
+ * Folgeschritt dokumentiert (docs/decisions/0007-operations.md). Bis dahin gilt
+ * die untenstehende strikte Quell-Policy.
  */
+function contentSecurityPolicy(): string {
+  const blob = process.env.BLOB_ACCOUNT_NAME
+    ? `https://${process.env.BLOB_ACCOUNT_NAME}.blob.core.windows.net`
+    : "";
+  return [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' data: ${blob}`.trim(),
+    "font-src 'self'",
+    "frame-src https://www.youtube-nocookie.com",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy() },
   { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Strict-Transport-Security",

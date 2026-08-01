@@ -1,0 +1,29 @@
+# Datenbankmigration als eigener Schritt VOR dem Traffic-Switch (SPEC §15).
+# Migrationen sind abwärtskompatibel (erst Spalte, dann Code, dann Altes weg).
+parameters:
+  - name: azureServiceConnection
+    type: string
+  - name: resourceGroup
+    type: string
+
+jobs:
+  - job: migrate
+    displayName: 'prisma migrate deploy'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '22.x'
+      - script: npm ci
+        displayName: 'Install'
+      - task: AzureCLI@2
+        displayName: 'Migrate (Managed Identity gegen Azure SQL)'
+        inputs:
+          azureSubscription: ${{ parameters.azureServiceConnection }}
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            # DATABASE_URL kommt aus dem Key Vault; hier über die Service
+            # Connection / Managed Identity beziehen und exportieren.
+            npx prisma migrate deploy

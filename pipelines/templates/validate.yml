@@ -1,0 +1,25 @@
+# CI-Gate (SPEC §15, §17): lint · typecheck · test · axe · npm audit.
+jobs:
+  - job: validate
+    displayName: 'Validate'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '22.x'
+      - script: npm ci
+        displayName: 'Install'
+      - script: npm run lint
+        displayName: 'Lint'
+      - script: npm run typecheck
+        displayName: 'Typecheck'
+      - script: npm run test
+        displayName: 'Unit-Tests'
+      - script: npx playwright install --with-deps chromium
+        displayName: 'Playwright-Browser'
+      - script: npm run test:a11y
+        displayName: 'axe-core (A11y)'
+        continueOnError: false
+      - script: npm audit --audit-level=high
+        displayName: 'npm audit (blockt bei High)'

@@ -9,13 +9,13 @@ Sitzung zuerst hier weiterlesen.
 |---|---|
 | M0 — Fundament | ✅ erledigt |
 | M1 — Daten und Auth | ✅ erledigt |
-| M2 — Editor und Beiträge | ⏳ offen |
-| M3 — Veröffentlichung und Zeitsteuerung | ⏳ offen |
-| M4 — Dossiers und Zweisprachigkeit | ⏳ offen |
-| M5 — Einsätze und Karte | ⏳ offen |
-| M6 — Briefings, Publikationen, Ausbildung | ⏳ offen |
-| M7 — Kanäle | ⏳ offen |
-| M8 — Betrieb | ⏳ offen |
+| M2 — Editor und Beiträge | ✅ erledigt |
+| M3 — Veröffentlichung und Zeitsteuerung | ✅ erledigt |
+| M4 — Dossiers und Zweisprachigkeit | ✅ erledigt |
+| M5 — Einsätze und Karte | ✅ erledigt |
+| M6 — Briefings, Publikationen, Ausbildung | ✅ erledigt |
+| M7 — Kanäle | ✅ erledigt |
+| M8 — Betrieb | ✅ erledigt |
 
 ## Branch
 
@@ -270,3 +270,38 @@ korrekte Zahlen inklusive Sprachaufteilung (durch Unit-Tests abgesichert).
 **Fertig-Kriterium:** Der Versandpfad für LinkedIn ist vollständig; für die
 übrigen Kanäle liegt beim Veröffentlichen eine ausführbare Ein-Klick-Aufgabe
 bereit.
+
+---
+
+## M8 — Betrieb ✅
+
+**Umgesetzt**
+- **Bicep** (`infra/main.bicep`) für alle Ressourcen aus SPEC §14: Managed
+  Identity, Log Analytics, Container Registry, Key Vault (RBAC), Storage
+  (media/uploads), Azure SQL (Free, serverless, AutoPause), Container Apps
+  Environment, Web-App (min 1/max 3, Multiple-Revisions), Scheduler-Job (Cron
+  alle 5 Min.), Custom Domain + Managed Certificate, Budget-Alert. **Nicht
+  deployt** — `what-if` vor dem Rollout (ADR 0007).
+- **Azure-DevOps-Pipelines** (`azure-pipelines.yml` + `pipelines/templates/*`):
+  validate (lint/typecheck/test/axe/audit) → build (Docker→ACR mit Git-SHA) →
+  infra (what-if→deploy) → migrate (vor Traffic-Switch) → staging → production
+  (manuelle Freigabe, Traffic 100 %). Rollback = Traffic-Switch (`promote.yml`).
+- **Sicherheits-Header** inkl. CSP (strikte Quell-Policy; nonce-Umstellung als
+  dokumentierter Folgeschritt, ADR 0007), X-Frame-Options, HSTS u. a.
+- **Rechtstexte-Verwaltung** (`LegalDoc` + Migration): Admin unter
+  `/admin/einstellungen`, öffentliche Seiten `/impressum`, `/datenschutz`,
+  `/barrierefreiheit` — Struktur/Felder, **kein Rechtstext im Code**.
+- **Lighthouse-CI** (`lighthouserc.json`, Budgets LCP < 2 s, CLS < 0,1,
+  JS < 180 KB) und **axe-core** über 8 Hauptrouten in beiden Sprachen
+  (`tests/a11y/axe.spec.ts`); E2E-Rauchtest (`tests/e2e/smoke.spec.ts`).
+
+**Offene Punkte vor dem ersten Deployment**
+- Entra-App-Registrierung, LinkedIn-App (+ LinkedIn-Seite), Azure-Subscription,
+  Key-Vault-Secrets, Custom-Domain-Validierung, Rechtstexte-Inhalt.
+- Bicep gegen echte API-Versionen mit `what-if` verifizieren; DB-Auth-Pfad
+  (Managed Identity vs. Fallback) bestätigen.
+
+**Fertig-Kriterium:** Der Weg „Commit auf main → validate → build → infra →
+migrate → staging → production (manuelle Freigabe)" ist als Pipeline definiert;
+Rollback ist als Traffic-Switch angelegt. Die Ausführung gegen Azure steht noch
+aus (kein Azure-Zugang in dieser Umsetzung).

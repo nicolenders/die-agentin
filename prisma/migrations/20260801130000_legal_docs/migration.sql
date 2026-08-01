@@ -1,0 +1,29 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- CreateTable
+CREATE TABLE [dbo].[LegalDoc] (
+    [id] NVARCHAR(1000) NOT NULL,
+    [docKey] NVARCHAR(1000) NOT NULL,
+    [locale] NVARCHAR(1000) NOT NULL,
+    [title] NVARCHAR(1000) NOT NULL,
+    [body] NVARCHAR(max) NOT NULL,
+    [updatedAt] DATETIME2 NOT NULL,
+    CONSTRAINT [LegalDoc_pkey] PRIMARY KEY CLUSTERED ([id]),
+    CONSTRAINT [LegalDoc_docKey_locale_key] UNIQUE NONCLUSTERED ([docKey],[locale])
+);
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH
+

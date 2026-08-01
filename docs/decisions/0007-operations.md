@@ -18,12 +18,33 @@ SSG-Lokalisierung.
 **Folgeschritt:** Umstellung auf nonce-basierte `script-src` zusammen mit
 durchgängig dynamischem Rendering (oder `'use cache'` je Route).
 
-## Infrastruktur (Bicep)
+## Infrastruktur (Bicep) & Pipeline — auf einfachen Erstlauf ausgelegt
 
-Alle Ressourcen als Bicep unter `infra/`. **Nicht deployt** — kein Azure-Zugang
-in der Umsetzungsumgebung, keine `bicep build`-Validierung möglich. Vor dem
-ersten Rollout ist `az deployment group what-if` Pflicht. API-Versionen sind
-nach bestem Wissen gewählt und zu verifizieren.
+Alle Ressourcen als Bicep unter `infra/`, `infra/main.bicep` **kompiliert sauber**
+(`bicep build`, keine Diagnostics). Vor dem ersten Rollout bleibt
+`az deployment group what-if` empfohlen (README Schritt 6); real deployt wurde
+nicht.
+
+Bewusste Vereinfachungen, damit die Pipeline **direkt durchläuft** (Review durch
+Azure-/DevOps-Brille):
+- **SQL-Authentifizierung** statt Managed Identity gegen SQL (ADR 0002, Fallback)
+  — passt zur App und ist für Einsteiger einfach. Passwort nur in der
+  DevOps-Variablengruppe / als Container-App-Secret.
+- **Container Registry per CLI vorab**, im Template als `existing` referenziert
+  — löst die Henne-Ei-Situation „Image bauen vor Registry" und vermeidet das
+  Zurücksetzen des Images bei erneutem Bicep-Deploy.
+- **Remote-Build via `az acr build`** — kein Docker-Daemon/Registry-Login auf dem
+  Agent nötig.
+- **Deterministischer Image-Tag** (`Build.BuildId`) statt Cross-Stage-Variablen.
+- **Traffic auf `latestRevision` = 100 %** im Multiple-Revisions-Modus: neue
+  Deployments gehen automatisch live, Rollback bleibt ein Traffic-Switch
+  (`pipelines/rollback.yml`).
+- **Migration** mit temporär freigegebener Agent-IP an der SQL-Firewall.
+- **Custom Domain & Budget** außerhalb des kritischen Pfads (Domain nur per
+  Anleitung, Budget nur bei gesetzter E-Mail), damit der Erstlauf ohne DNS und
+  ohne Sonderfälle durchläuft.
+- Scheduler als **einmaliger** Cron-Tick (`scripts/job-once.mjs`, im Runtime-Image
+  enthalten) statt eines Dauerläufers.
 
 ## Rechtstexte
 
@@ -35,4 +56,5 @@ geprüft (SPEC §12).
 ## Rollback
 
 Container App im Revisions-Modus „Multiple" mit Traffic-Splitting: Rollback ist
-ein Traffic-Switch auf die vorige Revision (`promote.yml`), kein Redeploy.
+ein Traffic-Switch auf die vorige Revision (`pipelines/rollback.yml` bzw.
+`az containerapp ingress traffic set`), kein Redeploy.

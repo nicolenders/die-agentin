@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Rollback per Traffic-Switch (SPEC §15). Separate, MANUELL gestartete Pipeline.
+# Leitet 100 % des Traffics auf eine ältere, bereits vorhandene Revision — kein
+# Redeploy, kein Neubau. In Azure DevOps als zweite Pipeline aus dieser Datei
+# anlegen und bei Bedarf manuell mit dem Revisionsnamen starten.
+#
+# Revisionsnamen anzeigen:
+#   az containerapp revision list -n nicolenders-prod-web -g <rg> \
+#     --query "[].{name:name, active:properties.active, created:properties.createdTime}" -o table
+# ---------------------------------------------------------------------------
+
+trigger: none
+pr: none
+
+parameters:
+  - name: revisionName
+    displayName: 'Revision, auf die zurückgerollt wird'
+    type: string
+
+variables:
+  - group: nicolenders
+  - name: azureServiceConnection
+    value: nicolenders-azure
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - task: AzureCLI@2
+    displayName: 'Traffic 100 % auf ${{ parameters.revisionName }}'
+    inputs:
+      azureSubscription: $(azureServiceConnection)
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        az containerapp ingress traffic set \
+          -n nicolenders-prod-web \
+          -g "$(resourceGroupName)" \
+          --revision-weight "${{ parameters.revisionName }}=100"
+        echo "Rollback aktiv: 100 % Traffic auf ${{ parameters.revisionName }}."

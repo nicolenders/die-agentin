@@ -1,8 +1,16 @@
-# Azure DevOps Pipeline (SPEC §15). Quelle: GitHub. Deployment: Azure DevOps.
-# In dieser Umsetzung geschrieben, aber nicht ausgeführt.
+# ---------------------------------------------------------------------------
+# Azure DevOps Pipeline für nicolenders.com (SPEC §15).
+# Quelle: GitHub · Deployment: Azure DevOps · Auth: Workload Identity Federation.
 #
-# Service Connection zu Azure über Workload Identity Federation (keine
-# Service-Principal-Secrets). Trigger auf main und Pull Requests.
+# Einrichtung in wenigen Schritten: siehe infra/README.md.
+# Kurz: 1) Variablengruppe "nicolenders" anlegen, 2) Service Connection
+# "nicolenders-azure" (Workload Identity Federation) anlegen, 3) Pipeline aus
+# dieser Datei erstellen und starten.
+#
+# Ablauf:
+#   validate  – bei jedem PR und auf main: lint · typecheck · test · build
+#   deploy    – nur auf main: Image bauen (in der Registry) und alles ausrollen
+# ---------------------------------------------------------------------------
 
 trigger:
   branches:
@@ -13,67 +21,126 @@ pr:
     include: ['*']
 
 variables:
-  azureServiceConnection: 'nicolenders-azure'
-  resourceGroup: 'nicolenders-prod-rg'
-  acrName: '' # aus Bicep-Output / Variablengruppe
-  imageRepository: 'web'
+  # Aus der Variablengruppe (Pipelines → Library). Enthält u. a.
+  # sqlAdminPassword, authSecret, jobSharedSecret (als Secret markiert) sowie
+  # acrName, resourceGroupName, location, adminObjectIds und optionale Werte.
+  - group: nicolenders
+  # Name der Azure-Service-Connection (Workload Identity Federation).
+  - name: azureServiceConnection
+    value: nicolenders-azure
+  # Eindeutiger, reproduzierbarer Image-Tag — in jeder Stage identisch.
+  - name: imageTag
+    value: $(Build.BuildId)
+  - name: sqlAdminLogin
+    value: nicoleadmin
 
 stages:
+  # ---- CI-Gate: läuft bei jedem Pull Request und auf main -------------------
   - stage: validate
-    displayName: 'Validate (lint · typecheck · test · axe · audit)'
+    displayName: 'Validate'
     jobs:
-      - template: pipelines/templates/validate.yml
+      - job: checks
+        displayName: 'lint · typecheck · test · build'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '22.x'
+          - script: npm ci
+            displayName: 'Install'
+          - script: npm run lint
+            displayName: 'Lint'
+          - script: npm run typecheck
+            displayName: 'Typecheck'
+          - script: npm run test
+            displayName: 'Unit-Tests'
+          - script: npm run build
+            displayName: 'Build'
+          - script: npm audit --audit-level=high
+            displayName: 'npm audit (Hinweis, blockt nicht)'
+            continueOnError: true
 
-  - stage: build
-    displayName: 'Build & Push Image'
+  # ---- CD: nur auf main -----------------------------------------------------
+  - stage: deploy
+    displayName: 'Deploy nach Azure'
     dependsOn: validate
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
-      - template: pipelines/templates/build.yml
-        parameters:
-          azureServiceConnection: $(azureServiceConnection)
-          acrName: $(acrName)
-          imageRepository: $(imageRepository)
-
-  - stage: infra
-    displayName: 'Infra (Bicep what-if → deploy)'
-    dependsOn: build
-    jobs:
-      - template: pipelines/templates/infra.yml
-        parameters:
-          azureServiceConnection: $(azureServiceConnection)
-          resourceGroup: $(resourceGroup)
-
-  - stage: migrate
-    displayName: 'DB-Migration (vor Traffic-Switch)'
-    dependsOn: infra
-    jobs:
-      - template: pipelines/templates/migrate.yml
-        parameters:
-          azureServiceConnection: $(azureServiceConnection)
-          resourceGroup: $(resourceGroup)
-
-  - stage: staging
-    displayName: 'Staging-Revision + Smoke-Test'
-    dependsOn: migrate
-    jobs:
-      - template: pipelines/templates/deploy.yml
-        parameters:
-          azureServiceConnection: $(azureServiceConnection)
-          resourceGroup: $(resourceGroup)
-          trafficWeight: 0
-
-  - stage: production
-    displayName: 'Production (manuelle Freigabe · Traffic 100 %)'
-    dependsOn: staging
-    jobs:
-      - deployment: production
-        environment: 'nicolenders-production' # verlangt manuelle Freigabe
+      - deployment: deploy
+        displayName: 'Build-Image · Infra · Migration'
+        pool:
+          vmImage: 'ubuntu-latest'
+        # Das Environment kann in Azure DevOps eine manuelle Freigabe verlangen
+        # (Environments → nicolenders-prod → Approvals). Ohne Freigabe läuft es
+        # direkt durch.
+        environment: 'nicolenders-prod'
         strategy:
           runOnce:
             deploy:
               steps:
-                - template: pipelines/templates/promote.yml
-                  parameters:
-                    azureServiceConnection: $(azureServiceConnection)
-                    resourceGroup: $(resourceGroup)
+                - checkout: self
+                - task: NodeTool@0
+                  inputs:
+                    versionSpec: '22.x'
+                - script: npm ci
+                  displayName: 'Install (für Prisma-Migration)'
+                - task: AzureCLI@2
+                  displayName: 'Registry-Build · Bicep-Deploy · DB-Migration'
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      RG="$(resourceGroupName)"
+                      LOC="$(location)"
+                      ACR="$(acrName)"
+                      TAG="$(imageTag)"
+                      IMAGE="$ACR.azurecr.io/web:$TAG"
+
+                      echo "== 1/5 Ressourcengruppe & Registry (idempotent) =="
+                      az group create -n "$RG" -l "$LOC" -o none
+                      az acr create -n "$ACR" -g "$RG" --sku Basic --admin-enabled false -o none
+
+                      echo "== 2/5 Image in der Registry bauen (kein Docker nötig) =="
+                      az acr build -r "$ACR" -t "web:$TAG" .
+
+                      echo "== 3/5 Infrastruktur ausrollen (Bicep) =="
+                      az deployment group create -g "$RG" -n "deploy-$TAG" \
+                        --template-file infra/main.bicep \
+                        --parameters \
+                          location="$LOC" \
+                          acrName="$ACR" \
+                          containerImage="$IMAGE" \
+                          sqlAdminLogin="$(sqlAdminLogin)" \
+                          sqlAdminPassword="$(sqlAdminPassword)" \
+                          authSecret="$(authSecret)" \
+                          jobSharedSecret="$(jobSharedSecret)" \
+                          adminObjectIds="$(adminObjectIds)" \
+                          siteUrl="$(siteUrl)" \
+                          entraClientId="$(entraClientId)" \
+                          entraClientSecret="$(entraClientSecret)" \
+                          entraIssuer="$(entraIssuer)" \
+                          linkedinClientId="$(linkedinClientId)" \
+                          linkedinClientSecret="$(linkedinClientSecret)" \
+                          budgetContactEmail="$(budgetContactEmail)" \
+                        -o none
+
+                      WEB_URL=$(az deployment group show -g "$RG" -n "deploy-$TAG" --query properties.outputs.webUrl.value -o tsv)
+                      SQL_FQDN=$(az deployment group show -g "$RG" -n "deploy-$TAG" --query properties.outputs.sqlServerFqdn.value -o tsv)
+                      DB_NAME=$(az deployment group show -g "$RG" -n "deploy-$TAG" --query properties.outputs.databaseName.value -o tsv)
+                      SQL_SERVER="${SQL_FQDN%%.*}"
+
+                      echo "== 4/5 Datenbankmigration (Agent-IP temporär freigeben) =="
+                      AGENT_IP=$(curl -s https://api.ipify.org)
+                      az sql server firewall-rule create -g "$RG" -s "$SQL_SERVER" -n "devops-agent-$TAG" \
+                        --start-ip-address "$AGENT_IP" --end-ip-address "$AGENT_IP" -o none
+                      export DATABASE_URL="sqlserver://$SQL_FQDN:1433;database=$DB_NAME;user=$(sqlAdminLogin);password=$(sqlAdminPassword);encrypt=true;trustServerCertificate=false"
+                      npx prisma migrate deploy
+                      az sql server firewall-rule delete -g "$RG" -s "$SQL_SERVER" -n "devops-agent-$TAG" -o none || true
+
+                      echo "== 5/5 Fertig =="
+                      echo "Website: $WEB_URL"
+                      echo "Falls die Variable siteUrl noch leer ist: einmalig in der"
+                      echo "Variablengruppe auf $WEB_URL setzen (für Feeds/OAuth)."

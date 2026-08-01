@@ -38,6 +38,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Scheduler-Skripte für den Container Apps Job (Cron-Tick)
+COPY --from=builder /app/scripts ./scripts
 
 USER nextjs
 EXPOSE 3000

@@ -1,16 +1,20 @@
 // ---------------------------------------------------------------------------
 // nicolenders.com — Azure-Infrastruktur (SPEC §14).
-// Ein Deployment pro Umgebung. NICHT in dieser Sitzung ausgeführt — mit
-// `az deployment group what-if` gegen eine echte Subscription zu verifizieren.
 //
-// Secrets kommen ausschließlich aus dem Key Vault (SPEC §13); hier werden nur
-// Referenzen verdrahtet, keine Werte gesetzt.
+// Ziel: EIN Bicep-Deployment, das nach dem Bootstrap der Container Registry
+// alles Übrige idempotent anlegt und aktualisiert. Bewusst einfach gehalten,
+// damit die Pipeline direkt durchläuft (siehe infra/README.md).
+//
+// DB-Zugriff: SQL-Authentifizierung (ADR 0002, Fallback). Das Passwort kommt
+// als sicherer Parameter aus einer Azure-DevOps-Variablengruppe / Key Vault und
+// landet ausschließlich als Container-App-Secret — nie im Repository.
+//
+// Custom Domain wird bewusst NICHT hier verdrahtet (erfordert DNS-Validierung
+// und würde den ersten Lauf blockieren) — siehe infra/README.md, Abschnitt
+// „Optional: eigene Domain".
 // ---------------------------------------------------------------------------
 
 targetScope = 'resourceGroup'
-
-@description('Kurzer Umgebungsname, z. B. prod oder staging.')
-param environmentName string = 'prod'
 
 @description('Azure-Region. Empfohlen: germanywestcentral oder westeurope.')
 param location string = resourceGroup().location
@@ -18,35 +22,81 @@ param location string = resourceGroup().location
 @description('Basisname für Ressourcen.')
 param baseName string = 'nicolenders'
 
-@description('Container-Image inkl. Tag (Git-SHA), z. B. <acr>.azurecr.io/web:<sha>.')
+@description('Kurzer Umgebungsname, z. B. prod.')
+param environmentName string = 'prod'
+
+@description('Name der zuvor angelegten Container Registry (global eindeutig, nur Kleinbuchstaben/Ziffern).')
+param acrName string
+
+@description('Voller Image-Name inkl. Tag, z. B. <acr>.azurecr.io/web:<tag>.')
 param containerImage string
 
-@description('Custom Domain (Apex).')
-param customDomain string = 'nicolenders.com'
+@description('Öffentliche Site-URL. Nach dem ersten Deployment auf die ausgegebene webUrl (oder eigene Domain) setzen.')
+param siteUrl string = ''
 
-@description('Öffentliche Site-URL.')
-param siteUrl string = 'https://nicolenders.com'
+// --- Secrets (sichere Parameter) --------------------------------------------
+@description('SQL-Admin-Login.')
+param sqlAdminLogin string = 'nicoleadmin'
 
+@secure()
+@description('SQL-Admin-Passwort. Mindestens 12 Zeichen, KEIN Semikolon.')
+param sqlAdminPassword string
+
+@secure()
+@description('Auth.js-Secret (npx auth secret).')
+param authSecret string
+
+@secure()
+@description('Shared Secret für den Job-Endpunkt.')
+param jobSharedSecret string
+
+// --- Optionale Konfiguration -------------------------------------------------
 @description('Entra Object IDs mit Admin-Zugriff, kommasepariert.')
 param adminObjectIds string = ''
 
-@description('Monatliches Budget in EUR für den Kostenalarm.')
+param entraClientId string = ''
+@secure()
+param entraClientSecret string = ''
+param entraIssuer string = ''
+
+param linkedinClientId string = ''
+@secure()
+param linkedinClientSecret string = ''
+
+// --- Kostenbremse ------------------------------------------------------------
+@description('E-Mail für den Budget-Alarm. Leer = kein Budget-Alarm.')
+param budgetContactEmail string = ''
+@description('Monatliches Budget in EUR.')
 param monthlyBudget int = 25
+@description('Erster Tag des Budget-Monats (YYYY-MM-01).')
+param budgetStartDate string = '2026-08-01'
 
-@description('E-Mail für Budget-Benachrichtigungen.')
-param budgetContactEmail string
-
-var tags = {
-  app: baseName
-  env: environmentName
-}
+var tags = { app: baseName, env: environmentName }
 var suffix = uniqueString(resourceGroup().id, environmentName)
+var dbName = '${baseName}db'
+var appName = '${baseName}-${environmentName}-web'
+var databaseUrl = 'sqlserver://${sqlServer.properties.fullyQualifiedDomainName}:1433;database=${dbName};user=${sqlAdminLogin};password=${sqlAdminPassword};encrypt=true;trustServerCertificate=false'
 
-// ---- Managed Identity ------------------------------------------------------
+// ---- Managed Identity (für ACR-Pull) ---------------------------------------
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: '${baseName}-${environmentName}-id'
   location: location
   tags: tags
+}
+
+// ---- Container Registry (zuvor per CLI gebootstrappt) -----------------------
+resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
+  name: acrName
+}
+
+resource acrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, identity.id, 'AcrPull')
+  scope: acr
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+  }
 }
 
 // ---- Log Analytics ---------------------------------------------------------
@@ -61,54 +111,10 @@ resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
-// ---- Container Registry -----------------------------------------------------
-resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
-  name: replace('${baseName}${environmentName}acr${suffix}', '-', '')
-  location: location
-  tags: tags
-  sku: { name: 'Basic' }
-  properties: { adminUserEnabled: false }
-}
-
-// Identity darf aus der Registry ziehen (AcrPull).
-resource acrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acr.id, identity.id, 'AcrPull')
-  scope: acr
-  properties: {
-    principalId: identity.properties.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
-  }
-}
-
-// ---- Key Vault -------------------------------------------------------------
-resource vault 'Microsoft.KeyVault/vaults@2023-07-01' = {
-  name: '${baseName}-${environmentName}-kv-${take(suffix, 6)}'
-  location: location
-  tags: tags
-  properties: {
-    sku: { family: 'A', name: 'standard' }
-    tenantId: subscription().tenantId
-    enableRbacAuthorization: true
-    enableSoftDelete: true
-    softDeleteRetentionInDays: 30
-  }
-}
-
-// Identity darf Secrets lesen (Key Vault Secrets User).
-resource kvSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(vault.id, identity.id, 'KeyVaultSecretsUser')
-  scope: vault
-  properties: {
-    principalId: identity.properties.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
-  }
-}
-
 // ---- Storage (Medien) ------------------------------------------------------
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
-  name: replace('${baseName}${environmentName}st${suffix}', '-', '')
+  // Storage-Kontonamen: 3–24 Zeichen, nur Kleinbuchstaben/Ziffern.
+  name: toLower(take('${baseName}${environmentName}st${suffix}', 24))
   location: location
   tags: tags
   sku: { name: 'Standard_LRS' }
@@ -124,20 +130,16 @@ resource blob 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
   parent: storage
   name: 'default'
 }
-
 resource mediaContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blob
   name: 'media'
   properties: { publicAccess: 'Blob' }
 }
-
 resource uploadsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blob
   name: 'uploads'
   properties: { publicAccess: 'None' }
 }
-
-// Identity darf Blobs schreiben (Storage Blob Data Contributor).
 resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storage.id, identity.id, 'BlobContributor')
   scope: storage
@@ -148,23 +150,15 @@ resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   }
 }
 
-// ---- Azure SQL (Free Offer, serverless, auto-pause) ------------------------
+// ---- Azure SQL (Free Offer, serverless, SQL-Auth) --------------------------
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: '${baseName}-${environmentName}-sql-${take(suffix, 6)}'
   location: location
   tags: tags
   properties: {
     version: '12.0'
-    // Ausschließlich Entra-Authentifizierung (SPEC §3.2). Der SQL-Admin ist die
-    // Managed Identity bzw. eine Entra-Gruppe.
-    administrators: {
-      administratorType: 'ActiveDirectory'
-      principalType: 'Application'
-      login: identity.name
-      sid: identity.properties.principalId
-      tenantId: subscription().tenantId
-      azureADOnlyAuthentication: true
-    }
+    administratorLogin: sqlAdminLogin
+    administratorLoginPassword: sqlAdminPassword
     minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
   }
@@ -172,13 +166,11 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
 
 resource sqlDb 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: sqlServer
-  name: '${baseName}db'
+  name: dbName
   location: location
   tags: tags
   sku: { name: 'GP_S_Gen5_1', tier: 'GeneralPurpose' }
   properties: {
-    // Free Offer: begrenzte vCore-Sekunden, danach auto-pause statt Kosten
-    // (SPEC §14 Kostenbremse).
     autoPauseDelay: 60
     minCapacity: json('0.5')
     useFreeLimit: true
@@ -186,6 +178,7 @@ resource sqlDb 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   }
 }
 
+// Erlaubt Azure-Diensten (u. a. der Container App) den Zugriff.
 resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = {
   parent: sqlServer
   name: 'AllowAzureServices'
@@ -208,43 +201,43 @@ resource caEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
   }
 }
 
-var jobSharedSecretRef = 'job-shared-secret'
-var databaseUrlRef = 'database-url'
+var commonSecrets = [
+  { name: 'database-url', value: databaseUrl }
+  { name: 'auth-secret', value: authSecret }
+  { name: 'job-shared-secret', value: jobSharedSecret }
+  { name: 'entra-secret', value: empty(entraClientSecret) ? 'unused' : entraClientSecret }
+  { name: 'linkedin-secret', value: empty(linkedinClientSecret) ? 'unused' : linkedinClientSecret }
+]
 
 // ---- Web Container App ------------------------------------------------------
 resource web 'Microsoft.App/containerApps@2024-03-01' = {
-  name: '${baseName}-${environmentName}-web'
+  name: appName
   location: location
   tags: tags
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: { '${identity.id}': {} }
   }
+  // Sicherstellen, dass die AcrPull-Rolle existiert, bevor das Image gezogen wird.
+  dependsOn: [ acrPull ]
   properties: {
     managedEnvironmentId: caEnv.id
     configuration: {
-      activeRevisionsMode: 'Multiple' // Rollback = Traffic-Switch (SPEC §15)
+      // Multiple-Revisions für Rollback per Traffic-Switch; die jeweils neueste
+      // Revision erhält automatisch 100 % Traffic (SPEC §15).
+      activeRevisionsMode: 'Multiple'
       ingress: {
         external: true
         targetPort: 3000
         transport: 'auto'
-        customDomains: [
-          {
-            name: customDomain
-            bindingType: 'SniEnabled'
-            certificateId: managedCert.id
-          }
-        ]
+        traffic: [ { latestRevision: true, weight: 100 } ]
       }
-      registries: [
-        { server: acr.properties.loginServer, identity: identity.id }
-      ]
-      secrets: [
-        { name: databaseUrlRef, keyVaultUrl: '${vault.properties.vaultUri}secrets/${databaseUrlRef}', identity: identity.id }
-        { name: jobSharedSecretRef, keyVaultUrl: '${vault.properties.vaultUri}secrets/${jobSharedSecretRef}', identity: identity.id }
-      ]
+      registries: [ { server: acr.properties.loginServer, identity: identity.id } ]
+      secrets: commonSecrets
     }
     template: {
+      // Kein expliziter revisionSuffix — Container Apps erzeugt bei Image-
+      // Änderung automatisch eine neue Revision.
       containers: [
         {
           name: 'web'
@@ -253,9 +246,15 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             { name: 'NODE_ENV', value: 'production' }
             { name: 'NEXT_PUBLIC_SITE_URL', value: siteUrl }
-            { name: 'DATABASE_URL', secretRef: databaseUrlRef }
-            { name: 'JOB_SHARED_SECRET', secretRef: jobSharedSecretRef }
+            { name: 'DATABASE_URL', secretRef: 'database-url' }
+            { name: 'AUTH_SECRET', secretRef: 'auth-secret' }
+            { name: 'JOB_SHARED_SECRET', secretRef: 'job-shared-secret' }
             { name: 'ADMIN_OBJECT_IDS', value: adminObjectIds }
+            { name: 'AUTH_MICROSOFT_ENTRA_ID_ID', value: entraClientId }
+            { name: 'AUTH_MICROSOFT_ENTRA_ID_SECRET', secretRef: 'entra-secret' }
+            { name: 'AUTH_MICROSOFT_ENTRA_ID_ISSUER', value: entraIssuer }
+            { name: 'LINKEDIN_CLIENT_ID', value: linkedinClientId }
+            { name: 'LINKEDIN_CLIENT_SECRET', secretRef: 'linkedin-secret' }
             { name: 'BLOB_ACCOUNT_NAME', value: storage.name }
             { name: 'BLOB_CONTAINER_MEDIA', value: 'media' }
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
@@ -267,18 +266,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// ---- Managed Certificate (kostenfrei) --------------------------------------
-resource managedCert 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = {
-  parent: caEnv
-  name: '${baseName}-cert'
-  location: location
-  properties: {
-    subjectName: customDomain
-    domainControlValidation: 'CNAME'
-  }
-}
-
-// ---- Scheduler Job (Cron alle 5 Min.) --------------------------------------
+// ---- Scheduler Job (Cron alle 5 Minuten) -----------------------------------
 resource schedulerJob 'Microsoft.App/jobs@2024-03-01' = {
   name: '${baseName}-${environmentName}-scheduler'
   location: location
@@ -287,6 +275,7 @@ resource schedulerJob 'Microsoft.App/jobs@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${identity.id}': {} }
   }
+  dependsOn: [ acrPull ]
   properties: {
     environmentId: caEnv.id
     configuration: {
@@ -297,12 +286,8 @@ resource schedulerJob 'Microsoft.App/jobs@2024-03-01' = {
         parallelism: 1
         replicaCompletionCount: 1
       }
-      registries: [
-        { server: acr.properties.loginServer, identity: identity.id }
-      ]
-      secrets: [
-        { name: jobSharedSecretRef, keyVaultUrl: '${vault.properties.vaultUri}secrets/${jobSharedSecretRef}', identity: identity.id }
-      ]
+      registries: [ { server: acr.properties.loginServer, identity: identity.id } ]
+      secrets: [ { name: 'job-shared-secret', value: jobSharedSecret } ]
     }
     template: {
       containers: [
@@ -310,10 +295,10 @@ resource schedulerJob 'Microsoft.App/jobs@2024-03-01' = {
           name: 'scheduler'
           image: containerImage
           resources: { cpu: json('0.25'), memory: '0.5Gi' }
-          command: ['node', 'scripts/scheduler.mjs']
+          command: [ 'node', 'scripts/job-once.mjs' ] // einmaliger Tick, dann Exit
           env: [
             { name: 'NEXT_PUBLIC_SITE_URL', value: siteUrl }
-            { name: 'JOB_SHARED_SECRET', secretRef: jobSharedSecretRef }
+            { name: 'JOB_SHARED_SECRET', secretRef: 'job-shared-secret' }
           ]
         }
       ]
@@ -321,34 +306,36 @@ resource schedulerJob 'Microsoft.App/jobs@2024-03-01' = {
   }
 }
 
-// ---- Budget-Alert (Kostenbremse, SPEC §14) ---------------------------------
-resource budget 'Microsoft.Consumption/budgets@2023-11-01' = {
+// ---- Budget-Alarm (nur wenn E-Mail gesetzt) --------------------------------
+resource budget 'Microsoft.Consumption/budgets@2023-11-01' = if (!empty(budgetContactEmail)) {
   name: '${baseName}-${environmentName}-budget'
   properties: {
     category: 'Cost'
     amount: monthlyBudget
     timeGrain: 'Monthly'
-    timePeriod: { startDate: '2026-08-01' }
+    timePeriod: { startDate: budgetStartDate }
     notifications: {
       Actual80: {
         enabled: true
         operator: 'GreaterThanOrEqualTo'
         threshold: 80
-        contactEmails: [budgetContactEmail]
+        contactEmails: [ budgetContactEmail ]
         thresholdType: 'Actual'
       }
       Forecast100: {
         enabled: true
         operator: 'GreaterThanOrEqualTo'
         threshold: 100
-        contactEmails: [budgetContactEmail]
+        contactEmails: [ budgetContactEmail ]
         thresholdType: 'Forecasted'
       }
     }
   }
 }
 
+output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'
 output webFqdn string = web.properties.configuration.ingress.fqdn
 output acrLoginServer string = acr.properties.loginServer
+output sqlServerFqdn string = sqlServer.properties.fullyQualifiedDomainName
+output databaseName string = dbName
 output identityClientId string = identity.properties.clientId
-output vaultUri string = vault.properties.vaultUri

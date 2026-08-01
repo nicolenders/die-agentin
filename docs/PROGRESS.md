@@ -220,3 +220,25 @@ Bestätigung deutlich markiert und nicht öffentlich.
 **Fertig-Kriterium:** Karte in beiden Sprachen, Pins mit Tastatur bedienbar;
 Jahresfilter, Popup und Detailseite spielen zusammen; die Tabelle ist immer
 sichtbar.
+
+---
+
+## M6 — Briefings, Publikationen, Ausbildung ✅
+
+**Umgesetzt**
+- **Ranking** (`lib/queries/ranking.ts`): reine, unit-getestete Funktion, die
+  `TalkDelivery`s je Vortrag in einem frei wählbaren Zeitraum zählt und nach
+  Sprache (DE/EN) aufteilt, absteigend sortiert. Datum der letzten Durchführung
+  inklusive.
+- Öffentlicher Vortragskatalog `/[locale]/briefings` nach Kategorie mit
+  Sprachverfügbarkeit und Ranking mit Start-/Enddatum-Filter (URL-Parameter,
+  ohne JS bedienbar).
+- Öffentliche Publikationsseite (Bücher als Karten, weitere als Tabelle) und
+  Ausbildungsseite (Zertifizierungen nach Kategorie, Mehrfachauszeichnungen über
+  das `series`-Feld, z. B. MVP).
+- Admin: Briefing-Verwaltung mit pflegbaren Kategorien (anlegen/umbenennen),
+  neuem Briefing und Ranking-Auswertung; Publikations-/Zertifizierungs-Erfassung
+  (FormData-Server-Actions, progressiv bedienbar).
+
+**Fertig-Kriterium:** Das Ranking liefert über einen frei gewählten Zeitraum
+korrekte Zahlen inklusive Sprachaufteilung (durch Unit-Tests abgesichert).

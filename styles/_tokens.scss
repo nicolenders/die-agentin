@@ -1,0 +1,39 @@
+// ---------------------------------------------------------------------------
+// Design-Tokens — einzige Quelle für Farben und Typografie (SPEC §10, CLAUDE.md)
+// Übernommen aus dem Banner / den Mockups. Als CSS Custom Properties exponiert,
+// damit sie zur Laufzeit (Theme, Vorschau) referenzierbar bleiben.
+// ---------------------------------------------------------------------------
+
+:root {
+  // Flächen / Hintergründe
+  --ink: #05010d; // Seitenhintergrund
+  --ink-2: #0b0518; // Flächen
+  --ink-3: #120a24; // Eingabefelder
+  --ink-4: #170e2c;
+  --line: #2a1a4a;
+  --line-soft: #1c1030;
+
+  // Akzente
+  --violet: #8b5cf6;
+  --violet-bright: #a855f7;
+  --violet-text: #c4a2fc; // violetter Text auf dunklem Grund (kontrastgeprüft)
+  --magenta: #e879f9;
+  --signal: #38bdf8;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --danger: #f87171;
+
+  // Text
+  --text: #ede9f8;
+  --muted: #a093c0;
+
+  // Typografie (SPEC §10). Self-hosted über next/font/local (siehe lib/fonts.ts):
+  // keine Google-Requests, kein Font-CDN, kein Layout-Shift. Die --font-*-
+  // Variablen setzt next/font auf dem <body>; hier folgen robuste Fallbacks.
+  --display: var(--font-poppins), "Century Gothic", "Futura", system-ui, sans-serif;
+  --body: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: var(--font-jetbrains), "SFMono-Regular", Consolas, monospace;
+
+  // Radius
+  --r: 4px;
+}

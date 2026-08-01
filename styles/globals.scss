@@ -1,0 +1,874 @@
+@use "tokens";
+
+// ---------------------------------------------------------------------------
+// Globales Basis- und Design-System. Aus docs/mockups/mockup-leseransicht.html
+// als verbindliche visuelle Referenz übernommen (SPEC §10).
+// Komponenten-spezifische Regeln liegen als CSS Modules bei den Komponenten.
+// ---------------------------------------------------------------------------
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(900px 500px at 12% -5%, rgba(139, 92, 246, 0.2), transparent 60%),
+    radial-gradient(700px 420px at 92% 8%, rgba(232, 121, 249, 0.11), transparent 62%),
+    linear-gradient(rgba(139, 92, 246, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.045) 1px, transparent 1px);
+  background-size: auto, auto, 52px 52px, 52px 52px;
+  background-attachment: fixed;
+}
+
+img {
+  max-width: 100%;
+}
+a {
+  color: var(--violet-text);
+}
+
+// Fokus sichtbar auf allen interaktiven Elementen (SPEC §11)
+:focus-visible {
+  outline: 2px solid var(--magenta);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+// Skip-Link „Zum Inhalt springen" (SPEC §11)
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+  background: var(--violet);
+  color: #fff;
+  padding: 10px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  border-radius: var(--r);
+}
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+// ---------- Typo-Bausteine ----------
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--violet-bright);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+  line-height: 1.15;
+}
+h1 {
+  font-size: clamp(38px, 6.2vw, 74px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-size: clamp(24px, 3vw, 34px);
+}
+h3 {
+  font-size: 19px;
+}
+p {
+  margin: 0 0 16px;
+  color: #d9d2ee;
+}
+.lead {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 62ch;
+}
+.mono {
+  font-family: var(--mono);
+}
+.muted {
+  color: var(--muted);
+}
+.meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #7c6ea0;
+  letter-spacing: 0.06em;
+}
+
+// ---------- Karten ----------
+.card {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    rgba(18, 10, 36, 0.85),
+    rgba(11, 5, 24, 0.85)
+  );
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  padding: 22px;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+.card:hover {
+  border-color: var(--violet);
+  transform: translateY(-2px);
+}
+// Signatur: Zielmarken-Ecken (SPEC §10)
+.bracket::before,
+.bracket::after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--violet-bright);
+  opacity: 0.75;
+}
+.bracket::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.bracket::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.grid {
+  display: grid;
+  gap: 18px;
+}
+.g4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.g3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.g2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 1100px) {
+  .g4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .g3,
+  .g2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ---------- Tags / Chips / Buttons ----------
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+}
+.tag.signal {
+  color: var(--signal);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.tag.notiz {
+  color: var(--violet-bright);
+  border-color: rgba(168, 85, 247, 0.45);
+}
+.tag.backstage {
+  color: var(--magenta);
+  border-color: rgba(232, 121, 249, 0.4);
+}
+.tag.dossier {
+  color: var(--warn);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 12px 20px;
+  border: 1px solid var(--violet);
+  color: var(--violet-text);
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: var(--r);
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:hover {
+  background: var(--violet);
+  color: #fff;
+}
+.btn.ghost {
+  border-color: var(--line);
+  color: var(--muted);
+}
+.btn.ghost:hover {
+  border-color: var(--violet);
+  background: transparent;
+  color: var(--text);
+}
+.btn.solid {
+  background: var(--violet);
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.chip[aria-pressed="true"],
+.chip[aria-current="true"] {
+  background: var(--violet);
+  border-color: var(--violet);
+  color: #fff;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 24px;
+}
+
+// ---------- Sprachumschalter ----------
+.lang {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  flex-shrink: 0;
+}
+.lang .lang-btn {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  padding: 6px 11px;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+}
+.lang .lang-btn[aria-current="true"] {
+  background: var(--violet);
+  color: #fff;
+}
+
+// ---------- Formulare (Admin + öffentlich) ----------
+label.f {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 16px 0 6px;
+}
+input.f,
+select.f,
+textarea.f {
+  width: 100%;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 9px 11px;
+  border-radius: var(--r);
+  font-family: var(--body);
+  font-size: 13.5px;
+}
+input.f:focus,
+select.f:focus,
+textarea.f:focus {
+  border-color: var(--violet);
+}
+
+// ---------- Tabellen ----------
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 14px;
+}
+th,
+td {
+  border: 1px solid var(--line-soft);
+  padding: 10px 13px;
+  text-align: left;
+}
+th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--violet-bright);
+  background: rgba(139, 92, 246, 0.07);
+}
+
+// ---------- Feed / Signale ----------
+.feed-item {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 22px;
+  padding: 22px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.feed-item:hover {
+  background: rgba(139, 92, 246, 0.06);
+}
+.feed-item .date {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #7c6ea0;
+  line-height: 1.8;
+}
+.feed-item h3 {
+  margin: 8px 0;
+}
+@media (max-width: 900px) {
+  .feed-item {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ---------- Inhalts-Renderer (Beiträge, Dossiers, Einsätze) ----------
+.article {
+  max-width: 1000px;
+}
+.artHead {
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 26px;
+  margin-bottom: 34px;
+}
+.block {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 34px;
+  margin-bottom: 30px;
+  align-items: start;
+}
+.block.left {
+  grid-template-columns: 300px 1fr;
+}
+.block.left .txt {
+  order: 2;
+}
+.block.left figure {
+  order: 1;
+}
+.block.full {
+  grid-template-columns: 1fr;
+}
+figure {
+  margin: 0;
+}
+figure img,
+.ph {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.ph {
+  aspect-ratio: 4 / 3;
+  background:
+    repeating-linear-gradient(45deg, rgba(139, 92, 246, 0.1) 0 10px, transparent 10px 20px),
+    var(--ink-3);
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: center;
+  padding: 10px;
+}
+figcaption {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: #7c6ea0;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.content-body blockquote,
+blockquote.quote {
+  border-left: 2px solid var(--magenta);
+  margin: 22px 0;
+  padding: 6px 0 6px 20px;
+  font-size: 19px;
+  font-family: var(--display);
+  font-weight: 300;
+  color: #e4dcfa;
+}
+pre {
+  background: #080314;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: #c9beeb;
+  line-height: 1.6;
+}
+ul.styled,
+ol.styled {
+  padding-left: 20px;
+  color: #d9d2ee;
+}
+ul.styled li,
+ol.styled li {
+  margin-bottom: 7px;
+}
+ul.styled li::marker,
+ol.styled li::marker {
+  color: var(--violet-bright);
+}
+
+// Galerie
+.gallery {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 6px 2px 16px;
+  scroll-snap-type: x mandatory;
+}
+.gallery .galleryItem {
+  min-width: 290px;
+  scroll-snap-align: start;
+}
+.galleryControls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+// Video mit Consent (SPEC §8, §12.2)
+.video-consent {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--ink-3);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 26px;
+}
+.video-consent p {
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: 44ch;
+}
+.video-embed {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.video-embed iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+// Link-Karte / zitierter Fund (SPEC §4, Typ SIGNAL)
+.quoted-link {
+  border-left: 2px solid var(--signal);
+  padding: 10px 14px;
+  background: rgba(56, 189, 248, 0.05);
+  margin: 12px 0;
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  display: block;
+}
+.quoted-link b {
+  color: var(--text);
+  font-weight: 500;
+  display: block;
+  font-size: 14.5px;
+}
+
+// Fallback-Hinweis, wenn EN fehlt (SPEC §8)
+.lang-fallback {
+  border: 1px solid var(--warn);
+  border-radius: var(--r);
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--warn);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 14px;
+  margin: 0 0 24px;
+}
+
+@media (max-width: 900px) {
+  .block,
+  .block.left {
+    grid-template-columns: 1fr;
+  }
+  .block.left .txt,
+  .block.left figure {
+    order: initial;
+  }
+}
+
+// ---------- Ranking / Briefings ----------
+.rank-row {
+  display: grid;
+  grid-template-columns: 38px 1fr 90px 110px;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.rank-row .n {
+  font-family: var(--mono);
+  font-size: 18px;
+  color: var(--violet-bright);
+}
+.bar {
+  height: 5px;
+  background: var(--line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--violet), var(--magenta));
+}
+.lang-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  border: 1px solid var(--line);
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: var(--muted);
+}
+.lang-badge.on {
+  color: var(--ok);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+@media (max-width: 900px) {
+  .rank-row {
+    grid-template-columns: 30px 1fr 80px;
+    row-gap: 6px;
+  }
+}
+
+// ---------- Zertifizierungen ----------
+.cert {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cert .badge {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border: 1px solid var(--violet);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--violet-bright);
+  text-align: center;
+}
+
+// ---------- Weltkarte (SPEC §11) ----------
+.map-shell {
+  position: relative;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(139, 92, 246, 0.13), transparent 65%),
+    #07031244;
+  overflow: hidden;
+}
+svg.map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.landmass {
+  fill: rgba(139, 92, 246, 0.16);
+  stroke: rgba(168, 85, 247, 0.55);
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
+}
+.graticule {
+  stroke: rgba(139, 92, 246, 0.13);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+  fill: none;
+}
+.pin {
+  cursor: pointer;
+}
+.pin circle.core {
+  fill: var(--magenta);
+  stroke: #fff;
+  stroke-width: 0.6;
+}
+.pin circle.halo {
+  fill: none;
+  stroke: var(--magenta);
+  stroke-width: 0.8;
+  opacity: 0.55;
+  animation: ping 2.8s ease-out infinite;
+}
+.pin.future circle.core {
+  fill: var(--signal);
+}
+.pin.future circle.halo {
+  stroke: var(--signal);
+}
+@keyframes ping {
+  0% {
+    r: 3;
+    opacity: 0.7;
+  }
+  100% {
+    r: 11;
+    opacity: 0;
+  }
+}
+.pin:hover circle.core,
+.pin:focus circle.core,
+.pin:focus-visible circle.core {
+  r: 5.5;
+}
+.pin:focus-visible {
+  outline: none;
+}
+.pin:focus-visible circle.halo {
+  stroke-width: 1.6;
+  opacity: 0.9;
+}
+.crosshair {
+  stroke: var(--magenta);
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+}
+.popup {
+  position: absolute;
+  width: 264px;
+  background: rgba(9, 4, 20, 0.97);
+  border: 1px solid var(--violet);
+  border-radius: var(--r);
+  padding: 15px;
+  font-size: 13px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65);
+  z-index: 5;
+}
+.popup h4 {
+  margin: 6px 0;
+  font-size: 15px;
+}
+.popup .close {
+  position: absolute;
+  top: 6px;
+  right: 9px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+}
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.year-filter {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+.counter {
+  display: flex;
+  gap: 34px;
+  flex-wrap: wrap;
+  margin: 26px 0;
+}
+
+// ---------- Marken-Bildplatzhalter ----------
+// Bewusst gestalteter Platzhalter (kein leerer Kasten): dunkler Grund mit
+// violettem Glow, Zielmarken-Ecken und einer Mono-Metazeile — passt zur Marke,
+// bis ein echtes Bild eingesetzt wird (siehe docs/BILDPROMPTS.md).
+.brand-image {
+  position: relative;
+  display: block;
+  margin: 0;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.brand-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.brand-ph {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+  background:
+    radial-gradient(120% 100% at 28% 8%, rgba(168, 85, 247, 0.26), transparent 60%),
+    radial-gradient(120% 120% at 92% 96%, rgba(232, 121, 249, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(18, 10, 36, 0.92), rgba(8, 3, 20, 0.96));
+}
+.brand-ph::after {
+  // feines Raster wie im Seitenhintergrund
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.06) 1px, transparent 1px);
+  background-size: 26px 26px;
+  pointer-events: none;
+}
+.brand-ph .reticle {
+  color: var(--violet-bright);
+  opacity: 0.9;
+  margin-bottom: 12px;
+}
+.brand-ph .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--violet-text);
+}
+.brand-ph .sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+// ---------- HQ-Hero mit Bildspalte ----------
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+}
+.hero-visual {
+  align-self: stretch;
+}
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+// ---------- Utility ----------
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

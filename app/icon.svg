@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#05010D"/>
+  <circle cx="16" cy="16" r="11" fill="none" stroke="#A855F7" stroke-width="1.4"/>
+  <circle cx="16" cy="16" r="2" fill="#E879F9"/>
+  <path d="M16 3v4M16 25v4M3 16h4M25 16h4" stroke="#A855F7" stroke-width="1.4"/>
+  <text x="16" y="16" text-anchor="middle" dominant-baseline="central" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="6.5" fill="#C4A2FC" letter-spacing="0.5" opacity="0">NE</text>
+</svg>

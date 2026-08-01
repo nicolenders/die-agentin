@@ -1,0 +1,266 @@
+// Admin-/Redaktions-Design-System. Aus docs/mockups/mockup-adminansicht.html
+// als verbindliche visuelle Referenz übernommen. Ergänzt die geteilten Klassen
+// aus globals.scss (card, btn, bracket, grid, table, .f-Formulare).
+
+.app {
+  display: grid;
+  grid-template-columns: 236px 1fr;
+  min-height: 100vh;
+}
+.aside {
+  background: #08031499;
+  border-right: 1px solid var(--line-soft);
+  padding: 18px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+}
+.aside .brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 8px;
+}
+.aside .sigil {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--violet);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--violet-bright);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.3) inset;
+}
+.aside .brand b {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  font-size: 13px;
+  display: block;
+}
+.aside .brand small {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted);
+  letter-spacing: 0.16em;
+}
+.roleChip {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--magenta);
+  border: 1px solid rgba(232, 121, 249, 0.4);
+  padding: 3px 8px;
+  border-radius: 3px;
+  display: inline-block;
+  margin: 10px 0 20px;
+}
+.aside nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.aside nav a {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-decoration: none;
+}
+.aside nav a:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--text);
+}
+.aside nav a[aria-current="page"] {
+  background: rgba(139, 92, 246, 0.18);
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--violet-bright);
+}
+.aside nav a i {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 10px;
+  color: var(--violet-bright);
+  width: 22px;
+}
+.aside .sec {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: #6b5d8c;
+  text-transform: uppercase;
+  margin: 20px 0 8px 12px;
+}
+
+.adminMain {
+  min-width: 0;
+}
+.topbar {
+  height: 60px;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  background: rgba(5, 1, 13, 0.93);
+  backdrop-filter: blur(12px);
+  z-index: 30;
+}
+.crumb {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.content {
+  padding: 26px 24px 70px;
+}
+
+.btn.sm {
+  padding: 7px 12px;
+  font-size: 10px;
+}
+
+.stat b {
+  font-family: var(--display);
+  font-size: 31px;
+  font-weight: 800;
+  display: block;
+  line-height: 1;
+  background: linear-gradient(92deg, var(--violet-bright), var(--magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.stat span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+// Status-Badges
+.st {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+  display: inline-block;
+}
+.st.draft {
+  color: var(--warn);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+.st.sched {
+  color: var(--signal);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.st.live {
+  color: var(--ok);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+.st.err {
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+// Sprach-/Kanal-Marker
+.lng {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--muted);
+}
+.lng.on {
+  color: var(--ok);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+.ch {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: #5c4e7c;
+}
+.ch.on {
+  color: var(--violet-bright);
+  border-color: var(--violet);
+  background: rgba(139, 92, 246, 0.12);
+}
+.ch.done {
+  color: var(--ok);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.queueItem {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.timelineDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 10px var(--signal);
+  display: inline-block;
+}
+
+// Anmelde-Ansicht
+.signinShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.signinCard {
+  max-width: 420px;
+  width: 100%;
+}
+
+.forbidden {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+}
+
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+  .aside {
+    position: static;
+    height: auto;
+  }
+}

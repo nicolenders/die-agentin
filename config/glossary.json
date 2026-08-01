@@ -1,0 +1,22 @@
+{
+  "comment": "Fachbegriffe, die bei der EN-Übersetzung unverändert bleiben (SPEC §8). Ergänzbar.",
+  "terms": [
+    "Copilot Studio",
+    "Microsoft Foundry",
+    "Microsoft 365 Copilot",
+    "Sensitivity Labels",
+    "Information Protection",
+    "Purview",
+    "Tenant",
+    "Agent",
+    "Agents",
+    "Prompt",
+    "Declarative Agents",
+    "Power Platform",
+    "Microsoft Entra ID",
+    "Managed Identity",
+    "Azure Container Apps",
+    "Modern Work",
+    "MVP"
+  ]
+}

@@ -1,11 +1,84 @@
-import AdminStub from "@/components/admin/AdminStub";
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { assetUrl } from "@/lib/media/url";
+import MissionForm, { type MissionFormInitial } from "@/components/admin/MissionForm";
 
 export const metadata = { title: "Einsätze · Zentrale" };
 
-export default function Page() {
+export default async function EinsaetzeAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const { id } = await searchParams;
+
+  let existingPins: { lat: number; lon: number }[] = [];
+  let talks: { id: string; name: string }[] = [];
+  let initial: MissionFormInitial = {
+    eventName: "",
+    city: "",
+    countryCode: "AT",
+    lat: 48.21,
+    lon: 16.37,
+    startDate: "",
+    status: "PLANNED",
+    eventUrl: "",
+    talkId: "",
+    language: "de",
+    de: { eventText: "", talkText: "" },
+    en: null,
+    photos: [],
+  };
+
+  try {
+    const [missions, talkRows] = await Promise.all([
+      db.mission.findMany({ select: { lat: true, lon: true } }),
+      db.talk.findMany({ include: { translations: { where: { locale: "de" } } } }),
+    ]);
+    existingPins = missions;
+    talks = talkRows.map((t) => ({ id: t.id, name: t.translations[0]?.title ?? t.id }));
+
+    if (id) {
+      const mission = await db.mission.findUnique({
+        where: { id },
+        include: {
+          translations: true,
+          photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
+          deliveries: { take: 1, orderBy: { heldOn: "desc" } },
+        },
+      });
+      if (mission) {
+        const de = mission.translations.find((t) => t.locale === "de");
+        const en = mission.translations.find((t) => t.locale === "en");
+        const delivery = mission.deliveries[0];
+        initial = {
+          missionId: mission.id,
+          eventName: mission.eventName,
+          city: mission.city,
+          countryCode: mission.countryCode,
+          lat: mission.lat,
+          lon: mission.lon,
+          startDate: mission.startDate.toISOString().slice(0, 10),
+          status: mission.status,
+          eventUrl: mission.eventUrl ?? "",
+          talkId: delivery?.talkId ?? "",
+          language: delivery?.language ?? "de",
+          de: { eventText: de?.eventText ?? "", talkText: de?.talkText ?? "" },
+          en: en ? { eventText: en.eventText, talkText: en.talkText } : null,
+          photos: mission.photos.map((p) => ({ id: p.assetId, url: assetUrl(p.asset.blobPath) })),
+        };
+      }
+    }
+  } catch {
+    // DB nicht erreichbar → leeres Formular
+  }
+
   return (
-    <AdminStub title="Einsätze" milestone="M5">
-      Einsätze auf der Karte erfassen, Briefing zuordnen, Fotos hinterlegen.
-    </AdminStub>
+    <>
+      <div style={{ marginBottom: 12 }}>
+        <Link className="btn ghost sm" href="/admin/einsaetze">Neuer Einsatz</Link>
+      </div>
+      <MissionForm initial={initial} existingPins={existingPins} talks={talks} />
+    </>
   );
 }

@@ -590,6 +590,130 @@ ol.styled li::marker {
   }
 }
 
+// ---------- Weltkarte (SPEC §11) ----------
+.map-shell {
+  position: relative;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(139, 92, 246, 0.13), transparent 65%),
+    #07031244;
+  overflow: hidden;
+}
+svg.map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.landmass {
+  fill: rgba(139, 92, 246, 0.16);
+  stroke: rgba(168, 85, 247, 0.55);
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
+}
+.graticule {
+  stroke: rgba(139, 92, 246, 0.13);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+  fill: none;
+}
+.pin {
+  cursor: pointer;
+}
+.pin circle.core {
+  fill: var(--magenta);
+  stroke: #fff;
+  stroke-width: 0.6;
+}
+.pin circle.halo {
+  fill: none;
+  stroke: var(--magenta);
+  stroke-width: 0.8;
+  opacity: 0.55;
+  animation: ping 2.8s ease-out infinite;
+}
+.pin.future circle.core {
+  fill: var(--signal);
+}
+.pin.future circle.halo {
+  stroke: var(--signal);
+}
+@keyframes ping {
+  0% {
+    r: 3;
+    opacity: 0.7;
+  }
+  100% {
+    r: 11;
+    opacity: 0;
+  }
+}
+.pin:hover circle.core,
+.pin:focus circle.core,
+.pin:focus-visible circle.core {
+  r: 5.5;
+}
+.pin:focus-visible {
+  outline: none;
+}
+.pin:focus-visible circle.halo {
+  stroke-width: 1.6;
+  opacity: 0.9;
+}
+.crosshair {
+  stroke: var(--magenta);
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+}
+.popup {
+  position: absolute;
+  width: 264px;
+  background: rgba(9, 4, 20, 0.97);
+  border: 1px solid var(--violet);
+  border-radius: var(--r);
+  padding: 15px;
+  font-size: 13px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65);
+  z-index: 5;
+}
+.popup h4 {
+  margin: 6px 0;
+  font-size: 15px;
+}
+.popup .close {
+  position: absolute;
+  top: 6px;
+  right: 9px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+}
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.year-filter {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+.counter {
+  display: flex;
+  gap: 34px;
+  flex-wrap: wrap;
+  margin: 26px 0;
+}
+
 // ---------- Utility ----------
 .visually-hidden {
   position: absolute;

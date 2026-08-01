@@ -1,0 +1,116 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { isLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n";
+import { getMissions } from "@/lib/queries/missions";
+import { formatDate } from "@/lib/format";
+import WorldMap, { type MapMission } from "@/components/map/WorldMap";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const dict = await getDictionary(locale);
+  return { title: dict.nav.einsaetze };
+}
+
+export default async function EinsaetzePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const missions = await getMissions(locale);
+
+  const mapMissions: MapMission[] = missions.map((m) => ({
+    id: m.id,
+    slug: m.slug,
+    eventName: m.eventName,
+    city: `${m.city}, ${m.countryCode}`,
+    countryCode: m.countryCode,
+    lat: m.lat,
+    lon: m.lon,
+    year: m.startDate.getUTCFullYear(),
+    future: m.future,
+    dateLabel: formatDate(m.startDate, locale),
+    eventUrl: m.eventUrl,
+  }));
+
+  return (
+    <section style={{ padding: "44px 0 90px" }}>
+      <p className="eyebrow">{locale === "de" ? "Einsätze vor Ort" : "Missions on site"}</p>
+      <h2>{locale === "de" ? "Wo ich war. Wo ich hinfahre." : "Where I've been. Where I'm headed."}</h2>
+      <p className="lead">
+        {locale === "de"
+          ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Die vollständige Liste steht als Tabelle unter der Karte."
+          : "Every pin is a mission: an event, a briefing, a city. The full list is in the table below the map."}
+      </p>
+
+      <div style={{ marginTop: 26 }}>
+        {mapMissions.length > 0 ? (
+          <WorldMap
+            missions={mapMissions}
+            locale={locale}
+            labels={{
+              all: locale === "de" ? "Alle" : "All",
+              done: locale === "de" ? "Abgeschlossener Einsatz" : "Completed mission",
+              planned: locale === "de" ? "Geplant" : "Planned",
+              size: locale === "de" ? "Punktgröße = Anzahl" : "Dot size = count",
+              sample: locale === "de" ? "Karte: Beispieldaten" : "Map: sample data",
+              open: locale === "de" ? "Veranstaltungswebsite" : "Event website",
+            }}
+          />
+        ) : (
+          <div className="card bracket">
+            <p className="muted">
+              {locale === "de" ? "Noch keine Einsätze erfasst." : "No missions recorded yet."}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Barrierefreie Tabellenalternative — immer sichtbar (SPEC §11). */}
+      <p className="eyebrow" style={{ marginTop: 44 }}>
+        {locale === "de" ? "Einsatzliste" : "Mission list"}
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>{locale === "de" ? "Datum" : "Date"}</th>
+            <th>{locale === "de" ? "Veranstaltung" : "Event"}</th>
+            <th>{locale === "de" ? "Ort" : "Location"}</th>
+            <th>{locale === "de" ? "Status" : "Status"}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {missions.map((m) => (
+            <tr key={m.id}>
+              <td className="meta">{formatDate(m.startDate, locale)}</td>
+              <td>
+                {m.slug ? (
+                  <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link>
+                ) : (
+                  m.eventName
+                )}
+              </td>
+              <td>
+                {m.city}, {m.countryCode}
+              </td>
+              <td>
+                {m.future
+                  ? locale === "de"
+                    ? "Geplant"
+                    : "Planned"
+                  : locale === "de"
+                    ? "Abgeschlossen"
+                    : "Completed"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}

@@ -198,3 +198,25 @@ ist idempotent.
 **Fertig-Kriterium:** Ein Dossier existiert in DE (Seed), eine EN-Rohübersetzung
 kann erzeugt, bestätigt und veröffentlicht werden; der KI-Entwurf ist bis zur
 Bestätigung deutlich markiert und nicht öffentlich.
+
+---
+
+## M5 — Einsätze und Karte ✅
+
+**Umgesetzt**
+- Weltkarte mit **d3-geo + gebündeltem world-atlas TopoJSON** (`lib/map/geo.ts`),
+  als SVG gerendert — keine Tile-Provider, keine Drittanbieter-Requests.
+- `WorldMap` (Client): Jahresfilter (Alle/Geplant/Jahre), Pin-Popup, Pins
+  fokussierbar mit `aria-label` „Veranstaltung, Ort, Datum" und per Enter/Space
+  aktivierbar (SPEC §11).
+- **Immer sichtbare Tabellenalternative** unter der Karte, serverseitig gerendert
+  (die Karte ist Beiwerk, die Tabelle ist der Inhalt).
+- Einsatzakte `/[locale]/einsaetze/[slug]` mit zwei Textbereichen (Veranstaltung,
+  Briefing) und Fotogalerie; Sprach-Fallback-Hinweis.
+- Admin-Einsatzerfassung (`MissionForm`): Kartenauswahl per Klick
+  (`projection.invert`), Fadenkreuz, Felder, DE/EN-Textbereiche, Briefing-
+  Zuordnung (legt `TalkDelivery` an), Foto-Upload über die Medienbibliothek.
+
+**Fertig-Kriterium:** Karte in beiden Sprachen, Pins mit Tastatur bedienbar;
+Jahresfilter, Popup und Detailseite spielen zusammen; die Tabelle ist immer
+sichtbar.

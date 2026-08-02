@@ -7,6 +7,12 @@ der Reihe nach abarbeitest, läuft die Pipeline beim ersten Start durch.
 Zeitbedarf: ~30 Minuten. Voraussetzung: eine Azure-Subscription und ein
 Azure-DevOps-Projekt (beides kostenlos anlegbar).
 
+> **Kein Azure DevOps / keine Pipeline?** Drei Wege führen zum Ziel:
+> - **Azure Portal (klicken)** → **[PORTAL.md](./PORTAL.md)** — Vorlage
+>   `infra/main.json` per Formular ausrollen.
+> - **Terminal (az-Befehle) ohne Cloud Shell** → **[MANUELL.md](./MANUELL.md)**.
+> - **Automatisiert** → die Pipeline unten in diesem Dokument.
+
 > Nichts davon wurde in dieser Umsetzung real ausgeführt (kein Azure-Zugang).
 > Prüfe den Bicep-Plan vor dem ersten Deployment mit `what-if` (Schritt 6).
 

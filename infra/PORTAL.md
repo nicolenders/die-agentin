@@ -34,26 +34,53 @@ Portal → **„+ Create a resource"** → nach **„Container Registry"** suche
 - Region: wie oben · SKU: **Basic**
 - **Review + create** → **Create**.
 
-## 4. Container-Image bauen (in Azure, ohne Docker)
+## 4. Container-Image bauen
 
-**Portal-Weg (ACR-Task aus GitHub):**
-1. Portal → deine Registry `nicolendersacr` öffnen.
-2. Links unter **„Services"** → **„Tasks"** → **„+ Add task"**.
-3. Ausfüllen:
+**Was passiert hier?** Die Registry aus Schritt 3 ist ein leeres Lager. In
+diesem Schritt wird der Website-Code in ein startfähiges Paket („Container-
+Image") verpackt und in dieses Lager gelegt, damit die App es später ausführen
+kann. Das Verpacken kann nicht durch reines Klicken passieren — es braucht eine
+Build-Maschine. Azure übernimmt das Bauen für dich (`az acr build` / ACR-Task),
+**du brauchst kein Docker**.
+
+Wähle **einen** der beiden Wege:
+
+### Weg A — ein Befehl (am einfachsten, wenn du das Projekt auf dem Rechner hast)
+
+Terminal im Projektordner (dort, wo das `Dockerfile` liegt):
+```bash
+az login
+az acr build -r nicolendersacr -t web:latest .
+```
+Kein Docker, kein GitHub-Token nötig (baut aus deinen lokalen Dateien).
+Das geht auch in der Cloud Shell — es ist nur **ein** kurzer Befehl.
+
+### Weg B — im Portal (ACR-Task aus GitHub, ohne lokalen Code)
+
+Weil das Repo **privat** ist, brauchst du einmal einen GitHub-Token:
+
+1. **Token erstellen:** github.com → Profilbild (oben rechts) → **Settings** →
+   ganz unten **Developer settings** → **Personal access tokens** →
+   **Tokens (classic)** → **Generate new token (classic)**.
+   - Note: `azure-acr`, Expiration z. B. 90 Tage
+   - Haken bei **`repo`** setzen → **Generate token** → **Token kopieren**
+     (wird nur einmal angezeigt).
+2. **Task anlegen:** Portal → Registry `nicolendersacr` → links unter
+   **„Services" → „Tasks" → „+ Add task"**. Ausfüllen:
    - Task name: `build-web`
-   - Image: `web:latest`
+   - Image (Tag): `web:latest`
    - Dockerfile: `Dockerfile`
-   - **Source location**: GitHub, Repository
-     `https://github.com/nicolenders/die-agentin.git`, Branch `main`
-   - Ist das Repo privat: einmalig ein **GitHub Personal Access Token**
-     hinterlegen (GitHub → Settings → Developer settings → Tokens, Scope `repo`).
-   - Commit-Trigger kannst du ausschalten.
-4. **Create**, dann bei der Task oben **„Run"** klicken.
-5. Nach ~1–2 Min. erscheint das Image unter **„Repositories" → `web`**.
+   - Source repository: `https://github.com/nicolenders/die-agentin`
+   - Branch: `main`
+   - Access/Repository token: **den kopierten GitHub-Token einfügen**
+   - „Enable trigger on commit" / Base-Image-Trigger: **Haken entfernen**
+     (wir bauen nur manuell)
+3. **Create** → in der Task-Liste `build-web` auswählen → oben **„Run"**.
+4. Nach ~1–2 Min. Status **„Succeeded"**; das Image erscheint unter
+   **„Repositories" → `web`**.
 
-> **Ein-Zeilen-Alternative** (falls der Task hakt), einmal in Cloud Shell oder
-> lokalem Terminal, im Repo-Ordner:
-> `az acr build -r nicolendersacr -t web:latest .`
+**Ergebnis (beide Wege):** In der Registry liegt jetzt `web:latest`. Weiter mit
+Schritt 5.
 
 ## 5. Gesamte Infrastruktur als Vorlage ausrollen
 

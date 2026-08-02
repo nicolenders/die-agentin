@@ -1,0 +1,37 @@
+# Baut das Container-Image und lädt es in die Azure Container Registry —
+# per Knopfdruck in GitHub (Tab „Actions"), ohne Terminal, ohne die fummelige
+# ACR-„Tasks"-Oberfläche im Portal.
+#
+# Einmalige Einrichtung (siehe infra/PORTAL.md, Schritt 4 „Weg C"):
+#   GitHub → Repo → Settings → Secrets and variables → Actions → New secret:
+#     ACR_LOGIN_SERVER  z. B. nicolendersacr.azurecr.io
+#     ACR_USERNAME      aus ACR → Access keys (Admin user aktivieren)
+#     ACR_PASSWORD      aus ACR → Access keys
+#
+# Danach: Actions → „Build & push image" → „Run workflow".
+
+name: Build & push image
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image-Tag (z. B. latest oder v1)"
+        default: "latest"
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bei der Registry anmelden
+        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ secrets.ACR_LOGIN_SERVER }}" -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: Image bauen und pushen
+        run: |
+          IMAGE="${{ secrets.ACR_LOGIN_SERVER }}/web:${{ inputs.tag }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "Fertig: $IMAGE"

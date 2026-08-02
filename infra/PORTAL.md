@@ -43,7 +43,32 @@ kann. Das Verpacken kann nicht durch reines Klicken passieren — es braucht ein
 Build-Maschine. Azure übernimmt das Bauen für dich (`az acr build` / ACR-Task),
 **du brauchst kein Docker**.
 
-Wähle **einen** der beiden Wege:
+> **Die „Tasks"-Oberfläche der Registry im Portal ist fummelig** (der
+> „Add task"-Knopf ist oft ausgegraut). Nutz sie nicht — nimm stattdessen einen
+> der folgenden Wege.
+
+Wähle **einen** der drei Wege:
+
+### Weg C — über GitHub, nur klicken (empfohlen, wenn du kein Terminal willst)
+
+Baut das Image per Knopfdruck in GitHub. Der fertige Ablauf liegt schon im Repo
+(`.github/workflows/build-image.yml`).
+
+1. **Registry-Zugang aktivieren:** Portal → Registry `nicolendersacr` → links
+   **„Access keys"** → **„Admin user"** auf **Enabled** → **Username** und
+   **password** stehen bleiben lassen (gleich kopieren).
+2. **In GitHub 3 Secrets anlegen:** Repo `nicolenders/die-agentin` → **Settings**
+   → **Secrets and variables** → **Actions** → **New repository secret**:
+   - `ACR_LOGIN_SERVER` = `nicolendersacr.azurecr.io`
+   - `ACR_USERNAME` = der Username aus Schritt 1
+   - `ACR_PASSWORD` = das password aus Schritt 1
+3. **Bauen:** GitHub → Tab **„Actions"** → links **„Build & push image"** →
+   rechts **„Run workflow"** → Tag `latest` lassen → **„Run workflow"**.
+4. Nach ~2–3 Min. grüner Haken. Das Image liegt dann in der Registry unter
+   **„Repositories" → `web`**.
+
+*(Den ACR-Admin-Zugang kannst du nach dem ersten Deployment wieder deaktivieren —
+die App zieht das Image über eine Managed Identity, nicht über diese Kennung.)*
 
 ### Weg A — ein Befehl (am einfachsten, wenn du das Projekt auf dem Rechner hast)
 
@@ -55,31 +80,11 @@ az acr build -r nicolendersacr -t web:latest .
 Kein Docker, kein GitHub-Token nötig (baut aus deinen lokalen Dateien).
 Das geht auch in der Cloud Shell — es ist nur **ein** kurzer Befehl.
 
-### Weg B — im Portal (ACR-Task aus GitHub, ohne lokalen Code)
+> Hinweis: Der frühere Weg über die ACR-„Tasks"-Oberfläche im Portal
+> („Services → Tasks → Add task") wird hier bewusst nicht mehr empfohlen — der
+> Knopf ist häufig ausgegraut/eingeschränkt. Weg C ersetzt ihn vollständig.
 
-Weil das Repo **privat** ist, brauchst du einmal einen GitHub-Token:
-
-1. **Token erstellen:** github.com → Profilbild (oben rechts) → **Settings** →
-   ganz unten **Developer settings** → **Personal access tokens** →
-   **Tokens (classic)** → **Generate new token (classic)**.
-   - Note: `azure-acr`, Expiration z. B. 90 Tage
-   - Haken bei **`repo`** setzen → **Generate token** → **Token kopieren**
-     (wird nur einmal angezeigt).
-2. **Task anlegen:** Portal → Registry `nicolendersacr` → links unter
-   **„Services" → „Tasks" → „+ Add task"**. Ausfüllen:
-   - Task name: `build-web`
-   - Image (Tag): `web:latest`
-   - Dockerfile: `Dockerfile`
-   - Source repository: `https://github.com/nicolenders/die-agentin`
-   - Branch: `main`
-   - Access/Repository token: **den kopierten GitHub-Token einfügen**
-   - „Enable trigger on commit" / Base-Image-Trigger: **Haken entfernen**
-     (wir bauen nur manuell)
-3. **Create** → in der Task-Liste `build-web` auswählen → oben **„Run"**.
-4. Nach ~1–2 Min. Status **„Succeeded"**; das Image erscheint unter
-   **„Repositories" → `web`**.
-
-**Ergebnis (beide Wege):** In der Registry liegt jetzt `web:latest`. Weiter mit
+**Ergebnis (alle Wege):** In der Registry liegt jetzt `web:latest`. Weiter mit
 Schritt 5.
 
 ## 5. Gesamte Infrastruktur als Vorlage ausrollen

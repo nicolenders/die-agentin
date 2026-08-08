@@ -28,6 +28,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.1",
+    "@azure/storage-blob": "^12.33.0",
     "@prisma/client": "6.19.3",
     "@tiptap/core": "^3.29.2",
     "@tiptap/extension-link": "^3.29.2",

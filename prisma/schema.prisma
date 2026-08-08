@@ -323,6 +323,29 @@ model MediaAsset {
   missionPhotos    MissionPhoto[]
   postHeroes       Post[]         @relation("PostHero")
   publicationCovers Publication[] @relation("PublicationCover")
+  legendPortraits  LegendContent[] @relation("LegendPortrait")
+}
+
+// Inhalte der „Legende" (Über-mich-Seite, SPEC §5) — im Admin pflegbar, je
+// Sprache eine Zeile. Listen (Säulen, Werkzeuge) als JSON. Porträt verweist auf
+// ein hochgeladenes MediaAsset (überlebt Deployments, anders als Dateien im Repo).
+model LegendContent {
+  locale          String  @id // "de" | "en"
+  eyebrow         String
+  name            String
+  lead            String  @db.NVarChar(Max)
+  missionEyebrow  String
+  missionText     String  @db.NVarChar(Max)
+  pillarsJson     String  @db.NVarChar(Max) // JSON: [{ title, text }]
+  toolsJson       String  @db.NVarChar(Max) // JSON: string[]
+  contactEyebrow  String
+  contactHeading  String
+  contactText     String  @db.NVarChar(Max)
+  contactButton   String
+  contactUrl      String  @db.NVarChar(2048)
+  portraitAssetId String?
+  portrait        MediaAsset? @relation("LegendPortrait", fields: [portraitAssetId], references: [id])
+  updatedAt       DateTime @updatedAt
 }
 
 // ---------------------------------------------------------------------------

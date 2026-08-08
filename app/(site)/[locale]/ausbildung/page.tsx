@@ -58,7 +58,14 @@ export default async function AusbildungPage({
             </p>
             {g.items.map((c) => (
               <div className="cert" key={c.id}>
-                <div className="badge">{badge(c.shortCode, c.name, c.series)}</div>
+                <div className="badge">
+                  {c.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.logoUrl} alt={c.logoAlt} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  ) : (
+                    badge(c.shortCode, c.name, c.series)
+                  )}
+                </div>
                 <div>
                   <b>{c.name}</b>
                   <div className="meta">

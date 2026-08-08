@@ -50,6 +50,7 @@ export async function createPublication(formData: FormData): Promise<void> {
         isbn: str(formData, "isbn") || null,
         publisher: str(formData, "publisher") || null,
         url: str(formData, "url") || null,
+        coverAssetId: str(formData, "coverAssetId") || null,
         translations: { create: [{ locale: "de", title: deTitle, role: str(formData, "role") || null }] },
       },
     });
@@ -81,6 +82,7 @@ export async function updatePublication(formData: FormData): Promise<void> {
         isbn: str(formData, "isbn") || null,
         publisher: str(formData, "publisher") || null,
         url: str(formData, "url") || null,
+        coverAssetId: str(formData, "coverAssetId") || null,
         translations: {
           upsert: {
             where: { publicationId_locale: { publicationId: id, locale: "de" } },
@@ -135,6 +137,7 @@ export async function createCertification(formData: FormData): Promise<void> {
         validUntil: monthToDate(str(formData, "validUntil")),
         proofUrl: str(formData, "proofUrl") || null,
         series: str(formData, "series") || null,
+        logoAssetId: str(formData, "logoAssetId") || null,
       },
     });
   } catch {
@@ -167,6 +170,7 @@ export async function updateCertification(formData: FormData): Promise<void> {
         validUntil: monthToDate(str(formData, "validUntil")),
         proofUrl: str(formData, "proofUrl") || null,
         series: str(formData, "series") || null,
+        logoAssetId: str(formData, "logoAssetId") || null,
       },
     });
   } catch {

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { cachedQuery, tags } from "@/lib/cache";
 import { pickTranslation } from "@/lib/content/pick";
+import { assetUrl } from "@/lib/media/url";
 import type { Locale } from "@/lib/i18n/config";
 import type { PublicationType } from "@/lib/domain";
 
@@ -13,15 +14,18 @@ export interface PublicationItem {
   url: string | null;
   title: string;
   role: string | null;
+  coverUrl: string | null;
+  coverAlt: string;
 }
 
 async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
   const pubs = await db.publication.findMany({
     orderBy: [{ year: "desc" }, { sortOrder: "asc" }],
-    include: { translations: true },
+    include: { translations: true, coverAsset: true },
   });
   return pubs.map((p) => {
     const picked = pickTranslation(p.translations, locale);
+    const title = picked?.translation.title ?? "";
     return {
       id: p.id,
       type: p.type as PublicationType,
@@ -29,8 +33,15 @@ async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
       isbn: p.isbn,
       publisher: p.publisher,
       url: p.url,
-      title: picked?.translation.title ?? "",
+      title,
       role: picked?.translation.role ?? null,
+      coverUrl: p.coverAsset ? assetUrl(p.coverAsset.blobPath) : null,
+      coverAlt:
+        p.coverAsset && !p.coverAsset.decorative
+          ? locale === "en" && p.coverAsset.altEn
+            ? p.coverAsset.altEn
+            : p.coverAsset.altDe
+          : title,
     };
   });
 }
@@ -54,6 +65,8 @@ export interface CertificationGroup {
     validUntil: Date | null;
     proofUrl: string | null;
     series: string | null;
+    logoUrl: string | null;
+    logoAlt: string;
   }[];
 }
 
@@ -61,7 +74,7 @@ async function loadCertifications(locale: Locale): Promise<CertificationGroup[]>
   const cats = await db.taxonomy.findMany({
     where: { kind: "CERTIFICATION" },
     orderBy: { sortOrder: "asc" },
-    include: { certMulti: { orderBy: { sortOrder: "asc" } } },
+    include: { certMulti: { orderBy: { sortOrder: "asc" }, include: { logo: true } } },
   });
   return cats
     .map((cat) => ({
@@ -74,6 +87,13 @@ async function loadCertifications(locale: Locale): Promise<CertificationGroup[]>
         validUntil: c.validUntil,
         proofUrl: c.proofUrl,
         series: c.series,
+        logoUrl: c.logo ? assetUrl(c.logo.blobPath) : null,
+        logoAlt:
+          c.logo && !c.logo.decorative
+            ? locale === "en" && c.logo.altEn
+              ? c.logo.altEn
+              : c.logo.altDe
+            : c.name,
       })),
     }))
     .filter((g) => g.items.length > 0);

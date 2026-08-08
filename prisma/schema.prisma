@@ -263,6 +263,8 @@ model Certification {
   series     String? // Reihe für Mehrfachauszeichnungen (z. B. „MVP")
   sortOrder  Int       @default(0)
   createdAt  DateTime  @default(now())
+  logoAssetId String?
+  logo        MediaAsset? @relation("CertificationLogo", fields: [logoAssetId], references: [id])
 
   categories Taxonomy[] @relation("CertificationCategories")
 
@@ -334,6 +336,7 @@ model MediaAsset {
   postHeroes       Post[]         @relation("PostHero")
   publicationCovers Publication[] @relation("PublicationCover")
   legendPortraits  LegendContent[] @relation("LegendPortrait")
+  certificationLogos Certification[] @relation("CertificationLogo")
 }
 
 // Inhalte der „Legende" (Über-mich-Seite, SPEC §5) — im Admin pflegbar, je

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import ConfirmButton from "@/components/admin/ConfirmButton";
+import AssetPickerField from "@/components/admin/AssetPickerField";
 import Flash from "@/components/admin/Flash";
 import {
   createPublication,
@@ -97,6 +98,8 @@ export default async function RecordsAdminPage({
             <input className="f" name="isbn" />
             <label className="f">Link (optional)</label>
             <input className="f" name="url" placeholder="https://…" />
+            <label className="f">Cover (optional)</label>
+            <AssetPickerField name="coverAssetId" initialAssetId={null} initialUrl={null} aspectRatio="3 / 4" emptyHint="Kein Cover gewählt" />
             <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>+ Publikation anlegen</button>
           </form>
         </div>
@@ -148,6 +151,8 @@ export default async function RecordsAdminPage({
             <input className="f" name="series" placeholder="MVP" />
             <label className="f">Nachweis-Link (optional)</label>
             <input className="f" name="proofUrl" placeholder="https://…" />
+            <label className="f">Logo (optional)</label>
+            <AssetPickerField name="logoAssetId" initialAssetId={null} initialUrl={null} aspectRatio="1 / 1" objectFit="contain" emptyHint="Kein Logo gewählt" />
             <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>+ Zertifizierung anlegen</button>
           </form>
         </div>

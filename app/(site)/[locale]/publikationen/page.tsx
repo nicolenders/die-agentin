@@ -41,8 +41,8 @@ export default async function PublikationenPage({
           {books.map((b) => (
             <article key={b.id} className="card bracket" style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 20 }}>
               <BrandImage
-                src={brandAsset(`cover-${b.id}.jpg`)}
-                alt={`Cover: ${b.title}`}
+                src={b.coverUrl ?? brandAsset(`cover-${b.id}.jpg`)}
+                alt={b.coverAlt || `Cover: ${b.title}`}
                 label="Cover"
                 sub={isDe ? "Buchcover" : "Book cover"}
                 ratio="2 / 3"

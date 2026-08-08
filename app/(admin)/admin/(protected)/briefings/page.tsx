@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getBriefingRanking } from "@/lib/queries/briefings";
 import { formatDate } from "@/lib/format";
 import ConfirmButton from "@/components/admin/ConfirmButton";
+import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import Flash from "@/components/admin/Flash";
 import {
   createTalkCategory,
@@ -149,12 +150,7 @@ export default async function BriefingsAdminPage({
           <label className="f">Titel (EN)</label>
           <input className="f" name="enTitle" placeholder="e. g. Agents in production" />
           <label className="f">Kategorien (Mehrfachauswahl)</label>
-          <select className="f" name="categoryIds" multiple required size={Math.min(6, Math.max(3, categories.length))} aria-label="Kategorien (Mehrfachauswahl)">
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.nameDe}</option>
-            ))}
-          </select>
-          <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
+          <CategoryMultiSelect name="categoryIds" options={categories.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Erst eine Kategorie anlegen (unten)." />
           <label className="f">Level</label>
           <input className="f" name="level" placeholder="300" />
           <label className="f">Dauer (Minuten)</label>

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import AssetPickerField from "@/components/admin/AssetPickerField";
+import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import Flash from "@/components/admin/Flash";
 import {
   createPublication,
@@ -133,12 +134,7 @@ export default async function RecordsAdminPage({
           <p className="eyebrow" style={{ marginTop: 16 }}>Neue Zertifizierung / Auszeichnung</p>
           <form action={createCertification}>
             <label className="f">Kategorien (Mehrfachauswahl)</label>
-            <select className="f" name="categoryIds" multiple size={Math.min(6, Math.max(3, certCats.length))} aria-label="Kategorien (Mehrfachauswahl)">
-              {certCats.map((c) => (
-                <option key={c.id} value={c.id}>{c.nameDe}</option>
-              ))}
-            </select>
-            <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
+            <CategoryMultiSelect name="categoryIds" options={certCats.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Erst eine Kategorie unter „Kategorien & Tags“ anlegen." />
             <label className="f">Bezeichnung</label>
             <input className="f" name="name" placeholder="z. B. Azure AI Engineer Associate" required />
             <label className="f">Kürzel</label>

@@ -83,8 +83,8 @@ export default function MediaPicker({
       onClick={onClose}
     >
       <div
-        className="card bracket"
-        style={{ maxWidth: 760, width: "100%", maxHeight: "88vh", overflow: "auto" }}
+        className="card bracket media-modal"
+        style={{ maxWidth: 760, width: "100%", maxHeight: "88vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -121,7 +121,7 @@ export default function MediaPicker({
           </button>
         </form>
 
-        {error ? <p className="st err" style={{ display: "inline-block" }}>{error}</p> : null}
+        {error ? <p className="media-error">{error}</p> : null}
         {loading ? (
           <p className="muted">Wird geladen …</p>
         ) : (

@@ -1,7 +1,7 @@
 # 0005 — Medienablage: lokal jetzt, Blob später
 
-**Datum:** 01.08.2026
-**Status:** angenommen (lokal), Blob-Upload **offen**
+**Datum:** 01.08.2026 · **Blob-Upload umgesetzt:** 09.08.2026
+**Status:** angenommen (lokal **und** Blob)
 
 ## Kontext
 
@@ -21,14 +21,20 @@ CLAUDE.md gelisteten Stacks — und Managed Identity.
   gesetztem `BLOB_ACCOUNT_NAME` einen klaren Fehler, statt ein halbes Verhalten
   vorzutäuschen.
 
-## Offener Punkt (Rückfrage vor Umsetzung)
+## Nachtrag 09.08.2026 — Blob-Upload umgesetzt
 
-`@azure/storage-blob` als Abhängigkeit aufnehmen? Dann `storeFile` um den
-Blob-Upload (Container `media`) via Managed Identity ergänzen. Bis zur Freigabe
-bleibt es beim lokalen Pfad. Die öffentliche URL-Bildung (`assetUrl`) ist bereits
-Blob-fähig.
+Nach Freigabe wurde der Blob-Upload ergänzt (der zuvor offene Punkt):
+
+- Abhängigkeiten: `@azure/storage-blob` + `@azure/identity` aufgenommen.
+- `storeFile` lädt bei gesetztem `BLOB_ACCOUNT_NAME` in den `media`-Container
+  (Blob-Name = Variantenpfad), sonst weiterhin nach `public/uploads/`.
+- Authentifizierung per `DefaultAzureCredential` mit der user-assigned Managed
+  Identity (`AZURE_CLIENT_ID`) — kein Secret im Code. Rolle „Storage Blob Data
+  Contributor" und Env-Vars kommen aus `infra/main.bicep`.
+- Uploads erhalten `Cache-Control: public, max-age=31536000, immutable`
+  (Dateiname enthält die Asset-ID, Inhalt ist unveränderlich).
 
 ## Konsequenz
 
-- Lokal/Docker: Upload funktioniert sofort.
-- Produktiv: ein klar abgegrenzter Folgeschritt (eine Datei, eine Abhängigkeit).
+- Lokal/Docker: Upload nach `public/uploads/`, funktioniert ohne Azure.
+- Produktiv: Upload nach Azure Blob über Managed Identity, keine Secrets.

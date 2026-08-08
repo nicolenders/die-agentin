@@ -276,6 +276,41 @@
   padding: 24px;
 }
 
+// Medienbibliothek-Dialog: nur vertikal scrollen, wenn nötig, nie horizontal
+// (lange Fehlertexte/Dateinamen dürfen keinen Balken erzwingen). Der vertikale
+// Balken bleibt schmal und im Marken-Farbton statt als grauer System-Balken.
+.media-modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+}
+.media-modal::-webkit-scrollbar {
+  width: 10px;
+}
+.media-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.media-modal::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.28);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.media-modal:hover::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.55);
+  background-clip: content-box;
+}
+// Fehlermeldung im Dialog: umbrechen statt in einer Zeile überlaufen.
+.media-error {
+  margin: 4px 0 0;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 860px) {
   .app {
     grid-template-columns: 1fr;

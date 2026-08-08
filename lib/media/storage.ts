@@ -1,10 +1,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { BlobServiceClient, type ContainerClient } from "@azure/storage-blob";
+import { DefaultAzureCredential } from "@azure/identity";
 
 // Medienablage. Lokal: Dateien unter public/uploads/ (im Dev von Next
-// ausgeliefert). Produktiv: Azure Blob Storage, Container `media` — das
-// erfordert das SDK @azure/storage-blob und ist als offener Punkt markiert
-// (siehe docs/decisions/0005-media-storage.md).
+// ausgeliefert). Produktiv: Azure Blob Storage, Container `media`, per Managed
+// Identity (kein Secret im Code) — die Identity und die Rolle „Storage Blob
+// Data Contributor" liefert die Infrastruktur (infra/main.bicep), die Env-Vars
+// BLOB_ACCOUNT_NAME / BLOB_CONTAINER_MEDIA / AZURE_CLIENT_ID die Container-App.
+// Siehe docs/decisions/0005-media-storage.md.
 
 export interface StoredFile {
   /** Relativer Pfad, wie in MediaAsset.blobPath / variants gespeichert. */
@@ -17,22 +21,44 @@ export function isBlobConfigured(): boolean {
   return Boolean(process.env.BLOB_ACCOUNT_NAME);
 }
 
+// Ein Client pro Prozess. DefaultAzureCredential nutzt in Produktion die
+// user-assigned Managed Identity (über AZURE_CLIENT_ID), lokal z. B. `az login`.
+let containerClient: ContainerClient | null = null;
+
+function getContainerClient(): ContainerClient {
+  if (containerClient) return containerClient;
+  const account = process.env.BLOB_ACCOUNT_NAME;
+  if (!account) {
+    throw new Error("BLOB_ACCOUNT_NAME ist nicht gesetzt.");
+  }
+  const container = process.env.BLOB_CONTAINER_MEDIA ?? "media";
+  const credential = new DefaultAzureCredential({
+    managedIdentityClientId: process.env.AZURE_CLIENT_ID,
+  });
+  const service = new BlobServiceClient(`https://${account}.blob.core.windows.net`, credential);
+  containerClient = service.getContainerClient(container);
+  return containerClient;
+}
+
 /**
  * Speichert einen Datei-Buffer. Gibt den relativen Pfad zurück, der in der DB
- * abgelegt wird (`assetUrl` baut daraus die öffentliche URL).
+ * abgelegt wird (`assetUrl` baut daraus die öffentliche URL). Produktiv landet
+ * die Datei als Blob im `media`-Container; der Pfad ist dann der Blob-Name.
  */
 export async function storeFile(
   relativePath: string,
   buffer: Buffer,
 ): Promise<StoredFile> {
   if (isBlobConfigured()) {
-    // Produktiv-Pfad: Upload nach Azure Blob (media-Container). Benötigt
-    // @azure/storage-blob + Managed Identity. Bis dahin bewusst nicht
-    // implementiert, statt ein halbes Verhalten vorzutäuschen.
-    throw new Error(
-      "Blob-Upload ist noch nicht implementiert (siehe docs/decisions/0005-media-storage.md). " +
-        "Lokal ohne BLOB_ACCOUNT_NAME funktioniert der Upload.",
-    );
+    const blob = getContainerClient().getBlockBlobClient(relativePath);
+    await blob.uploadData(buffer, {
+      blobHTTPHeaders: {
+        blobContentType: "image/webp",
+        // Bilder sind unveränderlich (Name enthält die ID) → lange cachebar.
+        blobCacheControl: "public, max-age=31536000, immutable",
+      },
+    });
+    return { path: relativePath };
   }
   const full = path.join(LOCAL_DIR, relativePath);
   await mkdir(path.dirname(full), { recursive: true });

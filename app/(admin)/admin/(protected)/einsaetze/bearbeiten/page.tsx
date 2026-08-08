@@ -14,6 +14,7 @@ export default async function EinsatzBearbeitenPage({
 
   let existingPins: { lat: number; lon: number }[] = [];
   let talks: { id: string; name: string }[] = [];
+  let categories: { id: string; name: string }[] = [];
   let initial: MissionFormInitial = {
     eventName: "",
     city: "",
@@ -31,12 +32,14 @@ export default async function EinsatzBearbeitenPage({
   };
 
   try {
-    const [missions, talkRows] = await Promise.all([
+    const [missions, talkRows, catRows] = await Promise.all([
       db.mission.findMany({ select: { lat: true, lon: true } }),
       db.talk.findMany({ include: { translations: { where: { locale: "de" } } } }),
+      db.taxonomy.findMany({ where: { kind: "TALK" }, orderBy: { sortOrder: "asc" }, select: { id: true, nameDe: true } }),
     ]);
     existingPins = missions;
     talks = talkRows.map((t) => ({ id: t.id, name: t.translations[0]?.title ?? t.id }));
+    categories = catRows.map((c) => ({ id: c.id, name: c.nameDe }));
 
     if (id) {
       const mission = await db.mission.findUnique({
@@ -78,7 +81,7 @@ export default async function EinsatzBearbeitenPage({
       <div style={{ marginBottom: 12 }}>
         <Link className="btn ghost sm" href="/admin/einsaetze">← Zurück zur Liste</Link>
       </div>
-      <MissionForm initial={initial} existingPins={existingPins} talks={talks} isEdit={Boolean(id)} />
+      <MissionForm initial={initial} existingPins={existingPins} talks={talks} categories={categories} isEdit={Boolean(id)} />
     </>
   );
 }

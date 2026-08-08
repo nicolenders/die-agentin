@@ -156,6 +156,60 @@ export async function updateTalk(formData: FormData): Promise<void> {
   redirect(`${LIST}?ok=updated`);
 }
 
+export interface QuickTalkInput {
+  deTitle: string;
+  enTitle?: string;
+  categoryId: string;
+  level?: string;
+  durationMin?: number | null;
+}
+
+export interface QuickTalkResult {
+  ok: boolean;
+  id?: string;
+  name?: string;
+  error?: string;
+}
+
+/**
+ * Legt ein Briefing „nebenbei" an und gibt es strukturiert zurück (id + Name),
+ * damit die Einsatz-Maske es sofort auswählen kann, ohne neu zu laden oder die
+ * bereits eingegebenen Daten zu verlieren. Wird direkt aus dem Client aufgerufen.
+ */
+export async function createTalkQuick(input: QuickTalkInput): Promise<QuickTalkResult> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { ok: false, error: "Keine Berechtigung." };
+  }
+  const deTitle = input.deTitle.trim();
+  const enTitle = input.enTitle?.trim() ?? "";
+  const categoryId = input.categoryId;
+  if (!deTitle || !categoryId) return { ok: false, error: "Titel und Kategorie sind Pflicht." };
+  const durationMin =
+    input.durationMin != null && Number.isFinite(input.durationMin) ? input.durationMin : null;
+
+  try {
+    const talk = await db.talk.create({
+      data: {
+        categoryId,
+        level: input.level?.trim() || null,
+        durationMin,
+        translations: {
+          create: [
+            { locale: "de", title: deTitle },
+            ...(enTitle ? [{ locale: "en" as const, title: enTitle }] : []),
+          ],
+        },
+      },
+    });
+    invalidate();
+    return { ok: true, id: talk.id, name: deTitle };
+  } catch {
+    return { ok: false, error: "Briefing konnte nicht angelegt werden." };
+  }
+}
+
 export async function deleteTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");

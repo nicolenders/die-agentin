@@ -9,6 +9,7 @@ import {
   saveMission,
   type SaveMissionInput,
 } from "@/app/(admin)/admin/(protected)/einsaetze/actions";
+import { createTalkQuick } from "@/app/(admin)/admin/(protected)/briefings/actions";
 
 const W = 1000;
 const H = 500;
@@ -41,11 +42,13 @@ export default function MissionForm({
   initial,
   existingPins,
   talks,
+  categories = [],
   isEdit = false,
 }: {
   initial: MissionFormInitial;
   existingPins: { lat: number; lon: number }[];
   talks: { id: string; name: string }[];
+  categories?: { id: string; name: string }[];
   isEdit?: boolean;
 }) {
   const router = useRouter();
@@ -61,6 +64,15 @@ export default function MissionForm({
   const [status, setStatus] = useState(initial.status || "PLANNED");
   const [eventUrl, setEventUrl] = useState(initial.eventUrl);
   const [talkId, setTalkId] = useState(initial.talkId);
+  const [talkList, setTalkList] = useState(talks);
+  // Inline-Anlage eines neuen Briefings, ohne die Maske zu verlassen.
+  const [showNewTalk, setShowNewTalk] = useState(false);
+  const [newTalkTitle, setNewTalkTitle] = useState("");
+  const [newTalkCategory, setNewTalkCategory] = useState(categories[0]?.id ?? "");
+  const [newTalkLevel, setNewTalkLevel] = useState("");
+  const [newTalkDuration, setNewTalkDuration] = useState("");
+  const [newTalkBusy, setNewTalkBusy] = useState(false);
+  const [newTalkError, setNewTalkError] = useState<string | null>(null);
   const [language, setLanguage] = useState(initial.language || "de");
   const [loc, setLoc] = useState<Loc>("de");
   const [enEnabled, setEnEnabled] = useState(Boolean(initial.en));
@@ -120,6 +132,34 @@ export default function MissionForm({
     setSaveStatus(res.error ?? "Fehler.");
   }
 
+  async function handleCreateTalk() {
+    setNewTalkError(null);
+    if (!newTalkTitle.trim() || !newTalkCategory) {
+      setNewTalkError("Titel und Kategorie sind Pflicht.");
+      return;
+    }
+    setNewTalkBusy(true);
+    const durationMin = newTalkDuration ? Number(newTalkDuration) : null;
+    const res = await createTalkQuick({
+      deTitle: newTalkTitle,
+      categoryId: newTalkCategory,
+      level: newTalkLevel,
+      durationMin: Number.isFinite(durationMin as number) ? durationMin : null,
+    });
+    setNewTalkBusy(false);
+    if (!res.ok || !res.id) {
+      setNewTalkError(res.error ?? "Anlegen fehlgeschlagen.");
+      return;
+    }
+    // Neues Briefing in die Auswahl übernehmen und direkt selektieren.
+    setTalkList((prev) => [{ id: res.id!, name: res.name ?? newTalkTitle }, ...prev]);
+    setTalkId(res.id);
+    setShowNewTalk(false);
+    setNewTalkTitle("");
+    setNewTalkLevel("");
+    setNewTalkDuration("");
+  }
+
   const text = loc === "de" ? deText : enText;
   const setText = loc === "de" ? setDeText : setEnText;
 
@@ -174,13 +214,66 @@ export default function MissionForm({
           </select>
           <label className="f">Website der Veranstaltung (optional)</label>
           <input className="f" placeholder="https://…" value={eventUrl} onChange={(e) => setEventUrl(e.target.value)} />
-          <label className="f">Gehaltenes Briefing</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label className="f" style={{ margin: 0 }}>Gehaltenes Briefing</label>
+            <button
+              type="button"
+              className="btn ghost sm"
+              style={{ marginLeft: "auto" }}
+              onClick={() => setShowNewTalk((v) => !v)}
+            >
+              {showNewTalk ? "Abbrechen" : "+ Neues Briefing"}
+            </button>
+          </div>
           <select className="f" value={talkId} onChange={(e) => setTalkId(e.target.value)}>
             <option value="">— keins —</option>
-            {talks.map((t) => (
+            {talkList.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
+
+          {showNewTalk ? (
+            <div className="card bracket" style={{ marginTop: 10, padding: 12 }}>
+              <p className="eyebrow" style={{ marginTop: 0 }}>Neues Briefing anlegen</p>
+              <label className="f">Titel (DE)</label>
+              <input
+                className="f"
+                value={newTalkTitle}
+                onChange={(e) => setNewTalkTitle(e.target.value)}
+                placeholder="z. B. Agents in Produktion"
+              />
+              <label className="f">Kategorie</label>
+              {categories.length === 0 ? (
+                <p className="meta">Erst eine Kategorie unter „Briefings“ anlegen.</p>
+              ) : (
+                <select className="f" value={newTalkCategory} onChange={(e) => setNewTalkCategory(e.target.value)}>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <span style={{ flex: 1 }}>
+                  <label className="f">Level</label>
+                  <input className="f" value={newTalkLevel} onChange={(e) => setNewTalkLevel(e.target.value)} placeholder="300" />
+                </span>
+                <span style={{ flex: 1 }}>
+                  <label className="f">Dauer (Min.)</label>
+                  <input className="f" type="number" value={newTalkDuration} onChange={(e) => setNewTalkDuration(e.target.value)} placeholder="45" />
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn solid sm"
+                style={{ marginTop: 10 }}
+                disabled={newTalkBusy || categories.length === 0}
+                onClick={handleCreateTalk}
+              >
+                {newTalkBusy ? "Legt an …" : "Anlegen und auswählen"}
+              </button>
+              {newTalkError ? <p className="meta" style={{ marginTop: 8, color: "var(--danger)" }}>{newTalkError}</p> : null}
+            </div>
+          ) : null}
           <label className="f">Sprache des Vortrags</label>
           <select className="f" value={language} onChange={(e) => setLanguage(e.target.value)}>
             <option value="de">Deutsch</option>

@@ -67,7 +67,7 @@ export default async function DashboardPage() {
             Link einfügen → Titel und Vorschau werden automatisch geholt
           </div>
         </Link>
-        <Link className="card bracket" href="/admin/einsaetze" style={{ color: "inherit" }}>
+        <Link className="card bracket" href="/admin/einsaetze/bearbeiten" style={{ color: "inherit" }}>
           <p className="eyebrow">Schnell erfassen</p>
           <b>Einsatz nachtragen</b>
           <div className="meta">Ort auf der Karte setzen, Briefing zuordnen</div>

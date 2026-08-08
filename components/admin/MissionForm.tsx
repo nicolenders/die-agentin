@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { computeGeo, project } from "@/lib/map/geo";
 import { MISSION_STATUSES } from "@/lib/domain";
 import MediaPicker, { type MediaItem } from "@/components/admin/editor/MediaPicker";
@@ -40,11 +41,14 @@ export default function MissionForm({
   initial,
   existingPins,
   talks,
+  isEdit = false,
 }: {
   initial: MissionFormInitial;
   existingPins: { lat: number; lon: number }[];
   talks: { id: string; name: string }[];
+  isEdit?: boolean;
 }) {
+  const router = useRouter();
   const { landPath, graticulePath, projection } = useMemo(() => computeGeo(W, H), []);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -106,8 +110,14 @@ export default function MissionForm({
       photoAssetIds: photos.map((p) => p.id),
       intent,
     });
+    if (res.ok) {
+      // Zurück zur Liste — mit sichtbarer Rückmeldung. Verhindert zugleich das
+      // versehentliche Doppelt-Anlegen bei erneutem Klick auf „Speichern".
+      router.push(`/admin/einsaetze?ok=${intent === "publish" ? "published" : "saved"}`);
+      return;
+    }
     setSaving(false);
-    setSaveStatus(res.ok ? "Gespeichert." : (res.error ?? "Fehler."));
+    setSaveStatus(res.error ?? "Fehler.");
   }
 
   const text = loc === "de" ? deText : enText;
@@ -115,7 +125,7 @@ export default function MissionForm({
 
   return (
     <section>
-      <h1>Einsatz erfassen</h1>
+      <h1>{isEdit ? "Einsatz bearbeiten" : "Einsatz erfassen"}</h1>
       <p className="muted">Ort auf der Karte anklicken oder Koordinaten eintragen.</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 16, marginTop: 20 }}>

@@ -1,84 +1,109 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { assetUrl } from "@/lib/media/url";
-import MissionForm, { type MissionFormInitial } from "@/components/admin/MissionForm";
+import { formatDate } from "@/lib/format";
+import type { ContentStatus } from "@/lib/domain";
+import ConfirmButton from "@/components/admin/ConfirmButton";
+import Flash from "@/components/admin/Flash";
+import { deleteMission } from "./actions";
 
 export const metadata = { title: "Einsätze · Zentrale" };
+
+const STATUS: Record<ContentStatus, { label: string; cls: string }> = {
+  DRAFT: { label: "Entwurf", cls: "draft" },
+  SCHEDULED: { label: "Eingeplant", cls: "sched" },
+  PUBLISHED: { label: "Live", cls: "live" },
+  ARCHIVED: { label: "Archiviert", cls: "" },
+};
 
 export default async function EinsaetzeAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ ok?: string; err?: string }>;
 }) {
-  const { id } = await searchParams;
+  const { ok, err } = await searchParams;
 
-  let existingPins: { lat: number; lon: number }[] = [];
-  let talks: { id: string; name: string }[] = [];
-  let initial: MissionFormInitial = {
-    eventName: "",
-    city: "",
-    countryCode: "AT",
-    lat: 48.21,
-    lon: 16.37,
-    startDate: "",
-    status: "PLANNED",
-    eventUrl: "",
-    talkId: "",
-    language: "de",
-    de: { eventText: "", talkText: "" },
-    en: null,
-    photos: [],
-  };
-
+  let rows: Awaited<ReturnType<typeof load>> = [];
+  let dbError = false;
   try {
-    const [missions, talkRows] = await Promise.all([
-      db.mission.findMany({ select: { lat: true, lon: true } }),
-      db.talk.findMany({ include: { translations: { where: { locale: "de" } } } }),
-    ]);
-    existingPins = missions;
-    talks = talkRows.map((t) => ({ id: t.id, name: t.translations[0]?.title ?? t.id }));
-
-    if (id) {
-      const mission = await db.mission.findUnique({
-        where: { id },
-        include: {
-          translations: true,
-          photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
-          deliveries: { take: 1, orderBy: { heldOn: "desc" } },
-        },
-      });
-      if (mission) {
-        const de = mission.translations.find((t) => t.locale === "de");
-        const en = mission.translations.find((t) => t.locale === "en");
-        const delivery = mission.deliveries[0];
-        initial = {
-          missionId: mission.id,
-          eventName: mission.eventName,
-          city: mission.city,
-          countryCode: mission.countryCode,
-          lat: mission.lat,
-          lon: mission.lon,
-          startDate: mission.startDate.toISOString().slice(0, 10),
-          status: mission.status,
-          eventUrl: mission.eventUrl ?? "",
-          talkId: delivery?.talkId ?? "",
-          language: delivery?.language ?? "de",
-          de: { eventText: de?.eventText ?? "", talkText: de?.talkText ?? "" },
-          en: en ? { eventText: en.eventText, talkText: en.talkText } : null,
-          photos: mission.photos.map((p) => ({ id: p.assetId, url: assetUrl(p.asset.blobPath) })),
-        };
-      }
-    }
+    rows = await load();
   } catch {
-    // DB nicht erreichbar → leeres Formular
+    dbError = true;
   }
 
   return (
-    <>
-      <div style={{ marginBottom: 12 }}>
-        <Link className="btn ghost sm" href="/admin/einsaetze">Neuer Einsatz</Link>
+    <section>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <h1 style={{ margin: 0 }}>Einsätze</h1>
+        <Link className="btn solid sm" href="/admin/einsaetze/bearbeiten" style={{ marginLeft: "auto" }}>
+          + Neuer Einsatz
+        </Link>
       </div>
-      <MissionForm initial={initial} existingPins={existingPins} talks={talks} />
-    </>
+      <p className="muted">Vorträge, Konferenzen, Auftritte — mit Ort auf der Karte und Bezug zum Briefing.</p>
+      <Flash ok={ok} err={err} />
+
+      {dbError ? (
+        <p className="st sched" style={{ display: "inline-block", marginTop: 16 }}>Datenbank wird geweckt … einen Moment.</p>
+      ) : rows.length === 0 ? (
+        <div className="card bracket" style={{ marginTop: 18 }}>
+          <p className="eyebrow">Noch keine Einsätze</p>
+          <p className="muted">Trag deinen ersten Auftritt nach — er gehört auf die Karte.</p>
+        </div>
+      ) : (
+        <table style={{ marginTop: 18 }}>
+          <thead>
+            <tr>
+              <th>Veranstaltung</th>
+              <th>Ort</th>
+              <th>Datum</th>
+              <th>Status</th>
+              <th>Sprachen</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((m) => {
+              const st = STATUS[m.contentStatus] ?? STATUS.DRAFT;
+              return (
+                <tr key={m.id}>
+                  <td><b>{m.eventName}</b></td>
+                  <td className="meta">{m.city}{m.countryCode ? `, ${m.countryCode}` : ""}</td>
+                  <td className="meta">{formatDate(m.startDate, "de")}</td>
+                  <td><span className={`st ${st.cls}`}>{st.label}</span></td>
+                  <td>
+                    <span className={`lng ${m.hasDe ? "on" : ""}`}>DE</span>{" "}
+                    <span className={`lng ${m.hasEn ? "on" : ""}`}>EN</span>
+                  </td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <Link className="btn ghost sm" href={`/admin/einsaetze/bearbeiten?id=${m.id}`}>Bearbeiten</Link>{" "}
+                    <form action={deleteMission} style={{ display: "inline" }}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <ConfirmButton confirmText={`Einsatz „${m.eventName}" wirklich löschen?`}>Löschen</ConfirmButton>
+                    </form>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
+}
+
+async function load() {
+  const missions = await db.mission.findMany({
+    orderBy: { startDate: "desc" },
+    include: { translations: { select: { locale: true } } },
+    take: 200,
+  });
+  return missions.map((m) => ({
+    id: m.id,
+    eventName: m.eventName,
+    city: m.city,
+    countryCode: m.countryCode,
+    startDate: m.startDate,
+    contentStatus: m.contentStatus as ContentStatus,
+    hasDe: m.translations.some((t) => t.locale === "de"),
+    hasEn: m.translations.some((t) => t.locale === "en"),
+  }));
 }

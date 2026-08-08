@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
+import { getLegend } from "@/lib/queries/legend";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -11,12 +14,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: dict.nav.legende };
 }
 
-export function generateStaticParams() {
-  return [{ locale: "de" }, { locale: "en" }];
-}
-
-// „Die Legende" — Über mich, Mission, Säulen, Kontakt (SPEC §5). Statischer
-// Inhalt (Beispieltext aus dem Mockup), kein DB-Zugriff.
+// „Die Legende" — Über mich, Mission, Säulen, Kontakt (SPEC §5). Inhalte kommen
+// aus der DB (im Admin pflegbar); solange nichts gepflegt ist, greifen Standard-
+// texte. Das Porträt kann als hochgeladenes Medium gesetzt werden, sonst
+// Datei/Platzhalter.
 export default async function LegendePage({
   params,
 }: {
@@ -25,84 +26,67 @@ export default async function LegendePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-
-  const pillars = isDe
-    ? [
-        ["Strategie", "Klar. Zielgerichtet."],
-        ["Architektur", "Sicher. Skalierbar."],
-        ["Umsetzung", "Pragmatisch. Effizient."],
-        ["Adoption", "Veränderung. Akzeptanz."],
-        ["Enablement", "Wissen. Fähigkeiten."],
-        ["Impact", "Erfolge. Mehrwert."],
-      ]
-    : [
-        ["Strategy", "Clear. Focused."],
-        ["Architecture", "Secure. Scalable."],
-        ["Delivery", "Pragmatic. Efficient."],
-        ["Adoption", "Change. Acceptance."],
-        ["Enablement", "Knowledge. Skills."],
-        ["Impact", "Results. Value."],
-      ];
+  const legend = await getLegend(locale);
+  const portraitSrc = legend.portrait?.url ?? brandAsset("portrait.jpg");
+  const portraitAlt = legend.portrait?.alt ?? (isDe ? "Porträt von Nicole Enders" : "Portrait of Nicole Enders");
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
       <div className="hero-grid">
         <div>
-          <p className="eyebrow">{isDe ? "Die Legende · über mich" : "The legend · about me"}</p>
-          <h2>Nicole Enders</h2>
-          <p className="lead">
-            {isDe
-              ? "Microsoft MVP seit 2020. Ich arbeite an der Schnittstelle zwischen dem, was technisch geht, und dem, was Menschen im Arbeitsalltag hilft."
-              : "Microsoft MVP since 2020. I work at the intersection of what is technically possible and what actually helps people at work."}
-          </p>
+          <p className="eyebrow">{legend.eyebrow}</p>
+          <h2>{legend.name}</h2>
+          <p className="lead">{legend.lead}</p>
         </div>
         <div className="hero-visual">
           <BrandImage
-            src={brandAsset("portrait.jpg")}
-            alt={isDe ? "Porträt von Nicole Enders" : "Portrait of Nicole Enders"}
+            src={portraitSrc}
+            alt={portraitAlt}
             label={isDe ? "Porträt" : "Portrait"}
-            sub={isDe ? "Nicole Enders" : "Nicole Enders"}
+            sub={legend.name}
             ratio="4 / 5"
           />
         </div>
       </div>
 
       <div className="card bracket" style={{ margin: "30px 0", padding: 30 }}>
-        <p className="eyebrow">{isDe ? "Meine Mission" : "My mission"}</p>
+        <p className="eyebrow">{legend.missionEyebrow}</p>
         <p style={{ fontSize: 20, fontFamily: "var(--display)", fontWeight: 300, lineHeight: 1.5, margin: 0 }}>
-          {isDe
-            ? "Menschen und Organisationen mit intelligenten Lösungen verbinden, um zukunftssicher, produktiv und smarter zu arbeiten."
-            : "Connecting people and organisations with intelligent solutions to work future-proof, productive and smarter."}
+          {legend.missionText}
         </p>
       </div>
 
-      <div className="grid g3">
-        {pillars.map(([title, text]) => (
-          <div className="card bracket" key={title}>
-            <p className="eyebrow">{title}</p>
-            <p style={{ fontSize: "14.5px" }}>{text}</p>
-          </div>
-        ))}
-      </div>
+      {legend.pillars.length > 0 ? (
+        <div className="grid g3">
+          {legend.pillars.map((p) => (
+            <div className="card bracket" key={p.title}>
+              <p className="eyebrow">{p.title}</p>
+              <p style={{ fontSize: "14.5px" }}>{p.text}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
-      <p className="eyebrow" style={{ marginTop: 44 }}>{isDe ? "Werkzeuge" : "Tools"}</p>
-      <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-        {["MICROSOFT FOUNDRY", "COPILOT STUDIO", "MICROSOFT 365", "MICROSOFT AZURE", "MICROSOFT TEAMS", "POWER PLATFORM"].map((t) => (
-          <span key={t} style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".2em", color: "var(--violet-text)", border: "1px solid var(--line)", padding: "6px 12px", borderRadius: "var(--r)" }}>
-            {t}
-          </span>
-        ))}
-      </div>
+      {legend.tools.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 44 }}>{isDe ? "Werkzeuge" : "Tools"}</p>
+          <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+            {legend.tools.map((t) => (
+              <span key={t} style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".2em", color: "var(--violet-text)", border: "1px solid var(--line)", padding: "6px 12px", borderRadius: "var(--r)" }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <div className="card bracket" style={{ marginTop: 44, padding: 30 }}>
-        <p className="eyebrow">{isDe ? "Kontakt aufnehmen" : "Get in touch"}</p>
-        <h3>{isDe ? "Am schnellsten über LinkedIn" : "Fastest via LinkedIn"}</h3>
-        <p style={{ fontSize: 15 }}>
-          {isDe
-            ? "Für Anfragen zu Vorträgen, Workshops und Beratung schreib mir direkt auf LinkedIn. Rechtlich verpflichtend ist zusätzlich eine E-Mail-Adresse — die findest du im Impressum."
-            : "For talks, workshops and consulting, message me directly on LinkedIn. A legally required email address is in the imprint."}
-        </p>
-        <a className="btn" href="#">{isDe ? "Nachricht auf LinkedIn" : "Message on LinkedIn"}</a>
+        <p className="eyebrow">{legend.contactEyebrow}</p>
+        <h3>{legend.contactHeading}</h3>
+        <p style={{ fontSize: 15 }}>{legend.contactText}</p>
+        <a className="btn" href={legend.contactUrl || "#"} target={legend.contactUrl && legend.contactUrl !== "#" ? "_blank" : undefined} rel="noopener noreferrer">
+          {legend.contactButton}
+        </a>
       </div>
     </section>
   );

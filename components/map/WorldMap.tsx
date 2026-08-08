@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { computeGeo, project } from "@/lib/map/geo";
+import { availableViews, inBounds } from "@/lib/map/views";
 import type { Locale } from "@/lib/i18n/config";
 
 const W = 1000;
@@ -21,6 +22,8 @@ export interface MapMission {
   dateLabel: string;
   eventUrl: string | null;
   published: boolean;
+  bannerUrl: string | null;
+  bannerAlt: string;
 }
 
 type Filter = "alle" | "geplant" | string;
@@ -35,11 +38,21 @@ export default function WorldMap({
 }: {
   missions: MapMission[];
   locale: Locale;
-  labels: { done: string; planned: string; size: string; sample: string; open: string; all: string };
+  labels: { done: string; planned: string; size: string; sample: string; open: string; all: string; view: string };
 }) {
-  const { landPath, graticulePath, projection } = useMemo(() => computeGeo(W, H), []);
   const [filter, setFilter] = useState<Filter>("alle");
+  const [viewId, setViewId] = useState("welt");
   const [selected, setSelected] = useState<MapMission | null>(null);
+
+  // Nur Ansichten anbieten, in denen Einsätze liegen (Welt und DACH immer).
+  const views = useMemo(() => availableViews(missions), [missions]);
+  const activeView = views.find((v) => v.id === viewId) ?? views[0];
+  const activeBounds = activeView?.bounds ?? null;
+
+  const { landPath, graticulePath, projection } = useMemo(
+    () => computeGeo(W, H, activeBounds),
+    [activeBounds],
+  );
 
   const years = useMemo(
     () => [...new Set(missions.map((m) => m.year))].sort((a, b) => b - a),
@@ -47,10 +60,16 @@ export default function WorldMap({
   );
 
   const visible = missions.filter((m) => {
+    if (!inBounds(activeBounds, m.lon, m.lat)) return false;
     if (filter === "alle") return true;
     if (filter === "geplant") return m.future;
     return String(m.year) === filter;
   });
+
+  function chooseView(id: string) {
+    setViewId(id);
+    setSelected(null); // Popup schließen — der Pin liegt evtl. außerhalb der neuen Ansicht.
+  }
 
   const chip = (value: Filter, label: string) => (
     <button
@@ -65,6 +84,21 @@ export default function WorldMap({
 
   return (
     <div>
+      {views.length > 1 ? (
+        <div className="year-filter" role="group" aria-label={labels.view} style={{ marginBottom: 8 }}>
+          {views.map((v) => (
+            <button
+              key={v.id}
+              className="chip"
+              aria-pressed={activeView?.id === v.id}
+              onClick={() => chooseView(v.id)}
+            >
+              {locale === "de" ? v.labelDe : v.labelEn}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div className="year-filter" role="group" aria-label={locale === "de" ? "Jahr filtern" : "Filter by year"}>
         {chip("alle", labels.all)}
         {chip("geplant", labels.planned)}
@@ -124,6 +158,14 @@ export default function WorldMap({
                   <button className="close" aria-label={locale === "de" ? "Schließen" : "Close"} onClick={() => setSelected(null)}>
                     ×
                   </button>
+                  {selected.bannerUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selected.bannerUrl}
+                      alt={selected.bannerAlt}
+                      style={{ width: "100%", borderRadius: 4, margin: "0 0 8px", display: "block" }}
+                    />
+                  ) : null}
                   <p className="meta" style={{ margin: 0 }}>
                     {selected.dateLabel} · {selected.city}
                     {selected.future ? ` · ${labels.planned.toUpperCase()}` : ""}

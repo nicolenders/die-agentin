@@ -1,0 +1,22 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- AlterTable
+ALTER TABLE [dbo].[Mission] ADD [bannerAssetId] NVARCHAR(1000);
+
+-- AddForeignKey
+ALTER TABLE [dbo].[Mission] ADD CONSTRAINT [Mission_bannerAssetId_fkey] FOREIGN KEY ([bannerAssetId]) REFERENCES [dbo].[MediaAsset]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH

@@ -17,14 +17,42 @@ export interface GeoResult {
   graticulePath: string;
 }
 
-/** Erzeugt Projektion und Pfade für eine Weltkarte der Größe W×H. */
-export function computeGeo(width: number, height: number): GeoResult {
+// Rechteckiger Ausschnitt in Geokoordinaten: [[minLon, minLat], [maxLon, maxLat]].
+// `null` steht für die ganze Welt.
+export type GeoBounds = [[number, number], [number, number]] | null;
+
+// Baut ein GeoJSON-Polygon aus einem Lon/Lat-Rechteck, damit d3 die Projektion
+// per fitExtent darauf einpassen (= „hineinzoomen") kann.
+function boundsPolygon(bounds: [[number, number], [number, number]]) {
+  const [[minLon, minLat], [maxLon, maxLat]] = bounds;
+  return {
+    type: "Polygon" as const,
+    coordinates: [
+      [
+        [minLon, minLat],
+        [maxLon, minLat],
+        [maxLon, maxLat],
+        [minLon, maxLat],
+        [minLon, minLat],
+      ],
+    ],
+  };
+}
+
+/**
+ * Erzeugt Projektion und Pfade für die Karte der Größe W×H. Ohne `bounds` wird
+ * die ganze Welt gezeigt; mit einem Lon/Lat-Rechteck wird auf diese Region
+ * eingepasst (Ansichten: Kontinente, DACH). Gleiche Projektion (Natural Earth),
+ * nur ein anderer Ausschnitt — keine zusätzlichen Abhängigkeiten.
+ */
+export function computeGeo(width: number, height: number, bounds: GeoBounds = null): GeoResult {
+  const fitObject = bounds ? boundsPolygon(bounds) : { type: "Sphere" as const };
   const projection = geoNaturalEarth1().fitExtent(
     [
       [6, 6],
       [width - 6, height - 6],
     ],
-    { type: "Sphere" },
+    fitObject,
   );
   const path = geoPath(projection);
   return {

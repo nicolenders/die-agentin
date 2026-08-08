@@ -31,6 +31,7 @@ export interface MissionFormInitial {
   de: { eventText: string; talkText: string };
   en: { eventText: string; talkText: string } | null;
   photos: { id: string; url: string }[];
+  banner: { id: string; url: string } | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -83,7 +84,9 @@ export default function MissionForm({
   const [deText, setDeText] = useState(initial.de);
   const [enText, setEnText] = useState(initial.en ?? { eventText: "", talkText: "" });
   const [photos, setPhotos] = useState<{ id: string; url: string }[]>(initial.photos);
+  const [banner, setBanner] = useState<{ id: string; url: string } | null>(initial.banner);
   const [showPicker, setShowPicker] = useState(false);
+  const [showBannerPicker, setShowBannerPicker] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -106,6 +109,11 @@ export default function MissionForm({
     setPhotos((prev) => (prev.some((p) => p.id === item.id) ? prev : [...prev, { id: item.id, url: item.url }]));
   }
 
+  function pickBanner(item: MediaItem) {
+    setShowBannerPicker(false);
+    setBanner({ id: item.id, url: item.url });
+  }
+
   async function handleSave(intent: SaveMissionInput["intent"]) {
     setSaving(true);
     setSaveStatus(null);
@@ -120,6 +128,7 @@ export default function MissionForm({
       endDate: endDate || null,
       status,
       eventUrl,
+      bannerAssetId: banner?.id ?? null,
       talkId: talkId || null,
       language,
       de: deText,
@@ -316,6 +325,41 @@ export default function MissionForm({
       </div>
 
       <div className="card bracket" style={{ marginTop: 16 }}>
+        <p className="eyebrow">Social-Banner der Veranstaltung</p>
+        <p className="meta" style={{ marginTop: 0 }}>
+          Vom Veranstalter bereitgestelltes Banner. Erscheint klein im Karten-Popup.
+        </p>
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginTop: 6 }}>
+          <div
+            style={{
+              width: 220,
+              aspectRatio: "16 / 9",
+              border: "1px solid var(--line-soft)",
+              borderRadius: 4,
+              overflow: "hidden",
+              background: "var(--surface-2, #1a1420)",
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            {banner ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={banner.url} alt="Banner-Vorschau" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <span className="meta" style={{ padding: 8, textAlign: "center" }}>Kein Banner gewählt</span>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button type="button" className="btn ghost sm" onClick={() => setShowBannerPicker(true)}>Banner wählen / hochladen</button>
+            {banner ? (
+              <button type="button" className="btn ghost sm" onClick={() => setBanner(null)}>Entfernen</button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="card bracket" style={{ marginTop: 16 }}>
         <p className="eyebrow">Fotos vom Einsatz</p>
         <div className="grid g4">
           {photos.map((p) => (
@@ -340,6 +384,7 @@ export default function MissionForm({
       {saveStatus ? <p className="meta" style={{ marginTop: 10 }}>{saveStatus}</p> : null}
 
       {showPicker ? <MediaPicker onPick={addPhoto} onClose={() => setShowPicker(false)} /> : null}
+      {showBannerPicker ? <MediaPicker onPick={pickBanner} onClose={() => setShowBannerPicker(false)} /> : null}
     </section>
   );
 }

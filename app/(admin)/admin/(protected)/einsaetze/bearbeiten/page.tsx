@@ -30,6 +30,7 @@ export default async function EinsatzBearbeitenPage({
     de: { eventText: "", talkText: "" },
     en: null,
     photos: [],
+    banner: null,
   };
 
   try {
@@ -49,6 +50,7 @@ export default async function EinsatzBearbeitenPage({
           translations: true,
           photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
           deliveries: { take: 1, orderBy: { heldOn: "desc" } },
+          banner: true,
         },
       });
       if (mission) {
@@ -71,6 +73,7 @@ export default async function EinsatzBearbeitenPage({
           de: { eventText: de?.eventText ?? "", talkText: de?.talkText ?? "" },
           en: en ? { eventText: en.eventText, talkText: en.talkText } : null,
           photos: mission.photos.map((p) => ({ id: p.assetId, url: assetUrl(p.asset.blobPath) })),
+          banner: mission.banner ? { id: mission.banner.id, url: assetUrl(mission.banner.blobPath) } : null,
         };
       }
     }

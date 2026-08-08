@@ -25,6 +25,7 @@ export interface SaveMissionInput {
   endDate?: string | null; // YYYY-MM-DD, optional
   status: string; // MissionStatus
   eventUrl?: string | null;
+  bannerAssetId?: string | null;
   talkId?: string | null;
   language: string; // Locale des Vortrags
   de: MissionTextInput;
@@ -88,6 +89,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         status,
         contentStatus,
         eventUrl: input.eventUrl || null,
+        bannerAssetId: input.bannerAssetId || null,
       },
       update: {
         eventName: input.eventName,
@@ -100,6 +102,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         status,
         contentStatus,
         eventUrl: input.eventUrl || null,
+        bannerAssetId: input.bannerAssetId || null,
       },
     });
 

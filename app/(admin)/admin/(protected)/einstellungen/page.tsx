@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
+import Flash from "@/components/admin/Flash";
 import { saveLegalDoc } from "./actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
@@ -20,19 +21,31 @@ const HINTS: Record<LegalKey, string> = {
     "Inhalte: Stand der Konformität, bekannte Einschränkungen (Karte), Rückmeldeweg.",
 };
 
-export default async function EinstellungenPage() {
-  let docs: { docKey: string; locale: string }[] = [];
+const LOCALES = [
+  { code: "de", label: "Deutsch" },
+  { code: "en", label: "Englisch" },
+] as const;
+
+export default async function EinstellungenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string; err?: string }>;
+}) {
+  const { ok, err } = await searchParams;
+
+  let docs: { docKey: string; locale: string; title: string; body: string }[] = [];
   let dbError = false;
   try {
-    docs = await db.legalDoc.findMany({ select: { docKey: true, locale: true } });
+    docs = await db.legalDoc.findMany({ select: { docKey: true, locale: true, title: true, body: true } });
   } catch {
     dbError = true;
   }
-  const has = (key: string) => docs.some((d) => d.docKey === key);
+  const find = (key: string, locale: string) => docs.find((d) => d.docKey === key && d.locale === locale);
 
   return (
     <section>
       <h1>Einstellungen</h1>
+      <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 
       <div className="grid g2" style={{ marginTop: 20 }}>
@@ -60,34 +73,41 @@ export default async function EinstellungenPage() {
         <div className="card bracket">
           <p className="eyebrow">Betrieb</p>
           <p style={{ fontSize: 14 }}>
-            Deployment über Azure DevOps (main → production, manuelle Freigabe).
-            Datenbank-Backup gemäß Azure-SQL-Konfiguration; Rollback per
-            Traffic-Switch (siehe pipelines/).
+            Deployment automatisch über GitHub Actions (Push auf <code>main</code> →
+            Build → Deploy). Datenbank-Backup gemäß Azure-SQL-Konfiguration;
+            Rollback per Traffic-Switch auf eine ältere Revision.
           </p>
         </div>
       </div>
 
       <p className="eyebrow" style={{ marginTop: 28 }}>Rechtliche Seiten</p>
+      <p className="meta">Bereits gespeicherter Text wird angezeigt und kann bearbeitet werden — je Sprache getrennt.</p>
       {LEGAL_KEYS.map((key) => (
         <div className="card bracket" key={key} style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <p className="eyebrow" style={{ margin: 0 }}>{LEGAL_LABEL[key]}</p>
-            <span className={`st ${has(key) ? "live" : "draft"}`}>{has(key) ? "Gepflegt" : "Entwurf"}</span>
-          </div>
+          <p className="eyebrow" style={{ margin: 0 }}>{LEGAL_LABEL[key]}</p>
           <p className="meta" style={{ marginTop: 6 }}>{HINTS[key]}</p>
-          <form action={saveLegalDoc}>
-            <input type="hidden" name="docKey" value={key} />
-            <label className="f">Sprache</label>
-            <select className="f" name="locale" style={{ maxWidth: 120 }}>
-              <option value="de">Deutsch</option>
-              <option value="en">Englisch</option>
-            </select>
-            <label className="f">Titel</label>
-            <input className="f" name="title" defaultValue={LEGAL_LABEL[key]} />
-            <label className="f">Inhalt (wird rechtlich geprüft)</label>
-            <textarea className="f" name="body" rows={6} placeholder="Von Nicole beizustellen …" />
-            <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Speichern</button>
-          </form>
+          <div className="grid g2" style={{ marginTop: 12 }}>
+            {LOCALES.map(({ code, label }) => {
+              const doc = find(key, code);
+              return (
+                <form action={saveLegalDoc} key={code}>
+                  <input type="hidden" name="docKey" value={key} />
+                  <input type="hidden" name="locale" value={code} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <label className="f" style={{ margin: 0 }}>{label}</label>
+                    <span className={`st ${doc ? "live" : "draft"}`}>{doc ? "Gepflegt" : "Fehlt"}</span>
+                  </div>
+                  <label className="f">Titel</label>
+                  <input className="f" name="title" defaultValue={doc?.title ?? LEGAL_LABEL[key]} />
+                  <label className="f">Inhalt (wird rechtlich geprüft)</label>
+                  <textarea className="f" name="body" rows={8} defaultValue={doc?.body ?? ""} placeholder="Von Nicole beizustellen …" />
+                  <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>
+                    {doc ? "Aktualisieren" : "Speichern"}
+                  </button>
+                </form>
+              );
+            })}
+          </div>
         </div>
       ))}
     </section>

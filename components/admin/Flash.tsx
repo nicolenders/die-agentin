@@ -10,7 +10,9 @@ const MESSAGES: Record<string, string> = {
   published: "Veröffentlicht.",
   "missing-fields": "Bitte alle Pflichtfelder ausfüllen — nichts wurde gespeichert.",
   "not-found": "Eintrag nicht gefunden.",
-  "category-in-use": "Kategorie hat noch Briefings — erst umhängen oder löschen.",
+  "category-in-use": "Kategorie ist noch zugeordnet — erst umhängen oder löschen.",
+  "alt-required": "Alt-Text ist Pflicht (außer das Bild ist dekorativ).",
+  "asset-in-use": "Bild wird noch verwendet — erst aus Beitrag/Einsatz entfernen.",
   failed: "Speichern fehlgeschlagen. Bitte erneut versuchen.",
 };
 

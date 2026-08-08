@@ -28,6 +28,7 @@ export const adminNav: AdminNavItem[] = [
     section: "Ausspielung",
   },
   { href: "/admin/medien", label: "Medien", icon: "▣" },
-  { href: "/admin/mobil", label: "Mobil erfassen", icon: "▯", section: "System" },
+  { href: "/admin/struktur", label: "Kategorien & Tags", icon: "⧉", section: "System" },
+  { href: "/admin/mobil", label: "Mobil erfassen", icon: "▯" },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: "⚙" },
 ];

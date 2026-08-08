@@ -57,7 +57,8 @@ jobs:
             --resource-group nicolenders-rg \
             --secrets \
               auth-secret="${{ secrets.AUTH_SECRET }}" \
-              entra-client-secret="${{ secrets.ENTRA_CLIENT_SECRET }}"
+              entra-client-secret="${{ secrets.ENTRA_CLIENT_SECRET }}" \
+              linkedin-client-secret="${{ secrets.LINKEDIN_CLIENT_SECRET }}"
 
           az containerapp update \
             --name nicolenders-prod-web \
@@ -69,4 +70,6 @@ jobs:
               "AUTH_MICROSOFT_ENTRA_ID_ID=${{ secrets.ENTRA_CLIENT_ID }}" \
               "AUTH_MICROSOFT_ENTRA_ID_ISSUER=https://login.microsoftonline.com/${{ secrets.ENTRA_TENANT_ID }}/v2.0" \
               "AUTH_MICROSOFT_ENTRA_ID_SECRET=secretref:entra-client-secret" \
-              "ADMIN_OBJECT_IDS=${{ secrets.ADMIN_OBJECT_IDS }}"
+              "ADMIN_OBJECT_IDS=${{ secrets.ADMIN_OBJECT_IDS }}" \
+              "LINKEDIN_CLIENT_ID=${{ secrets.LINKEDIN_CLIENT_ID }}" \
+              "LINKEDIN_CLIENT_SECRET=secretref:linkedin-client-secret"

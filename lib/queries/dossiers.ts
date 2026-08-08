@@ -9,7 +9,7 @@ export interface DossierCard {
   title: string;
   summary: string | null;
   reviewedAt: Date | null;
-  categoryName: string | null;
+  categoryNames: string[];
   fallback: boolean;
   contentLocale: Locale;
 }
@@ -18,7 +18,7 @@ async function loadDossiers(locale: Locale): Promise<DossierCard[]> {
   const dossiers = await db.dossier.findMany({
     where: { status: "PUBLISHED" },
     orderBy: { reviewedAt: "desc" },
-    include: { translations: true, category: true },
+    include: { translations: true, categories: { orderBy: { sortOrder: "asc" } } },
   });
   const cards: DossierCard[] = [];
   for (const d of dossiers) {
@@ -31,7 +31,7 @@ async function loadDossiers(locale: Locale): Promise<DossierCard[]> {
       title: picked.translation.title,
       summary: picked.translation.summary,
       reviewedAt: d.reviewedAt,
-      categoryName: d.category ? (locale === "en" ? d.category.nameEn : d.category.nameDe) : null,
+      categoryNames: d.categories.map((c) => (locale === "en" ? c.nameEn : c.nameDe)),
       fallback: picked.fallback,
       contentLocale: picked.contentLocale,
     });

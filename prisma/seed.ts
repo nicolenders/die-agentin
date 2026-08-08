@@ -132,6 +132,7 @@ async function main() {
       data: {
         id: t.id,
         categoryId: t.categoryId,
+        categories: { connect: [{ id: t.categoryId }] },
         level: t.level,
         durationMin: t.durationMin,
         active: true,
@@ -318,6 +319,7 @@ async function main() {
       id: "dossier-labels",
       status: "PUBLISHED",
       categoryId: "tax-do-purview",
+      categories: { connect: [{ id: "tax-do-purview" }] },
       reviewedAt: new Date("2026-07-12T00:00:00Z"),
       publishAt: new Date("2026-02-04T00:00:00Z"),
       translations: {
@@ -382,16 +384,21 @@ async function main() {
   });
 
   // --- Zertifizierungen / Auszeichnungen ------------------------------------
-  await db.certification.createMany({
-    data: [
-      { name: "Microsoft MVP — M365 Apps & Services", categoryId: "tax-ce-awards", acquiredOn: new Date("2020-07-01T00:00:00Z"), series: "MVP", sortOrder: 0 },
-      { name: "Azure AI Engineer Associate", shortCode: "AI-102", categoryId: "tax-ce-azure", acquiredOn: new Date("2025-03-01T00:00:00Z"), sortOrder: 0 },
-      { name: "Azure Administrator Associate", shortCode: "AZ-104", categoryId: "tax-ce-azure", acquiredOn: new Date("2023-11-01T00:00:00Z"), validUntil: new Date("2027-10-01T00:00:00Z"), sortOrder: 1 },
-      { name: "Microsoft 365 Administrator Expert", shortCode: "MS-102", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-06-01T00:00:00Z"), sortOrder: 0 },
-      { name: "Information Protection Administrator", shortCode: "SC-400", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-02-01T00:00:00Z"), sortOrder: 1 },
-      { name: "Power Platform Solution Architect Expert", shortCode: "PL-600", categoryId: "tax-ce-power", acquiredOn: new Date("2023-09-01T00:00:00Z"), sortOrder: 0 },
-    ],
-  });
+  // Einzeln (statt createMany), damit die Mehrfach-Kategorie mitverknüpft wird.
+  const certs = [
+    { name: "Microsoft MVP — M365 Apps & Services", categoryId: "tax-ce-awards", acquiredOn: new Date("2020-07-01T00:00:00Z"), series: "MVP", sortOrder: 0 },
+    { name: "Azure AI Engineer Associate", shortCode: "AI-102", categoryId: "tax-ce-azure", acquiredOn: new Date("2025-03-01T00:00:00Z"), sortOrder: 0 },
+    { name: "Azure Administrator Associate", shortCode: "AZ-104", categoryId: "tax-ce-azure", acquiredOn: new Date("2023-11-01T00:00:00Z"), validUntil: new Date("2027-10-01T00:00:00Z"), sortOrder: 1 },
+    { name: "Microsoft 365 Administrator Expert", shortCode: "MS-102", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-06-01T00:00:00Z"), sortOrder: 0 },
+    { name: "Information Protection Administrator", shortCode: "SC-400", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-02-01T00:00:00Z"), sortOrder: 1 },
+    { name: "Power Platform Solution Architect Expert", shortCode: "PL-600", categoryId: "tax-ce-power", acquiredOn: new Date("2023-09-01T00:00:00Z"), sortOrder: 0 },
+  ];
+  for (const c of certs) {
+    const { categoryId, ...rest } = c;
+    await db.certification.create({
+      data: { ...rest, categoryId, categories: { connect: [{ id: categoryId }] } },
+    });
+  }
 
   // --- Kanäle ---------------------------------------------------------------
   await db.channelAccount.createMany({

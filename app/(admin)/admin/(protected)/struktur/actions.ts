@@ -23,8 +23,8 @@ function asKind(value: string): CategoryKind | null {
 }
 
 async function categoryInUse(kind: CategoryKind, id: string): Promise<boolean> {
-  if (kind === "DOSSIER") return (await db.dossier.count({ where: { categoryId: id } })) > 0;
-  return (await db.certification.count({ where: { categoryId: id } })) > 0;
+  if (kind === "DOSSIER") return (await db.dossier.count({ where: { categories: { some: { id } } } })) > 0;
+  return (await db.certification.count({ where: { categories: { some: { id } } } })) > 0;
 }
 
 // ------------------------------------------------------------- Kategorien

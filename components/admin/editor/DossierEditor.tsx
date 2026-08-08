@@ -24,7 +24,7 @@ export interface DossierCategoryOption {
 
 export interface DossierEditorInitial {
   dossierId?: string;
-  categoryId: string | null;
+  categoryIds: string[];
   tocEnabled: boolean;
   publishAtLocal: string;
   de: { title: string; summary: string; doc: TiptapDoc };
@@ -42,7 +42,7 @@ export default function DossierEditor({
   const [enEnabled, setEnEnabled] = useState(Boolean(initial.en));
   const [enIsDraft, setEnIsDraft] = useState(false);
   const [enConfirmed, setEnConfirmed] = useState(initial.en?.confirmed ?? false);
-  const [categoryId, setCategoryId] = useState(initial.categoryId ?? "");
+  const [categoryIds, setCategoryIds] = useState<string[]>(initial.categoryIds);
   const [tocEnabled, setTocEnabled] = useState(initial.tocEnabled);
   const [publishAtLocal, setPublishAtLocal] = useState(initial.publishAtLocal);
   const [deTitle, setDeTitle] = useState(initial.de.title);
@@ -136,7 +136,7 @@ export default function DossierEditor({
     setStatus(null);
     const res = await saveDossier({
       dossierId: initial.dossierId,
-      categoryId: categoryId || null,
+      categoryIds,
       tocEnabled,
       publishAtLocal,
       intent,
@@ -209,13 +209,20 @@ export default function DossierEditor({
 
           <aside>
             <p className="eyebrow">Dossier</p>
-            <label className="f" htmlFor="do-cat">Kategorie</label>
-            <select id="do-cat" className="f" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">— keine —</option>
+            <label className="f" htmlFor="do-cat">Kategorien (Mehrfachauswahl)</label>
+            <select
+              id="do-cat"
+              className="f"
+              multiple
+              size={Math.min(6, Math.max(3, categories.length))}
+              value={categoryIds}
+              onChange={(e) => setCategoryIds(Array.from(e.target.selectedOptions, (o) => o.value))}
+            >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+            <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
 
             <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14, fontSize: 13 }}>
               <input type="checkbox" checked={tocEnabled} onChange={(e) => setTocEnabled(e.target.checked)} />

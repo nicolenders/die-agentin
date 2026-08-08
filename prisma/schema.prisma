@@ -86,6 +86,9 @@ model Dossier {
 
   translations DossierTranslation[]
   posts        Post[]
+  // Mehrfachauswahl (SPEC-Erweiterung): mehrere Kategorien je Dossier.
+  // `categoryId` bleibt als „primäre" Kategorie erhalten (Abwärtskompatibilität).
+  categories Taxonomy[] @relation("DossierCategories")
 
   @@index([status, publishAt])
 }
@@ -178,6 +181,7 @@ model Talk {
 
   translations TalkTranslation[]
   deliveries   TalkDelivery[]
+  categories   Taxonomy[]     @relation("TalkCategories")
 
   @@index([categoryId])
 }
@@ -260,6 +264,8 @@ model Certification {
   sortOrder  Int       @default(0)
   createdAt  DateTime  @default(now())
 
+  categories Taxonomy[] @relation("CertificationCategories")
+
   @@index([categoryId])
   @@index([series])
 }
@@ -279,6 +285,10 @@ model Taxonomy {
   dossiers       Dossier[]       @relation("DossierCategory")
   talks          Talk[]          @relation("TalkCategory")
   certifications Certification[] @relation("CertificationCategory")
+  // Mehrfachauswahl-Gegenseiten (Join-Tabellen).
+  dossierMulti Dossier[]       @relation("DossierCategories")
+  talkMulti    Talk[]          @relation("TalkCategories")
+  certMulti    Certification[] @relation("CertificationCategories")
 
   @@unique([kind, slug])
   @@index([kind, sortOrder])

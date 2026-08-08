@@ -20,7 +20,7 @@ export interface DossierTranslationInput {
 
 export interface SaveDossierInput {
   dossierId?: string;
-  categoryId?: string | null;
+  categoryIds: string[];
   tocEnabled: boolean;
   publishAtLocal?: string;
   de: DossierTranslationInput;
@@ -85,13 +85,15 @@ export async function saveDossier(input: SaveDossierInput): Promise<SaveDossierR
       create: {
         id: input.dossierId,
         status,
-        categoryId: input.categoryId ?? undefined,
+        categoryId: input.categoryIds[0] ?? undefined,
+        categories: { connect: input.categoryIds.map((id) => ({ id })) },
         publishAt: publishAt ?? undefined,
         reviewedAt: now,
       },
       update: {
         status,
-        categoryId: input.categoryId ?? null,
+        categoryId: input.categoryIds[0] ?? null,
+        categories: { set: input.categoryIds.map((id) => ({ id })) },
         publishAt: publishAt ?? undefined,
         reviewedAt: now,
       },

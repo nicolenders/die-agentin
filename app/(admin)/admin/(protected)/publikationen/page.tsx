@@ -26,7 +26,7 @@ export default async function RecordsAdminPage({
   try {
     const [pubRows, certRows, cats] = await Promise.all([
       db.publication.findMany({ orderBy: { year: "desc" }, include: { translations: { where: { locale: "de" } } } }),
-      db.certification.findMany({ orderBy: { acquiredOn: "desc" }, include: { category: true } }),
+      db.certification.findMany({ orderBy: { acquiredOn: "desc" }, include: { categories: true } }),
       db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
     ]);
     pubs = pubRows.map((p) => ({
@@ -37,7 +37,7 @@ export default async function RecordsAdminPage({
     certs = certRows.map((c) => ({
       id: c.id,
       name: c.name,
-      meta: [c.shortCode, c.category?.nameDe, formatDate(c.acquiredOn, "de")].filter(Boolean).join(" · "),
+      meta: [c.shortCode, c.categories.map((x) => x.nameDe).join(", ") || null, formatDate(c.acquiredOn, "de")].filter(Boolean).join(" · "),
     }));
     certCats = cats.map((c) => ({ id: c.id, nameDe: c.nameDe }));
   } catch {
@@ -129,12 +129,13 @@ export default async function RecordsAdminPage({
 
           <p className="eyebrow" style={{ marginTop: 16 }}>Neue Zertifizierung / Auszeichnung</p>
           <form action={createCertification}>
-            <label className="f">Kategorie</label>
-            <select className="f" name="categoryId">
+            <label className="f">Kategorien (Mehrfachauswahl)</label>
+            <select className="f" name="categoryIds" multiple size={Math.min(6, Math.max(3, certCats.length))} aria-label="Kategorien (Mehrfachauswahl)">
               {certCats.map((c) => (
                 <option key={c.id} value={c.id}>{c.nameDe}</option>
               ))}
             </select>
+            <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
             <label className="f">Bezeichnung</label>
             <input className="f" name="name" placeholder="z. B. Azure AI Engineer Associate" required />
             <label className="f">Kürzel</label>

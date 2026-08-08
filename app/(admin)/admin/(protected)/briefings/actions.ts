@@ -16,6 +16,11 @@ function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
+// Mehrfachauswahl der Kategorien; `categoryId` bleibt = erste Auswahl.
+function ids(formData: FormData, key: string): string[] {
+  return formData.getAll(key).map((v) => String(v)).filter(Boolean);
+}
+
 function invalidate(): void {
   invalidateTags([tags.briefingList("de"), tags.briefingList("en")]);
 }
@@ -60,7 +65,7 @@ export async function deleteTalkCategory(formData: FormData): Promise<void> {
   if (!id) redirect(`${LIST}?err=not-found`);
   // Eine Kategorie mit zugeordneten Briefings darf nicht gelöscht werden
   // (sonst verwaiste Vorträge). Erst umhängen oder Briefings löschen.
-  const inUse = await db.talk.count({ where: { categoryId: id } });
+  const inUse = await db.talk.count({ where: { categories: { some: { id } } } });
   if (inUse > 0) redirect(`${LIST}?err=category-in-use`);
   let failed = false;
   try {
@@ -79,17 +84,18 @@ export async function createTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const deTitle = str(formData, "deTitle");
   const enTitle = str(formData, "enTitle");
-  const categoryId = str(formData, "categoryId");
+  const categoryIds = ids(formData, "categoryIds");
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");
   const durationMin = durationRaw ? Number(durationRaw) : null;
-  if (!deTitle || !categoryId) redirect(`${LIST}?err=missing-fields`);
+  if (!deTitle || categoryIds.length === 0) redirect(`${LIST}?err=missing-fields`);
 
   let failed = false;
   try {
     await db.talk.create({
       data: {
-        categoryId,
+        categoryId: categoryIds[0]!,
+        categories: { connect: categoryIds.map((id) => ({ id })) },
         level,
         durationMin: durationMin !== null && Number.isFinite(durationMin) ? durationMin : null,
         translations: {
@@ -113,8 +119,8 @@ export async function updateTalk(formData: FormData): Promise<void> {
   const id = str(formData, "id");
   if (!id) redirect(`${LIST}?err=not-found`);
   const deTitle = str(formData, "deTitle");
-  const categoryId = str(formData, "categoryId");
-  if (!deTitle || !categoryId) redirect(`${LIST}/bearbeiten?id=${id}&err=missing-fields`);
+  const categoryIds = ids(formData, "categoryIds");
+  if (!deTitle || categoryIds.length === 0) redirect(`${LIST}/bearbeiten?id=${id}&err=missing-fields`);
   const enTitle = str(formData, "enTitle");
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");
@@ -126,7 +132,8 @@ export async function updateTalk(formData: FormData): Promise<void> {
     await db.talk.update({
       where: { id },
       data: {
-        categoryId,
+        categoryId: categoryIds[0]!,
+        categories: { set: categoryIds.map((id) => ({ id })) },
         level,
         durationMin: durationMin !== null && Number.isFinite(durationMin) ? durationMin : null,
         active,
@@ -159,7 +166,7 @@ export async function updateTalk(formData: FormData): Promise<void> {
 export interface QuickTalkInput {
   deTitle: string;
   enTitle?: string;
-  categoryId: string;
+  categoryIds: string[];
   level?: string;
   durationMin?: number | null;
 }
@@ -184,15 +191,16 @@ export async function createTalkQuick(input: QuickTalkInput): Promise<QuickTalkR
   }
   const deTitle = input.deTitle.trim();
   const enTitle = input.enTitle?.trim() ?? "";
-  const categoryId = input.categoryId;
-  if (!deTitle || !categoryId) return { ok: false, error: "Titel und Kategorie sind Pflicht." };
+  const categoryIds = (input.categoryIds ?? []).filter(Boolean);
+  if (!deTitle || categoryIds.length === 0) return { ok: false, error: "Titel und Kategorie sind Pflicht." };
   const durationMin =
     input.durationMin != null && Number.isFinite(input.durationMin) ? input.durationMin : null;
 
   try {
     const talk = await db.talk.create({
       data: {
-        categoryId,
+        categoryId: categoryIds[0]!,
+        categories: { connect: categoryIds.map((id) => ({ id })) },
         level: input.level?.trim() || null,
         durationMin,
         translations: {

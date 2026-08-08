@@ -82,7 +82,7 @@ export default async function DossiersAdminPage() {
 async function load() {
   const dossiers = await db.dossier.findMany({
     orderBy: { updatedAt: "desc" },
-    include: { translations: { select: { locale: true, title: true, state: true } }, category: true },
+    include: { translations: { select: { locale: true, title: true, state: true } }, categories: true },
     take: 100,
   });
   return dossiers.map((d) => {
@@ -91,7 +91,7 @@ async function load() {
     return {
       id: d.id,
       title: de?.title ?? d.translations[0]?.title ?? "(ohne Titel)",
-      category: d.category?.nameDe ?? null,
+      category: d.categories.map((c) => c.nameDe).join(", ") || null,
       status: d.status as ContentStatus,
       reviewedAt: d.reviewedAt,
       hasDe: Boolean(de),

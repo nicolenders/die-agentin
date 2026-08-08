@@ -34,7 +34,7 @@ export default async function DossierEditPage({
   }
 
   let initial: DossierEditorInitial = {
-    categoryId: null,
+    categoryIds: [],
     tocEnabled: true,
     publishAtLocal: "",
     de: { title: "", summary: "", doc: emptyDoc() },
@@ -43,13 +43,13 @@ export default async function DossierEditPage({
 
   if (id) {
     try {
-      const dossier = await db.dossier.findUnique({ where: { id }, include: { translations: true } });
+      const dossier = await db.dossier.findUnique({ where: { id }, include: { translations: true, categories: true } });
       if (dossier) {
         const de = dossier.translations.find((t) => t.locale === "de");
         const en = dossier.translations.find((t) => t.locale === "en");
         initial = {
           dossierId: dossier.id,
-          categoryId: dossier.categoryId,
+          categoryIds: dossier.categories.map((c) => c.id),
           tocEnabled: de?.tocEnabled ?? true,
           publishAtLocal: utcToBerlinLocal(dossier.publishAt),
           de: { title: de?.title ?? "", summary: de?.summary ?? "", doc: parseDoc(de?.bodyJson) },

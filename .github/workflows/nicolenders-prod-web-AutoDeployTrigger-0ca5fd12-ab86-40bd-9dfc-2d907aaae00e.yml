@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout to the branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Azure Login
         uses: azure/login@v2
@@ -34,16 +34,11 @@ jobs:
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}Dockerfile
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: Dockerfile
           registryUrl: nicolendersacr.azurecr.io
           registryUsername: ${{ secrets.NICOLENDERSPRODWEB_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.NICOLENDERSPRODWEB_REGISTRY_PASSWORD }}
           containerAppName: nicolenders-prod-web
           resourceGroup: nicolenders-rg
           imageToBuild: nicolendersacr.azurecr.io/nicolenders-prod-web:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
-

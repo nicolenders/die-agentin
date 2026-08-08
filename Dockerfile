@@ -7,8 +7,9 @@
 
 FROM node:22-slim AS base
 ENV NEXT_TELEMETRY_DISABLED=1
-# openssl wird von Prisma benötigt.
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# openssl wird von Prisma benötigt; ca-certificates für die TLS-Prüfung der
+# Azure-SQL-Verbindung (encrypt=true, trustServerCertificate=false).
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # ---- Abhängigkeiten ----

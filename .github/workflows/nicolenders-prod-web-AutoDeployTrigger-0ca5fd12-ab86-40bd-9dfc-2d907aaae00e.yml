@@ -42,3 +42,31 @@ jobs:
           containerAppName: nicolenders-prod-web
           resourceGroup: nicolenders-rg
           imageToBuild: nicolendersacr.azurecr.io/nicolenders-prod-web:${{ github.sha }}
+
+      # Configuration as code: applied on every deploy so it can never silently
+      # disappear from the app (unlike hand-edited portal env vars). Sensitive
+      # values are stored as Container App secrets; DATABASE_URL and other
+      # infrastructure-managed variables are preserved (--set-env-vars only
+      # touches the keys listed here).
+      - name: Apply application configuration
+        env:
+          SITE_URL: https://nicolenders-prod-web.wittybush-b6a6f63e.westeurope.azurecontainerapps.io
+        run: |
+          az containerapp secret set \
+            --name nicolenders-prod-web \
+            --resource-group nicolenders-rg \
+            --secrets \
+              auth-secret="${{ secrets.AUTH_SECRET }}" \
+              entra-client-secret="${{ secrets.ENTRA_CLIENT_SECRET }}"
+
+          az containerapp update \
+            --name nicolenders-prod-web \
+            --resource-group nicolenders-rg \
+            --set-env-vars \
+              "NEXT_PUBLIC_SITE_URL=$SITE_URL" \
+              "AUTH_URL=$SITE_URL" \
+              "AUTH_SECRET=secretref:auth-secret" \
+              "AUTH_MICROSOFT_ENTRA_ID_ID=${{ secrets.ENTRA_CLIENT_ID }}" \
+              "AUTH_MICROSOFT_ENTRA_ID_ISSUER=https://login.microsoftonline.com/${{ secrets.ENTRA_TENANT_ID }}/v2.0" \
+              "AUTH_MICROSOFT_ENTRA_ID_SECRET=secretref:entra-client-secret" \
+              "ADMIN_OBJECT_IDS=${{ secrets.ADMIN_OBJECT_IDS }}"

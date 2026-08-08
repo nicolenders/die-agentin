@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import Flash from "@/components/admin/Flash";
 import AssetPickerField from "@/components/admin/AssetPickerField";
+import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { updatePublication, updateCertification } from "../actions";
 
 export const metadata = { title: "Bearbeiten · Publikationen · Zentrale" };
@@ -87,12 +88,7 @@ export default async function RecordEditPage({
           <form action={updateCertification}>
             <input type="hidden" name="id" value={row.id} />
             <label className="f">Kategorien (Mehrfachauswahl)</label>
-            <select className="f" name="categoryIds" multiple size={Math.min(6, Math.max(3, cats.length))} defaultValue={row.categories.map((c) => c.id)} aria-label="Kategorien (Mehrfachauswahl)">
-              {cats.map((c) => (
-                <option key={c.id} value={c.id}>{c.nameDe}</option>
-              ))}
-            </select>
-            <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
+            <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={row.categories.map((c) => c.id)} />
             <label className="f">Bezeichnung</label>
             <input className="f" name="name" defaultValue={row.name} required />
             <label className="f">Kürzel</label>

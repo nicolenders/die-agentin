@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import Flash from "@/components/admin/Flash";
+import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { createTalk, updateTalk } from "../actions";
 
 export const metadata = { title: "Briefing bearbeiten · Zentrale" };
@@ -53,12 +54,7 @@ export default async function BriefingEditPage({
           <label className="f">Titel (EN)</label>
           <input className="f" name="enTitle" defaultValue={en?.title ?? ""} />
           <label className="f">Kategorien (Mehrfachauswahl)</label>
-          <select className="f" name="categoryIds" multiple required size={Math.min(6, Math.max(3, cats.length))} defaultValue={talk?.categories.map((c) => c.id) ?? []} aria-label="Kategorien (Mehrfachauswahl)">
-            {cats.map((c) => (
-              <option key={c.id} value={c.id}>{c.nameDe}</option>
-            ))}
-          </select>
-          <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
+          <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={talk?.categories.map((c) => c.id) ?? []} />
           <label className="f">Level</label>
           <input className="f" name="level" defaultValue={talk?.level ?? ""} placeholder="300" />
           <label className="f">Dauer (Minuten)</label>

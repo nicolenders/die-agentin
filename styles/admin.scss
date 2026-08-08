@@ -14,7 +14,28 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  // Dezenter, markenfarbener Scrollbalken statt des Standard-Grau.
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+}
+// WebKit/Blink: schmaler, schwebender Thumb, der nur beim Hover deutlicher wird.
+.aside::-webkit-scrollbar {
+  width: 10px;
+}
+.aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+.aside::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.28);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.aside:hover::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.55);
+  background-clip: content-box;
 }
 .aside .brand {
   display: flex;
@@ -259,8 +280,29 @@
   .app {
     grid-template-columns: 1fr;
   }
+  // Keine feste Höhe mehr → kein Scrollbalken; Navigation wird zur kompakten,
+  // umbrechenden Leiste statt einer langen vertikalen Liste.
   .aside {
     position: static;
     height: auto;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .aside nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .aside nav a {
+    width: auto;
+    padding: 8px 10px;
+  }
+  .aside .sec {
+    width: 100%;
+    margin: 12px 0 2px 4px;
+  }
+  .roleChip {
+    margin: 8px 0 12px;
   }
 }

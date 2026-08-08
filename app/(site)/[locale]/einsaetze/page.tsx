@@ -36,6 +36,7 @@ export default async function EinsaetzePage({
     future: m.future,
     dateLabel: formatDate(m.startDate, locale),
     eventUrl: m.eventUrl,
+    published: m.published,
   }));
 
   return (
@@ -89,7 +90,7 @@ export default async function EinsaetzePage({
             <tr key={m.id}>
               <td className="meta">{formatDate(m.startDate, locale)}</td>
               <td>
-                {m.slug ? (
+                {m.published && m.slug ? (
                   <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link>
                 ) : (
                   m.eventName

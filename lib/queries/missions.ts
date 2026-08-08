@@ -17,6 +17,8 @@ export interface MissionListItem {
   status: MissionStatus;
   future: boolean;
   eventUrl: string | null;
+  // Nur veröffentlichte Einsätze haben eine öffentliche Einsatzakte-Detailseite.
+  published: boolean;
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
@@ -35,6 +37,7 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       status: m.status as MissionStatus,
       future: m.startDate.getTime() > nowMs,
       eventUrl: m.eventUrl,
+      published: m.contentStatus === "PUBLISHED",
     };
   });
 }

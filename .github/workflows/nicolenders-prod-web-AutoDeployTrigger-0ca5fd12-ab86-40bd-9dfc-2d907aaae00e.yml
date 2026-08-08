@@ -13,6 +13,12 @@ on:
   # Allow manual trigger 
   workflow_dispatch:      
 
+# Deploys must not overlap: a Container App can only run one provisioning
+# operation at a time. Queue runs (do not cancel an in-flight deploy).
+concurrency:
+  group: deploy-nicolenders-prod-web
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest

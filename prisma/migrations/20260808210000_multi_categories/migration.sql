@@ -33,22 +33,25 @@ CREATE NONCLUSTERED INDEX [_TalkCategories_B_index] ON [dbo].[_TalkCategories]([
 CREATE NONCLUSTERED INDEX [_CertificationCategories_B_index] ON [dbo].[_CertificationCategories]([B]);
 
 -- AddForeignKey
-ALTER TABLE [dbo].[_DossierCategories] ADD CONSTRAINT [_DossierCategories_A_fkey] FOREIGN KEY ([A]) REFERENCES [dbo].[Dossier]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+-- Entitäts-Seite kaskadiert (Eintrag löschen -> Verknüpfungen weg).
+-- Kategorie-Seite NO ACTION: SQL Server verbietet mehrere Kaskadenpfade, und
+-- Kategorien werden ohnehin nur gelöscht, wenn sie nirgends zugeordnet sind.
+ALTER TABLE [dbo].[_DossierCategories] ADD CONSTRAINT [_DossierCategories_A_fkey] FOREIGN KEY ([A]) REFERENCES [dbo].[Dossier]([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[_DossierCategories] ADD CONSTRAINT [_DossierCategories_B_fkey] FOREIGN KEY ([B]) REFERENCES [dbo].[Taxonomy]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE [dbo].[_DossierCategories] ADD CONSTRAINT [_DossierCategories_B_fkey] FOREIGN KEY ([B]) REFERENCES [dbo].[Taxonomy]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[_TalkCategories] ADD CONSTRAINT [_TalkCategories_A_fkey] FOREIGN KEY ([A]) REFERENCES [dbo].[Talk]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE [dbo].[_TalkCategories] ADD CONSTRAINT [_TalkCategories_A_fkey] FOREIGN KEY ([A]) REFERENCES [dbo].[Talk]([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[_TalkCategories] ADD CONSTRAINT [_TalkCategories_B_fkey] FOREIGN KEY ([B]) REFERENCES [dbo].[Taxonomy]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE [dbo].[_TalkCategories] ADD CONSTRAINT [_TalkCategories_B_fkey] FOREIGN KEY ([B]) REFERENCES [dbo].[Taxonomy]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[_CertificationCategories] ADD CONSTRAINT [_CertificationCategories_A_fkey] FOREIGN KEY ([A]) REFERENCES [dbo].[Certification]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE [dbo].[_CertificationCategories] ADD CONSTRAINT [_CertificationCategories_A_fkey] FOREIGN KEY ([A]) REFERENCES [dbo].[Certification]([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[_CertificationCategories] ADD CONSTRAINT [_CertificationCategories_B_fkey] FOREIGN KEY ([B]) REFERENCES [dbo].[Taxonomy]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE [dbo].[_CertificationCategories] ADD CONSTRAINT [_CertificationCategories_B_fkey] FOREIGN KEY ([B]) REFERENCES [dbo].[Taxonomy]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- Backfill: bestehende Einzel-Kategorie (categoryId) in die Mehrfach-Verknüpfung übernehmen.
 INSERT INTO [dbo].[_DossierCategories] ([A],[B])

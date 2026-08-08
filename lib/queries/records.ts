@@ -61,12 +61,12 @@ async function loadCertifications(locale: Locale): Promise<CertificationGroup[]>
   const cats = await db.taxonomy.findMany({
     where: { kind: "CERTIFICATION" },
     orderBy: { sortOrder: "asc" },
-    include: { certifications: { orderBy: { sortOrder: "asc" } } },
+    include: { certMulti: { orderBy: { sortOrder: "asc" } } },
   });
   return cats
     .map((cat) => ({
       category: locale === "en" ? cat.nameEn : cat.nameDe,
-      items: cat.certifications.map((c) => ({
+      items: cat.certMulti.map((c) => ({
         id: c.id,
         name: c.name,
         shortCode: c.shortCode,

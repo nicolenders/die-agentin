@@ -66,7 +66,7 @@ export default async function RecordEditPage({
 
   if (cert) {
     const [row, cats] = await Promise.all([
-      db.certification.findUnique({ where: { id: cert } }),
+      db.certification.findUnique({ where: { id: cert }, include: { categories: true } }),
       db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
     ]);
     if (!row) {
@@ -80,13 +80,13 @@ export default async function RecordEditPage({
         <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
           <form action={updateCertification}>
             <input type="hidden" name="id" value={row.id} />
-            <label className="f">Kategorie</label>
-            <select className="f" name="categoryId" defaultValue={row.categoryId ?? ""}>
-              <option value="">— keine —</option>
+            <label className="f">Kategorien (Mehrfachauswahl)</label>
+            <select className="f" name="categoryIds" multiple size={Math.min(6, Math.max(3, cats.length))} defaultValue={row.categories.map((c) => c.id)} aria-label="Kategorien (Mehrfachauswahl)">
               {cats.map((c) => (
                 <option key={c.id} value={c.id}>{c.nameDe}</option>
               ))}
             </select>
+            <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
             <label className="f">Bezeichnung</label>
             <input className="f" name="name" defaultValue={row.name} required />
             <label className="f">Kürzel</label>

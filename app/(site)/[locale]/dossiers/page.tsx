@@ -24,13 +24,16 @@ export default async function DossiersPage({
   const dict = await getDictionary(locale);
   const dossiers = await getPublishedDossiers(locale);
 
-  // Nach Kategorie gruppieren.
+  // Nach Kategorie gruppieren. Ein Dossier mit mehreren Kategorien erscheint
+  // unter jeder; ohne Kategorie unter „—".
   const groups = new Map<string, typeof dossiers>();
   for (const d of dossiers) {
-    const key = d.categoryName ?? "—";
-    const list = groups.get(key);
-    if (list) list.push(d);
-    else groups.set(key, [d]);
+    const keys = d.categoryNames.length > 0 ? d.categoryNames : ["—"];
+    for (const key of keys) {
+      const list = groups.get(key);
+      if (list) list.push(d);
+      else groups.set(key, [d]);
+    }
   }
 
   return (

@@ -25,7 +25,7 @@ async function loadCatalog(locale: Locale): Promise<BriefingCategory[]> {
     where: { kind: "TALK" },
     orderBy: { sortOrder: "asc" },
     include: {
-      talks: {
+      talkMulti: {
         where: { active: true },
         include: { translations: true, deliveries: { select: { language: true } } },
       },
@@ -36,7 +36,7 @@ async function loadCatalog(locale: Locale): Promise<BriefingCategory[]> {
     .map((cat) => ({
       id: cat.id,
       name: locale === "en" ? cat.nameEn : cat.nameDe,
-      talks: cat.talks.map((t): BriefingCard => {
+      talks: cat.talkMulti.map((t): BriefingCard => {
         const picked = pickTranslation(t.translations, locale);
         return {
           id: t.id,

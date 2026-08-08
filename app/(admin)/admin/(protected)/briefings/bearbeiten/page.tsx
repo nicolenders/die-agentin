@@ -19,7 +19,7 @@ export default async function BriefingEditPage({
   });
 
   const talk = id
-    ? await db.talk.findUnique({ where: { id }, include: { translations: true } })
+    ? await db.talk.findUnique({ where: { id }, include: { translations: true, categories: true } })
     : null;
 
   if (id && !talk) {
@@ -52,13 +52,13 @@ export default async function BriefingEditPage({
           <input className="f" name="deTitle" defaultValue={de?.title ?? ""} required />
           <label className="f">Titel (EN)</label>
           <input className="f" name="enTitle" defaultValue={en?.title ?? ""} />
-          <label className="f">Kategorie</label>
-          <select className="f" name="categoryId" defaultValue={talk?.categoryId ?? ""} required>
-            <option value="" disabled>— bitte wählen —</option>
+          <label className="f">Kategorien (Mehrfachauswahl)</label>
+          <select className="f" name="categoryIds" multiple required size={Math.min(6, Math.max(3, cats.length))} defaultValue={talk?.categories.map((c) => c.id) ?? []} aria-label="Kategorien (Mehrfachauswahl)">
             {cats.map((c) => (
               <option key={c.id} value={c.id}>{c.nameDe}</option>
             ))}
           </select>
+          <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
           <label className="f">Level</label>
           <input className="f" name="level" defaultValue={talk?.level ?? ""} placeholder="300" />
           <label className="f">Dauer (Minuten)</label>

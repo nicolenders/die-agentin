@@ -82,13 +82,13 @@ export default async function StrukturPage({
   let dbError = false;
   try {
     const [dcats, ccats, trows, rrows] = await Promise.all([
-      db.taxonomy.findMany({ where: { kind: "DOSSIER" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { dossiers: true } } } }),
-      db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { certifications: true } } } }),
+      db.taxonomy.findMany({ where: { kind: "DOSSIER" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { dossierMulti: true } } } }),
+      db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { certMulti: true } } } }),
       db.tag.findMany({ orderBy: { nameDe: "asc" }, include: { _count: { select: { posts: true } } } }),
       db.redirect.findMany({ orderBy: { createdAt: "desc" }, take: 200 }),
     ]);
-    dossierCats = dcats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.dossiers }));
-    certCats = ccats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.certifications }));
+    dossierCats = dcats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.dossierMulti }));
+    certCats = ccats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.certMulti }));
     tagRows = trows.map((t) => ({ id: t.id, nameDe: t.nameDe, nameEn: t.nameEn, count: t._count.posts }));
     redirects = rrows;
   } catch {

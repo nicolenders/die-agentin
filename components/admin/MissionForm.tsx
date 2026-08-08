@@ -68,7 +68,9 @@ export default function MissionForm({
   // Inline-Anlage eines neuen Briefings, ohne die Maske zu verlassen.
   const [showNewTalk, setShowNewTalk] = useState(false);
   const [newTalkTitle, setNewTalkTitle] = useState("");
-  const [newTalkCategory, setNewTalkCategory] = useState(categories[0]?.id ?? "");
+  const [newTalkCategories, setNewTalkCategories] = useState<string[]>(
+    categories[0] ? [categories[0].id] : [],
+  );
   const [newTalkLevel, setNewTalkLevel] = useState("");
   const [newTalkDuration, setNewTalkDuration] = useState("");
   const [newTalkBusy, setNewTalkBusy] = useState(false);
@@ -134,15 +136,15 @@ export default function MissionForm({
 
   async function handleCreateTalk() {
     setNewTalkError(null);
-    if (!newTalkTitle.trim() || !newTalkCategory) {
-      setNewTalkError("Titel und Kategorie sind Pflicht.");
+    if (!newTalkTitle.trim() || newTalkCategories.length === 0) {
+      setNewTalkError("Titel und mindestens eine Kategorie sind Pflicht.");
       return;
     }
     setNewTalkBusy(true);
     const durationMin = newTalkDuration ? Number(newTalkDuration) : null;
     const res = await createTalkQuick({
       deTitle: newTalkTitle,
-      categoryId: newTalkCategory,
+      categoryIds: newTalkCategories,
       level: newTalkLevel,
       durationMin: Number.isFinite(durationMin as number) ? durationMin : null,
     });
@@ -242,11 +244,18 @@ export default function MissionForm({
                 onChange={(e) => setNewTalkTitle(e.target.value)}
                 placeholder="z. B. Agents in Produktion"
               />
-              <label className="f">Kategorie</label>
+              <label className="f">Kategorien (Mehrfachauswahl)</label>
               {categories.length === 0 ? (
                 <p className="meta">Erst eine Kategorie unter „Briefings“ anlegen.</p>
               ) : (
-                <select className="f" value={newTalkCategory} onChange={(e) => setNewTalkCategory(e.target.value)}>
+                <select
+                  className="f"
+                  multiple
+                  size={Math.min(5, Math.max(2, categories.length))}
+                  value={newTalkCategories}
+                  onChange={(e) => setNewTalkCategories(Array.from(e.target.selectedOptions, (o) => o.value))}
+                  aria-label="Kategorien (Mehrfachauswahl)"
+                >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}

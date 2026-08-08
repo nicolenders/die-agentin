@@ -29,22 +29,22 @@ export default async function BriefingsAdminPage({
       db.taxonomy.findMany({
         where: { kind: "TALK" },
         orderBy: { sortOrder: "asc" },
-        include: { _count: { select: { talks: true } } },
+        include: { _count: { select: { talkMulti: true } } },
       }),
       db.talk.findMany({
         orderBy: { createdAt: "desc" },
         include: {
           translations: { where: { locale: "de" } },
-          category: true,
+          categories: true,
           _count: { select: { deliveries: true } },
         },
       }),
     ]);
-    categories = cats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.talks }));
+    categories = cats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.talkMulti }));
     talks = talkRows.map((t) => ({
       id: t.id,
       title: t.translations[0]?.title ?? "(ohne Titel)",
-      category: t.category?.nameDe ?? "—",
+      category: t.categories.map((c) => c.nameDe).join(", ") || "—",
       level: t.level,
       durationMin: t.durationMin,
       deliveries: t._count.deliveries,
@@ -148,12 +148,13 @@ export default async function BriefingsAdminPage({
           <input className="f" name="deTitle" placeholder="z. B. Agents in Produktion" required />
           <label className="f">Titel (EN)</label>
           <input className="f" name="enTitle" placeholder="e. g. Agents in production" />
-          <label className="f">Kategorie</label>
-          <select className="f" name="categoryId" required>
+          <label className="f">Kategorien (Mehrfachauswahl)</label>
+          <select className="f" name="categoryIds" multiple required size={Math.min(6, Math.max(3, categories.length))} aria-label="Kategorien (Mehrfachauswahl)">
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.nameDe}</option>
             ))}
           </select>
+          <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
           <label className="f">Level</label>
           <input className="f" name="level" placeholder="300" />
           <label className="f">Dauer (Minuten)</label>

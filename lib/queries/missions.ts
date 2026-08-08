@@ -19,10 +19,15 @@ export interface MissionListItem {
   eventUrl: string | null;
   // Nur veröffentlichte Einsätze haben eine öffentliche Einsatzakte-Detailseite.
   published: boolean;
+  bannerUrl: string | null;
+  bannerAlt: string;
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
-  const missions = await db.mission.findMany({ orderBy: { startDate: "desc" }, include: { translations: true } });
+  const missions = await db.mission.findMany({
+    orderBy: { startDate: "desc" },
+    include: { translations: true, banner: true },
+  });
   return missions.map((m) => {
     const picked = pickTranslation(m.translations, locale);
     return {
@@ -38,6 +43,13 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       future: m.startDate.getTime() > nowMs,
       eventUrl: m.eventUrl,
       published: m.contentStatus === "PUBLISHED",
+      bannerUrl: m.banner ? assetUrl(m.banner.blobPath) : null,
+      bannerAlt:
+        m.banner && !m.banner.decorative
+          ? locale === "en" && m.banner.altEn
+            ? m.banner.altEn
+            : m.banner.altDe
+          : m.eventName,
     };
   });
 }

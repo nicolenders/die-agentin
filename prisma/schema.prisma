@@ -126,6 +126,8 @@ model Mission {
   status        String    @default("PLANNED") // MissionStatus
   eventUrl      String?   @db.NVarChar(2048)
   contentStatus String    @default("DRAFT") // ContentStatus
+  bannerAssetId String?
+  banner        MediaAsset? @relation("MissionBanner", fields: [bannerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -337,6 +339,7 @@ model MediaAsset {
   publicationCovers Publication[] @relation("PublicationCover")
   legendPortraits  LegendContent[] @relation("LegendPortrait")
   certificationLogos Certification[] @relation("CertificationLogo")
+  missionBanners   Mission[]      @relation("MissionBanner")
 }
 
 // Inhalte der „Legende" (Über-mich-Seite, SPEC §5) — im Admin pflegbar, je

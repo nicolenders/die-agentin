@@ -37,6 +37,8 @@ export default async function EinsaetzePage({
     dateLabel: formatDate(m.startDate, locale),
     eventUrl: m.eventUrl,
     published: m.published,
+    bannerUrl: m.bannerUrl,
+    bannerAlt: m.bannerAlt,
   }));
 
   return (
@@ -61,6 +63,7 @@ export default async function EinsaetzePage({
               size: locale === "de" ? "Punktgröße = Anzahl" : "Dot size = count",
               sample: locale === "de" ? "Karte: Beispieldaten" : "Map: sample data",
               open: locale === "de" ? "Veranstaltungswebsite" : "Event website",
+              view: locale === "de" ? "Ansicht wählen" : "Choose view",
             }}
           />
         ) : (

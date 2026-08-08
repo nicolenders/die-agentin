@@ -1,6 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import { requireAdmin, ForbiddenError } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
@@ -137,6 +138,30 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Speichern fehlgeschlagen." };
   }
+}
+
+/**
+ * Löscht einen Einsatz samt Übersetzungen und Fotozuordnungen. Zugehörige
+ * TalkDeliveries (Vortragszählung fürs Ranking) müssen zuvor entfernt werden,
+ * weil ihr Fremdschlüssel kein Kaskadenlöschen erlaubt. Leitet mit sichtbarer
+ * Rückmeldung zurück auf die Liste.
+ */
+export async function deleteMission(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/admin/einsaetze?err=not-found");
+
+  let failed = false;
+  try {
+    await db.talkDelivery.deleteMany({ where: { missionId: id } });
+    await db.mission.delete({ where: { id } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect("/admin/einsaetze?err=failed");
+
+  invalidateTags([tags.mission(id), tags.missionList("de"), tags.missionList("en")]);
+  redirect("/admin/einsaetze?ok=deleted");
 }
 
 async function upsertText(

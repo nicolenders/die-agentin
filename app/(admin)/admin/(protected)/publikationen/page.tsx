@@ -1,21 +1,43 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
-import { createPublication, createCertification } from "./actions";
+import { formatDate } from "@/lib/format";
+import ConfirmButton from "@/components/admin/ConfirmButton";
+import Flash from "@/components/admin/Flash";
+import {
+  createPublication,
+  createCertification,
+  deletePublication,
+  deleteCertification,
+} from "./actions";
 
 export const metadata = { title: "Publikationen & Ausbildung · Zentrale" };
 
-export default async function RecordsAdminPage() {
+export default async function RecordsAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string; err?: string }>;
+}) {
+  const { ok, err } = await searchParams;
+
   let pubs: { id: string; title: string; meta: string }[] = [];
+  let certs: { id: string; name: string; meta: string }[] = [];
   let certCats: { id: string; nameDe: string }[] = [];
   let dbError = false;
   try {
-    const [pubRows, cats] = await Promise.all([
+    const [pubRows, certRows, cats] = await Promise.all([
       db.publication.findMany({ orderBy: { year: "desc" }, include: { translations: { where: { locale: "de" } } } }),
+      db.certification.findMany({ orderBy: { acquiredOn: "desc" }, include: { category: true } }),
       db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
     ]);
     pubs = pubRows.map((p) => ({
       id: p.id,
       title: p.translations[0]?.title ?? "(ohne Titel)",
       meta: `${p.type} · ${p.year}${p.translations[0]?.role ? ` · ${p.translations[0]?.role}` : ""}`,
+    }));
+    certs = certRows.map((c) => ({
+      id: c.id,
+      name: c.name,
+      meta: [c.shortCode, c.category?.nameDe, formatDate(c.acquiredOn, "de")].filter(Boolean).join(" · "),
     }));
     certCats = cats.map((c) => ({ id: c.id, nameDe: c.nameDe }));
   } catch {
@@ -25,28 +47,40 @@ export default async function RecordsAdminPage() {
   return (
     <section>
       <h1>Publikationen &amp; Ausbildung</h1>
+      <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 
       <div className="grid g2" style={{ marginTop: 20 }}>
         <div className="card bracket">
           <p className="eyebrow">Publikationen</p>
-          <table>
-            <tbody>
-              {pubs.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <b>{p.title}</b>
-                    <div className="meta">{p.meta}</div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {pubs.length === 0 ? (
+            <p className="muted">Noch keine Publikationen erfasst.</p>
+          ) : (
+            <table>
+              <tbody>
+                {pubs.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <b>{p.title}</b>
+                      <div className="meta">{p.meta}</div>
+                    </td>
+                    <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                      <Link className="btn ghost sm" href={`/admin/publikationen/bearbeiten?pub=${p.id}`}>Bearbeiten</Link>{" "}
+                      <form action={deletePublication} style={{ display: "inline" }}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <ConfirmButton confirmText={`Publikation „${p.title}" wirklich löschen?`}>Löschen</ConfirmButton>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
           <p className="eyebrow" style={{ marginTop: 16 }}>Neue Publikation</p>
           <form action={createPublication}>
             <label className="f">Titel (DE)</label>
-            <input className="f" name="deTitle" placeholder="Titel" />
+            <input className="f" name="deTitle" placeholder="Titel" required />
             <label className="f">Art</label>
             <select className="f" name="type">
               <option value="BOOK">Buch</option>
@@ -68,7 +102,32 @@ export default async function RecordsAdminPage() {
         </div>
 
         <div className="card bracket">
-          <p className="eyebrow">Zertifizierung / Auszeichnung</p>
+          <p className="eyebrow">Zertifizierungen &amp; Auszeichnungen</p>
+          {certs.length === 0 ? (
+            <p className="muted">Noch keine Zertifizierungen erfasst.</p>
+          ) : (
+            <table>
+              <tbody>
+                {certs.map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <b>{c.name}</b>
+                      <div className="meta">{c.meta}</div>
+                    </td>
+                    <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                      <Link className="btn ghost sm" href={`/admin/publikationen/bearbeiten?cert=${c.id}`}>Bearbeiten</Link>{" "}
+                      <form action={deleteCertification} style={{ display: "inline" }}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <ConfirmButton confirmText={`„${c.name}" wirklich löschen?`}>Löschen</ConfirmButton>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <p className="eyebrow" style={{ marginTop: 16 }}>Neue Zertifizierung / Auszeichnung</p>
           <form action={createCertification}>
             <label className="f">Kategorie</label>
             <select className="f" name="categoryId">
@@ -77,18 +136,18 @@ export default async function RecordsAdminPage() {
               ))}
             </select>
             <label className="f">Bezeichnung</label>
-            <input className="f" name="name" placeholder="z. B. Azure AI Engineer Associate" />
+            <input className="f" name="name" placeholder="z. B. Azure AI Engineer Associate" required />
             <label className="f">Kürzel</label>
             <input className="f" name="shortCode" placeholder="AI-102" />
             <label className="f">Erworben am</label>
-            <input className="f" name="acquiredOn" type="month" />
+            <input className="f" name="acquiredOn" type="month" required />
             <label className="f">Gültig bis (optional)</label>
             <input className="f" name="validUntil" type="month" />
             <label className="f">Reihe (Mehrfachauszeichnung, z. B. MVP)</label>
             <input className="f" name="series" placeholder="MVP" />
             <label className="f">Nachweis-Link (optional)</label>
             <input className="f" name="proofUrl" placeholder="https://…" />
-            <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Speichern</button>
+            <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>+ Zertifizierung anlegen</button>
           </form>
         </div>
       </div>

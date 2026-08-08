@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { LEGAL_KEYS } from "@/lib/queries/legal";
@@ -13,12 +13,20 @@ export async function saveLegalDoc(formData: FormData): Promise<void> {
   const locale = String(formData.get("locale") ?? "de") === "en" ? "en" : "de";
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "");
-  if (!(LEGAL_KEYS as readonly string[]).includes(docKey) || !title) return;
+  if (!(LEGAL_KEYS as readonly string[]).includes(docKey) || !title) {
+    redirect("/admin/einstellungen?err=missing-fields");
+  }
 
-  await db.legalDoc.upsert({
-    where: { docKey_locale: { docKey, locale } },
-    create: { docKey, locale, title, body },
-    update: { title, body },
-  });
-  revalidatePath("/admin/einstellungen");
+  let failed = false;
+  try {
+    await db.legalDoc.upsert({
+      where: { docKey_locale: { docKey, locale } },
+      create: { docKey, locale, title, body },
+      update: { title, body },
+    });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect("/admin/einstellungen?err=failed");
+  redirect("/admin/einstellungen?ok=saved");
 }

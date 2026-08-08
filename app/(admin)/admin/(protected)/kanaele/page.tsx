@@ -24,7 +24,14 @@ function parsePayload(payload: string): { text: string; url: string } {
   }
 }
 
-export default async function KanaelePage() {
+export default async function KanaelePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const linkedinConfigured = Boolean(process.env.LINKEDIN_CLIENT_ID);
+
   let accounts: Awaited<ReturnType<typeof db.channelAccount.findMany>> = [];
   let manualTasks: Awaited<ReturnType<typeof db.channelTask.findMany>> = [];
   let failedTasks: typeof manualTasks = [];
@@ -45,6 +52,18 @@ export default async function KanaelePage() {
       <p className="muted">Der Zustand der Verbindungen und offene Ein-Klick-Aufgaben.</p>
 
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
+
+      {error === "linkedin-not-configured" || !linkedinConfigured ? (
+        <div className="card bracket" style={{ marginTop: 12, borderLeft: "2px solid var(--warn)" }}>
+          <p className="eyebrow" style={{ margin: 0 }}>LinkedIn noch nicht eingerichtet</p>
+          <p className="meta" style={{ marginTop: 6 }}>
+            Automatisches Posten auf LinkedIn braucht einmalig eine LinkedIn-App
+            (Client ID/Secret). Anleitung: <code>docs/LINKEDIN.md</code>. Danach
+            funktioniert „Verbinden“. X, Instagram und Facebook laufen ohnehin
+            über die Ein-Klick-Freigabe — dort ist nichts einzurichten.
+          </p>
+        </div>
+      ) : null}
 
       <p className="eyebrow" style={{ marginTop: 20 }}>Kanäle</p>
       <div className="grid g3">

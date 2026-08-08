@@ -1,0 +1,110 @@
+import Link from "next/link";
+import { db } from "@/lib/db";
+import Flash from "@/components/admin/Flash";
+import { updatePublication, updateCertification } from "../actions";
+
+export const metadata = { title: "Bearbeiten · Publikationen · Zentrale" };
+
+function monthValue(date: Date | null | undefined): string {
+  return date ? date.toISOString().slice(0, 7) : "";
+}
+
+export default async function RecordEditPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pub?: string; cert?: string; err?: string }>;
+}) {
+  const { pub, cert, err } = await searchParams;
+
+  const back = (
+    <div style={{ marginBottom: 12 }}>
+      <Link className="btn ghost sm" href="/admin/publikationen">← Zurück zur Übersicht</Link>
+    </div>
+  );
+
+  if (pub) {
+    const row = await db.publication.findUnique({
+      where: { id: pub },
+      include: { translations: { where: { locale: "de" } } },
+    });
+    if (!row) {
+      return <section>{back}<p className="st">Publikation nicht gefunden.</p></section>;
+    }
+    const de = row.translations[0];
+    return (
+      <section>
+        {back}
+        <h1>Publikation bearbeiten</h1>
+        <Flash err={err} />
+        <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
+          <form action={updatePublication}>
+            <input type="hidden" name="id" value={row.id} />
+            <label className="f">Titel (DE)</label>
+            <input className="f" name="deTitle" defaultValue={de?.title ?? ""} required />
+            <label className="f">Art</label>
+            <select className="f" name="type" defaultValue={row.type}>
+              <option value="BOOK">Buch</option>
+              <option value="ARTICLE">Fachartikel</option>
+              <option value="WHITEPAPER">Whitepaper</option>
+            </select>
+            <label className="f">Jahr</label>
+            <input className="f" name="year" type="number" defaultValue={row.year} />
+            <label className="f">Rolle (z. B. Co-Autorin)</label>
+            <input className="f" name="role" defaultValue={de?.role ?? ""} />
+            <label className="f">Verlag / Medium</label>
+            <input className="f" name="publisher" defaultValue={row.publisher ?? ""} />
+            <label className="f">ISBN (optional)</label>
+            <input className="f" name="isbn" defaultValue={row.isbn ?? ""} />
+            <label className="f">Link (optional)</label>
+            <input className="f" name="url" defaultValue={row.url ?? ""} placeholder="https://…" />
+            <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Änderungen speichern</button>
+          </form>
+        </div>
+      </section>
+    );
+  }
+
+  if (cert) {
+    const [row, cats] = await Promise.all([
+      db.certification.findUnique({ where: { id: cert } }),
+      db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
+    ]);
+    if (!row) {
+      return <section>{back}<p className="st">Zertifizierung nicht gefunden.</p></section>;
+    }
+    return (
+      <section>
+        {back}
+        <h1>Zertifizierung bearbeiten</h1>
+        <Flash err={err} />
+        <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
+          <form action={updateCertification}>
+            <input type="hidden" name="id" value={row.id} />
+            <label className="f">Kategorie</label>
+            <select className="f" name="categoryId" defaultValue={row.categoryId ?? ""}>
+              <option value="">— keine —</option>
+              {cats.map((c) => (
+                <option key={c.id} value={c.id}>{c.nameDe}</option>
+              ))}
+            </select>
+            <label className="f">Bezeichnung</label>
+            <input className="f" name="name" defaultValue={row.name} required />
+            <label className="f">Kürzel</label>
+            <input className="f" name="shortCode" defaultValue={row.shortCode ?? ""} />
+            <label className="f">Erworben am</label>
+            <input className="f" name="acquiredOn" type="month" defaultValue={monthValue(row.acquiredOn)} required />
+            <label className="f">Gültig bis (optional)</label>
+            <input className="f" name="validUntil" type="month" defaultValue={monthValue(row.validUntil)} />
+            <label className="f">Reihe (Mehrfachauszeichnung, z. B. MVP)</label>
+            <input className="f" name="series" defaultValue={row.series ?? ""} />
+            <label className="f">Nachweis-Link (optional)</label>
+            <input className="f" name="proofUrl" defaultValue={row.proofUrl ?? ""} placeholder="https://…" />
+            <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Änderungen speichern</button>
+          </form>
+        </div>
+      </section>
+    );
+  }
+
+  return <section>{back}<p className="muted">Kein Eintrag ausgewählt.</p></section>;
+}

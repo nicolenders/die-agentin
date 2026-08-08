@@ -22,6 +22,7 @@ export interface SaveMissionInput {
   lat: number;
   lon: number;
   startDate: string; // YYYY-MM-DD
+  endDate?: string | null; // YYYY-MM-DD, optional
   status: string; // MissionStatus
   eventUrl?: string | null;
   talkId?: string | null;
@@ -69,6 +70,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
   const status = isOneOf(MISSION_STATUSES, input.status) ? input.status : "PLANNED";
   const contentStatus = input.intent === "publish" ? "PUBLISHED" : "DRAFT";
   const startDate = new Date(`${input.startDate || "2026-01-01"}T00:00:00Z`);
+  const endDate = input.endDate ? new Date(`${input.endDate}T00:00:00Z`) : null;
 
   try {
     const mission = await db.mission.upsert({
@@ -82,6 +84,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         lat: input.lat,
         lon: input.lon,
         startDate,
+        endDate,
         status,
         contentStatus,
         eventUrl: input.eventUrl || null,
@@ -93,6 +96,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         lat: input.lat,
         lon: input.lon,
         startDate,
+        endDate,
         status,
         contentStatus,
         eventUrl: input.eventUrl || null,

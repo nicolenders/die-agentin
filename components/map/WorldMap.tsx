@@ -20,6 +20,7 @@ export interface MapMission {
   future: boolean;
   dateLabel: string;
   eventUrl: string | null;
+  published: boolean;
 }
 
 type Filter = "alle" | "geplant" | string;
@@ -135,7 +136,7 @@ export default function WorldMap({
                       </a>
                     </p>
                   ) : null}
-                  {selected.slug ? (
+                  {selected.published && selected.slug ? (
                     <Link className="btn" href={`/${locale}/einsaetze/${selected.slug}`} style={{ width: "100%", justifyContent: "center", padding: "9px 14px" }}>
                       {locale === "de" ? "Einsatzakte öffnen" : "Open mission file"}
                     </Link>

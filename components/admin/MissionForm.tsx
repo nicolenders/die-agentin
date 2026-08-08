@@ -23,6 +23,7 @@ export interface MissionFormInitial {
   lat: number;
   lon: number;
   startDate: string;
+  endDate: string;
   status: string;
   eventUrl: string;
   talkId: string;
@@ -61,6 +62,7 @@ export default function MissionForm({
   const [city, setCity] = useState(initial.city);
   const [countryCode, setCountryCode] = useState(initial.countryCode);
   const [startDate, setStartDate] = useState(initial.startDate);
+  const [endDate, setEndDate] = useState(initial.endDate);
   const [status, setStatus] = useState(initial.status || "PLANNED");
   const [eventUrl, setEventUrl] = useState(initial.eventUrl);
   const [talkId, setTalkId] = useState(initial.talkId);
@@ -115,6 +117,7 @@ export default function MissionForm({
       lat,
       lon,
       startDate,
+      endDate: endDate || null,
       status,
       eventUrl,
       talkId: talkId || null,
@@ -206,8 +209,10 @@ export default function MissionForm({
           <input className="f" value={city} onChange={(e) => setCity(e.target.value)} />
           <label className="f">Ländercode (2 Buchstaben)</label>
           <input className="f" value={countryCode} maxLength={2} onChange={(e) => setCountryCode(e.target.value)} />
-          <label className="f">Datum</label>
+          <label className="f">Datum (Beginn)</label>
           <input className="f" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <label className="f">Enddatum (optional, bei mehrtägigen Einsätzen)</label>
+          <input className="f" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           <label className="f">Status</label>
           <select className="f" value={status} onChange={(e) => setStatus(e.target.value)}>
             {MISSION_STATUSES.map((s) => (

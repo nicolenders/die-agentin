@@ -9,6 +9,7 @@ import type { AssetMap } from "@/lib/content/assets";
 import RenderDocument from "@/components/content/RenderDocument";
 import EditorToolbar, { type PickMode } from "./EditorToolbar";
 import MediaPicker, { type MediaItem } from "./MediaPicker";
+import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import {
   saveDossier,
   suggestDossierTranslation,
@@ -209,20 +210,9 @@ export default function DossierEditor({
 
           <aside>
             <p className="eyebrow">Dossier</p>
-            <label className="f" htmlFor="do-cat">Kategorien (Mehrfachauswahl)</label>
-            <select
-              id="do-cat"
-              className="f"
-              multiple
-              size={Math.min(6, Math.max(3, categories.length))}
-              value={categoryIds}
-              onChange={(e) => setCategoryIds(Array.from(e.target.selectedOptions, (o) => o.value))}
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <p className="meta">Mehrere mit Strg/Cmd bzw. langem Tippen wählbar.</p>
+            <label className="f">Kategorien (Mehrfachauswahl)</label>
+            <CategoryMultiSelect options={categories} value={categoryIds} onChange={setCategoryIds} />
+            <div style={{ marginTop: 4 }} />
 
             <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14, fontSize: 13 }}>
               <input type="checkbox" checked={tocEnabled} onChange={(e) => setTocEnabled(e.target.checked)} />

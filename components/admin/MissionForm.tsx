@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { computeGeo, project } from "@/lib/map/geo";
 import { MISSION_STATUSES } from "@/lib/domain";
 import MediaPicker, { type MediaItem } from "@/components/admin/editor/MediaPicker";
+import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import {
   saveMission,
   type SaveMissionInput,
@@ -259,22 +260,12 @@ export default function MissionForm({
                 placeholder="z. B. Agents in Produktion"
               />
               <label className="f">Kategorien (Mehrfachauswahl)</label>
-              {categories.length === 0 ? (
-                <p className="meta">Erst eine Kategorie unter „Briefings“ anlegen.</p>
-              ) : (
-                <select
-                  className="f"
-                  multiple
-                  size={Math.min(5, Math.max(2, categories.length))}
-                  value={newTalkCategories}
-                  onChange={(e) => setNewTalkCategories(Array.from(e.target.selectedOptions, (o) => o.value))}
-                  aria-label="Kategorien (Mehrfachauswahl)"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              )}
+              <CategoryMultiSelect
+                options={categories}
+                value={newTalkCategories}
+                onChange={setNewTalkCategories}
+                emptyHint="Erst eine Kategorie unter „Briefings“ anlegen."
+              />
               <div style={{ display: "flex", gap: 8 }}>
                 <span style={{ flex: 1 }}>
                   <label className="f">Level</label>

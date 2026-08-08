@@ -654,6 +654,11 @@ ol.styled li::marker {
   font-size: 9px;
   color: var(--violet-bright);
   text-align: center;
+  overflow: hidden;
+}
+.cert .badge img {
+  border-radius: 50%;
+  padding: 4px;
 }
 
 // ---------- Weltkarte (SPEC §11) ----------

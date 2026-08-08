@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { assetUrl } from "@/lib/media/url";
 import Flash from "@/components/admin/Flash";
+import AssetPickerField from "@/components/admin/AssetPickerField";
 import { updatePublication, updateCertification } from "../actions";
 
 export const metadata = { title: "Bearbeiten · Publikationen · Zentrale" };
@@ -25,12 +27,13 @@ export default async function RecordEditPage({
   if (pub) {
     const row = await db.publication.findUnique({
       where: { id: pub },
-      include: { translations: { where: { locale: "de" } } },
+      include: { translations: { where: { locale: "de" } }, coverAsset: true },
     });
     if (!row) {
       return <section>{back}<p className="st">Publikation nicht gefunden.</p></section>;
     }
     const de = row.translations[0];
+    const coverUrl = row.coverAsset ? assetUrl(row.coverAsset.blobPath) : null;
     return (
       <section>
         {back}
@@ -57,6 +60,8 @@ export default async function RecordEditPage({
             <input className="f" name="isbn" defaultValue={row.isbn ?? ""} />
             <label className="f">Link (optional)</label>
             <input className="f" name="url" defaultValue={row.url ?? ""} placeholder="https://…" />
+            <label className="f">Cover (optional)</label>
+            <AssetPickerField name="coverAssetId" initialAssetId={row.coverAssetId} initialUrl={coverUrl} aspectRatio="3 / 4" emptyHint="Kein Cover gewählt" />
             <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Änderungen speichern</button>
           </form>
         </div>
@@ -66,12 +71,13 @@ export default async function RecordEditPage({
 
   if (cert) {
     const [row, cats] = await Promise.all([
-      db.certification.findUnique({ where: { id: cert }, include: { categories: true } }),
+      db.certification.findUnique({ where: { id: cert }, include: { categories: true, logo: true } }),
       db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
     ]);
     if (!row) {
       return <section>{back}<p className="st">Zertifizierung nicht gefunden.</p></section>;
     }
+    const logoUrl = row.logo ? assetUrl(row.logo.blobPath) : null;
     return (
       <section>
         {back}
@@ -99,6 +105,8 @@ export default async function RecordEditPage({
             <input className="f" name="series" defaultValue={row.series ?? ""} />
             <label className="f">Nachweis-Link (optional)</label>
             <input className="f" name="proofUrl" defaultValue={row.proofUrl ?? ""} placeholder="https://…" />
+            <label className="f">Logo (optional)</label>
+            <AssetPickerField name="logoAssetId" initialAssetId={row.logoAssetId} initialUrl={logoUrl} aspectRatio="1 / 1" objectFit="contain" emptyHint="Kein Logo gewählt" />
             <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Änderungen speichern</button>
           </form>
         </div>

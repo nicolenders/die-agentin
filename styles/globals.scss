@@ -154,10 +154,17 @@ h1 {
   display: grid;
   grid-template-columns: 92px 1fr;
   gap: 16px;
-  align-items: start;
+  // Karten einer Reihe sind gleich hoch (Grid-Stretch); Cover bleibt oben,
+  // der Textkörper füllt die Höhe, damit der Button unten bündig sitzt.
+  align-items: stretch;
+}
+.pub-card > .brand-image {
+  align-self: start;
 }
 .pub-body {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 .pub-tags {
   display: flex;
@@ -184,7 +191,8 @@ h1 {
   font-size: 13px;
 }
 .pub-link {
-  margin-top: 10px;
+  margin-top: auto; // an den unteren Rand der Karte schieben → Buttons bündig
+  align-self: flex-start; // Button behält seine natürliche Breite
 }
 @media (max-width: 1100px) {
   .pub-grid {

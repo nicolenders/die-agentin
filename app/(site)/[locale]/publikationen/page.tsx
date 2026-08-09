@@ -59,7 +59,7 @@ export default async function PublikationenPage({
                 </p>
                 {b.url ? (
                   <a className="btn ghost sm pub-link" href={b.url} target="_blank" rel="noopener noreferrer">
-                    {isDe ? "Informationen zum Buch" : "Book details"}
+                    {isDe ? "Weitere Infos" : "More info"}
                   </a>
                 ) : null}
               </div>

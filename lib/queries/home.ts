@@ -121,15 +121,7 @@ async function loadHomeStats(): Promise<HomeStats> {
     db.mission.groupBy({ by: ["countryCode"] }),
     db.talk.count({ where: { active: true } }),
     db.publication.count({ where: { type: "BOOK" } }),
-    db.certification.count({
-      where: {
-        OR: [
-          { series: { contains: "MVP" } },
-          { category: { is: { nameDe: { contains: "MVP" } } } },
-          { categories: { some: { nameDe: { contains: "MVP" } } } },
-        ],
-      },
-    }),
+    db.certification.count({ where: { kind: "MVP" } }),
   ]);
   return {
     missions,

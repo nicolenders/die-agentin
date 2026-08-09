@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { invalidateTags, tags } from "@/lib/cache";
 import { PUBLICATION_TYPES, isOneOf } from "@/lib/domain";
+import { toCertKind } from "@/lib/records/kind";
+import { FOCUS_TAG } from "@/lib/queries/records";
 
 const LIST = "/admin/publikationen";
 
@@ -130,6 +132,7 @@ export async function createCertification(formData: FormData): Promise<void> {
     await db.certification.create({
       data: {
         name,
+        kind: toCertKind(str(formData, "kind")),
         shortCode: str(formData, "shortCode") || null,
         categoryId: categoryIds[0] ?? null,
         categories: { connect: categoryIds.map((id) => ({ id })) },
@@ -163,6 +166,7 @@ export async function updateCertification(formData: FormData): Promise<void> {
       where: { id },
       data: {
         name,
+        kind: toCertKind(str(formData, "kind")),
         shortCode: str(formData, "shortCode") || null,
         categoryId: categoryIds[0] ?? null,
         categories: { set: categoryIds.map((id) => ({ id })) },
@@ -194,5 +198,43 @@ export async function deleteCertification(formData: FormData): Promise<void> {
   }
   if (failed) redirect(`${LIST}?err=failed`);
   invalidateCertifications();
+  redirect(`${LIST}?ok=deleted`);
+}
+
+// ------------------------------------------------ Aktuelle Lernthemen
+
+export async function createFocusTopic(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const titleDe = str(formData, "titleDe");
+  if (!titleDe) redirect(`${LIST}?err=missing-fields`);
+  let failed = false;
+  try {
+    await db.focusTopic.create({
+      data: {
+        titleDe,
+        titleEn: str(formData, "titleEn") || null,
+        note: str(formData, "note") || null,
+      },
+    });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=failed`);
+  invalidateTags([FOCUS_TAG]);
+  redirect(`${LIST}?ok=created`);
+}
+
+export async function deleteFocusTopic(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!id) redirect(`${LIST}?err=not-found`);
+  let failed = false;
+  try {
+    await db.focusTopic.delete({ where: { id } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=failed`);
+  invalidateTags([FOCUS_TAG]);
   redirect(`${LIST}?ok=deleted`);
 }

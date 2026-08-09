@@ -57,54 +57,78 @@ export async function getPublications(locale: Locale): Promise<PublicationItem[]
   }
 }
 
-export interface CertificationGroup {
-  category: string;
-  items: {
-    id: string;
-    name: string;
-    shortCode: string | null;
-    acquiredOn: Date;
-    validUntil: Date | null;
-    proofUrl: string | null;
-    series: string | null;
-    logoUrl: string | null;
-    logoAlt: string;
-    logoAi: boolean;
-  }[];
+export interface CertificationRecord {
+  id: string;
+  name: string;
+  shortCode: string | null;
+  kind: string; // CERTIFICATION | MVP | TRAINING | AWARD
+  acquiredOn: Date;
+  validUntil: Date | null;
+  proofUrl: string | null;
+  series: string | null;
+  logoUrl: string | null;
+  logoAlt: string;
+  logoAi: boolean;
 }
 
-async function loadCertifications(locale: Locale): Promise<CertificationGroup[]> {
-  const cats = await db.taxonomy.findMany({
-    where: { kind: "CERTIFICATION" },
-    orderBy: { sortOrder: "asc" },
-    include: { certMulti: { orderBy: { sortOrder: "asc" }, include: { logo: true } } },
+async function loadCertifications(locale: Locale): Promise<CertificationRecord[]> {
+  const rows = await db.certification.findMany({
+    orderBy: [{ acquiredOn: "desc" }, { sortOrder: "asc" }],
+    include: { logo: true },
   });
-  return cats
-    .map((cat) => ({
-      category: locale === "en" ? cat.nameEn : cat.nameDe,
-      items: cat.certMulti.map((c) => ({
-        id: c.id,
-        name: c.name,
-        shortCode: c.shortCode,
-        acquiredOn: c.acquiredOn,
-        validUntil: c.validUntil,
-        proofUrl: c.proofUrl,
-        series: c.series,
-        logoAi: c.logo?.source === "AI",
-        logoUrl: c.logo ? assetUrl(c.logo.blobPath) : null,
-        logoAlt:
-          c.logo && !c.logo.decorative
-            ? locale === "en" && c.logo.altEn
-              ? c.logo.altEn
-              : c.logo.altDe
-            : c.name,
-      })),
-    }))
-    .filter((g) => g.items.length > 0);
+  return rows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    shortCode: c.shortCode,
+    kind: c.kind,
+    acquiredOn: c.acquiredOn,
+    validUntil: c.validUntil,
+    proofUrl: c.proofUrl,
+    series: c.series,
+    logoAi: c.logo?.source === "AI",
+    logoUrl: c.logo ? assetUrl(c.logo.blobPath) : null,
+    logoAlt:
+      c.logo && !c.logo.decorative
+        ? locale === "en" && c.logo.altEn
+          ? c.logo.altEn
+          : c.logo.altDe
+        : c.name,
+  }));
 }
 
-export async function getCertifications(locale: Locale): Promise<CertificationGroup[]> {
+export async function getCertifications(locale: Locale): Promise<CertificationRecord[]> {
   const run = cachedQuery(loadCertifications, ["certs", locale], [tags.certificationList(locale)]);
+  try {
+    return await run(locale);
+  } catch {
+    return [];
+  }
+}
+
+// --------------------------------------------------- Aktuelle Lernthemen
+
+export const FOCUS_TAG = "focus-topics";
+
+export interface FocusTopicItem {
+  id: string;
+  title: string;
+  note: string | null;
+}
+
+async function loadFocusTopics(locale: Locale): Promise<FocusTopicItem[]> {
+  const rows = await db.focusTopic.findMany({
+    where: { active: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+  });
+  return rows.map((t) => ({
+    id: t.id,
+    title: locale === "en" && t.titleEn ? t.titleEn : t.titleDe,
+    note: t.note,
+  }));
+}
+
+export async function getFocusTopics(locale: Locale): Promise<FocusTopicItem[]> {
+  const run = cachedQuery(loadFocusTopics, ["focus", locale], [FOCUS_TAG]);
   try {
     return await run(locale);
   } catch {

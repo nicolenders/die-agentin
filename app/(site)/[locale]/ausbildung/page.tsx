@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
-import { getCertifications } from "@/lib/queries/records";
+import { getCertifications, getFocusTopics } from "@/lib/queries/records";
+import { CERT_KINDS, CERT_KIND_LABEL, CERT_KIND_LABEL_EN } from "@/lib/records/kind";
 import AssetImage from "@/components/media/AssetImage";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,8 @@ export default async function AusbildungPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const groups = await getCertifications(locale);
+  const [certs, focus] = await Promise.all([getCertifications(locale), getFocusTopics(locale)]);
+  const kindLabel = (k: (typeof CERT_KINDS)[number]) => (isDe ? CERT_KIND_LABEL[k] : CERT_KIND_LABEL_EN[k]);
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
@@ -47,22 +49,49 @@ export default async function AusbildungPage({
       <h2>{isDe ? "Eine Agentin bildet sich weiter" : "An agent keeps learning"}</h2>
       <p className="lead">
         {isDe
-          ? "Gruppiert nach Kategorien, mit Ausstellungsdatum und — wo relevant — Gültigkeit."
-          : "Grouped by category, with issue date and — where relevant — validity."}
+          ? "Zertifizierungen, MVP-Auszeichnungen, Schulungen und aktuelle Themen — getrennt nach Bereichen."
+          : "Certifications, MVP awards, trainings and current topics — grouped by area."}
       </p>
 
-      {groups.length === 0 ? (
+      {focus.length > 0 ? (
+        <div className="card bracket" style={{ margin: "24px 0", padding: 24 }}>
+          <p className="eyebrow">{isDe ? "Woran ich gerade lerne" : "What I'm currently exploring"}</p>
+          <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 6 }}>
+            {focus.map((f) => (
+              <span
+                key={f.id}
+                title={f.note ?? undefined}
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "11px",
+                  letterSpacing: ".14em",
+                  color: "var(--violet-text)",
+                  border: "1px solid var(--line)",
+                  padding: "7px 13px",
+                  borderRadius: "var(--r)",
+                }}
+              >
+                {f.title}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {certs.length === 0 && focus.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 24 }}>
           <p className="muted">{isDe ? "Noch keine Zertifizierungen erfasst." : "No certifications yet."}</p>
         </div>
-      ) : (
-        groups.map((g) => (
-          <div key={g.category}>
-            <p className="eyebrow" style={{ marginTop: 32 }}>
-              {g.category}
-            </p>
+      ) : null}
+
+      {CERT_KINDS.map((kind) => {
+        const items = certs.filter((c) => c.kind === kind);
+        if (items.length === 0) return null;
+        return (
+          <div key={kind}>
+            <p className="eyebrow" style={{ marginTop: 32 }}>{kindLabel(kind)}</p>
             <div className="cert-grid">
-              {g.items.map((c) => (
+              {items.map((c) => (
                 <div className="cert" key={c.id}>
                   <div className="badge">
                     {c.logoUrl ? (
@@ -99,8 +128,8 @@ export default async function AusbildungPage({
               ))}
             </div>
           </div>
-        ))
-      )}
+        );
+      })}
     </section>
   );
 }

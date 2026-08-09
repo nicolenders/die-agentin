@@ -4,6 +4,7 @@ import { assetUrl } from "@/lib/media/url";
 import Flash from "@/components/admin/Flash";
 import AssetPickerField from "@/components/admin/AssetPickerField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
+import { CERT_KINDS, CERT_KIND_LABEL } from "@/lib/records/kind";
 import { updatePublication, updateCertification } from "../actions";
 
 export const metadata = { title: "Bearbeiten · Publikationen · Zentrale" };
@@ -87,7 +88,13 @@ export default async function RecordEditPage({
         <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
           <form action={updateCertification}>
             <input type="hidden" name="id" value={row.id} />
-            <label className="f">Kategorien (Mehrfachauswahl)</label>
+            <label className="f">Art</label>
+            <select className="f" name="kind" defaultValue={row.kind}>
+              {CERT_KINDS.map((k) => (
+                <option key={k} value={k}>{CERT_KIND_LABEL[k]}</option>
+              ))}
+            </select>
+            <label className="f">Kategorien (optional, Mehrfachauswahl)</label>
             <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={row.categories.map((c) => c.id)} />
             <label className="f">Bezeichnung</label>
             <input className="f" name="name" defaultValue={row.name} required />

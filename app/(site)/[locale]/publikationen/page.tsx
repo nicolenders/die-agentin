@@ -46,6 +46,7 @@ export default async function PublikationenPage({
                 label="Cover"
                 sub={isDe ? "Buchcover" : "Book cover"}
                 ratio="2 / 3"
+                ai={b.coverAi}
               />
               <div>
                 <span className="tag">{typeLabel(b.type)}</span>

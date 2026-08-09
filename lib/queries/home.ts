@@ -13,6 +13,7 @@ export const HOME_TAG = "home";
 export interface HeroImage {
   url: string;
   alt: string;
+  ai: boolean;
 }
 
 export interface HeroData {
@@ -86,6 +87,7 @@ export async function getHomeHero(locale: Locale): Promise<HeroData> {
             locale === "en" && row.heroAsset.altEn
               ? row.heroAsset.altEn
               : row.heroAsset.altDe,
+          ai: row.heroAsset.source === "AI",
         }
       : null,
   };

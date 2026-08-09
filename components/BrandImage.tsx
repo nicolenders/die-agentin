@@ -8,6 +8,7 @@ export default function BrandImage({
   sub = "Prompt: docs/BILDPROMPTS.md",
   ratio = "4 / 3",
   className = "",
+  ai = false,
 }: {
   src: string | null;
   alt: string;
@@ -15,15 +16,19 @@ export default function BrandImage({
   sub?: string;
   ratio?: string;
   className?: string;
+  ai?: boolean;
 }) {
   return (
     <figure
       className={`brand-image bracket ${className}`}
-      style={{ aspectRatio: ratio }}
+      style={{ aspectRatio: ratio, position: "relative" }}
     >
       {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt} />
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt={alt} />
+          {ai ? <span className="ai-badge">KI-generiert</span> : null}
+        </>
       ) : (
         <div className="brand-ph" role="img" aria-label={alt}>
           <div>

@@ -90,7 +90,7 @@ export default async function EinsatzaktePage({
               {locale === "de" ? "Bilder vom Einsatz" : "Photos from the mission"}
             </h3>
             <Gallery
-              images={mission.photos.map((p) => ({ url: p.url, alt: p.decorative ? "" : p.alt }))}
+              images={mission.photos.map((p) => ({ url: p.url, alt: p.decorative ? "" : p.alt, ai: p.ai }))}
               label={locale === "de" ? "Fotos vom Einsatz" : "Mission photos"}
             />
           </>

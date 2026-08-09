@@ -77,6 +77,7 @@ export default async function HQPage({
               label="Die Agentin"
               sub={locale === "de" ? "Hero-Bild" : "Hero image"}
               ratio="4 / 5"
+              ai={hero.heroImage?.ai ?? false}
             />
           </div>
         </div>

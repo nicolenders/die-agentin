@@ -16,6 +16,7 @@ export interface PublicationItem {
   role: string | null;
   coverUrl: string | null;
   coverAlt: string;
+  coverAi: boolean;
 }
 
 async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
@@ -42,6 +43,7 @@ async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
             ? p.coverAsset.altEn
             : p.coverAsset.altDe
           : title,
+      coverAi: p.coverAsset?.source === "AI",
     };
   });
 }
@@ -67,6 +69,7 @@ export interface CertificationGroup {
     series: string | null;
     logoUrl: string | null;
     logoAlt: string;
+    logoAi: boolean;
   }[];
 }
 
@@ -87,6 +90,7 @@ async function loadCertifications(locale: Locale): Promise<CertificationGroup[]>
         validUntil: c.validUntil,
         proofUrl: c.proofUrl,
         series: c.series,
+        logoAi: c.logo?.source === "AI",
         logoUrl: c.logo ? assetUrl(c.logo.blobPath) : null,
         logoAlt:
           c.logo && !c.logo.decorative

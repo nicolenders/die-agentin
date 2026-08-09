@@ -47,6 +47,7 @@ export default async function LegendePage({
             label={isDe ? "Porträt" : "Portrait"}
             sub={legend.name}
             ratio="4 / 5"
+            ai={legend.portrait?.ai ?? false}
           />
         </div>
       </div>

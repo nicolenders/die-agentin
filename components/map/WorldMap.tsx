@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { computeGeo, project } from "@/lib/map/geo";
 import { availableViews, inBounds } from "@/lib/map/views";
+import AssetImage from "@/components/media/AssetImage";
 import type { Locale } from "@/lib/i18n/config";
 
 const W = 1000;
@@ -24,6 +25,7 @@ export interface MapMission {
   published: boolean;
   bannerUrl: string | null;
   bannerAlt: string;
+  bannerAi: boolean;
 }
 
 type Filter = "alle" | "geplant" | string;
@@ -167,11 +169,12 @@ export default function WorldMap({
                     ×
                   </button>
                   {selected.bannerUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <AssetImage
                       src={selected.bannerUrl}
                       alt={selected.bannerAlt}
-                      style={{ width: "100%", borderRadius: 4, margin: "0 0 8px", display: "block" }}
+                      ai={selected.bannerAi}
+                      style={{ display: "block", margin: "0 0 8px" }}
+                      imgStyle={{ width: "100%", borderRadius: 4, display: "block" }}
                     />
                   ) : null}
                   <p className="meta" style={{ margin: 0 }}>

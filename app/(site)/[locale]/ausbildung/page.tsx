@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getCertifications } from "@/lib/queries/records";
+import AssetImage from "@/components/media/AssetImage";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +61,12 @@ export default async function AusbildungPage({
               <div className="cert" key={c.id}>
                 <div className="badge">
                   {c.logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.logoUrl} alt={c.logoAlt} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    <AssetImage
+                      src={c.logoUrl}
+                      alt={c.logoAlt}
+                      ai={c.logoAi}
+                      imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    />
                   ) : (
                     badge(c.shortCode, c.name, c.series)
                   )}

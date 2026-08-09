@@ -21,6 +21,7 @@ export interface MissionListItem {
   published: boolean;
   bannerUrl: string | null;
   bannerAlt: string;
+  bannerAi: boolean;
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
@@ -43,6 +44,7 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       future: m.startDate.getTime() > nowMs,
       eventUrl: m.eventUrl,
       published: m.contentStatus === "PUBLISHED",
+      bannerAi: m.banner?.source === "AI",
       bannerUrl: m.banner ? assetUrl(m.banner.blobPath) : null,
       bannerAlt:
         m.banner && !m.banner.decorative
@@ -80,7 +82,7 @@ export interface MissionDetail {
   talkText: string;
   fallback: boolean;
   contentLocale: Locale;
-  photos: { url: string; alt: string; decorative: boolean }[];
+  photos: { url: string; alt: string; decorative: boolean; ai: boolean }[];
   briefing: { title: string; language: string } | null;
 }
 
@@ -126,6 +128,7 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
       url: assetUrl(p.asset.blobPath),
       alt: locale === "en" && p.asset.altEn ? p.asset.altEn : p.asset.altDe,
       decorative: p.asset.decorative,
+      ai: p.asset.source === "AI",
     })),
     briefing: delivery && talkTitle ? { title: talkTitle, language: delivery.language } : null,
   };

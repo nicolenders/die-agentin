@@ -52,8 +52,23 @@ async function fetchSocialLinks(): Promise<Record<string, string>> {
 
 // Gecacht: ein Footer-Aufruf (jede Seite) berührt so die DB nicht (SPEC §2.1).
 // Wird beim Speichern über den Tag `site-settings` invalidiert.
-export const getSocialLinks = cachedQuery(
+const loadSocialLinks = cachedQuery(
   fetchSocialLinks,
   ["site-settings", "social"],
   [SITE_SETTINGS_TAG],
 );
+
+/**
+ * Footer-Social-Links. Fehlertolerant: Der Footer steckt im geteilten Layout
+ * (auch der statisch gerenderten Startseite). Ist die DB nicht erreichbar —
+ * etwa beim Docker-Build ohne Datenbank oder während die Serverless-Instanz
+ * pausiert —, liefert die Abfrage einfach keine Links, statt die Seite scheitern
+ * zu lassen.
+ */
+export async function getSocialLinks(): Promise<Record<string, string>> {
+  try {
+    return await loadSocialLinks();
+  } catch {
+    return {};
+  }
+}

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { LEGAL_KEYS } from "@/lib/queries/legal";
@@ -54,6 +55,10 @@ export async function saveSocialLinks(formData: FormData): Promise<void> {
       });
     }
     invalidateTags([SITE_SETTINGS_TAG]);
+    // Die Startseiten werden statisch gerendert und lesen den Footer beim Build
+    // (ohne DB). Damit neue Profile dort erscheinen, gezielt neu erzeugen.
+    revalidatePath("/de");
+    revalidatePath("/en");
   } catch {
     failed = true;
   }

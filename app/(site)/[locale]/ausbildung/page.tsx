@@ -21,6 +21,10 @@ function monthYear(date: Date, locale: Locale): string {
   }).format(date);
 }
 
+function yearOf(date: Date): string {
+  return new Intl.DateTimeFormat("de-DE", { year: "numeric", timeZone: "Europe/Berlin" }).format(date);
+}
+
 function badge(shortCode: string | null, name: string, series: string | null): string {
   if (series) return series;
   if (shortCode) return shortCode;
@@ -57,38 +61,43 @@ export default async function AusbildungPage({
             <p className="eyebrow" style={{ marginTop: 32 }}>
               {g.category}
             </p>
-            {g.items.map((c) => (
-              <div className="cert" key={c.id}>
-                <div className="badge">
-                  {c.logoUrl ? (
-                    <AssetImage
-                      src={c.logoUrl}
-                      alt={c.logoAlt}
-                      ai={c.logoAi}
-                      imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
-                    />
-                  ) : (
-                    badge(c.shortCode, c.name, c.series)
-                  )}
-                </div>
-                <div>
-                  <b>{c.name}</b>
-                  <div className="meta">
-                    {isDe ? "Erworben" : "Acquired"} {monthYear(c.acquiredOn, locale)}
-                    {c.validUntil ? ` · ${isDe ? "gültig bis" : "valid until"} ${monthYear(c.validUntil, locale)}` : ""}
-                    {c.series ? ` · ${isDe ? "Reihe" : "series"} ${c.series}` : ""}
-                    {c.proofUrl ? (
-                      <>
-                        {" · "}
-                        <a href={c.proofUrl} target="_blank" rel="noopener noreferrer">
-                          {isDe ? "Nachweis" : "Proof"}
-                        </a>
-                      </>
-                    ) : null}
+            <div className="cert-grid">
+              {g.items.map((c) => (
+                <div className="cert" key={c.id}>
+                  <div className="badge">
+                    {c.logoUrl ? (
+                      <AssetImage
+                        src={c.logoUrl}
+                        alt={c.logoAlt}
+                        ai={c.logoAi}
+                        imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      />
+                    ) : (
+                      badge(c.shortCode, c.name, c.series)
+                    )}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="cert-head">
+                      <b>{c.name}</b>
+                      <span className="pub-year">{yearOf(c.acquiredOn)}</span>
+                    </div>
+                    <div className="meta">
+                      {isDe ? "Erworben" : "Acquired"} {monthYear(c.acquiredOn, locale)}
+                      {c.validUntil ? ` · ${isDe ? "gültig bis" : "valid until"} ${monthYear(c.validUntil, locale)}` : ""}
+                      {c.series ? ` · ${isDe ? "Reihe" : "series"} ${c.series}` : ""}
+                      {c.proofUrl ? (
+                        <>
+                          {" · "}
+                          <a href={c.proofUrl} target="_blank" rel="noopener noreferrer">
+                            {isDe ? "Nachweis" : "Proof"}
+                          </a>
+                        </>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ))
       )}

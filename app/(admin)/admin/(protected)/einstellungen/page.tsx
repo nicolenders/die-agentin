@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
+import { SOCIAL_PLATFORMS, socialSettingKey } from "@/lib/queries/settings";
 import Flash from "@/components/admin/Flash";
-import { saveLegalDoc } from "./actions";
+import { saveLegalDoc, saveSocialLinks } from "./actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
 
@@ -42,6 +43,17 @@ export default async function EinstellungenPage({
   }
   const find = (key: string, locale: string) => docs.find((d) => d.docKey === key && d.locale === locale);
 
+  const social: Record<string, string> = {};
+  try {
+    const rows = await db.siteSetting.findMany({
+      where: { key: { in: SOCIAL_PLATFORMS.map((p) => socialSettingKey(p.key)) } },
+      select: { key: true, value: true },
+    });
+    for (const row of rows) social[row.key.replace(/^social\./, "")] = row.value;
+  } catch {
+    dbError = true;
+  }
+
   return (
     <section>
       <h1>Einstellungen</h1>
@@ -79,6 +91,35 @@ export default async function EinstellungenPage({
           </p>
         </div>
       </div>
+
+      <p className="eyebrow" style={{ marginTop: 28 }}>Social-Media-Profile</p>
+      <p className="meta">
+        Erscheinen im Footer. Leeres Feld = Link wird ausgeblendet. Ohne
+        vollständige Adresse wird <code>https://</code> ergänzt.
+      </p>
+      <form action={saveSocialLinks} className="card bracket" style={{ marginBottom: 16 }}>
+        <div className="grid g2">
+          {SOCIAL_PLATFORMS.map((p) => (
+            <div key={p.key}>
+              <label className="f" htmlFor={`social-${p.key}`}>
+                {p.label}
+              </label>
+              <input
+                id={`social-${p.key}`}
+                className="f"
+                name={p.key}
+                type="url"
+                inputMode="url"
+                defaultValue={social[p.key] ?? ""}
+                placeholder={p.placeholder}
+              />
+            </div>
+          ))}
+        </div>
+        <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>
+          Profile speichern
+        </button>
+      </form>
 
       <p className="eyebrow" style={{ marginTop: 28 }}>Rechtliche Seiten</p>
       <p className="meta">Bereits gespeicherter Text wird angezeigt und kann bearbeitet werden — je Sprache getrennt.</p>

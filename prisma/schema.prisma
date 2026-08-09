@@ -442,3 +442,14 @@ model AuditLog {
   @@index([at])
   @@index([entity, entityId])
 }
+
+// ---------------------------------------------------------------------------
+// Seiteneinstellungen (Schlüssel/Wert), z. B. Social-Media-Profile im Footer.
+// Von Nicole ohne Deployment pflegbar; öffentlich gecacht (Tag "site-settings").
+// ---------------------------------------------------------------------------
+
+model SiteSetting {
+  key       String   @id
+  value     String   @db.NVarChar(Max)
+  updatedAt DateTime @updatedAt
+}

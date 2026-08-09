@@ -2,6 +2,7 @@ import Link from "next/link";
 import styles from "./SiteFooter.module.scss";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n";
+import { getSocialLinks, SOCIAL_PLATFORMS } from "@/lib/queries/settings";
 
 interface SiteFooterProps {
   locale: Locale;
@@ -9,9 +10,12 @@ interface SiteFooterProps {
 }
 
 /** Fußzeile mit Inhalts-, Über- und Rechts-Links (SPEC §12: Footer-Pflichtlinks). */
-export default function SiteFooter({ locale, dict }: SiteFooterProps) {
+export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
   const year = 2026;
   const l = (segment: string) => `/${locale}/${segment}`;
+  // Nur gepflegte Profile anzeigen (SPEC: keine toten „#"-Links).
+  const social = await getSocialLinks();
+  const socialLinks = SOCIAL_PLATFORMS.filter((p) => social[p.key]);
 
   return (
     <footer className={styles.footer}>
@@ -29,23 +33,21 @@ export default function SiteFooter({ locale, dict }: SiteFooterProps) {
           <p style={{ fontSize: 14, color: "var(--muted)", maxWidth: "34ch" }}>
             {dict.brand.tagline}
           </p>
-          <div className={styles.socials}>
-            <a href="#" aria-label="LinkedIn">
-              in
-            </a>
-            <a href="#" aria-label="Instagram">
-              ig
-            </a>
-            <a href="#" aria-label="Facebook">
-              fb
-            </a>
-            <a href="#" aria-label="YouTube">
-              yt
-            </a>
-            <a href="#" aria-label="X">
-              x
-            </a>
-          </div>
+          {socialLinks.length > 0 ? (
+            <div className={styles.socials}>
+              {socialLinks.map((p) => (
+                <a
+                  key={p.key}
+                  href={social[p.key]}
+                  aria-label={p.label}
+                  target="_blank"
+                  rel="me noopener noreferrer"
+                >
+                  {p.icon}
+                </a>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div>

@@ -342,6 +342,7 @@ model MediaAsset {
   legendPortraits  LegendContent[] @relation("LegendPortrait")
   certificationLogos Certification[] @relation("CertificationLogo")
   missionBanners   Mission[]      @relation("MissionBanner")
+  homeHeroes       HomeContent[]  @relation("HomeHero")
 }
 
 // Inhalte der „Legende" (Über-mich-Seite, SPEC §5) — im Admin pflegbar, je
@@ -454,4 +455,21 @@ model SiteSetting {
   key       String   @id
   value     String   @db.NVarChar(Max)
   updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Startseiten-Hero (SPEC §5), je Sprache im Admin pflegbar. `headline` und
+// `lead` sind Rich-Text-Feldwerte (TipTap-JSON; Akzent-Mark für farbige Wörter),
+// `roles` ein JSON-String-Array. Fehlt ein Eintrag, greift der i18n-Standard.
+// ---------------------------------------------------------------------------
+
+model HomeContent {
+  locale      String  @id
+  eyebrow     String?
+  headline    String? @db.NVarChar(Max)
+  lead        String? @db.NVarChar(Max)
+  roles       String? @db.NVarChar(Max)
+  heroAssetId String?
+  heroAsset   MediaAsset? @relation("HomeHero", fields: [heroAssetId], references: [id])
+  updatedAt   DateTime @updatedAt
 }

@@ -111,6 +111,24 @@ h1 {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+// Kategorie-Tags an Briefings: anklickbar (filtern), hervorgehoben wenn aktiv.
+.cat-tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--violet-text);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.cat-tag.on {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(92deg, var(--violet-bright), var(--magenta));
+}
+
 // Registerkarten (Admin).
 .tab-bar {
   display: flex;

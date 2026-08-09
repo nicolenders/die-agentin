@@ -206,9 +206,36 @@ export default function MissionForm({
             <circle cx={cx} cy={cy} r={5} fill="var(--signal)" stroke="#fff" strokeWidth={0.6} />
           </svg>
           <div style={{ padding: "12px 16px", borderTop: "1px solid var(--line-soft)" }}>
-            <span className="meta">
-              Gesetzt: {lat.toFixed(4)} N / {lon.toFixed(4)} O
-            </span>
+            <p className="meta" style={{ marginTop: 0 }}>
+              Klick auf die Karte grob setzen — oder exakte Koordinaten eintragen (z. B. aus
+              Google/Bing Maps: Rechtsklick auf den Ort → Koordinaten kopieren).
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <label className="f" style={{ margin: 0 }}>
+                Breite (N)
+                <input
+                  className="f"
+                  type="number"
+                  step="0.0001"
+                  value={lat}
+                  onChange={(e) => setLat(Number(e.target.value))}
+                  style={{ maxWidth: 140 }}
+                  aria-label="Breitengrad"
+                />
+              </label>
+              <label className="f" style={{ margin: 0 }}>
+                Länge (O)
+                <input
+                  className="f"
+                  type="number"
+                  step="0.0001"
+                  value={lon}
+                  onChange={(e) => setLon(Number(e.target.value))}
+                  style={{ maxWidth: 140 }}
+                  aria-label="Längengrad"
+                />
+              </label>
+            </div>
           </div>
         </div>
 

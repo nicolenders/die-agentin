@@ -78,13 +78,69 @@ export async function deleteTalkCategory(formData: FormData): Promise<void> {
   redirect(`${LIST}?ok=deleted`);
 }
 
+// -------------------------------------------------------------- Zielgruppen
+// Wiederverwendbare Zielgruppen-Tags (Taxonomy kind "AUDIENCE"), analog zu den
+// Kategorien: einmal anlegen, an beliebig vielen Briefings verwenden.
+
+export async function createTalkAudience(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const name = str(formData, "name");
+  if (!name) redirect(`${LIST}?err=missing-fields`);
+  let failed = false;
+  try {
+    await db.taxonomy.create({ data: { kind: "AUDIENCE", nameDe: name, nameEn: name, slug: slugify(name) } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=failed`);
+  invalidate();
+  redirect(`${LIST}?ok=created`);
+}
+
+export async function renameTalkAudience(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const nameDe = str(formData, "nameDe");
+  const nameEn = str(formData, "nameEn") || nameDe;
+  if (!id || !nameDe) redirect(`${LIST}?err=missing-fields`);
+  let failed = false;
+  try {
+    await db.taxonomy.update({ where: { id }, data: { nameDe, nameEn } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=failed`);
+  invalidate();
+  redirect(`${LIST}?ok=updated`);
+}
+
+export async function deleteTalkAudience(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!id) redirect(`${LIST}?err=not-found`);
+  const inUse = await db.talk.count({ where: { audiences: { some: { id } } } });
+  if (inUse > 0) redirect(`${LIST}?err=audience-in-use`);
+  let failed = false;
+  try {
+    await db.taxonomy.delete({ where: { id } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=failed`);
+  invalidate();
+  redirect(`${LIST}?ok=deleted`);
+}
+
 // --------------------------------------------------------------- Briefings
 
 export async function createTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const deTitle = str(formData, "deTitle");
   const enTitle = str(formData, "enTitle");
+  const deAbstract = str(formData, "deAbstract");
+  const enAbstract = str(formData, "enAbstract");
   const categoryIds = ids(formData, "categoryIds");
+  const audienceIds = ids(formData, "audienceIds");
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");
   const durationMin = durationRaw ? Number(durationRaw) : null;
@@ -96,12 +152,15 @@ export async function createTalk(formData: FormData): Promise<void> {
       data: {
         categoryId: categoryIds[0]!,
         categories: { connect: categoryIds.map((id) => ({ id })) },
+        audiences: { connect: audienceIds.map((id) => ({ id })) },
         level,
         durationMin: durationMin !== null && Number.isFinite(durationMin) ? durationMin : null,
         translations: {
           create: [
-            { locale: "de", title: deTitle },
-            ...(enTitle ? [{ locale: "en" as const, title: enTitle }] : []),
+            { locale: "de", title: deTitle, abstract: deAbstract || null },
+            ...(enTitle
+              ? [{ locale: "en" as const, title: enTitle, abstract: enAbstract || null }]
+              : []),
           ],
         },
       },
@@ -122,6 +181,9 @@ export async function updateTalk(formData: FormData): Promise<void> {
   const categoryIds = ids(formData, "categoryIds");
   if (!deTitle || categoryIds.length === 0) redirect(`${LIST}/bearbeiten?id=${id}&err=missing-fields`);
   const enTitle = str(formData, "enTitle");
+  const deAbstract = str(formData, "deAbstract");
+  const enAbstract = str(formData, "enAbstract");
+  const audienceIds = ids(formData, "audienceIds");
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");
   const durationMin = durationRaw ? Number(durationRaw) : null;
@@ -134,14 +196,15 @@ export async function updateTalk(formData: FormData): Promise<void> {
       data: {
         categoryId: categoryIds[0]!,
         categories: { set: categoryIds.map((id) => ({ id })) },
+        audiences: { set: audienceIds.map((id) => ({ id })) },
         level,
         durationMin: durationMin !== null && Number.isFinite(durationMin) ? durationMin : null,
         active,
         translations: {
           upsert: {
             where: { talkId_locale: { talkId: id, locale: "de" } },
-            create: { locale: "de", title: deTitle },
-            update: { title: deTitle },
+            create: { locale: "de", title: deTitle, abstract: deAbstract || null },
+            update: { title: deTitle, abstract: deAbstract || null },
           },
         },
       },
@@ -149,8 +212,8 @@ export async function updateTalk(formData: FormData): Promise<void> {
     if (enTitle) {
       await db.talkTranslation.upsert({
         where: { talkId_locale: { talkId: id, locale: "en" } },
-        create: { talkId: id, locale: "en", title: enTitle },
-        update: { title: enTitle },
+        create: { talkId: id, locale: "en", title: enTitle, abstract: enAbstract || null },
+        update: { title: enTitle, abstract: enAbstract || null },
       });
     } else {
       await db.talkTranslation.deleteMany({ where: { talkId: id, locale: "en" } });

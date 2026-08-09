@@ -56,6 +56,12 @@ export default async function BriefingsPage({
               <article key={t.id} className="card bracket">
                 <h3>{t.title}</h3>
                 {t.abstract ? <p style={{ fontSize: "14.5px" }}>{t.abstract}</p> : null}
+                {t.audiences.length > 0 ? (
+                  <p className="meta">
+                    {isDe ? "Für: " : "For: "}
+                    {t.audiences.join(" · ")}
+                  </p>
+                ) : null}
                 <p className="meta">
                   {t.deCount + t.enCount}× {isDe ? "gehalten" : "delivered"}
                   {t.level ? ` · Level ${t.level}` : ""}

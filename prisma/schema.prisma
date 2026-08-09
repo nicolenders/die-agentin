@@ -184,6 +184,7 @@ model Talk {
   translations TalkTranslation[]
   deliveries   TalkDelivery[]
   categories   Taxonomy[]     @relation("TalkCategories")
+  audiences    Taxonomy[]     @relation("TalkAudiences")
 
   @@index([categoryId])
 }
@@ -290,9 +291,10 @@ model Taxonomy {
   talks          Talk[]          @relation("TalkCategory")
   certifications Certification[] @relation("CertificationCategory")
   // Mehrfachauswahl-Gegenseiten (Join-Tabellen).
-  dossierMulti Dossier[]       @relation("DossierCategories")
-  talkMulti    Talk[]          @relation("TalkCategories")
-  certMulti    Certification[] @relation("CertificationCategories")
+  dossierMulti  Dossier[]       @relation("DossierCategories")
+  talkMulti     Talk[]          @relation("TalkCategories")
+  certMulti     Certification[] @relation("CertificationCategories")
+  talkAudiences Talk[]          @relation("TalkAudiences")
 
   @@unique([kind, slug])
   @@index([kind, sortOrder])

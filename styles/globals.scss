@@ -111,6 +111,93 @@ h1 {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+// Medienbibliothek als Tabelle: kompakte Zeilen, Zellen oben ausgerichtet.
+.media-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.media-table th,
+.media-table td {
+  vertical-align: top;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+}
+.media-table th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+// Bild mit KI-Hinweis + Klick-zum-Vergrößern (Lightbox). Anwendungsweit.
+.asset-image {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  max-width: 100%;
+}
+.asset-image > img {
+  max-width: 100%;
+  height: auto;
+}
+.ai-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(5, 1, 13, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 3px 7px;
+  border-radius: 4px;
+  pointer-events: none;
+  line-height: 1.2;
+  backdrop-filter: blur(2px);
+}
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(2, 0, 8, 0.9);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.lightbox-figure {
+  position: relative;
+  margin: 0;
+  max-width: 94vw;
+  max-height: 90vh;
+}
+.lightbox-figure img {
+  max-width: 94vw;
+  max-height: 84vh;
+  display: block;
+  border-radius: 6px;
+}
+.lightbox-figure figcaption {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+  text-align: center;
+}
+.lightbox-close {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: 0;
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 // Kopfzeile der Bearbeiten-Masken: Titel links, Aktionen (Speichern) oben
 // rechts, Erfolgs-/Fehlermeldung in derselben Zeile links neben den Buttons.
 .mask-bar {

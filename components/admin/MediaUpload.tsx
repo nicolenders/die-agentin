@@ -46,6 +46,12 @@ export default function MediaUpload() {
         <input className="f" id="ml-altde" name="altDe" placeholder="Was ist auf dem Bild zu sehen?" />
         <label className="f" htmlFor="ml-alten">Alt-Text (EN) · optional</label>
         <input className="f" id="ml-alten" name="altEn" />
+        <label className="f" htmlFor="ml-source">Herkunft</label>
+        <select className="f" id="ml-source" name="source" defaultValue="MINE">
+          <option value="MINE">Eigenes Bild</option>
+          <option value="OTHER">Von jemand anderem</option>
+          <option value="AI">KI-generiert</option>
+        </select>
         <label className="f" htmlFor="ml-credit">Bildnachweis · optional</label>
         <input className="f" id="ml-credit" name="credit" />
         <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, fontSize: 13 }}>

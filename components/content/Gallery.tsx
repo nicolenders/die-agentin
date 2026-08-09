@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef } from "react";
+import AssetImage from "@/components/media/AssetImage";
 
 export interface GalleryImage {
   url?: string;
   alt: string;
   label?: string;
+  ai?: boolean;
 }
 
 // Horizontal scrollbare Galerie (SPEC §11): role=region mit Label, per
@@ -63,12 +65,12 @@ export default function Gallery({
       >
         {images.map((img, i) =>
           img.url ? (
-            <img
+            <AssetImage
               key={i}
               className="galleryItem"
               src={img.url}
               alt={img.alt}
-              loading="lazy"
+              ai={img.ai}
             />
           ) : (
             <div key={i} className="ph galleryItem">

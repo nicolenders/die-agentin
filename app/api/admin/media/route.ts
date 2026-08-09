@@ -8,6 +8,7 @@ import { processImage } from "@/lib/media/process";
 import { storeFile } from "@/lib/media/storage";
 import { rateLimit } from "@/lib/rate-limit";
 import { withDbRetry } from "@/lib/db-retry";
+import { toMediaSource } from "@/lib/media/source";
 
 export const runtime = "nodejs";
 
@@ -52,6 +53,8 @@ export async function GET() {
         width: a.width,
         height: a.height,
         decorative: a.decorative,
+        source: a.source,
+        createdAt: a.createdAt.toISOString(),
       })),
     );
   } catch {
@@ -82,6 +85,7 @@ export async function POST(request: Request) {
   const altEn = (form.get("altEn") as string | null)?.trim() || null;
   const credit = (form.get("credit") as string | null)?.trim() || null;
   const decorative = form.get("decorative") === "true";
+  const source = toMediaSource((form.get("source") as string | null) ?? "");
 
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "Keine Datei übermittelt." }, { status: 400 });
@@ -130,6 +134,7 @@ export async function POST(request: Request) {
           altDe: decorative ? "" : altDe,
           altEn,
           decorative,
+          source,
           credit,
           variants: JSON.stringify(stored),
         },
@@ -144,6 +149,8 @@ export async function POST(request: Request) {
       width: asset.width,
       height: asset.height,
       decorative: asset.decorative,
+      source: asset.source,
+      createdAt: asset.createdAt.toISOString(),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload fehlgeschlagen.";

@@ -12,6 +12,7 @@ export interface ResolvedAsset {
   height?: number;
   credit?: string | null;
   decorative?: boolean;
+  ai?: boolean; // KI-generiert → Hinweis „KI-generiert" einblenden
 }
 
 export type AssetMap = Record<string, ResolvedAsset>;

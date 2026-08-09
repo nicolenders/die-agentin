@@ -332,6 +332,9 @@ model MediaAsset {
   altDe     String // Pflicht (SPEC §11)
   altEn     String?
   decorative Boolean @default(false) // alt="" ausdrücklich (SPEC §11)
+  // Herkunft des Bildes: MINE (eigenes), OTHER (von jemand anderem), AI
+  // (KI-generiert → Hinweis „KI-generiert" wird überall eingeblendet).
+  source    String  @default("MINE")
   credit    String?
   variants  String   @db.NVarChar(Max) // JSON: [{w,format,path}]
   createdAt DateTime @default(now())

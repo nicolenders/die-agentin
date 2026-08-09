@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import AssetImage from "@/components/media/AssetImage";
+import { MEDIA_SOURCES, SOURCE_LABEL, toMediaSource, type MediaSource } from "@/lib/media/source";
 
 export interface MediaItem {
   id: string;
@@ -11,6 +13,7 @@ export interface MediaItem {
   width?: number;
   height?: number;
   decorative?: boolean;
+  source?: string;
 }
 
 // Medienbibliothek als Modal (SPEC M2). Listet Assets, lädt neue hoch (Alt-Text
@@ -26,6 +29,17 @@ export default function MediaPicker({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<"" | MediaSource>("");
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return items.filter((it) => {
+      if (sourceFilter && toMediaSource(it.source) !== sourceFilter) return false;
+      if (needle && !`${it.altDe} ${it.altEn ?? ""}`.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+  }, [items, q, sourceFilter]);
 
   useEffect(() => {
     let active = true;
@@ -118,6 +132,12 @@ export default function MediaPicker({
             Alt-Text (EN) · optional
           </label>
           <input className="f" id="mp-alten" name="altEn" />
+          <label className="f" htmlFor="mp-source">Herkunft</label>
+          <select className="f" id="mp-source" name="source" defaultValue="MINE">
+            {MEDIA_SOURCES.map((s) => (
+              <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
+            ))}
+          </select>
           <label className="f" htmlFor="mp-credit">
             Bildnachweis · optional
           </label>
@@ -133,24 +153,63 @@ export default function MediaPicker({
         {error ? <p className="media-error">{error}</p> : null}
         {loading ? (
           <p className="muted">Wird geladen …</p>
+        ) : items.length === 0 ? (
+          <p className="muted">Noch keine Medien.</p>
         ) : (
-          <div className="grid g4">
-            {items.map((item) => (
-              <button
-                key={item.id}
-                className="card"
-                style={{ padding: 8, textAlign: "left", cursor: "pointer" }}
-                onClick={() => onPick(item)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.url} alt={item.altDe} style={{ width: "100%", borderRadius: 4 }} />
-                <span className="meta" style={{ display: "block", marginTop: 6 }}>
-                  {item.decorative ? "dekorativ" : item.altDe || "ohne Alt-Text"}
-                </span>
-              </button>
-            ))}
-            {items.length === 0 ? <p className="muted">Noch keine Medien.</p> : null}
-          </div>
+          <>
+            <div className="year-filter" style={{ alignItems: "center", gap: 10 }}>
+              <input
+                className="f"
+                style={{ maxWidth: 220 }}
+                placeholder="Suche (Alt-Text) …"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                aria-label="Medien durchsuchen"
+              />
+              <select className="f" style={{ maxWidth: 190 }} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value as "" | MediaSource)} aria-label="Nach Herkunft filtern">
+                <option value="">Alle Herkünfte</option>
+                {MEDIA_SOURCES.map((s) => (
+                  <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="media-table">
+                <thead>
+                  <tr>
+                    <th>Bild</th>
+                    <th>Alt-Text</th>
+                    <th>Herkunft</th>
+                    <th>Größe</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <AssetImage
+                          src={item.url}
+                          alt={item.altDe || "Bild"}
+                          ai={toMediaSource(item.source) === "AI"}
+                          imgStyle={{ width: 64, height: 64, objectFit: "cover", borderRadius: 4 }}
+                        />
+                      </td>
+                      <td>{item.decorative ? <span className="meta">dekorativ</span> : item.altDe || <span className="meta">ohne Alt-Text</span>}</td>
+                      <td className="meta">{SOURCE_LABEL[toMediaSource(item.source)]}</td>
+                      <td className="meta" style={{ whiteSpace: "nowrap" }}>{item.width && item.height ? `${item.width}×${item.height}` : "—"}</td>
+                      <td>
+                        <button className="btn solid sm" type="button" onClick={() => onPick(item)}>Auswählen</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 ? (
+                    <tr><td colSpan={5}><span className="muted">Keine Treffer.</span></td></tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

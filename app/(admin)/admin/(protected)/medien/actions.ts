@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
+import { toMediaSource } from "@/lib/media/source";
 
 const LIST = "/admin/medien";
 
@@ -14,6 +15,7 @@ export async function updateAsset(formData: FormData): Promise<void> {
   const altDe = String(formData.get("altDe") ?? "").trim();
   const altEn = String(formData.get("altEn") ?? "").trim();
   const decorative = formData.get("decorative") != null;
+  const source = toMediaSource(String(formData.get("source") ?? ""));
   if (!id) redirect(`${LIST}?err=not-found`);
   if (!decorative && !altDe) redirect(`${LIST}?err=alt-required`);
 
@@ -21,7 +23,7 @@ export async function updateAsset(formData: FormData): Promise<void> {
   try {
     await db.mediaAsset.update({
       where: { id },
-      data: { altDe: decorative ? "" : altDe, altEn: altEn || null, decorative },
+      data: { altDe: decorative ? "" : altDe, altEn: altEn || null, decorative, source },
     });
   } catch {
     failed = true;

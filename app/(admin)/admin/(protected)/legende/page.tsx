@@ -49,17 +49,20 @@ export default async function LegendeAdminPage({
 
   return (
     <section>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <h1 style={{ margin: 0 }}>Legende</h1>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-          <Link className={`btn sm ${locale === "de" ? "solid" : "ghost"}`} href="/admin/legende?locale=de">Deutsch</Link>
-          <Link className={`btn sm ${locale === "en" ? "solid" : "ghost"}`} href="/admin/legende?locale=en">English</Link>
+      <div className="mask-bar">
+        <h1>Legende</h1>
+        <div className="mask-bar-actions">
+          <Flash ok={ok} err={err} />
+          <div className="mask-bar-buttons">
+            <Link className={`btn sm ${locale === "de" ? "solid" : "ghost"}`} href="/admin/legende?locale=de">Deutsch</Link>
+            <Link className={`btn sm ${locale === "en" ? "solid" : "ghost"}`} href="/admin/legende?locale=en">English</Link>
+            <button className="btn solid sm" type="submit" form="legend-form">Speichern ({locale.toUpperCase()})</button>
+          </div>
         </div>
       </div>
       <p className="muted">Die „Über mich“-Seite — Texte, Säulen, Werkzeuge, Kontakt und Porträt. Du bearbeitest gerade: <b>{locale === "de" ? "Deutsch" : "English"}</b> (die andere Sprache: <Link href={`/admin/legende?locale=${other}`}>{other.toUpperCase()}</Link>).</p>
-      <Flash ok={ok} err={err} />
 
-      <form action={saveLegend}>
+      <form action={saveLegend} id="legend-form">
         <input type="hidden" name="locale" value={locale} />
 
         <div className="card bracket" style={{ marginTop: 16 }}>

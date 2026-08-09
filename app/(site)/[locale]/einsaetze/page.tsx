@@ -39,6 +39,7 @@ export default async function EinsaetzePage({
     published: m.published,
     bannerUrl: m.bannerUrl,
     bannerAlt: m.bannerAlt,
+    bannerAi: m.bannerAi,
   }));
 
   return (

@@ -25,7 +25,7 @@ export interface LegendData {
   contactText: string;
   contactButton: string;
   contactUrl: string;
-  portrait: { url: string; alt: string } | null;
+  portrait: { url: string; alt: string; ai: boolean } | null;
 }
 
 export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
@@ -107,6 +107,7 @@ async function loadLegend(locale: Locale): Promise<LegendData> {
       ? {
           url: assetUrl(row.portrait.blobPath),
           alt: (locale === "en" ? row.portrait.altEn : row.portrait.altDe) || row.name,
+          ai: row.portrait.source === "AI",
         }
       : null,
   };

@@ -13,6 +13,7 @@ export const HOME_TAG = "home";
 export interface HeroImage {
   url: string;
   alt: string;
+  ai: boolean;
 }
 
 export interface HeroData {
@@ -86,6 +87,7 @@ export async function getHomeHero(locale: Locale): Promise<HeroData> {
             locale === "en" && row.heroAsset.altEn
               ? row.heroAsset.altEn
               : row.heroAsset.altDe,
+          ai: row.heroAsset.source === "AI",
         }
       : null,
   };
@@ -107,30 +109,40 @@ export interface HomeStats {
   countries: number;
   briefings: number;
   books: number;
-  mvpAwards: string; // Markenfakt, im Admin pflegbar (SiteSetting home.mvpAwards)
+  mvpAwards: number; // Anzahl der MVP-Auszeichnungen aus „Ausbildung"
 }
 
-const MVP_KEY = "home.mvpAwards";
-
+// MVP-Auszeichnungen werden unter „Ausbildung" (Zertifizierungen) als Reihe bzw.
+// Kategorie „MVP" gepflegt. Der Zähler summiert alle solchen Einträge — je ein
+// Eintrag pro Jahr ergibt so automatisch die Zahl (statt einer festen 7).
 async function loadHomeStats(): Promise<HomeStats> {
-  const [missions, countryGroups, briefings, books, mvp] = await Promise.all([
+  const [missions, countryGroups, briefings, books, mvpAwards] = await Promise.all([
     db.mission.count(),
     db.mission.groupBy({ by: ["countryCode"] }),
     db.talk.count({ where: { active: true } }),
     db.publication.count({ where: { type: "BOOK" } }),
-    db.siteSetting.findUnique({ where: { key: MVP_KEY }, select: { value: true } }),
+    db.certification.count({
+      where: {
+        OR: [
+          { series: { contains: "MVP" } },
+          { category: { is: { nameDe: { contains: "MVP" } } } },
+          { categories: { some: { nameDe: { contains: "MVP" } } } },
+        ],
+      },
+    }),
   ]);
   return {
     missions,
     countries: countryGroups.length,
     briefings,
     books,
-    mvpAwards: mvp?.value?.trim() || "7",
+    mvpAwards,
   };
 }
 
 // Kennzahlen der Startseite. Getaggt mit allen relevanten Listen, damit ein
-// Veröffentlichen (Einsatz/Beitrag/Briefing/Publikation) die Zähler auffrischt.
+// Veröffentlichen (Einsatz/Beitrag/Briefing/Publikation/Zertifizierung) die
+// Zähler auffrischt.
 export async function getHomeStats(): Promise<HomeStats> {
   const run = cachedQuery(loadHomeStats, ["home-stats"], [
     HOME_TAG,
@@ -138,12 +150,11 @@ export async function getHomeStats(): Promise<HomeStats> {
     tags.postList("de"),
     tags.briefingList("de"),
     tags.publicationList("de"),
+    tags.certificationList("de"),
   ]);
   try {
     return await run();
   } catch {
-    return { missions: 0, countries: 0, briefings: 0, books: 0, mvpAwards: "7" };
+    return { missions: 0, countries: 0, briefings: 0, books: 0, mvpAwards: 0 };
   }
 }
-
-export const MVP_SETTING_KEY = MVP_KEY;

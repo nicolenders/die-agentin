@@ -27,6 +27,12 @@ export type GeoBounds = [[number, number], [number, number]] | null;
 
 // Baut ein GeoJSON-Polygon aus einem Lon/Lat-Rechteck, damit d3 die Projektion
 // per fitExtent darauf einpassen (= „hineinzoomen") kann.
+//
+// WICHTIG: Die Ringrichtung muss im Uhrzeigersinn sein. d3-geo interpretiert
+// Polygone sphärisch — das Innere liegt links der Laufrichtung. Bei
+// gegen-den-Uhrzeigersinn-Wicklung hält d3 das kleine Rechteck für „die ganze
+// Welt minus Rechteck", die Bounding-Box wird global und fitExtent zoomt nicht
+// (Ergebnis: Kontinent-/DACH-Ansicht blieb auf Weltmaßstab).
 function boundsPolygon(bounds: [[number, number], [number, number]]) {
   const [[minLon, minLat], [maxLon, maxLat]] = bounds;
   return {
@@ -34,9 +40,9 @@ function boundsPolygon(bounds: [[number, number], [number, number]]) {
     coordinates: [
       [
         [minLon, minLat],
-        [maxLon, minLat],
-        [maxLon, maxLat],
         [minLon, maxLat],
+        [maxLon, maxLat],
+        [maxLon, minLat],
         [minLon, minLat],
       ],
     ],

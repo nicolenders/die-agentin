@@ -1,10 +1,10 @@
 import { assetUrl } from "@/lib/media/url";
 import { getHomeHero, getHomeContentRaw, getHomeStats } from "@/lib/queries/home";
 import type { Locale } from "@/lib/i18n/config";
-import Flash from "@/components/admin/Flash";
+import MaskBar from "@/components/admin/MaskBar";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import AssetPickerField from "@/components/admin/AssetPickerField";
-import { saveHomeHero, saveMvpAwards } from "./actions";
+import { saveHomeHero } from "./actions";
 
 export const metadata = { title: "Startseite · Zentrale" };
 
@@ -32,17 +32,22 @@ export default async function StartseiteAdminPage({
 
   return (
     <section>
-      <h1>Startseite</h1>
+      <MaskBar title="Startseite" ok={ok} err={err}>
+        {data.map(({ code, label }) => (
+          <button key={code} className="btn solid sm" type="submit" form={`home-${code}`}>
+            {label} speichern
+          </button>
+        ))}
+      </MaskBar>
       <p className="muted">
         Der Hero-Bereich der Startseite. Alles andere (nächster Einsatz, letzte
         Beiträge, Zähler) zieht sich automatisch aus den gepflegten Daten.
       </p>
-      <Flash ok={ok} err={err} />
 
       {data.map(({ code, label, hero, raw }) => (
         <div className="card bracket" key={code} style={{ marginTop: 20 }}>
           <p className="eyebrow" style={{ marginTop: 0 }}>{label}</p>
-          <form action={saveHomeHero}>
+          <form action={saveHomeHero} id={`home-${code}`}>
             <input type="hidden" name="locale" value={code} />
 
             <label className="f">Kicker (kleine Zeile über der Überschrift)</label>
@@ -89,19 +94,14 @@ export default async function StartseiteAdminPage({
       ))}
 
       <div className="card bracket" style={{ marginTop: 20 }}>
-        <p className="eyebrow" style={{ marginTop: 0 }}>Kennzahlen</p>
+        <p className="eyebrow" style={{ marginTop: 0 }}>Kennzahlen (automatisch)</p>
         <p className="meta" style={{ marginTop: 0 }}>
-          Einsätze ({stats.missions}), Länder ({stats.countries}), Briefings
-          ({stats.briefings}) und Bücher ({stats.books}) zählt die Startseite
-          automatisch. Nur die MVP-Auszeichnungen sind ein Markenfakt:
+          Alle Zähler ziehen sich aus den Daten: Einsätze ({stats.missions}),
+          Länder ({stats.countries}), Briefings ({stats.briefings}), Bücher
+          ({stats.books}) und MVP-Auszeichnungen ({stats.mvpAwards}). Die
+          MVP-Zahl zählt die Einträge unter <b>Publikationen &amp; Ausbildung</b>,
+          die zur Reihe/Kategorie „MVP“ gehören.
         </p>
-        <form action={saveMvpAwards} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          <div>
-            <label className="f" htmlFor="mvpAwards">MVP Awards (z. B. 7)</label>
-            <input id="mvpAwards" className="f" name="mvpAwards" defaultValue={stats.mvpAwards} style={{ maxWidth: 120 }} />
-          </div>
-          <button className="btn solid sm" type="submit">Speichern</button>
-        </form>
       </div>
     </section>
   );

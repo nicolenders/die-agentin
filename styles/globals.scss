@@ -111,6 +111,172 @@ h1 {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+// Publikationen: kompaktes Raster (drei pro Reihe), Cover links, Jahr als
+// deutlich sichtbarer Chip.
+.pub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.pub-card {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.pub-body {
+  min-width: 0;
+}
+.pub-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pub-year {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: linear-gradient(92deg, var(--violet-bright), var(--magenta));
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.pub-title {
+  margin: 10px 0 6px;
+  font-size: 17px;
+  line-height: 1.25;
+}
+.pub-meta {
+  font-size: 13px;
+}
+.pub-link {
+  margin-top: 10px;
+}
+@media (max-width: 1100px) {
+  .pub-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .pub-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Medienbibliothek als Tabelle: kompakte Zeilen, Zellen oben ausgerichtet.
+.media-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.media-table th,
+.media-table td {
+  vertical-align: top;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+}
+.media-table th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+// Bild mit KI-Hinweis + Klick-zum-Vergrößern (Lightbox). Anwendungsweit.
+.asset-image {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  max-width: 100%;
+}
+.asset-image > img {
+  max-width: 100%;
+  height: auto;
+}
+.ai-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(5, 1, 13, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 3px 7px;
+  border-radius: 4px;
+  pointer-events: none;
+  line-height: 1.2;
+  backdrop-filter: blur(2px);
+}
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(2, 0, 8, 0.9);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.lightbox-figure {
+  position: relative;
+  margin: 0;
+  max-width: 94vw;
+  max-height: 90vh;
+}
+.lightbox-figure img {
+  max-width: 94vw;
+  max-height: 84vh;
+  display: block;
+  border-radius: 6px;
+}
+.lightbox-figure figcaption {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+  text-align: center;
+}
+.lightbox-close {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: 0;
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+// Kopfzeile der Bearbeiten-Masken: Titel links, Aktionen (Speichern) oben
+// rechts, Erfolgs-/Fehlermeldung in derselben Zeile links neben den Buttons.
+.mask-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+.mask-bar h1 {
+  margin: 0;
+  margin-right: auto;
+}
+.mask-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mask-bar-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 // Marken-Akzent (Verlauf auf Text). Wird vom Rich-Text-Highlight-Mark und der
 // Hero-Headline verwendet, damit hervorgehobene Wörter denselben Look haben.
 .accent {
@@ -669,12 +835,34 @@ ol.styled li::marker {
 }
 
 // ---------- Zertifizierungen ----------
+// Zertifizierungen kompakt in zwei Spalten statt einer langen Liste.
+.cert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 32px;
+}
+@media (max-width: 720px) {
+  .cert-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.cert-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .cert {
   display: flex;
   gap: 14px;
   align-items: flex-start;
   padding: 15px 0;
   border-bottom: 1px solid var(--line-soft);
+}
+.cert .badge .asset-image {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 .cert .badge {
   width: 42px;

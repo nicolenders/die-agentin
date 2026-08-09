@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
-import Flash from "@/components/admin/Flash";
+import MaskBar from "@/components/admin/MaskBar";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import { createTalk, updateTalk } from "../actions";
@@ -54,11 +54,14 @@ export default async function BriefingEditPage({
       <div style={{ marginBottom: 12 }}>
         <Link className="btn ghost sm" href="/admin/briefings">← Zurück zur Liste</Link>
       </div>
-      <h1>{isEdit ? "Briefing bearbeiten" : "Neues Briefing"}</h1>
-      <Flash err={err} />
+      <MaskBar title={isEdit ? "Briefing bearbeiten" : "Neues Briefing"} err={err}>
+        <button className="btn solid sm" type="submit" form="talk-form">
+          {isEdit ? "Änderungen speichern" : "Briefing anlegen"}
+        </button>
+      </MaskBar>
 
       <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
-        <form action={isEdit ? updateTalk : createTalk}>
+        <form action={isEdit ? updateTalk : createTalk} id="talk-form">
           {talk ? <input type="hidden" name="id" value={talk.id} /> : null}
           <label className="f">Titel (DE)</label>
           <input className="f" name="deTitle" defaultValue={de?.title ?? ""} required />

@@ -7,6 +7,8 @@ import { validateUpload } from "@/lib/media/detect";
 import { processImage } from "@/lib/media/process";
 import { storeFile } from "@/lib/media/storage";
 import { rateLimit } from "@/lib/rate-limit";
+import { withDbRetry } from "@/lib/db-retry";
+import { toMediaSource } from "@/lib/media/source";
 
 export const runtime = "nodejs";
 
@@ -51,6 +53,8 @@ export async function GET() {
         width: a.width,
         height: a.height,
         decorative: a.decorative,
+        source: a.source,
+        createdAt: a.createdAt.toISOString(),
       })),
     );
   } catch {
@@ -81,6 +85,7 @@ export async function POST(request: Request) {
   const altEn = (form.get("altEn") as string | null)?.trim() || null;
   const credit = (form.get("credit") as string | null)?.trim() || null;
   const decorative = form.get("decorative") === "true";
+  const source = toMediaSource((form.get("source") as string | null) ?? "");
 
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "Keine Datei übermittelt." }, { status: 400 });
@@ -107,7 +112,7 @@ export async function POST(request: Request) {
 
   const id = randomUUID();
   try {
-    const stored = [];
+    const stored: { w: number; format: string; path: string }[] = [];
     for (const v of processed.variants) {
       const storedFile = await storeFile(`${id}-${v.w}.webp`, v.buffer);
       stored.push({ w: v.w, format: v.format, path: storedFile.path });
@@ -117,20 +122,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Keine Bildvariante erzeugt." }, { status: 400 });
     }
 
-    const asset = await db.mediaAsset.create({
-      data: {
-        id,
-        blobPath: largest.path,
-        width: processed.width,
-        height: processed.height,
-        mime: "image/webp",
-        altDe: decorative ? "" : altDe,
-        altEn,
-        decorative,
-        credit,
-        variants: JSON.stringify(stored),
-      },
-    });
+    // Auf eine ggf. pausierte serverlose DB warten, statt sofort zu scheitern.
+    const asset = await withDbRetry(() =>
+      db.mediaAsset.create({
+        data: {
+          id,
+          blobPath: largest.path,
+          width: processed.width,
+          height: processed.height,
+          mime: "image/webp",
+          altDe: decorative ? "" : altDe,
+          altEn,
+          decorative,
+          source,
+          credit,
+          variants: JSON.stringify(stored),
+        },
+      }),
+    );
 
     return NextResponse.json({
       id: asset.id,
@@ -140,6 +149,8 @@ export async function POST(request: Request) {
       width: asset.width,
       height: asset.height,
       decorative: asset.decorative,
+      source: asset.source,
+      createdAt: asset.createdAt.toISOString(),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload fehlgeschlagen.";

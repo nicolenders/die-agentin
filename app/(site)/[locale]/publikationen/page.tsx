@@ -37,27 +37,29 @@ export default async function PublikationenPage({
       <h2>{isDe ? "Schriftlich festgehalten" : "Put down in writing"}</h2>
 
       {books.length > 0 ? (
-        <div className="grid g2" style={{ marginTop: 26 }}>
+        <div className="pub-grid" style={{ marginTop: 26 }}>
           {books.map((b) => (
-            <article key={b.id} className="card bracket" style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 20 }}>
+            <article key={b.id} className="card bracket pub-card">
               <BrandImage
                 src={b.coverUrl ?? brandAsset(`cover-${b.id}.jpg`)}
                 alt={b.coverAlt || `Cover: ${b.title}`}
                 label="Cover"
                 sub={isDe ? "Buchcover" : "Book cover"}
                 ratio="2 / 3"
+                ai={b.coverAi}
               />
-              <div>
-                <span className="tag">{typeLabel(b.type)}</span>
-                <h3 style={{ marginTop: 10 }}>{b.title}</h3>
-                <p style={{ fontSize: "14.5px" }}>
-                  {[b.role, b.publisher, String(b.year), b.isbn ? `ISBN ${b.isbn}` : null]
-                    .filter(Boolean)
-                    .join(" · ")}
+              <div className="pub-body">
+                <div className="pub-tags">
+                  <span className="tag">{typeLabel(b.type)}</span>
+                  <span className="pub-year">{b.year}</span>
+                </div>
+                <h3 className="pub-title">{b.title}</h3>
+                <p className="meta pub-meta">
+                  {[b.role, b.publisher, b.isbn ? `ISBN ${b.isbn}` : null].filter(Boolean).join(" · ")}
                 </p>
                 {b.url ? (
-                  <a className="btn ghost" href={b.url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 8 }}>
-                    {isDe ? "Zum Verlag" : "To publisher"}
+                  <a className="btn ghost sm pub-link" href={b.url} target="_blank" rel="noopener noreferrer">
+                    {isDe ? "Informationen zum Buch" : "Book details"}
                   </a>
                 ) : null}
               </div>

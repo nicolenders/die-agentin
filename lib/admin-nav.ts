@@ -11,7 +11,8 @@ export interface AdminNavItem {
 
 export const adminNav: AdminNavItem[] = [
   { href: "/admin", label: "Einsatzzentrale", icon: "◈" },
-  { href: "/admin/beitraege", label: "Alle Beiträge", icon: "≡", section: "Inhalte" },
+  { href: "/admin/startseite", label: "Startseite", icon: "⌂", section: "Inhalte" },
+  { href: "/admin/beitraege", label: "Alle Beiträge", icon: "≡" },
   { href: "/admin/editor", label: "Editor", icon: "✎" },
   { href: "/admin/dossiers", label: "Dossiers", icon: "▤" },
   { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },

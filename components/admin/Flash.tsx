@@ -4,6 +4,7 @@
 // sichtbares Feedback statt eines still wirkungslosen Knopfs.
 const MESSAGES: Record<string, string> = {
   saved: "Gespeichert.",
+  social: "Social-Media-Profile gespeichert.",
   created: "Angelegt.",
   updated: "Aktualisiert.",
   deleted: "Gelöscht.",
@@ -13,6 +14,7 @@ const MESSAGES: Record<string, string> = {
   "category-in-use": "Kategorie ist noch zugeordnet — erst umhängen oder löschen.",
   "alt-required": "Alt-Text ist Pflicht (außer das Bild ist dekorativ).",
   "asset-in-use": "Bild wird noch verwendet — erst aus Beitrag/Einsatz entfernen.",
+  "audience-in-use": "Zielgruppe ist noch zugeordnet — erst umhängen oder Briefings ändern.",
   failed: "Speichern fehlgeschlagen. Bitte erneut versuchen.",
 };
 

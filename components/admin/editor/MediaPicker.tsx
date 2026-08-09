@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export interface MediaItem {
   id: string;
@@ -66,7 +67,15 @@ export default function MediaPicker({
     }
   }
 
-  return (
+  // Über ein Portal an <body> rendern: Der Picker wird u. a. aus Formularen
+  // heraus geöffnet (Cover/Logo/Porträt). Als Kind eines <form> wäre das eigene
+  // Upload-<form> verschachtelt (ungültig) und der Klick würde das äußere
+  // Formular absenden — der Dialog „verschwände". Das Portal löst ihn aus jeder
+  // transformierten/positionierten Elternkette und deckt zuverlässig den ganzen
+  // Viewport ab.
+  if (typeof document === "undefined") return null;
+
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
@@ -74,10 +83,10 @@ export default function MediaPicker({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(5,1,13,.8)",
+        background: "rgba(5,1,13,.92)",
         display: "grid",
         placeItems: "center",
-        zIndex: 100,
+        zIndex: 1000,
         padding: 20,
       }}
       onClick={onClose}
@@ -146,4 +155,6 @@ export default function MediaPicker({
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }

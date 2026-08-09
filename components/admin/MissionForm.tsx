@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { computeGeo, project } from "@/lib/map/geo";
 import { MISSION_STATUSES } from "@/lib/domain";
 import MediaPicker, { type MediaItem } from "@/components/admin/editor/MediaPicker";
+import RichTextField from "@/components/admin/editor/RichTextField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import {
   saveMission,
@@ -307,11 +308,21 @@ export default function MissionForm({
       <div className="grid g2" style={{ marginTop: 16 }}>
         <div className="card bracket">
           <p className="eyebrow">Text: Die Veranstaltung</p>
-          <textarea className="f" rows={6} value={text.eventText} onChange={(e) => setText({ ...text, eventText: e.target.value })} />
+          <RichTextField
+            key={`${loc}-eventText`}
+            defaultValue={text.eventText}
+            ariaLabel="Text: Die Veranstaltung"
+            onChange={(v) => setText({ ...text, eventText: v })}
+          />
         </div>
         <div className="card bracket">
           <p className="eyebrow">Text: Mein Briefing</p>
-          <textarea className="f" rows={6} value={text.talkText} onChange={(e) => setText({ ...text, talkText: e.target.value })} />
+          <RichTextField
+            key={`${loc}-talkText`}
+            defaultValue={text.talkText}
+            ariaLabel="Text: Mein Briefing"
+            onChange={(v) => setText({ ...text, talkText: v })}
+          />
         </div>
       </div>
 

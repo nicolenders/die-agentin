@@ -4,6 +4,8 @@ import { getDictionary } from "@/lib/i18n";
 import { getLegend } from "@/lib/queries/legend";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
+import { parseRichValue } from "@/lib/content/rich";
+import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +38,7 @@ export default async function LegendePage({
         <div>
           <p className="eyebrow">{legend.eyebrow}</p>
           <h2>{legend.name}</h2>
-          <p className="lead">{legend.lead}</p>
+          <p className="lead">{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
         </div>
         <div className="hero-visual">
           <BrandImage
@@ -52,7 +54,7 @@ export default async function LegendePage({
       <div className="card bracket" style={{ margin: "30px 0", padding: 30 }}>
         <p className="eyebrow">{legend.missionEyebrow}</p>
         <p style={{ fontSize: 20, fontFamily: "var(--display)", fontWeight: 300, lineHeight: 1.5, margin: 0 }}>
-          {legend.missionText}
+          {renderInlineFieldContent(parseRichValue(legend.missionText))}
         </p>
       </div>
 
@@ -83,7 +85,7 @@ export default async function LegendePage({
       <div className="card bracket" style={{ marginTop: 44, padding: 30 }}>
         <p className="eyebrow">{legend.contactEyebrow}</p>
         <h3>{legend.contactHeading}</h3>
-        <p style={{ fontSize: 15 }}>{legend.contactText}</p>
+        <p style={{ fontSize: 15 }}>{renderInlineFieldContent(parseRichValue(legend.contactText))}</p>
         <a className="btn" href={legend.contactUrl || "#"} target={legend.contactUrl && legend.contactUrl !== "#" ? "_blank" : undefined} rel="noopener noreferrer">
           {legend.contactButton}
         </a>

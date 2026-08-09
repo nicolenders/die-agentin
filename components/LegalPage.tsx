@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getLegalDoc, type LegalKey } from "@/lib/queries/legal";
 import { formatDate } from "@/lib/format";
+import RichText from "@/components/content/RichText";
 
 const DEFAULT_TITLE: Record<LegalKey, { de: string; en: string }> = {
   IMPRINT: { de: "Impressum", en: "Imprint" },
@@ -31,11 +32,7 @@ export default async function LegalPage({
           <p className="meta">
             {locale === "de" ? "Zuletzt aktualisiert" : "Last updated"} {formatDate(doc.updatedAt, locale)}
           </p>
-          {doc.body.split(/\n{2,}/).map((para, i) => (
-            <p key={i} style={{ whiteSpace: "pre-wrap" }}>
-              {para}
-            </p>
-          ))}
+          <RichText value={doc.body} locale={locale} />
         </>
       ) : (
         <div className="card bracket" style={{ marginTop: 20 }}>

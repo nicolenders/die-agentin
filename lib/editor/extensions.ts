@@ -1,7 +1,20 @@
-import { Node, mergeAttributes, type Extensions } from "@tiptap/core";
+import { Node, Mark, mergeAttributes, type Extensions } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Paragraph from "@tiptap/extension-paragraph";
 import type { ContentContext, MarginSide, ImageLayout } from "@/lib/content/schema";
+
+// Marken-Akzent als Inline-Mark: hebt Wörter im Verlauf hervor (Hero-Headline,
+// betonte Stellen in Feldern). Rendert als <span class="accent"> — dieselbe
+// Klasse nutzt der öffentliche Renderer. Umschalten über toggleMark("highlight").
+const Highlight = Mark.create({
+  name: "highlight",
+  parseHTML() {
+    return [{ tag: "span.accent" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["span", mergeAttributes(HTMLAttributes, { class: "accent" }), 0];
+  },
+});
 
 // TipTap-Erweiterungen (SPEC §4). StarterKit deckt Text, Überschriften, Listen,
 // Zitat, Code, Trenner und Marks (inkl. Link/Underline) ab. Die spezialisierten
@@ -88,6 +101,18 @@ const TocNode = blockAtom("toc", () => "Inhaltsverzeichnis");
  * erlaubt (SPEC §4).
  */
 export function buildExtensions(context: ContentContext): Extensions {
+  // Schlanker Feld-Editor: nur Fließtext-Formatierung + Akzent, keine Blöcke.
+  if (context === "field") {
+    return [
+      StarterKit.configure({
+        heading: { levels: [2, 3] },
+        codeBlock: false,
+        link: { openOnClick: false, HTMLAttributes: { rel: "noopener" } },
+      }),
+      Highlight,
+    ];
+  }
+
   const base: Extensions = [
     StarterKit.configure({
       paragraph: false, // durch MarginParagraph ersetzt
@@ -96,6 +121,7 @@ export function buildExtensions(context: ContentContext): Extensions {
     }),
     MarginParagraph,
     ImageNode,
+    Highlight,
   ];
   if (context === "post") {
     base.push(LinkCardNode);

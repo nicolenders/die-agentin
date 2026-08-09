@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import Flash from "@/components/admin/Flash";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
+import RichTextField from "@/components/admin/editor/RichTextField";
 import { createTalk, updateTalk } from "../actions";
 
 export const metadata = { title: "Briefing bearbeiten · Zentrale" };
@@ -13,14 +14,24 @@ export default async function BriefingEditPage({
 }) {
   const { id, err } = await searchParams;
 
-  const cats = await db.taxonomy.findMany({
-    where: { kind: "TALK" },
-    orderBy: { sortOrder: "asc" },
-    select: { id: true, nameDe: true },
-  });
+  const [cats, audiences] = await Promise.all([
+    db.taxonomy.findMany({
+      where: { kind: "TALK" },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, nameDe: true },
+    }),
+    db.taxonomy.findMany({
+      where: { kind: "AUDIENCE" },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, nameDe: true },
+    }),
+  ]);
 
   const talk = id
-    ? await db.talk.findUnique({ where: { id }, include: { translations: true, categories: true } })
+    ? await db.talk.findUnique({
+        where: { id },
+        include: { translations: true, categories: true, audiences: true },
+      })
     : null;
 
   if (id && !talk) {
@@ -53,8 +64,19 @@ export default async function BriefingEditPage({
           <input className="f" name="deTitle" defaultValue={de?.title ?? ""} required />
           <label className="f">Titel (EN)</label>
           <input className="f" name="enTitle" defaultValue={en?.title ?? ""} />
+          <label className="f">Vortragsinhalt (DE)</label>
+          <RichTextField name="deAbstract" defaultValue={de?.abstract ?? ""} ariaLabel="Vortragsinhalt DE" />
+          <label className="f" style={{ marginTop: 12 }}>Vortragsinhalt (EN)</label>
+          <RichTextField name="enAbstract" defaultValue={en?.abstract ?? ""} ariaLabel="Vortragsinhalt EN" />
           <label className="f">Kategorien (Mehrfachauswahl)</label>
           <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={talk?.categories.map((c) => c.id) ?? []} />
+          <label className="f">Zielgruppe (Mehrfachauswahl)</label>
+          <CategoryMultiSelect
+            name="audienceIds"
+            options={audiences.map((a) => ({ id: a.id, name: a.nameDe }))}
+            defaultSelected={talk?.audiences.map((a) => a.id) ?? []}
+            emptyHint="Erst eine Zielgruppe anlegen (Übersicht → Zielgruppen)."
+          />
           <label className="f">Level</label>
           <input className="f" name="level" defaultValue={talk?.level ?? ""} placeholder="300" />
           <label className="f">Dauer (Minuten)</label>

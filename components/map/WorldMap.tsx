@@ -48,10 +48,11 @@ export default function WorldMap({
   const views = useMemo(() => availableViews(missions), [missions]);
   const activeView = views.find((v) => v.id === viewId) ?? views[0];
   const activeBounds = activeView?.bounds ?? null;
+  const activeCountries = activeView?.countries ?? null;
 
   const { landPath, graticulePath, projection } = useMemo(
-    () => computeGeo(W, H, activeBounds),
-    [activeBounds],
+    () => computeGeo(W, H, activeBounds, activeCountries),
+    [activeBounds, activeCountries],
   );
 
   const years = useMemo(
@@ -84,25 +85,32 @@ export default function WorldMap({
 
   return (
     <div>
-      {views.length > 1 ? (
-        <div className="year-filter" role="group" aria-label={labels.view} style={{ marginBottom: 8 }}>
-          {views.map((v) => (
-            <button
-              key={v.id}
-              className="chip"
-              aria-pressed={activeView?.id === v.id}
-              onClick={() => chooseView(v.id)}
-            >
-              {locale === "de" ? v.labelDe : v.labelEn}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      {/* Ansicht (Welt/Kontinente/DACH) und Zeitfilter in einer Zeile. */}
+      <div className="map-filters">
+        {views.length > 1 ? (
+          <div className="year-filter" role="group" aria-label={labels.view}>
+            {views.map((v) => (
+              <button
+                key={v.id}
+                className="chip"
+                aria-pressed={activeView?.id === v.id}
+                onClick={() => chooseView(v.id)}
+              >
+                {locale === "de" ? v.labelDe : v.labelEn}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
-      <div className="year-filter" role="group" aria-label={locale === "de" ? "Jahr filtern" : "Filter by year"}>
-        {chip("alle", labels.all)}
-        {chip("geplant", labels.planned)}
-        {years.map((y) => chip(String(y), String(y)))}
+        <div
+          className="year-filter"
+          role="group"
+          aria-label={locale === "de" ? "Jahr filtern" : "Filter by year"}
+        >
+          {chip("alle", labels.all)}
+          {chip("geplant", labels.planned)}
+          {years.map((y) => chip(String(y), String(y)))}
+        </div>
       </div>
 
       <div className="map-shell" style={{ position: "relative" }}>

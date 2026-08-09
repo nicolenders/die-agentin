@@ -3,6 +3,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getBriefingCatalog, getBriefingRanking } from "@/lib/queries/briefings";
 import { formatDate } from "@/lib/format";
+import RichText from "@/components/content/RichText";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,15 @@ export default async function BriefingsPage({
             {cat.talks.map((t) => (
               <article key={t.id} className="card bracket">
                 <h3>{t.title}</h3>
-                {t.abstract ? <p style={{ fontSize: "14.5px" }}>{t.abstract}</p> : null}
+                <div style={{ fontSize: "14.5px" }}>
+                  <RichText value={t.abstract} locale={locale} />
+                </div>
+                {t.audiences.length > 0 ? (
+                  <p className="meta">
+                    {isDe ? "Für: " : "For: "}
+                    {t.audiences.join(" · ")}
+                  </p>
+                ) : null}
                 <p className="meta">
                   {t.deCount + t.enCount}× {isDe ? "gehalten" : "delivered"}
                   {t.level ? ` · Level ${t.level}` : ""}

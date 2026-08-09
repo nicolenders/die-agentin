@@ -10,6 +10,7 @@ export interface MapViewDef {
   labelEn: string;
   bounds: GeoBounds; // null = ganze Welt
   always?: boolean; // immer anbieten, auch ohne Einsätze in der Region
+  countries?: string[]; // nur diese Länder zeichnen (ISO-3166-1 numerisch), sonst ganze Landmasse
 }
 
 export const MAP_VIEWS: MapViewDef[] = [
@@ -20,7 +21,15 @@ export const MAP_VIEWS: MapViewDef[] = [
   { id: "afrika", labelDe: "Afrika", labelEn: "Africa", bounds: [[-20, -35], [52, 38]] },
   { id: "asien", labelDe: "Asien", labelEn: "Asia", bounds: [[40, 5], [150, 78]] },
   { id: "ozeanien", labelDe: "Ozeanien", labelEn: "Oceania", bounds: [[110, -48], [180, 3]] },
-  { id: "dach", labelDe: "DACH", labelEn: "DACH", bounds: [[5, 45], [18, 55.5]], always: true },
+  // DACH: nur Deutschland (276), Österreich (040) und die Schweiz (756) zeichnen.
+  {
+    id: "dach",
+    labelDe: "DACH",
+    labelEn: "DACH",
+    bounds: [[5, 45.5], [17.5, 55.5]],
+    always: true,
+    countries: ["276", "040", "756"],
+  },
 ];
 
 /** Liegt ein Punkt im Rechteck der Ansicht? `null`-Bounds (Welt) umfasst alles. */

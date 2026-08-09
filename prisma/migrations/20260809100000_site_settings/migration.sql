@@ -1,0 +1,24 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- CreateTable
+CREATE TABLE [dbo].[SiteSetting] (
+    [key] NVARCHAR(1000) NOT NULL,
+    [value] NVARCHAR(max) NOT NULL,
+    [updatedAt] DATETIME2 NOT NULL,
+    CONSTRAINT [SiteSetting_pkey] PRIMARY KEY CLUSTERED ([key])
+);
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH

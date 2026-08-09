@@ -1,6 +1,7 @@
 import { geoNaturalEarth1, geoPath, geoGraticule10, type GeoProjection } from "d3-geo";
 import { feature } from "topojson-client";
 import topoData from "world-atlas/land-110m.json";
+import topoCountries from "world-atlas/countries-110m.json";
 
 // Kartengrundlage (SPEC §2, §10): d3-geo + gebündeltes world-atlas TopoJSON,
 // als SVG gerendert. Keine Tile-Provider, keine Drittanbieter-Requests.
@@ -9,6 +10,9 @@ import topoData from "world-atlas/land-110m.json";
 // daher ein gezielter Cast in genau dieser Hilfsdatei.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const landFeature = feature(topoData as any, (topoData as any).objects.land) as any;
+const countryFeatures = (
+  feature(topoCountries as any, (topoCountries as any).objects.countries) as any
+).features as { id?: string | number }[];
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export interface GeoResult {
@@ -45,7 +49,12 @@ function boundsPolygon(bounds: [[number, number], [number, number]]) {
  * eingepasst (Ansichten: Kontinente, DACH). Gleiche Projektion (Natural Earth),
  * nur ein anderer Ausschnitt — keine zusätzlichen Abhängigkeiten.
  */
-export function computeGeo(width: number, height: number, bounds: GeoBounds = null): GeoResult {
+export function computeGeo(
+  width: number,
+  height: number,
+  bounds: GeoBounds = null,
+  countryIds: string[] | null = null,
+): GeoResult {
   const fitObject = bounds ? boundsPolygon(bounds) : { type: "Sphere" as const };
   const projection = geoNaturalEarth1().fitExtent(
     [
@@ -55,9 +64,17 @@ export function computeGeo(width: number, height: number, bounds: GeoBounds = nu
     fitObject,
   );
   const path = geoPath(projection);
+  // Mit `countryIds` nur diese Länder zeichnen (z. B. DACH = DE/AT/CH), sonst
+  // die gesamte Landmasse.
+  const geometry = countryIds
+    ? {
+        type: "FeatureCollection" as const,
+        features: countryFeatures.filter((f) => countryIds.includes(String(f.id))),
+      }
+    : landFeature;
   return {
     projection,
-    landPath: path(landFeature) ?? "",
+    landPath: path(geometry) ?? "",
     graticulePath: path(geoGraticule10()) ?? "",
   };
 }

@@ -8,6 +8,7 @@ export interface BriefingCard {
   id: string;
   title: string;
   abstract: string | null;
+  audiences: string[];
   level: string | null;
   durationMin: number | null;
   deCount: number;
@@ -27,7 +28,11 @@ async function loadCatalog(locale: Locale): Promise<BriefingCategory[]> {
     include: {
       talkMulti: {
         where: { active: true },
-        include: { translations: true, deliveries: { select: { language: true } } },
+        include: {
+          translations: true,
+          deliveries: { select: { language: true } },
+          audiences: { select: { nameDe: true, nameEn: true } },
+        },
       },
     },
   });
@@ -42,6 +47,7 @@ async function loadCatalog(locale: Locale): Promise<BriefingCategory[]> {
           id: t.id,
           title: picked?.translation.title ?? "",
           abstract: picked?.translation.abstract ?? null,
+          audiences: t.audiences.map((a) => (locale === "en" ? a.nameEn : a.nameDe)),
           level: t.level,
           durationMin: t.durationMin,
           deCount: t.deliveries.filter((d) => d.language !== "en").length,

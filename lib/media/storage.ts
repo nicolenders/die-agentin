@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { BlobServiceClient, type ContainerClient } from "@azure/storage-blob";
 import { DefaultAzureCredential } from "@azure/identity";
@@ -64,4 +64,25 @@ export async function storeFile(
   await mkdir(path.dirname(full), { recursive: true });
   await writeFile(full, buffer);
   return { path: `uploads/${relativePath}` };
+}
+
+/**
+ * Liest ein Medium für den `/media`-Proxy: aus dem Blob-Container (per Managed
+ * Identity) bzw. lokal aus public/uploads. Gibt `null` zurück, wenn es nicht
+ * existiert. Der Name darf keine Pfad-Traversal enthalten (wird vom Aufrufer
+ * geprüft).
+ */
+export async function readMedia(name: string): Promise<Buffer | null> {
+  if (isBlobConfigured()) {
+    try {
+      return await getContainerClient().getBlockBlobClient(name).downloadToBuffer();
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return await readFile(path.join(LOCAL_DIR, name));
+  } catch {
+    return null;
+  }
 }

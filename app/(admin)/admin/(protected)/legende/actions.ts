@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { invalidateTags, tags } from "@/lib/cache";
+import { serializeRichValue } from "@/lib/content/rich";
 
 const PAGE = "/admin/legende";
 
@@ -36,14 +37,14 @@ export async function saveLegend(formData: FormData): Promise<void> {
   const data = {
     eyebrow: str(formData, "eyebrow"),
     name,
-    lead: str(formData, "lead"),
+    lead: serializeRichValue(str(formData, "lead")),
     missionEyebrow: str(formData, "missionEyebrow"),
-    missionText: str(formData, "missionText"),
+    missionText: serializeRichValue(str(formData, "missionText")),
     pillarsJson: JSON.stringify(pillars),
     toolsJson: JSON.stringify(toolsList),
     contactEyebrow: str(formData, "contactEyebrow"),
     contactHeading: str(formData, "contactHeading"),
-    contactText: str(formData, "contactText"),
+    contactText: serializeRichValue(str(formData, "contactText")),
     contactButton: str(formData, "contactButton"),
     contactUrl: str(formData, "contactUrl"),
     portraitAssetId: str(formData, "portraitAssetId") || null,

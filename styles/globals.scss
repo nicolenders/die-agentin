@@ -111,6 +111,40 @@ h1 {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+// Marken-Akzent (Verlauf auf Text). Wird vom Rich-Text-Highlight-Mark und der
+// Hero-Headline verwendet, damit hervorgehobene Wörter denselben Look haben.
+.accent {
+  background: linear-gradient(92deg, var(--violet-bright), var(--magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+// Rich-Text-Feld im Admin: sieht aus wie ein Textarea, verhält sich wie ein
+// Editor. `.rich-input` ist die editierbare Fläche (TipTap ProseMirror).
+.rich-field .rich-input {
+  min-height: 120px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--field-bg, rgba(255, 255, 255, 0.02));
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text);
+  outline: none;
+}
+.rich-field .rich-input:focus-within,
+.rich-field .rich-input.ProseMirror-focused {
+  border-color: var(--violet);
+}
+.rich-field .rich-input :first-child {
+  margin-top: 0;
+}
+.rich-field .rich-input :last-child {
+  margin-bottom: 0;
+}
+.rich-field .rich-input p {
+  margin: 0 0 8px;
+}
 h2 {
   font-size: clamp(24px, 3vw, 34px);
 }
@@ -777,6 +811,28 @@ svg.map {
   gap: 7px;
   flex-wrap: wrap;
   margin: 0 0 18px;
+}
+// Ansichts- und Zeitfilter nebeneinander in einer Zeile, mit dezentem Trenner.
+// Bricht erst auf schmalen Viewports um.
+.map-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px 18px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+.map-filters .year-filter {
+  margin: 0;
+}
+.map-filters .year-filter + .year-filter {
+  padding-left: 18px;
+  border-left: 1px solid var(--line-soft);
+}
+@media (max-width: 620px) {
+  .map-filters .year-filter + .year-filter {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 .counter {
   display: flex;

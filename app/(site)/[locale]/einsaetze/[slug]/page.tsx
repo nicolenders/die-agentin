@@ -6,6 +6,7 @@ import { getDictionary } from "@/lib/i18n";
 import { getMissionBySlug } from "@/lib/queries/missions";
 import { formatDate } from "@/lib/format";
 import Gallery from "@/components/content/Gallery";
+import RichText from "@/components/content/RichText";
 
 export const dynamic = "force-dynamic";
 
@@ -66,11 +67,9 @@ export default async function EinsatzaktePage({
         <div className="grid g2">
           <div className="card bracket">
             <p className="eyebrow">{locale === "de" ? "Die Veranstaltung" : "The event"}</p>
-            {mission.eventText.split(/\n+/).map((p, i) => (
-              <p key={i} style={{ fontSize: 15 }}>
-                {p}
-              </p>
-            ))}
+            <div style={{ fontSize: 15 }}>
+              <RichText value={mission.eventText} locale={locale} />
+            </div>
           </div>
           <div className="card bracket">
             <p className="eyebrow">{locale === "de" ? "Mein Briefing" : "My briefing"}</p>
@@ -79,11 +78,9 @@ export default async function EinsatzaktePage({
                 <b>{mission.briefing.title}</b> · {mission.briefing.language.toUpperCase()}
               </p>
             ) : null}
-            {mission.talkText.split(/\n+/).map((p, i) => (
-              <p key={i} style={{ fontSize: 15 }}>
-                {p}
-              </p>
-            ))}
+            <div style={{ fontSize: 15 }}>
+              <RichText value={mission.talkText} locale={locale} />
+            </div>
           </div>
         </div>
 

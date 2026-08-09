@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
 import { MISSION_STATUSES, isOneOf } from "@/lib/domain";
+import { serializeRichValue } from "@/lib/content/rich";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface MissionTextInput {
@@ -181,9 +182,11 @@ async function upsertText(
     where: { missionId_locale: { missionId, locale } },
     select: { slug: true },
   });
+  const eventText = serializeRichValue(t.eventText);
+  const talkText = serializeRichValue(t.talkText);
   await db.missionTranslation.upsert({
     where: { missionId_locale: { missionId, locale } },
-    create: { missionId, locale, slug, eventText: t.eventText, talkText: t.talkText, state: "REVIEWED" },
-    update: { slug: existing?.slug ?? slug, eventText: t.eventText, talkText: t.talkText },
+    create: { missionId, locale, slug, eventText, talkText, state: "REVIEWED" },
+    update: { slug: existing?.slug ?? slug, eventText, talkText },
   });
 }

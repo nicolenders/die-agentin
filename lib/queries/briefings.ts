@@ -67,6 +67,69 @@ export async function getBriefingCatalog(locale: Locale): Promise<BriefingCatego
   }
 }
 
+export interface BriefingListItem {
+  id: string;
+  title: string;
+  abstract: string | null;
+  categories: string[];
+  audiences: string[];
+  level: string | null;
+  durationMin: number | null;
+  deCount: number;
+  enCount: number;
+  total: number;
+  lastHeld: string | null; // ISO
+}
+
+// Jedes aktive Briefing GENAU EINMAL, mit allen Kategorien als Liste, sortiert
+// nach Häufigkeit (Einsätze). Grundlage für die einheitliche, filterbare
+// Briefings-Seite (kein Duplikat je Kategorie mehr).
+async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
+  const talks = await db.talk.findMany({
+    where: { active: true },
+    include: {
+      translations: true,
+      categories: { select: { nameDe: true, nameEn: true } },
+      audiences: { select: { nameDe: true, nameEn: true } },
+      deliveries: { select: { language: true, heldOn: true } },
+    },
+  });
+
+  const items = talks.map((t): BriefingListItem => {
+    const picked = pickTranslation(t.translations, locale);
+    const lastHeld = t.deliveries.reduce<Date | null>(
+      (max, d) => (max === null || d.heldOn > max ? d.heldOn : max),
+      null,
+    );
+    return {
+      id: t.id,
+      title: picked?.translation.title ?? "",
+      abstract: picked?.translation.abstract ?? null,
+      categories: t.categories.map((c) => (locale === "en" ? c.nameEn : c.nameDe)),
+      audiences: t.audiences.map((a) => (locale === "en" ? a.nameEn : a.nameDe)),
+      level: t.level,
+      durationMin: t.durationMin,
+      deCount: t.deliveries.filter((d) => d.language !== "en").length,
+      enCount: t.deliveries.filter((d) => d.language === "en").length,
+      total: t.deliveries.length,
+      lastHeld: lastHeld ? lastHeld.toISOString() : null,
+    };
+  });
+
+  return items.sort(
+    (a, b) => b.total - a.total || a.title.localeCompare(b.title, locale),
+  );
+}
+
+export async function getBriefingList(locale: Locale): Promise<BriefingListItem[]> {
+  const run = cachedQuery(loadBriefingList, ["briefing-list", locale], [tags.briefingList(locale)]);
+  try {
+    return await run(locale);
+  } catch {
+    return [];
+  }
+}
+
 export async function getBriefingRanking(
   locale: Locale,
   range?: DateRange,

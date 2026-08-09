@@ -48,12 +48,16 @@ export default function RichTextField({
   defaultValue,
   minimal = false,
   ariaLabel,
+  onChange,
 }: {
-  name: string;
+  /** Name des versteckten Inputs für Server-Action-Formulare. */
+  name?: string;
   defaultValue?: string | null;
   /** Nur Betonung + Akzent (z. B. für Überschriften), keine Blöcke/Listen. */
   minimal?: boolean;
   ariaLabel?: string;
+  /** Für kontrollierte Nutzung (z. B. MissionForm): erhält das JSON bei Änderung. */
+  onChange?: (value: string) => void;
 }) {
   const initialDoc: TiptapDoc = parseRichValue(defaultValue);
   const [json, setJson] = useState<string>(() => JSON.stringify(initialDoc));
@@ -62,7 +66,11 @@ export default function RichTextField({
     extensions: buildExtensions("field"),
     content: initialDoc,
     immediatelyRender: false,
-    onUpdate: ({ editor }) => setJson(JSON.stringify(editor.getJSON())),
+    onUpdate: ({ editor }) => {
+      const next = JSON.stringify(editor.getJSON());
+      setJson(next);
+      onChange?.(next);
+    },
     editorProps: {
       attributes: {
         class: "rich-input",
@@ -102,7 +110,7 @@ export default function RichTextField({
       ) : null}
 
       <EditorContent editor={editor} />
-      <input type="hidden" name={name} value={json} readOnly />
+      {name ? <input type="hidden" name={name} value={json} readOnly /> : null}
     </div>
   );
 }

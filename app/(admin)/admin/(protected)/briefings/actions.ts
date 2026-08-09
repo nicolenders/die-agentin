@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
+import { serializeRichValue } from "@/lib/content/rich";
 
 // Verwaltung des Vortragsrepertoires (SPEC §6/M6). Kategorien und Briefings sind
 // vom Nutzer pflegbar (anlegen, bearbeiten, löschen). Formulare nutzen
@@ -137,8 +138,8 @@ export async function createTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const deTitle = str(formData, "deTitle");
   const enTitle = str(formData, "enTitle");
-  const deAbstract = str(formData, "deAbstract");
-  const enAbstract = str(formData, "enAbstract");
+  const deAbstract = serializeRichValue(str(formData, "deAbstract"));
+  const enAbstract = serializeRichValue(str(formData, "enAbstract"));
   const categoryIds = ids(formData, "categoryIds");
   const audienceIds = ids(formData, "audienceIds");
   const level = str(formData, "level") || null;
@@ -181,8 +182,8 @@ export async function updateTalk(formData: FormData): Promise<void> {
   const categoryIds = ids(formData, "categoryIds");
   if (!deTitle || categoryIds.length === 0) redirect(`${LIST}/bearbeiten?id=${id}&err=missing-fields`);
   const enTitle = str(formData, "enTitle");
-  const deAbstract = str(formData, "deAbstract");
-  const enAbstract = str(formData, "enAbstract");
+  const deAbstract = serializeRichValue(str(formData, "deAbstract"));
+  const enAbstract = serializeRichValue(str(formData, "enAbstract"));
   const audienceIds = ids(formData, "audienceIds");
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");

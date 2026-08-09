@@ -5,6 +5,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { LEGEND_DEFAULTS, type LegendPillar } from "@/lib/queries/legend";
 import Flash from "@/components/admin/Flash";
 import LegendPortraitField from "@/components/admin/LegendPortraitField";
+import RichTextField from "@/components/admin/editor/RichTextField";
 import { saveLegend } from "./actions";
 
 export const metadata = { title: "Legende · Zentrale" };
@@ -73,7 +74,7 @@ export default async function LegendeAdminPage({
           <label className="f">Name / Titel</label>
           <input className="f" name="name" defaultValue={val.name} required />
           <label className="f">Lead (Einleitungssatz)</label>
-          <textarea className="f" name="lead" rows={3} defaultValue={val.lead} />
+          <RichTextField name="lead" defaultValue={val.lead} ariaLabel="Lead" />
         </div>
 
         <div className="card bracket" style={{ marginTop: 16 }}>
@@ -81,7 +82,7 @@ export default async function LegendeAdminPage({
           <label className="f">Überschrift</label>
           <input className="f" name="missionEyebrow" defaultValue={val.missionEyebrow} />
           <label className="f">Text</label>
-          <textarea className="f" name="missionText" rows={3} defaultValue={val.missionText} />
+          <RichTextField name="missionText" defaultValue={val.missionText} ariaLabel="Missionstext" />
         </div>
 
         <div className="card bracket" style={{ marginTop: 16 }}>
@@ -103,7 +104,7 @@ export default async function LegendeAdminPage({
           <label className="f">Überschrift</label>
           <input className="f" name="contactHeading" defaultValue={val.contactHeading} />
           <label className="f">Text</label>
-          <textarea className="f" name="contactText" rows={3} defaultValue={val.contactText} />
+          <RichTextField name="contactText" defaultValue={val.contactText} ariaLabel="Kontakttext" />
           <label className="f">Button-Beschriftung</label>
           <input className="f" name="contactButton" defaultValue={val.contactButton} />
           <label className="f">Button-Link (z. B. deine LinkedIn-URL)</label>

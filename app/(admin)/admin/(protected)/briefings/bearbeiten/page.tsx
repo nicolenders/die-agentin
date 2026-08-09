@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import Flash from "@/components/admin/Flash";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
+import RichTextField from "@/components/admin/editor/RichTextField";
 import { createTalk, updateTalk } from "../actions";
 
 export const metadata = { title: "Briefing bearbeiten · Zentrale" };
@@ -64,21 +65,9 @@ export default async function BriefingEditPage({
           <label className="f">Titel (EN)</label>
           <input className="f" name="enTitle" defaultValue={en?.title ?? ""} />
           <label className="f">Vortragsinhalt (DE)</label>
-          <textarea
-            className="f"
-            name="deAbstract"
-            rows={5}
-            defaultValue={de?.abstract ?? ""}
-            placeholder="Worum geht es? Was nehmen die Teilnehmenden mit?"
-          />
-          <label className="f">Vortragsinhalt (EN)</label>
-          <textarea
-            className="f"
-            name="enAbstract"
-            rows={5}
-            defaultValue={en?.abstract ?? ""}
-            placeholder="Talk description in English (optional)."
-          />
+          <RichTextField name="deAbstract" defaultValue={de?.abstract ?? ""} ariaLabel="Vortragsinhalt DE" />
+          <label className="f" style={{ marginTop: 12 }}>Vortragsinhalt (EN)</label>
+          <RichTextField name="enAbstract" defaultValue={en?.abstract ?? ""} ariaLabel="Vortragsinhalt EN" />
           <label className="f">Kategorien (Mehrfachauswahl)</label>
           <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={talk?.categories.map((c) => c.id) ?? []} />
           <label className="f">Zielgruppe (Mehrfachauswahl)</label>

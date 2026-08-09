@@ -12,6 +12,7 @@ import {
   socialSettingKey,
   normalizeSocialUrl,
 } from "@/lib/queries/settings";
+import { serializeRichValue } from "@/lib/content/rich";
 
 // Pflege der Rechtstexte (SPEC §12). Nur Struktur/Felder — der Inhalt kommt von
 // Nicole. Erste Zeile: Rollenprüfung.
@@ -20,7 +21,7 @@ export async function saveLegalDoc(formData: FormData): Promise<void> {
   const docKey = String(formData.get("docKey") ?? "");
   const locale = String(formData.get("locale") ?? "de") === "en" ? "en" : "de";
   const title = String(formData.get("title") ?? "").trim();
-  const body = String(formData.get("body") ?? "");
+  const body = serializeRichValue(String(formData.get("body") ?? ""));
   if (!(LEGAL_KEYS as readonly string[]).includes(docKey) || !title) {
     redirect("/admin/einstellungen?err=missing-fields");
   }

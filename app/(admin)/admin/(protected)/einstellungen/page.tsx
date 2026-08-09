@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
 import { SOCIAL_PLATFORMS, socialSettingKey } from "@/lib/queries/settings";
 import Flash from "@/components/admin/Flash";
+import RichTextField from "@/components/admin/editor/RichTextField";
 import { saveLegalDoc, saveSocialLinks } from "./actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
@@ -141,7 +142,7 @@ export default async function EinstellungenPage({
                   <label className="f">Titel</label>
                   <input className="f" name="title" defaultValue={doc?.title ?? LEGAL_LABEL[key]} />
                   <label className="f">Inhalt (wird rechtlich geprüft)</label>
-                  <textarea className="f" name="body" rows={8} defaultValue={doc?.body ?? ""} placeholder="Von Nicole beizustellen …" />
+                  <RichTextField name="body" defaultValue={doc?.body ?? ""} ariaLabel={`${LEGAL_LABEL[key]} ${label}`} />
                   <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>
                     {doc ? "Aktualisieren" : "Speichern"}
                   </button>

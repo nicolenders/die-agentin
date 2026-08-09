@@ -9,6 +9,8 @@ import { toCertKind } from "@/lib/records/kind";
 import { FOCUS_TAG } from "@/lib/queries/records";
 
 const LIST = "/admin/publikationen";
+const CERT_LIST = "/admin/ausbildung";
+const FOCUS_LIST = "/admin/aufklaerung";
 
 function monthToDate(value: string | null): Date | null {
   if (!value) return null;
@@ -124,7 +126,7 @@ export async function createCertification(formData: FormData): Promise<void> {
   await requireAdmin();
   const name = str(formData, "name");
   const acquiredOn = monthToDate(str(formData, "acquiredOn"));
-  if (!name || !acquiredOn) redirect(`${LIST}?err=missing-fields`);
+  if (!name || !acquiredOn) redirect(`${CERT_LIST}?err=missing-fields`);
   const categoryIds = ids(formData, "categoryIds");
 
   let failed = false;
@@ -146,18 +148,18 @@ export async function createCertification(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(`${CERT_LIST}?err=failed`);
   invalidateCertifications();
-  redirect(`${LIST}?ok=created`);
+  redirect(`${CERT_LIST}?ok=created`);
 }
 
 export async function updateCertification(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  if (!id) redirect(`${CERT_LIST}?err=not-found`);
   const name = str(formData, "name");
   const acquiredOn = monthToDate(str(formData, "acquiredOn"));
-  if (!name || !acquiredOn) redirect(`${LIST}/bearbeiten?cert=${id}&err=missing-fields`);
+  if (!name || !acquiredOn) redirect(`${CERT_LIST}/bearbeiten?cert=${id}&err=missing-fields`);
   const categoryIds = ids(formData, "categoryIds");
 
   let failed = false;
@@ -180,15 +182,15 @@ export async function updateCertification(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}/bearbeiten?cert=${id}&err=failed`);
+  if (failed) redirect(`${CERT_LIST}/bearbeiten?cert=${id}&err=failed`);
   invalidateCertifications();
-  redirect(`${LIST}?ok=updated`);
+  redirect(`${CERT_LIST}?ok=updated`);
 }
 
 export async function deleteCertification(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  if (!id) redirect(`${CERT_LIST}?err=not-found`);
 
   let failed = false;
   try {
@@ -196,9 +198,9 @@ export async function deleteCertification(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(`${CERT_LIST}?err=failed`);
   invalidateCertifications();
-  redirect(`${LIST}?ok=deleted`);
+  redirect(`${CERT_LIST}?ok=deleted`);
 }
 
 // ------------------------------------------------ Aktuelle Lernthemen
@@ -206,7 +208,7 @@ export async function deleteCertification(formData: FormData): Promise<void> {
 export async function createFocusTopic(formData: FormData): Promise<void> {
   await requireAdmin();
   const titleDe = str(formData, "titleDe");
-  if (!titleDe) redirect(`${LIST}?err=missing-fields`);
+  if (!titleDe) redirect(`${FOCUS_LIST}?err=missing-fields`);
   let failed = false;
   try {
     await db.focusTopic.create({
@@ -219,22 +221,22 @@ export async function createFocusTopic(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(`${FOCUS_LIST}?err=failed`);
   invalidateTags([FOCUS_TAG]);
-  redirect(`${LIST}?ok=created`);
+  redirect(`${FOCUS_LIST}?ok=created`);
 }
 
 export async function deleteFocusTopic(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  if (!id) redirect(`${FOCUS_LIST}?err=not-found`);
   let failed = false;
   try {
     await db.focusTopic.delete({ where: { id } });
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(`${FOCUS_LIST}?err=failed`);
   invalidateTags([FOCUS_TAG]);
-  redirect(`${LIST}?ok=deleted`);
+  redirect(`${FOCUS_LIST}?ok=deleted`);
 }

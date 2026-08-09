@@ -55,7 +55,7 @@ export default async function AusbildungPage({
 
       {focus.length > 0 ? (
         <div className="card bracket" style={{ margin: "24px 0", padding: 24 }}>
-          <p className="eyebrow">{isDe ? "Woran ich gerade lerne" : "What I'm currently exploring"}</p>
+          <p className="eyebrow">{isDe ? "Aufklärung · auf dem Radar" : "Recon · on the radar"}</p>
           <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 6 }}>
             {focus.map((f) => (
               <span

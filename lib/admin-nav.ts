@@ -18,11 +18,9 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },
   { href: "/admin/einsaetze", label: "Einsätze", icon: "◎", section: "Struktur" },
   { href: "/admin/briefings", label: "Briefings", icon: "▶" },
-  {
-    href: "/admin/publikationen",
-    label: "Publikationen & Ausbildung",
-    icon: "★",
-  },
+  { href: "/admin/publikationen", label: "Publikationen", icon: "★" },
+  { href: "/admin/ausbildung", label: "Ausbildung & Auszeichnungen", icon: "✦" },
+  { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "⌖" },
   {
     href: "/admin/kanaele",
     label: "Zeitplan & Kanäle",

@@ -48,8 +48,6 @@ COPY --from=builder /app/scripts ./scripts
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0
-# Ausstehende Migrationen beim Start anwenden, dann Server starten. Migrationen
-# sind idempotent (migrate deploy); schlägt es fehl (z. B. DB kurz nicht
-# erreichbar), startet der Server trotzdem und der nächste Start versucht es
-# erneut — so bleibt die Seite erreichbar, statt in einer Boot-Schleife zu hängen.
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy || echo 'WARN: prisma migrate deploy failed — starting server anyway'; node server.js"]
+# Ausstehende Migrationen beim Start anwenden (mit Warten/Retry für die pausierte
+# serverlose DB), dann Server starten. Details in scripts/start.sh.
+CMD ["sh", "/app/scripts/start.sh"]

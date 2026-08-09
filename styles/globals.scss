@@ -111,6 +111,31 @@ h1 {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+// Kopfzeile der Bearbeiten-Masken: Titel links, Aktionen (Speichern) oben
+// rechts, Erfolgs-/Fehlermeldung in derselben Zeile links neben den Buttons.
+.mask-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+.mask-bar h1 {
+  margin: 0;
+  margin-right: auto;
+}
+.mask-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mask-bar-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 // Marken-Akzent (Verlauf auf Text). Wird vom Rich-Text-Highlight-Mark und der
 // Hero-Headline verwendet, damit hervorgehobene Wörter denselben Look haben.
 .accent {

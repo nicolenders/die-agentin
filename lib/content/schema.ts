@@ -2,7 +2,10 @@
 // Diese Datei definiert die erlaubten Node-Typen, Marks und den Kontext, in dem
 // bestimmte Bausteine verfügbar sind. Sie ist die Autorität für `sanitize.ts`.
 
-export type ContentContext = "post" | "dossier" | "mission";
+// "field" ist der schlanke Kontext für formularbasierte Rich-Text-Felder
+// (Kurztexte wie Vortragsinhalt, Legenden, Rechtstexte, Hero-Headline). Er
+// erlaubt nur einfache Formatierung — keine Bild-/Galerie-/Video-Blöcke.
+export type ContentContext = "post" | "dossier" | "mission" | "field";
 
 export type MarginSide = "left" | "right";
 export type ImageLayout = "full" | "left" | "right";
@@ -50,7 +53,21 @@ const EXTRA_NODES: Record<ContentContext, readonly string[]> = {
   post: ["linkCard"],
   dossier: ["gallery", "video", "videoGallery", "toc"],
   mission: ["gallery"],
+  field: [],
 };
+
+// Schlanke Node-Menge für den "field"-Kontext: nur Fließtext-Formatierung.
+const FIELD_NODES = [
+  "paragraph",
+  "heading",
+  "bulletList",
+  "orderedList",
+  "listItem",
+  "blockquote",
+  "horizontalRule",
+  "text",
+  "hardBreak",
+] as const;
 
 export const ALLOWED_MARKS = new Set([
   "bold",
@@ -59,10 +76,12 @@ export const ALLOWED_MARKS = new Set([
   "strike",
   "code",
   "link",
+  "highlight", // Marken-Akzent (Verlauf), u. a. für die Hero-Headline
 ]);
 
 /** Menge der in einem Kontext erlaubten Node-Typen. */
 export function allowedNodesFor(context: ContentContext): Set<string> {
+  if (context === "field") return new Set<string>(FIELD_NODES);
   return new Set<string>([...BASE_NODES, ...EXTRA_NODES[context]]);
 }
 

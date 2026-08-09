@@ -26,6 +26,7 @@ function applyMarks(node: React.ReactNode, marks: TiptapMark[] | undefined, key:
   let el = node;
   // Reihenfolge: innere Betonung zuerst, Link außen.
   const has = (t: string) => marks.some((m) => m.type === t);
+  if (has("highlight")) el = <span key={`h${key}`} className="accent">{el}</span>;
   if (has("code")) el = <code key={`c${key}`}>{el}</code>;
   if (has("strike")) el = <s key={`s${key}`}>{el}</s>;
   if (has("underline")) el = <u key={`u${key}`}>{el}</u>;
@@ -277,4 +278,17 @@ export default function RenderDocument({
       {doc.content.map((node, i) => renderNode(node, i, ctx, doc))}
     </div>
   );
+}
+
+/**
+ * Rendert nur die Inline-Inhalte eines Feld-Dokuments (Text + Marks inkl.
+ * Akzent/Highlight) flach — für Überschriften/Kurzfelder wie die Hero-Headline,
+ * wo die Absatz-Struktur des Block-Renderers unerwünscht ist. Absätze werden
+ * durch einen Zeilenumbruch getrennt.
+ */
+export function renderInlineFieldContent(doc: TiptapDoc): React.ReactNode {
+  return doc.content.flatMap((block, bi) => {
+    const inline = <React.Fragment key={`b${bi}`}>{renderInline(block.content)}</React.Fragment>;
+    return bi === 0 ? [inline] : [<br key={`br${bi}`} />, inline];
+  });
 }

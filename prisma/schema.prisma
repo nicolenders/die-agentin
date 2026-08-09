@@ -257,6 +257,9 @@ model PublicationTranslation {
 model Certification {
   id         String    @id @default(cuid())
   name       String
+  // Art des Eintrags: CERTIFICATION | MVP | TRAINING (besuchte Schulung/Training)
+  // | AWARD (andere Auszeichnung). Steuert die Bereiche im Admin und öffentlich.
+  kind       String    @default("CERTIFICATION")
   shortCode  String? // Kürzel, z. B. AI-102
   categoryId String?
   category   Taxonomy? @relation("CertificationCategory", fields: [categoryId], references: [id])
@@ -465,6 +468,20 @@ model SiteSetting {
 // `lead` sind Rich-Text-Feldwerte (TipTap-JSON; Akzent-Mark für farbige Wörter),
 // `roles` ein JSON-String-Array. Fehlt ein Eintrag, greift der i18n-Standard.
 // ---------------------------------------------------------------------------
+
+// Aktuelle Lernthemen / „Womit ich mich gerade beschäftige" (SPEC §5-nah). Muss
+// nicht zu einer Zertifizierung führen — dient auch als Vortragsthemen-Ausblick.
+model FocusTopic {
+  id        String   @id @default(cuid())
+  titleDe   String
+  titleEn   String?
+  note      String?  @db.NVarChar(Max)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([active, sortOrder])
+}
 
 model HomeContent {
   locale      String  @id

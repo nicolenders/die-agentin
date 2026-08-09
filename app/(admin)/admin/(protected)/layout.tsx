@@ -1,6 +1,7 @@
 import { redirect, forbidden } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/guard";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import DbStatus from "@/components/admin/DbStatus";
 import { signOutAction } from "../actions";
 
 // Schützt alle echten Admin-Seiten. Nicht angemeldet → Anmeldung; angemeldet,
@@ -21,6 +22,7 @@ export default async function ProtectedAdminLayout({
         <div className="topbar">
           <strong className="crumb">ZENTRALE</strong>
           <span className="st live">Angemeldet via Entra ID</span>
+          <DbStatus />
           <a
             className="btn ghost sm"
             href="/de"

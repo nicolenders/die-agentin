@@ -778,6 +778,28 @@ svg.map {
   flex-wrap: wrap;
   margin: 0 0 18px;
 }
+// Ansichts- und Zeitfilter nebeneinander in einer Zeile, mit dezentem Trenner.
+// Bricht erst auf schmalen Viewports um.
+.map-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px 18px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+.map-filters .year-filter {
+  margin: 0;
+}
+.map-filters .year-filter + .year-filter {
+  padding-left: 18px;
+  border-left: 1px solid var(--line-soft);
+}
+@media (max-width: 620px) {
+  .map-filters .year-filter + .year-filter {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
 .counter {
   display: flex;
   gap: 34px;

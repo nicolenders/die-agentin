@@ -56,6 +56,7 @@ const de = {
     countCountries: "Länder",
     countBriefings: "Briefings im Repertoire",
     countMvp: "MVP Award",
+    countCertifications: "Zertifizierungen",
     countBooks: "Bücher",
     mostRequested: "Meistgefragtes Briefing",
     openMissionFile: "Einsatzakte öffnen",

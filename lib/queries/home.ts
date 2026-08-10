@@ -110,18 +110,20 @@ export interface HomeStats {
   briefings: number;
   books: number;
   mvpAwards: number; // Anzahl der MVP-Auszeichnungen aus „Ausbildung"
+  certifications: number; // Anzahl der Zertifizierungen (kind=CERTIFICATION)
 }
 
 // MVP-Auszeichnungen werden unter „Ausbildung" (Zertifizierungen) als Reihe bzw.
 // Kategorie „MVP" gepflegt. Der Zähler summiert alle solchen Einträge — je ein
 // Eintrag pro Jahr ergibt so automatisch die Zahl (statt einer festen 7).
 async function loadHomeStats(): Promise<HomeStats> {
-  const [missions, countryGroups, briefings, books, mvpAwards] = await Promise.all([
+  const [missions, countryGroups, briefings, books, mvpAwards, certifications] = await Promise.all([
     db.mission.count(),
     db.mission.groupBy({ by: ["countryCode"] }),
     db.talk.count({ where: { active: true } }),
     db.publication.count({ where: { type: "BOOK" } }),
     db.certification.count({ where: { kind: "MVP" } }),
+    db.certification.count({ where: { kind: "CERTIFICATION" } }),
   ]);
   return {
     missions,
@@ -129,6 +131,7 @@ async function loadHomeStats(): Promise<HomeStats> {
     briefings,
     books,
     mvpAwards,
+    certifications,
   };
 }
 
@@ -147,6 +150,6 @@ export async function getHomeStats(): Promise<HomeStats> {
   try {
     return await run();
   } catch {
-    return { missions: 0, countries: 0, briefings: 0, books: 0, mvpAwards: 0 };
+    return { missions: 0, countries: 0, briefings: 0, books: 0, mvpAwards: 0, certifications: 0 };
   }
 }

@@ -9,7 +9,7 @@ import AssetImage from "@/components/media/AssetImage";
 import Flash from "@/components/admin/Flash";
 import Tabs, { type TabDef } from "@/components/admin/Tabs";
 import { CERT_KINDS, CERT_KIND_LABEL, CERT_FAMILIES, CERT_FAMILY_SHORT } from "@/lib/records/kind";
-import { createCertification, deleteCertification } from "../publikationen/actions";
+import { createCertification, deleteCertification, reorderCertification } from "../publikationen/actions";
 
 export const metadata = { title: "Ausbildung & Auszeichnungen · Zentrale" };
 
@@ -35,7 +35,7 @@ export default async function AusbildungAdminPage({
   let dbError = false;
   try {
     const [certRows, cats] = await Promise.all([
-      db.certification.findMany({ orderBy: { acquiredOn: "desc" }, include: { categories: true, logo: true } }),
+      db.certification.findMany({ orderBy: [{ sortOrder: "asc" }, { acquiredOn: "desc" }], include: { categories: true, logo: true } }),
       db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
     ]);
     certs = certRows.map((c) => ({
@@ -63,8 +63,20 @@ export default async function AusbildungAdminPage({
     return (
       <table style={{ marginTop: 4 }}>
         <tbody>
-          {rows.map((c) => (
+          {rows.map((c, i) => (
             <tr key={c.id}>
+              <td style={{ width: 34, whiteSpace: "nowrap", verticalAlign: "middle" }}>
+                <form action={reorderCertification} style={{ display: "block", lineHeight: 0 }}>
+                  <input type="hidden" name="id" value={c.id} />
+                  <input type="hidden" name="dir" value="up" />
+                  <button className="btn ghost sm" type="submit" disabled={i === 0} aria-label={`„${c.name}" nach oben`} title="Nach oben">↑</button>
+                </form>
+                <form action={reorderCertification} style={{ display: "block", lineHeight: 0, marginTop: 4 }}>
+                  <input type="hidden" name="id" value={c.id} />
+                  <input type="hidden" name="dir" value="down" />
+                  <button className="btn ghost sm" type="submit" disabled={i === rows.length - 1} aria-label={`„${c.name}" nach unten`} title="Nach unten">↓</button>
+                </form>
+              </td>
               <td style={{ width: 48 }}>
                 {c.logoUrl ? (
                   <AssetImage src={c.logoUrl} alt={c.name} ai={c.logoAi} imgStyle={{ width: 40, height: 40, objectFit: "contain", borderRadius: 4 }} />

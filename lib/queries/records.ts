@@ -73,8 +73,10 @@ export interface CertificationRecord {
 }
 
 async function loadCertifications(locale: Locale): Promise<CertificationRecord[]> {
+  // Reihenfolge im Admin einstellbar: sortOrder gewinnt, acquiredOn nur als
+  // Tiebreaker (neueste zuerst), solange nichts manuell sortiert wurde.
   const rows = await db.certification.findMany({
-    orderBy: [{ acquiredOn: "desc" }, { sortOrder: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { acquiredOn: "desc" }],
     include: { logo: true },
   });
   return rows.map((c) => ({

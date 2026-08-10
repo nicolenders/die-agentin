@@ -189,6 +189,46 @@ export async function updateCertification(formData: FormData): Promise<void> {
   redirect(`${CERT_LIST}?ok=updated`);
 }
 
+// Reihenfolge einer Zertifizierung innerhalb ihrer Art um eine Position
+// verschieben. sortOrder gilt gruppenweise (je kind): Wir normalisieren die
+// Werte der Gruppe auf fortlaufende Indizes und tauschen den Nachbarn — so ist
+// die Reihenfolge deterministisch, auch wenn bisher alles sortOrder=0 war.
+export async function reorderCertification(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const dir = str(formData, "dir"); // "up" | "down"
+  if (!id) redirect(`${CERT_LIST}?err=not-found`);
+
+  let failed = false;
+  try {
+    const target = await db.certification.findUnique({ where: { id }, select: { kind: true } });
+    if (target) {
+      const group = await db.certification.findMany({
+        where: { kind: target.kind },
+        orderBy: [{ sortOrder: "asc" }, { acquiredOn: "desc" }],
+        select: { id: true },
+      });
+      const index = group.findIndex((g) => g.id === id);
+      const swapWith = dir === "down" ? index + 1 : index - 1;
+      const order = group.map((g) => g.id);
+      const a = order[index];
+      const b = order[swapWith];
+      if (a !== undefined && b !== undefined) {
+        order[index] = b;
+        order[swapWith] = a;
+        await db.$transaction(
+          order.map((gid, i) => db.certification.update({ where: { id: gid }, data: { sortOrder: i } })),
+        );
+      }
+    }
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${CERT_LIST}?err=failed`);
+  invalidateCertifications();
+  redirect(`${CERT_LIST}?ok=reordered`);
+}
+
 export async function deleteCertification(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");

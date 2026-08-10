@@ -189,6 +189,11 @@ h1 {
 .course-card > .brand-image {
   width: 100%;
 }
+// Textkörper füllt die restliche Kartenhöhe, damit „Zum Kurs" über
+// .pub-link (margin-top:auto) bei allen Karten auf gleicher Höhe sitzt.
+.course-card > .pub-body {
+  flex: 1;
+}
 .pub-body {
   min-width: 0;
   display: flex;

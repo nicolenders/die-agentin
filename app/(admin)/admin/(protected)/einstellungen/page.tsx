@@ -95,8 +95,9 @@ export default async function EinstellungenPage({
 
       <p className="eyebrow" style={{ marginTop: 28 }}>Social-Media-Profile</p>
       <p className="meta">
-        Erscheinen im Footer. Leeres Feld = Link wird ausgeblendet. Ohne
-        vollständige Adresse wird <code>https://</code> ergänzt.
+        Erscheinen als anklickbare Icons im Footer und auf der Legende-Seite.
+        Leeres Feld = Link wird ausgeblendet. Ohne vollständige Adresse wird{" "}
+        <code>https://</code> ergänzt.
       </p>
       <form action={saveSocialLinks} className="card bracket" style={{ marginBottom: 16 }}>
         <div className="grid g2">

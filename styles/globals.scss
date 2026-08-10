@@ -189,6 +189,11 @@ h1 {
 .course-card > .brand-image {
   width: 100%;
 }
+// Textkörper füllt die restliche Kartenhöhe, damit „Zum Kurs" über
+// .pub-link (margin-top:auto) bei allen Karten auf gleicher Höhe sitzt.
+.course-card > .pub-body {
+  flex: 1;
+}
 .pub-body {
   min-width: 0;
   display: flex;
@@ -1199,6 +1204,34 @@ svg.map {
     grid-template-columns: 1fr;
     gap: 28px;
   }
+}
+
+// ---------- Social-Media-Icons ----------
+// Anklickbare Markenzeichen (Legende-Seite, sonst der Footer mit eigener Optik).
+.social-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.social-icons a {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.social-icons a svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+.social-icons a:hover {
+  border-color: var(--violet);
+  color: var(--violet-bright);
+  background: var(--violet-weak, rgba(139, 92, 246, 0.08));
 }
 
 // ---------- Utility ----------

@@ -66,6 +66,9 @@ docs/                   SPEC.md, Mockups, Architekturentscheidungen
 - **Fehler:** sagen, was passiert ist und was zu tun ist. Keine Entschuldigungen, keine vagen Meldungen.
   „Beitrag konnte nicht auf LinkedIn veröffentlicht werden: Zugriff abgelaufen. Verbindung erneuern."
 - **Leere Zustände** sind eine Einladung zum Handeln, kein trauriger Satz.
+- **Karten in einem Raster sind gleich hoch, Aktions-Buttons sitzen auf gemeinsamer Grundlinie.**
+  Unterschiedlich lange Titel/Texte dürfen den „Zum Kurs"/„Mehr"-Button nicht verschieben — Textkörper
+  füllt die Kartenhöhe, der Button wird per `margin-top: auto` nach unten geschoben.
 - **Migrationen abwärtskompatibel:** erst Spalte hinzufügen, dann Code deployen, dann Altes entfernen.
 
 ## Definition of Done

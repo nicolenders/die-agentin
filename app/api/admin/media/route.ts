@@ -79,7 +79,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const form = await request.formData();
+  // Das Auslesen des Multipart-Bodys kann selbst werfen (zu großer/kaputter
+  // Upload). Ohne diesen Rahmen quittiert Next mit einer HTML-Fehlerseite, der
+  // Client scheitert an res.json() und zeigt nur „Upload fehlgeschlagen." — die
+  // eigentliche Ursache ginge verloren. Deshalb: alles in JSON überführen.
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch (error) {
+    console.error("[media] formData konnte nicht gelesen werden:", error);
+    return NextResponse.json(
+      { error: "Die hochgeladene Datei konnte nicht gelesen werden (evtl. zu groß). Bitte kleineres Bild wählen." },
+      { status: 400 },
+    );
+  }
+
   const file = form.get("file");
   const altDe = (form.get("altDe") as string | null)?.trim() ?? "";
   const altEn = (form.get("altEn") as string | null)?.trim() || null;
@@ -106,23 +120,38 @@ export async function POST(request: Request) {
   let processed;
   try {
     processed = await processImage(buffer);
-  } catch {
+  } catch (error) {
+    console.error("[media] Bildverarbeitung fehlgeschlagen:", error);
     return NextResponse.json({ error: "Bild konnte nicht verarbeitet werden." }, { status: 400 });
   }
 
   const id = randomUUID();
+
+  // Schritt 1: Bilddateien ablegen (Blob Storage bzw. lokal). Getrennt vom
+  // DB-Schreiben, damit die Fehlermeldung sagt, welcher Schritt scheiterte.
+  let stored: { w: number; format: string; path: string }[];
   try {
-    const stored: { w: number; format: string; path: string }[] = [];
+    stored = [];
     for (const v of processed.variants) {
       const storedFile = await storeFile(`${id}-${v.w}.webp`, v.buffer);
       stored.push({ w: v.w, format: v.format, path: storedFile.path });
     }
-    const largest = stored[stored.length - 1];
-    if (!largest) {
-      return NextResponse.json({ error: "Keine Bildvariante erzeugt." }, { status: 400 });
-    }
+  } catch (error) {
+    console.error("[media] Ablage im Storage fehlgeschlagen:", error);
+    return NextResponse.json(
+      { error: "Bild konnte nicht gespeichert werden (Storage nicht erreichbar). Bitte erneut versuchen." },
+      { status: 502 },
+    );
+  }
 
-    // Auf eine ggf. pausierte serverlose DB warten, statt sofort zu scheitern.
+  const largest = stored[stored.length - 1];
+  if (!largest) {
+    return NextResponse.json({ error: "Keine Bildvariante erzeugt." }, { status: 400 });
+  }
+
+  // Schritt 2: Datenbanksatz anlegen. Auf eine ggf. pausierte serverlose DB
+  // warten, statt sofort zu scheitern.
+  try {
     const asset = await withDbRetry(() =>
       db.mediaAsset.create({
         data: {
@@ -153,7 +182,11 @@ export async function POST(request: Request) {
       createdAt: asset.createdAt.toISOString(),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload fehlgeschlagen.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[media] Datenbanksatz konnte nicht angelegt werden:", error);
+    const detail = error instanceof Error ? error.message : String(error);
+    return NextResponse.json(
+      { error: `Eintrag konnte nicht gespeichert werden: ${detail}` },
+      { status: 500 },
+    );
   }
 }

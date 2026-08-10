@@ -64,18 +64,28 @@ export default function MediaPicker({
     e.preventDefault();
     setError(null);
     setBusy(true);
+    const formEl = e.currentTarget;
     try {
-      const form = new FormData(e.currentTarget);
+      const form = new FormData(formEl);
       const res = await fetch("/api/admin/media", { method: "POST", body: form });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: MediaItem & { error?: string };
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        // Keine JSON-Antwort (z. B. HTML-Fehlerseite): Status + Auszug zeigen,
+        // statt die eigentliche Ursache zu verschlucken.
+        setError(`Upload fehlgeschlagen (HTTP ${res.status}). ${raw.slice(0, 140)}`.trim());
+        return;
+      }
       if (!res.ok) {
-        setError(data.error ?? "Upload fehlgeschlagen.");
+        setError(data.error ?? `Upload fehlgeschlagen (HTTP ${res.status}).`);
       } else {
         setItems((prev) => [data, ...prev]);
-        e.currentTarget.reset();
+        formEl.reset();
       }
-    } catch {
-      setError("Upload fehlgeschlagen.");
+    } catch (err) {
+      setError(`Upload fehlgeschlagen: ${err instanceof Error ? err.message : "Netzwerkfehler"}.`);
     } finally {
       setBusy(false);
     }

@@ -62,6 +62,7 @@ export interface CertificationRecord {
   name: string;
   shortCode: string | null;
   kind: string; // CERTIFICATION | MVP | TRAINING | AWARD
+  family: string; // MICROSOFT | METHODICAL (nur bei kind=CERTIFICATION relevant)
   acquiredOn: Date;
   validUntil: Date | null;
   proofUrl: string | null;
@@ -81,6 +82,7 @@ async function loadCertifications(locale: Locale): Promise<CertificationRecord[]
     name: c.name,
     shortCode: c.shortCode,
     kind: c.kind,
+    family: c.family,
     acquiredOn: c.acquiredOn,
     validUntil: c.validUntil,
     proofUrl: c.proofUrl,

@@ -49,19 +49,26 @@ export default async function PublicationEditPage({
             <option value="BOOK">Buch</option>
             <option value="ARTICLE">Fachartikel</option>
             <option value="WHITEPAPER">Whitepaper</option>
+            <option value="COURSE">Kurs</option>
           </select>
           <label className="f">Jahr</label>
           <input className="f" name="year" type="number" defaultValue={row.year} />
           <label className="f">Rolle (z. B. Co-Autorin)</label>
           <input className="f" name="role" defaultValue={de?.role ?? ""} />
-          <label className="f">Verlag / Medium</label>
+          <label className="f">{row.type === "COURSE" ? "Plattform" : "Verlag / Medium"}</label>
           <input className="f" name="publisher" defaultValue={row.publisher ?? ""} />
           <label className="f">ISBN (optional)</label>
           <input className="f" name="isbn" defaultValue={row.isbn ?? ""} />
-          <label className="f">Link (optional)</label>
+          <label className="f">{row.type === "COURSE" ? "Link zum Kurs" : "Link (optional)"}</label>
           <input className="f" name="url" defaultValue={row.url ?? ""} placeholder="https://…" />
-          <label className="f">Cover (optional)</label>
-          <AssetPickerField name="coverAssetId" initialAssetId={row.coverAssetId} initialUrl={coverUrl} aspectRatio="3 / 4" emptyHint="Kein Cover gewählt" />
+          <label className="f">{row.type === "COURSE" ? "Thumbnail (optional)" : "Cover (optional)"}</label>
+          <AssetPickerField
+            name="coverAssetId"
+            initialAssetId={row.coverAssetId}
+            initialUrl={coverUrl}
+            aspectRatio={row.type === "COURSE" ? "16 / 9" : "3 / 4"}
+            emptyHint={row.type === "COURSE" ? "Kein Thumbnail gewählt" : "Kein Cover gewählt"}
+          />
           <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Änderungen speichern</button>
         </form>
       </div>

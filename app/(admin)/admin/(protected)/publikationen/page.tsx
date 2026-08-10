@@ -14,6 +14,7 @@ const PUB_TYPES = [
   { id: "BOOK", label: "Bücher", singular: "Buch" },
   { id: "ARTICLE", label: "Fachartikel", singular: "Fachartikel" },
   { id: "WHITEPAPER", label: "Whitepaper", singular: "Whitepaper" },
+  { id: "COURSE", label: "Kurse", singular: "Kurs" },
 ] as const;
 
 interface PubRow {
@@ -63,10 +64,19 @@ export default async function PublikationenAdminPage({
         <tbody>
           {rows.map((p) => (
             <tr key={p.id}>
-              {type === "BOOK" ? (
+              {type === "BOOK" || type === "COURSE" ? (
                 <td style={{ width: 60 }}>
                   {p.coverUrl ? (
-                    <AssetImage src={p.coverUrl} alt={p.coverAlt} ai={p.coverAi} imgStyle={{ width: 46, height: 62, objectFit: "cover", borderRadius: 3 }} />
+                    <AssetImage
+                      src={p.coverUrl}
+                      alt={p.coverAlt}
+                      ai={p.coverAi}
+                      imgStyle={
+                        type === "COURSE"
+                          ? { width: 64, height: 36, objectFit: "cover", borderRadius: 3 }
+                          : { width: 46, height: 62, objectFit: "cover", borderRadius: 3 }
+                      }
+                    />
                   ) : (
                     <span className="meta">—</span>
                   )}
@@ -96,26 +106,39 @@ export default async function PublikationenAdminPage({
       {type === "ARTICLE" ? (
         <p className="meta" style={{ marginTop: 0 }}>Auch Gastbeiträge in fremden Blogs (z. B. MVP-Treff, Microsoft) — Medium und Link angeben.</p>
       ) : null}
+      {type === "COURSE" ? (
+        <p className="meta" style={{ marginTop: 0 }}>Eigene Trainings, z. B. auf LinkedIn Learning. Plattform und Link zum Kurs angeben; Thumbnail optional.</p>
+      ) : null}
       <label className="f">Titel (DE)</label>
-      <input className="f" name="deTitle" placeholder="Titel" required />
+      <input className="f" name="deTitle" placeholder={type === "COURSE" ? "Kurstitel" : "Titel"} required />
       <label className="f">Jahr</label>
       <input className="f" name="year" type="number" defaultValue={2026} />
-      <label className="f">Rolle (z. B. Co-Autorin)</label>
-      <input className="f" name="role" />
-      <label className="f">{type === "ARTICLE" ? "Medium / Blog" : "Verlag / Medium"}</label>
-      <input className="f" name="publisher" placeholder={type === "ARTICLE" ? "z. B. MVP-Treff, Microsoft Tech Community" : ""} />
+      <label className="f">{type === "COURSE" ? "Rolle" : "Rolle (z. B. Co-Autorin)"}</label>
+      <input className="f" name="role" defaultValue={type === "COURSE" ? "Trainerin" : undefined} />
+      <label className="f">{type === "ARTICLE" ? "Medium / Blog" : type === "COURSE" ? "Plattform" : "Verlag / Medium"}</label>
+      <input
+        className="f"
+        name="publisher"
+        defaultValue={type === "COURSE" ? "LinkedIn Learning" : undefined}
+        placeholder={type === "ARTICLE" ? "z. B. MVP-Treff, Microsoft Tech Community" : ""}
+      />
       {type === "BOOK" ? (
         <>
           <label className="f">ISBN (optional)</label>
           <input className="f" name="isbn" />
         </>
       ) : null}
-      <label className="f">Link (optional)</label>
+      <label className="f">{type === "COURSE" ? "Link zum Kurs" : "Link (optional)"}</label>
       <input className="f" name="url" placeholder="https://…" />
       {type === "BOOK" ? (
         <>
           <label className="f">Cover (optional)</label>
           <AssetPickerField name="coverAssetId" initialAssetId={null} initialUrl={null} aspectRatio="3 / 4" emptyHint="Kein Cover gewählt" />
+        </>
+      ) : type === "COURSE" ? (
+        <>
+          <label className="f">Thumbnail (optional)</label>
+          <AssetPickerField name="coverAssetId" initialAssetId={null} initialUrl={null} aspectRatio="16 / 9" emptyHint="Kein Thumbnail gewählt" />
         </>
       ) : (
         <input type="hidden" name="coverAssetId" value="" />
@@ -145,7 +168,7 @@ export default async function PublikationenAdminPage({
   return (
     <section>
       <h1>Publikationen</h1>
-      <p className="muted">Bücher, Fachartikel und Whitepaper — je Art links anlegen, rechts verwalten.</p>
+      <p className="muted">Bücher, Fachartikel, Whitepaper und Kurse — je Art links anlegen, rechts verwalten.</p>
       <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 

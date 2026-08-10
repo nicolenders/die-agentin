@@ -43,7 +43,7 @@ export type TaskState = (typeof TASK_STATES)[number];
 export const TAXONOMY_KINDS = ["DOSSIER", "TALK", "CERTIFICATION"] as const;
 export type TaxonomyKind = (typeof TAXONOMY_KINDS)[number];
 
-export const PUBLICATION_TYPES = ["BOOK", "ARTICLE", "WHITEPAPER"] as const;
+export const PUBLICATION_TYPES = ["BOOK", "ARTICLE", "WHITEPAPER", "COURSE"] as const;
 export type PublicationType = (typeof PUBLICATION_TYPES)[number];
 
 /** Generischer Prüfer: Ist `value` einer der erlaubten Werte? */

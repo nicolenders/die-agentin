@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getLegend } from "@/lib/queries/legend";
+import { getSocialLinks } from "@/lib/queries/settings";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
+import SocialLinks from "@/components/SocialLinks";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 
@@ -28,7 +30,7 @@ export default async function LegendePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const legend = await getLegend(locale);
+  const [legend, social] = await Promise.all([getLegend(locale), getSocialLinks()]);
   const portraitSrc = legend.portrait?.url ?? brandAsset("portrait.jpg");
   const portraitAlt = legend.portrait?.alt ?? (isDe ? "Porträt von Nicole Enders" : "Portrait of Nicole Enders");
 
@@ -39,6 +41,14 @@ export default async function LegendePage({
           <p className="eyebrow">{legend.eyebrow}</p>
           <h2>{legend.name}</h2>
           <p className="lead">{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
+          {Object.keys(social).length > 0 ? (
+            <div style={{ marginTop: 28 }}>
+              <p className="eyebrow" style={{ marginBottom: 12 }}>
+                {isDe ? "Folgen & vernetzen" : "Follow & connect"}
+              </p>
+              <SocialLinks social={social} className="social-icons" />
+            </div>
+          ) : null}
         </div>
         <div className="hero-visual">
           <BrandImage

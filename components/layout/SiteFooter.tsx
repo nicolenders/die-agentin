@@ -2,7 +2,8 @@ import Link from "next/link";
 import styles from "./SiteFooter.module.scss";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n";
-import { getSocialLinks, SOCIAL_PLATFORMS } from "@/lib/queries/settings";
+import { getSocialLinks } from "@/lib/queries/settings";
+import SocialLinks from "@/components/SocialLinks";
 
 interface SiteFooterProps {
   locale: Locale;
@@ -15,7 +16,6 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
   const l = (segment: string) => `/${locale}/${segment}`;
   // Nur gepflegte Profile anzeigen (SPEC: keine toten „#"-Links).
   const social = await getSocialLinks();
-  const socialLinks = SOCIAL_PLATFORMS.filter((p) => social[p.key]);
 
   return (
     <footer className={styles.footer}>
@@ -33,21 +33,7 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
           <p style={{ fontSize: 14, color: "var(--muted)", maxWidth: "34ch" }}>
             {dict.brand.tagline}
           </p>
-          {socialLinks.length > 0 ? (
-            <div className={styles.socials}>
-              {socialLinks.map((p) => (
-                <a
-                  key={p.key}
-                  href={social[p.key]}
-                  aria-label={p.label}
-                  target="_blank"
-                  rel="me noopener noreferrer"
-                >
-                  {p.icon}
-                </a>
-              ))}
-            </div>
-          ) : null}
+          <SocialLinks social={social} className={styles.socials} />
         </div>
 
         <div>

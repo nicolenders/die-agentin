@@ -8,6 +8,7 @@ const MESSAGES: Record<string, string> = {
   created: "Angelegt.",
   updated: "Aktualisiert.",
   deleted: "Gelöscht.",
+  reordered: "Reihenfolge aktualisiert.",
   published: "Veröffentlicht.",
   "missing-fields": "Bitte alle Pflichtfelder ausfüllen — nichts wurde gespeichert.",
   "not-found": "Eintrag nicht gefunden.",

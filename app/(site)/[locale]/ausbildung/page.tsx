@@ -128,15 +128,15 @@ export default async function AusbildungPage({
                     badge(c.shortCode, c.name, c.series)
                   )}
                 </div>
-                <div style={{ minWidth: 0 }}>
+                <div className="cert-main">
                   <div className="cert-head">
-                    <b>{c.name}</b>
-                    <span className="pub-year">{yearOf(c.acquiredOn)}</span>
+                    <b className="cert-name">{c.name}</b>
+                    <span className="cert-year">{yearOf(c.acquiredOn)}</span>
                   </div>
-                  <div className="meta">
+                  <div className="meta cert-meta">
                     {isDe ? "Erworben" : "Acquired"} {monthYear(c.acquiredOn, locale)}
                     {c.validUntil ? ` · ${isDe ? "gültig bis" : "valid until"} ${monthYear(c.validUntil, locale)}` : ""}
-                    {c.series ? ` · ${isDe ? "Reihe" : "series"} ${c.series}` : ""}
+                    {c.series ? ` · ${c.series}` : ""}
                     {c.proofUrl ? (
                       <>
                         {" · "}

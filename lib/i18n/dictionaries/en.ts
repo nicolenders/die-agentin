@@ -57,6 +57,7 @@ const en: Dictionary = {
     countCountries: "Countries",
     countBriefings: "Briefings in repertoire",
     countMvp: "MVP Award",
+    countCertifications: "Certifications",
     countBooks: "Books",
     mostRequested: "Most requested briefing",
     openMissionFile: "Open mission file",

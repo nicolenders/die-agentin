@@ -148,6 +148,10 @@ export default async function HQPage({
           <span>{t.countMvp}</span>
         </div>
         <div>
+          <b>{stats.certifications}</b>
+          <span>{t.countCertifications}</span>
+        </div>
+        <div>
           <b>{stats.books}</b>
           <span>{t.countBooks}</span>
         </div>

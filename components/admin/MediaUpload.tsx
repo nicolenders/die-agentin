@@ -21,16 +21,24 @@ export default function MediaUpload() {
     const formEl = e.currentTarget;
     try {
       const res = await fetch("/api/admin/media", { method: "POST", body: new FormData(formEl) });
-      const data = await res.json().catch(() => ({}));
+      const raw = await res.text();
+      let data: { error?: string };
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        // Keine JSON-Antwort (z. B. HTML-Fehlerseite): Status + Auszug zeigen.
+        setError(`Upload fehlgeschlagen (HTTP ${res.status}). ${raw.slice(0, 140)}`.trim());
+        return;
+      }
       if (!res.ok) {
-        setError(data.error ?? "Upload fehlgeschlagen.");
+        setError(data.error ?? `Upload fehlgeschlagen (HTTP ${res.status}).`);
       } else {
         formEl.reset();
         setOk(true);
         router.refresh();
       }
-    } catch {
-      setError("Upload fehlgeschlagen.");
+    } catch (err) {
+      setError(`Upload fehlgeschlagen: ${err instanceof Error ? err.message : "Netzwerkfehler"}.`);
     } finally {
       setBusy(false);
     }

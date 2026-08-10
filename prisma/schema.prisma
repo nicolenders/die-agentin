@@ -260,6 +260,9 @@ model Certification {
   // Art des Eintrags: CERTIFICATION | MVP | TRAINING (besuchte Schulung/Training)
   // | AWARD (andere Auszeichnung). Steuert die Bereiche im Admin und öffentlich.
   kind       String    @default("CERTIFICATION")
+  // Nur für kind=CERTIFICATION relevant: MICROSOFT | METHODICAL — teilt die
+  // Zertifizierungen öffentlich in zwei Bereiche.
+  family     String    @default("MICROSOFT")
   shortCode  String? // Kürzel, z. B. AI-102
   categoryId String?
   category   Taxonomy? @relation("CertificationCategory", fields: [categoryId], references: [id])

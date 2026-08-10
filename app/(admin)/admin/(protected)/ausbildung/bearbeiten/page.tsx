@@ -4,7 +4,7 @@ import { assetUrl } from "@/lib/media/url";
 import Flash from "@/components/admin/Flash";
 import AssetPickerField from "@/components/admin/AssetPickerField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
-import { CERT_KINDS, CERT_KIND_LABEL } from "@/lib/records/kind";
+import { CERT_KINDS, CERT_KIND_LABEL, CERT_FAMILIES, CERT_FAMILY_SHORT } from "@/lib/records/kind";
 import { updateCertification } from "../../publikationen/actions";
 
 export const metadata = { title: "Bearbeiten · Ausbildung · Zentrale" };
@@ -51,6 +51,12 @@ export default async function CertEditPage({
           <select className="f" name="kind" defaultValue={row.kind}>
             {CERT_KINDS.map((k) => (
               <option key={k} value={k}>{CERT_KIND_LABEL[k]}</option>
+            ))}
+          </select>
+          <label className="f">Art der Zertifizierung (nur für „Zertifizierungen“)</label>
+          <select className="f" name="family" defaultValue={row.family}>
+            {CERT_FAMILIES.map((f) => (
+              <option key={f} value={f}>{CERT_FAMILY_SHORT[f]}</option>
             ))}
           </select>
           <label className="f">Kategorien (optional, Mehrfachauswahl)</label>

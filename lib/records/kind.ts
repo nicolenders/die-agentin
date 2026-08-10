@@ -22,3 +22,30 @@ export function toCertKind(value: string | null | undefined): CertKind {
     ? (value as CertKind)
     : "CERTIFICATION";
 }
+
+// Unterteilung der Zertifizierungen (kind = CERTIFICATION) in Microsoft- und
+// methodische Zertifizierungen. Für andere Arten ohne Bedeutung.
+export const CERT_FAMILIES = ["MICROSOFT", "METHODICAL"] as const;
+export type CertFamily = (typeof CERT_FAMILIES)[number];
+
+export const CERT_FAMILY_LABEL: Record<CertFamily, string> = {
+  MICROSOFT: "Microsoft-Zertifizierungen",
+  METHODICAL: "Methodische Zertifizierungen",
+};
+
+export const CERT_FAMILY_LABEL_EN: Record<CertFamily, string> = {
+  MICROSOFT: "Microsoft certifications",
+  METHODICAL: "Methodological certifications",
+};
+
+// Kurzform für Dropdown/Chips im Admin.
+export const CERT_FAMILY_SHORT: Record<CertFamily, string> = {
+  MICROSOFT: "Microsoft",
+  METHODICAL: "Methodisch",
+};
+
+export function toCertFamily(value: string | null | undefined): CertFamily {
+  return value && (CERT_FAMILIES as readonly string[]).includes(value)
+    ? (value as CertFamily)
+    : "MICROSOFT";
+}

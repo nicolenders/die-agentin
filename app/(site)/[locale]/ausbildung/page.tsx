@@ -2,7 +2,15 @@ import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getCertifications, getFocusTopics } from "@/lib/queries/records";
-import { CERT_KINDS, CERT_KIND_LABEL, CERT_KIND_LABEL_EN } from "@/lib/records/kind";
+import {
+  CERT_KINDS,
+  CERT_KIND_LABEL,
+  CERT_KIND_LABEL_EN,
+  CERT_FAMILIES,
+  CERT_FAMILY_LABEL,
+  CERT_FAMILY_LABEL_EN,
+} from "@/lib/records/kind";
+import type { CertificationRecord } from "@/lib/queries/records";
 import AssetImage from "@/components/media/AssetImage";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +50,24 @@ export default async function AusbildungPage({
   const isDe = locale === "de";
   const [certs, focus] = await Promise.all([getCertifications(locale), getFocusTopics(locale)]);
   const kindLabel = (k: (typeof CERT_KINDS)[number]) => (isDe ? CERT_KIND_LABEL[k] : CERT_KIND_LABEL_EN[k]);
+  const familyLabel = (f: (typeof CERT_FAMILIES)[number]) =>
+    isDe ? CERT_FAMILY_LABEL[f] : CERT_FAMILY_LABEL_EN[f];
+
+  // Abschnitte untereinander. Zertifizierungen werden zusätzlich nach Microsoft
+  // und methodisch getrennt; die übrigen Arten bleiben ein Abschnitt.
+  const sections: { key: string; label: string; items: CertificationRecord[] }[] = [];
+  for (const kind of CERT_KINDS) {
+    const inKind = certs.filter((c) => c.kind === kind);
+    if (inKind.length === 0) continue;
+    if (kind === "CERTIFICATION") {
+      for (const fam of CERT_FAMILIES) {
+        const items = inKind.filter((c) => (c.family === "METHODICAL" ? "METHODICAL" : "MICROSOFT") === fam);
+        if (items.length > 0) sections.push({ key: `cert-${fam}`, label: familyLabel(fam), items });
+      }
+    } else {
+      sections.push({ key: kind, label: kindLabel(kind), items: inKind });
+    }
+  }
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
@@ -84,52 +110,48 @@ export default async function AusbildungPage({
         </div>
       ) : null}
 
-      {CERT_KINDS.map((kind) => {
-        const items = certs.filter((c) => c.kind === kind);
-        if (items.length === 0) return null;
-        return (
-          <div key={kind}>
-            <p className="eyebrow" style={{ marginTop: 32 }}>{kindLabel(kind)}</p>
-            <div className="cert-grid">
-              {items.map((c) => (
-                <div className="cert" key={c.id}>
-                  <div className="badge">
-                    {c.logoUrl ? (
-                      <AssetImage
-                        src={c.logoUrl}
-                        alt={c.logoAlt}
-                        ai={c.logoAi}
-                        imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
-                      />
-                    ) : (
-                      badge(c.shortCode, c.name, c.series)
-                    )}
+      {sections.map((sec) => (
+        <div key={sec.key}>
+          <p className="eyebrow" style={{ marginTop: 32 }}>{sec.label}</p>
+          <div className="cert-grid">
+            {sec.items.map((c) => (
+              <div className="cert" key={c.id}>
+                <div className="badge">
+                  {c.logoUrl ? (
+                    <AssetImage
+                      src={c.logoUrl}
+                      alt={c.logoAlt}
+                      ai={c.logoAi}
+                      imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    />
+                  ) : (
+                    badge(c.shortCode, c.name, c.series)
+                  )}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div className="cert-head">
+                    <b>{c.name}</b>
+                    <span className="pub-year">{yearOf(c.acquiredOn)}</span>
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="cert-head">
-                      <b>{c.name}</b>
-                      <span className="pub-year">{yearOf(c.acquiredOn)}</span>
-                    </div>
-                    <div className="meta">
-                      {isDe ? "Erworben" : "Acquired"} {monthYear(c.acquiredOn, locale)}
-                      {c.validUntil ? ` · ${isDe ? "gültig bis" : "valid until"} ${monthYear(c.validUntil, locale)}` : ""}
-                      {c.series ? ` · ${isDe ? "Reihe" : "series"} ${c.series}` : ""}
-                      {c.proofUrl ? (
-                        <>
-                          {" · "}
-                          <a href={c.proofUrl} target="_blank" rel="noopener noreferrer">
-                            {isDe ? "Nachweis" : "Proof"}
-                          </a>
-                        </>
-                      ) : null}
-                    </div>
+                  <div className="meta">
+                    {isDe ? "Erworben" : "Acquired"} {monthYear(c.acquiredOn, locale)}
+                    {c.validUntil ? ` · ${isDe ? "gültig bis" : "valid until"} ${monthYear(c.validUntil, locale)}` : ""}
+                    {c.series ? ` · ${isDe ? "Reihe" : "series"} ${c.series}` : ""}
+                    {c.proofUrl ? (
+                      <>
+                        {" · "}
+                        <a href={c.proofUrl} target="_blank" rel="noopener noreferrer">
+                          {isDe ? "Nachweis" : "Proof"}
+                        </a>
+                      </>
+                    ) : null}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </section>
   );
 }

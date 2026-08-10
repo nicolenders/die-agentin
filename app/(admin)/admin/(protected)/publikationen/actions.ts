@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { invalidateTags, tags } from "@/lib/cache";
 import { PUBLICATION_TYPES, isOneOf } from "@/lib/domain";
-import { toCertKind } from "@/lib/records/kind";
+import { toCertKind, toCertFamily } from "@/lib/records/kind";
 import { FOCUS_TAG } from "@/lib/queries/records";
 
 const LIST = "/admin/publikationen";
@@ -135,6 +135,7 @@ export async function createCertification(formData: FormData): Promise<void> {
       data: {
         name,
         kind: toCertKind(str(formData, "kind")),
+        family: toCertFamily(str(formData, "family")),
         shortCode: str(formData, "shortCode") || null,
         categoryId: categoryIds[0] ?? null,
         categories: { connect: categoryIds.map((id) => ({ id })) },
@@ -169,6 +170,7 @@ export async function updateCertification(formData: FormData): Promise<void> {
       data: {
         name,
         kind: toCertKind(str(formData, "kind")),
+        family: toCertFamily(str(formData, "family")),
         shortCode: str(formData, "shortCode") || null,
         categoryId: categoryIds[0] ?? null,
         categories: { set: categoryIds.map((id) => ({ id })) },

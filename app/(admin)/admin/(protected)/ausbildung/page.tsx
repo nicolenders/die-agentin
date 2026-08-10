@@ -8,7 +8,7 @@ import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import AssetImage from "@/components/media/AssetImage";
 import Flash from "@/components/admin/Flash";
 import Tabs, { type TabDef } from "@/components/admin/Tabs";
-import { CERT_KINDS, CERT_KIND_LABEL } from "@/lib/records/kind";
+import { CERT_KINDS, CERT_KIND_LABEL, CERT_FAMILIES, CERT_FAMILY_SHORT } from "@/lib/records/kind";
 import { createCertification, deleteCertification } from "../publikationen/actions";
 
 export const metadata = { title: "Ausbildung & Auszeichnungen · Zentrale" };
@@ -17,6 +17,7 @@ interface CertRow {
   id: string;
   name: string;
   kind: string;
+  family: string;
   meta: string;
   logoUrl: string | null;
   logoAi: boolean;
@@ -41,7 +42,13 @@ export default async function AusbildungAdminPage({
       id: c.id,
       name: c.name,
       kind: c.kind,
-      meta: [c.shortCode, c.categories.map((x) => x.nameDe).join(", ") || null, formatDate(c.acquiredOn, "de")].filter(Boolean).join(" · "),
+      family: c.family,
+      meta: [
+        c.kind === "CERTIFICATION" ? CERT_FAMILY_SHORT[c.family === "METHODICAL" ? "METHODICAL" : "MICROSOFT"] : null,
+        c.shortCode,
+        c.categories.map((x) => x.nameDe).join(", ") || null,
+        formatDate(c.acquiredOn, "de"),
+      ].filter(Boolean).join(" · "),
       logoUrl: c.logo ? assetUrl(c.logo.blobPath) : null,
       logoAi: c.logo?.source === "AI",
     }));
@@ -86,6 +93,18 @@ export default async function AusbildungAdminPage({
   const form = (kind: string) => (
     <form action={createCertification}>
       <input type="hidden" name="kind" value={kind} />
+      {kind === "CERTIFICATION" ? (
+        <>
+          <label className="f">Art der Zertifizierung</label>
+          <select className="f" name="family" defaultValue="MICROSOFT">
+            {CERT_FAMILIES.map((f) => (
+              <option key={f} value={f}>{CERT_FAMILY_SHORT[f]}</option>
+            ))}
+          </select>
+        </>
+      ) : (
+        <input type="hidden" name="family" value="MICROSOFT" />
+      )}
       <label className="f">Kategorien (optional, Mehrfachauswahl)</label>
       <CategoryMultiSelect name="categoryIds" options={certCats.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Optional — Kategorien unter „Kategorien & Tags“ anlegen." />
       <label className="f">Bezeichnung</label>

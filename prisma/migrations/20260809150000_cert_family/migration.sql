@@ -1,0 +1,19 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- AddColumn: Unterteilung der Zertifizierungen (MICROSOFT | METHODICAL).
+ALTER TABLE [dbo].[Certification] ADD [family] NVARCHAR(1000) NOT NULL CONSTRAINT [Certification_family_df] DEFAULT 'MICROSOFT';
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH

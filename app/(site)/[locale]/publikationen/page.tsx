@@ -24,12 +24,13 @@ export default async function PublikationenPage({
   const isDe = locale === "de";
   const all = await getPublications(locale);
   const books = all.filter((p) => p.type === "BOOK");
-  const others = all.filter((p) => p.type !== "BOOK");
+  const courses = all.filter((p) => p.type === "COURSE");
+  const others = all.filter((p) => p.type !== "BOOK" && p.type !== "COURSE");
 
   const typeLabel = (t: string) =>
     isDe
-      ? { BOOK: "Buch", ARTICLE: "Fachartikel", WHITEPAPER: "Whitepaper" }[t] ?? t
-      : { BOOK: "Book", ARTICLE: "Article", WHITEPAPER: "Whitepaper" }[t] ?? t;
+      ? { BOOK: "Buch", ARTICLE: "Fachartikel", WHITEPAPER: "Whitepaper", COURSE: "Kurs" }[t] ?? t
+      : { BOOK: "Book", ARTICLE: "Article", WHITEPAPER: "Whitepaper", COURSE: "Course" }[t] ?? t;
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
@@ -66,6 +67,43 @@ export default async function PublikationenPage({
             </article>
           ))}
         </div>
+      ) : null}
+
+      {courses.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: books.length > 0 ? 40 : 26 }}>
+            {isDe ? "Kurse & Trainings" : "Courses & trainings"}
+          </p>
+          <div className="pub-grid" style={{ marginTop: 18 }}>
+            {courses.map((c) => (
+              <article key={c.id} className="card bracket course-card">
+                <BrandImage
+                  src={c.coverUrl ?? brandAsset(`cover-${c.id}.jpg`)}
+                  alt={c.coverAlt || `Thumbnail: ${c.title}`}
+                  label={isDe ? "Kurs" : "Course"}
+                  sub={c.publisher ?? "LinkedIn Learning"}
+                  ratio="16 / 9"
+                  ai={c.coverAi}
+                />
+                <div className="pub-body">
+                  <div className="pub-tags">
+                    <span className="tag">{typeLabel(c.type)}</span>
+                    <span className="pub-year">{c.year}</span>
+                  </div>
+                  <h3 className="pub-title">{c.title}</h3>
+                  <p className="meta pub-meta">
+                    {[c.role, c.publisher].filter(Boolean).join(" · ")}
+                  </p>
+                  {c.url ? (
+                    <a className="btn ghost sm pub-link" href={c.url} target="_blank" rel="noopener noreferrer">
+                      {isDe ? "Zum Kurs" : "View course"}
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
       ) : null}
 
       {others.length > 0 ? (

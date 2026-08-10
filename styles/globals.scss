@@ -179,6 +179,16 @@ h1 {
 .pub-card > .brand-image {
   align-self: start;
 }
+// Kurskarten: Thumbnail oben (Querformat), Text darunter — die vertraute
+// Anmutung einer Videokachel.
+.course-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.course-card > .brand-image {
+  width: 100%;
+}
 .pub-body {
   min-width: 0;
   display: flex;

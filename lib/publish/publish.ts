@@ -44,8 +44,59 @@ async function enqueueChannelTasks(postId: string, now: Date): Promise<void> {
   }
 }
 
+/** Kanal-Aufgaben für eine fällige Depesche einreihen (Phase 4). */
+async function enqueueDispatchTasks(dispatchId: string, now: Date): Promise<void> {
+  try {
+    const accounts = await db.channelAccount.findMany({ where: { connected: true } });
+    if (accounts.length === 0) return;
+    const de = await db.dispatchTranslation.findUnique({
+      where: { dispatchId_locale: { dispatchId, locale: "de" } },
+      select: { slug: true, socialText: true, title: true },
+    });
+    const url = de ? `${SITE}/de/depeschen/${de.slug}` : SITE;
+    const text = de?.socialText ?? de?.title ?? "";
+    for (const account of accounts) {
+      const existing = await db.channelTask.findFirst({
+        where: { dispatchId, platform: account.platform },
+        select: { id: true },
+      });
+      if (existing) continue;
+      const state = account.platform === "LINKEDIN" ? "PENDING" : "MANUAL_OPEN";
+      await db.channelTask.create({
+        data: { dispatchId, platform: account.platform, state, scheduledAt: now, payload: JSON.stringify({ text, url }) },
+      });
+    }
+  } catch {
+    // Kanäle sind optional.
+  }
+}
+
+/** Fällige, terminierte Depeschen veröffentlichen (idempotent). */
+async function publishDispatches(now: Date): Promise<string[]> {
+  const due = await db.dispatch.findMany({
+    where: { status: "SCHEDULED", publishAt: { lte: now } },
+    select: { id: true },
+  });
+  const published: string[] = [];
+  for (const { id } of due) {
+    const res = await db.dispatch.updateMany({
+      where: { id, status: "SCHEDULED" },
+      data: { status: "PUBLISHED", publishedAt: now },
+    });
+    if (res.count === 1) {
+      published.push(id);
+      await enqueueDispatchTasks(id, now);
+      await db.auditLog.create({
+        data: { actor: "scheduler", action: "dispatch.publish", entity: "dispatch", entityId: id, detail: "auto (scheduled)" },
+      });
+    }
+  }
+  return published;
+}
+
 export interface PublishResult {
   published: string[];
+  publishedDispatches: string[];
 }
 
 /**
@@ -87,5 +138,15 @@ export async function runScheduledPublish(now: Date = new Date()): Promise<Publi
       ...published.map((id) => tags.post(id)),
     ]);
   }
-  return { published };
+
+  const publishedDispatches = await publishDispatches(now);
+  if (publishedDispatches.length > 0) {
+    invalidateTags([
+      tags.dispatchList("de"),
+      tags.dispatchList("en"),
+      ...publishedDispatches.map((id) => tags.dispatch(id)),
+    ]);
+  }
+
+  return { published, publishedDispatches };
 }

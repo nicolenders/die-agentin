@@ -13,6 +13,8 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin", label: "Einsatzzentrale", icon: "◈" },
   { href: "/admin/startseite", label: "Startseite", icon: "⌂", section: "Inhalte" },
   { href: "/admin/depeschen", label: "Depeschen", icon: "≡" },
+  { href: "/admin/redaktionsplan", label: "Redaktionsplan", icon: "▦" },
+  { href: "/admin/archiv", label: "Archiv", icon: "⊟" },
   { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },
   { href: "/admin/identitaeten", label: "Identitäten", icon: "⬡", section: "Struktur" },
   { href: "/admin/einsaetze", label: "Einsätze", icon: "◎" },

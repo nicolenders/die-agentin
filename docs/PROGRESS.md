@@ -18,7 +18,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 1** — Audit + Sofortmaßnahmen (`docs/AUDIT.md`)
 - [x] **Phase 2** — Identitäten (Decknamen): Datenmodell + Admin
 - [x] **Phase 3** — Signale + Dossiers → Depeschen (öffentlich + Admin)
-- [ ] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
+- [x] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
 - [ ] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
 - [ ] **Phase 6** — GitHub-Integration
 - [ ] **Phase 7** — Kontakt: LinkedIn + E-Mail
@@ -79,6 +79,26 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
   Alt-Admin (`beitraege`/`editor`/`dossiers`) aus der Nav entfernt, Routen noch da.
 - KI-Rohübersetzung (Foundry) für Depeschen-EN wie beim alten Dossier-Editor.
 - Zeitgesteuertes Veröffentlichen (SCHEDULED→PUBLISHED) → Phase 4.
+
+**Phase 4 — Status, Archiv, Redaktionsplan**
+- Sichtbarkeitsregel zentral in `lib/visibility.ts` (`isPublic`, `publishedWhere`,
+  `isPlanned`) mit Unit-Tests. Regel: PUBLISHED UND publishedAt ≤ now.
+- Publish-Job (`lib/publish`) verarbeitet jetzt auch terminierte Depeschen
+  (SCHEDULED→PUBLISHED, idempotent) und invalidiert die Depeschen-Cache-Tags —
+  damit greift die Zeitsteuerung trotz Caching (Latenz ≤ revalidate 1 h bzw.
+  sofort beim Job-Lauf; dokumentiert).
+- Admin „Archiv" (Tabs Depeschen/Einsätze): Wiederherstellen (→DRAFT),
+  endgültig löschen mit Bestätigung.
+- Admin „Redaktionsplan": Tabelle (sortier-/filterbar, Auswahl in der URL) +
+  Monatskalender als CSS-Grid (keine Kalenderbibliothek), eingefärbt nach
+  Identitätsfarbe, „+n weitere" bei Überlauf.
+
+**Aus Phase 4 vertagt:**
+- Talk/Publication haben noch kein Status-/`ARCHIVED`-Feld → Archiv-/Plan-Tabs
+  dafür fehlen (Folgeschritt: Statusfeld ergänzen). Missionen nutzen `contentStatus`.
+- Drag & Drop im Kalender (nur Anzeige umgesetzt, wie in 4.3 erlaubt).
+- Admin-Vorschau-Banner für nicht sichtbare Detail-URLs (Teilen via bestehendem
+  `/preview/[token]`).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

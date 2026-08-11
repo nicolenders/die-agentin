@@ -553,6 +553,129 @@ async function main() {
     ],
   });
 
+  // --- Rechtstexte (Phase 11) -----------------------------------------------
+  // Vollständige, verwendbare Fassungen DE + EN. KEINE Rechtsberatung — vor dem
+  // Cutover fachkundig prüfen lassen (docs/PROGRESS.md). Die Pflichtangaben
+  // (Name/Anschrift/E-Mail/LinkedIn) zieht die Impressum-Seite aus den
+  // Einstellungen; hier stehen nur die freien Blöcke.
+  const legalDocs: { docKey: string; locale: string; title: string; blocks: Array<{ h?: string; p?: string }> }[] = [
+    {
+      docKey: "IMPRINT", locale: "de", title: "Impressum",
+      blocks: [
+        { h: "Haftung für Inhalte" },
+        { p: "Als Diensteanbieter bin ich gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG bin ich als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden entsprechender Rechtsverletzungen entferne ich diese Inhalte umgehend." },
+        { h: "Haftung für Links" },
+        { p: "Mein Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte ich keinen Einfluss habe. Deshalb kann ich für diese fremden Inhalte keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft; rechtswidrige Inhalte waren nicht erkennbar. Eine permanente inhaltliche Kontrolle ist ohne konkrete Anhaltspunkte nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen entferne ich derartige Links umgehend." },
+        { h: "Urheberrecht" },
+        { p: "Die von mir erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechts bedürfen meiner schriftlichen Zustimmung. Downloads und Kopien sind nur für den privaten, nicht kommerziellen Gebrauch gestattet. Soweit Inhalte nicht von mir erstellt wurden, werden die Urheberrechte Dritter beachtet und als solche gekennzeichnet. Sollten Sie dennoch auf eine Urheberrechtsverletzung aufmerksam werden, bitte ich um einen Hinweis; bei Bekanntwerden entferne ich solche Inhalte umgehend." },
+        { h: "Streitschlichtung" },
+        { p: "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung bereit. Als Privatperson ohne Verbrauchergeschäft bin ich nicht zur Teilnahme an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle verpflichtet und nehme daran nicht teil." },
+      ],
+    },
+    {
+      docKey: "IMPRINT", locale: "en", title: "Imprint",
+      blocks: [
+        { h: "Liability for content" },
+        { p: "As a service provider I am responsible for my own content on these pages under the general laws (§ 7 (1) DDG). Under §§ 8 to 10 DDG, however, I am not obliged to monitor transmitted or stored third-party information or to investigate circumstances that indicate unlawful activity. Obligations to remove or block the use of information under the general laws remain unaffected. Liability in this respect is only possible from the point in time at which a concrete infringement becomes known. Upon becoming aware of such infringements, I will remove the content promptly." },
+        { h: "Liability for links" },
+        { p: "My offering contains links to external third-party websites over whose content I have no influence. I therefore cannot assume any liability for this third-party content. The respective provider or operator of the linked pages is always responsible for their content. The linked pages were checked for possible legal violations at the time of linking; unlawful content was not recognisable. Ongoing monitoring without concrete evidence of an infringement is not reasonable. Upon becoming aware of legal violations, I will remove such links promptly." },
+        { h: "Copyright" },
+        { p: "The content and works I create on these pages are subject to German copyright law. Reproduction, editing, distribution and any kind of use beyond the limits of copyright require my written consent. Downloads and copies are permitted for private, non-commercial use only. Where content was not created by me, the copyrights of third parties are respected and marked as such. Should you nonetheless notice an infringement, please let me know; I will remove such content promptly." },
+        { h: "Dispute resolution" },
+        { p: "The European Commission provides a platform for online dispute resolution. As a private individual without consumer business, I am neither obliged to participate in dispute resolution proceedings before a consumer arbitration board nor do I do so." },
+      ],
+    },
+    {
+      docKey: "PRIVACY", locale: "de", title: "Datenschutzerklärung",
+      blocks: [
+        { h: "Verantwortlicher" },
+        { p: "Verantwortlich für die Datenverarbeitung auf dieser Website ist Nicole Enders. Die Kontaktdaten finden Sie im Impressum." },
+        { h: "Allgemeines zur Datenverarbeitung" },
+        { p: "Ich verarbeite personenbezogene Daten nur, soweit dies zur Bereitstellung einer funktionsfähigen Website und meiner Inhalte erforderlich ist. Rechtsgrundlagen sind insbesondere Art. 6 Abs. 1 lit. a DSGVO (Einwilligung), lit. b (Vertrag/Anbahnung) und lit. f (berechtigtes Interesse)." },
+        { h: "Hosting und Server-Logfiles" },
+        { p: "Diese Website wird bei Microsoft Azure (Azure Container Apps, Region West Europe) gehostet. Beim Aufruf werden automatisch Informationen in Server-Logfiles erfasst (u. a. gekürzte IP-Adresse, Datum/Uhrzeit, aufgerufene Seite, User-Agent) auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO zum Zweck eines sicheren, stabilen Betriebs. Die Logs werden nach spätestens 30 Tagen gelöscht." },
+        { h: "Cookies" },
+        { p: "Für Leserinnen und Leser werden keine Cookies gesetzt. Ein technisch notwendiges Cookie wird ausschließlich für den Admin-Login (Redaktion) verwendet. Ein Einwilligungsbanner ist daher nicht erforderlich." },
+        { h: "Eingebettete Inhalte Dritter" },
+        { p: "Einzelne Seiten können Videos von YouTube (Google Ireland Ltd.) einbinden. Diese werden erst nach Ihrer ausdrücklichen Zustimmung geladen (Zwei-Klick-Lösung); vorher besteht keine Verbindung zu YouTube. Die interaktive Karte wird lokal aus gebündelten Geodaten gerendert — es werden keine Kartendienste Dritter aufgerufen." },
+        { h: "Kontaktaufnahme" },
+        { p: "Wenn Sie mich per E-Mail oder LinkedIn kontaktieren, verarbeite ich die übermittelten Daten zur Bearbeitung Ihrer Anfrage (Art. 6 Abs. 1 lit. b bzw. f DSGVO). Für LinkedIn gelten zusätzlich die Datenschutzhinweise von LinkedIn." },
+        { h: "RSS-Feed" },
+        { p: "Der angebotene RSS-Feed enthält keine personenbezogenen Daten." },
+        { h: "Ihre Rechte" },
+        { p: "Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21 DSGVO) sowie das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren." },
+        { h: "Speicherdauer" },
+        { p: "Personenbezogene Daten werden nur so lange gespeichert, wie es für die genannten Zwecke erforderlich ist oder gesetzliche Aufbewahrungsfristen bestehen." },
+        { h: "Änderungen dieser Erklärung" },
+        { p: "Diese Datenschutzerklärung wird angepasst, sobald sich die Datenverarbeitung ändert. Es gilt die jeweils hier veröffentlichte Fassung; das Stand-Datum ergibt sich aus dem letzten Änderungsdatum." },
+      ],
+    },
+    {
+      docKey: "PRIVACY", locale: "en", title: "Privacy policy",
+      blocks: [
+        { h: "Controller" },
+        { p: "The controller for data processing on this website is Nicole Enders. Contact details are provided in the imprint." },
+        { h: "General information" },
+        { p: "I process personal data only to the extent necessary to provide a functional website and my content. The legal bases are in particular Art. 6 (1) (a) GDPR (consent), (b) (contract) and (f) (legitimate interest)." },
+        { h: "Hosting and server log files" },
+        { p: "This website is hosted on Microsoft Azure (Azure Container Apps, West Europe region). When the pages are accessed, information is automatically recorded in server log files (including a shortened IP address, date/time, page accessed, user agent) on the basis of Art. 6 (1) (f) GDPR for secure, stable operation. Logs are deleted after 30 days at the latest." },
+        { h: "Cookies" },
+        { p: "No cookies are set for readers. A technically necessary cookie is used solely for the admin login (editorial). A consent banner is therefore not required." },
+        { h: "Embedded third-party content" },
+        { p: "Individual pages may embed videos from YouTube (Google Ireland Ltd.). These are only loaded after your explicit consent (two-click solution); no connection to YouTube is made beforehand. The interactive map is rendered locally from bundled geodata — no third-party map services are called." },
+        { h: "Contacting me" },
+        { p: "If you contact me by email or LinkedIn, I process the data you provide to handle your request (Art. 6 (1) (b) or (f) GDPR). LinkedIn's own privacy notices additionally apply to LinkedIn." },
+        { h: "RSS feed" },
+        { p: "The RSS feed offered contains no personal data." },
+        { h: "Your rights" },
+        { p: "You have the right to access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18), data portability (Art. 20) and objection (Art. 21 GDPR), as well as the right to lodge a complaint with a data protection supervisory authority." },
+        { h: "Retention period" },
+        { p: "Personal data is stored only for as long as necessary for the stated purposes or as required by statutory retention periods." },
+        { h: "Changes to this policy" },
+        { p: "This privacy policy will be adapted as soon as the data processing changes. The version published here applies; the date reflects the last modification." },
+      ],
+    },
+    {
+      docKey: "ACCESSIBILITY", locale: "de", title: "Erklärung zur Barrierefreiheit",
+      blocks: [
+        { p: "Diese Erklärung ist eine freiwillige Selbstverpflichtung. Diese Website ist ein rein redaktionelles Informationsangebot einer Privatperson ohne Verkaufs- oder Buchungsfunktion und fällt daher voraussichtlich nicht unter das Barrierefreiheitsstärkungsgesetz (BFSG). Ich bemühe mich dennoch aus eigenem Anspruch um Barrierefreiheit." },
+        { h: "Angestrebter Standard" },
+        { p: "Ziel ist die Konformität mit den Web Content Accessibility Guidelines (WCAG) 2.1, Stufe AA." },
+        { h: "Aktueller Stand und Selbsteinschätzung" },
+        { p: "Die Seite ist weitgehend barrierefrei nutzbar: semantisches HTML, durchgängige Tastaturbedienung mit sichtbarem Fokus, ausreichende Farbkontraste, Alternativtexte für Bilder und Respektierung von „prefers-reduced-motion“." },
+        { h: "Bekannte Einschränkungen" },
+        { p: "Die interaktive Weltkarte ist für Screenreader nicht sinnvoll erschließbar. Als gleichwertige Alternative steht unter der Karte immer eine vollständige Tabelle aller Einsätze zur Verfügung." },
+        { h: "Feedback und Kontakt" },
+        { p: "Wenn Ihnen Barrieren auffallen, freue ich mich über einen Hinweis über die im Impressum genannte E-Mail-Adresse." },
+        { h: "Datum der letzten Prüfung" },
+        { p: "Diese Erklärung wird bei Änderungen aktualisiert; das Stand-Datum ergibt sich aus dem letzten Änderungsdatum." },
+      ],
+    },
+    {
+      docKey: "ACCESSIBILITY", locale: "en", title: "Accessibility statement",
+      blocks: [
+        { p: "This statement is a voluntary self-commitment. This website is a purely editorial information offering by a private individual, without any sales or booking function, and therefore presumably does not fall under the German Accessibility Strengthening Act (BFSG). I nevertheless strive for accessibility out of my own standards." },
+        { h: "Target standard" },
+        { p: "The goal is conformance with the Web Content Accessibility Guidelines (WCAG) 2.1, level AA." },
+        { h: "Current state and self-assessment" },
+        { p: "The site is largely accessible: semantic HTML, full keyboard operation with a visible focus, sufficient colour contrast, alternative texts for images and respect for 'prefers-reduced-motion'." },
+        { h: "Known limitations" },
+        { p: "The interactive world map cannot be meaningfully accessed by screen readers. As an equivalent alternative, a complete table of all missions is always available below the map." },
+        { h: "Feedback and contact" },
+        { p: "If you notice any barriers, I welcome a note to the email address given in the imprint." },
+        { h: "Date of last review" },
+        { p: "This statement is updated when changes occur; the date reflects the last modification." },
+      ],
+    },
+  ];
+  for (const d of legalDocs) {
+    await db.legalDoc.upsert({
+      where: { docKey_locale: { docKey: d.docKey, locale: d.locale } },
+      create: { docKey: d.docKey, locale: d.locale, title: d.title, body: doc(...d.blocks) },
+      update: { title: d.title, body: doc(...d.blocks) },
+    });
+  }
+
   console.log("Seed abgeschlossen.");
 }
 

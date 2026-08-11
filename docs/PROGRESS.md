@@ -25,7 +25,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [~] **Phase 8** — Sessionize-Backfill (Infrastruktur fertig; Daten = STOP)
 - [x] **Phase 9** — Einsatzakte mit Belegmaterial
 - [~] **Phase 10** — Narrativ (10.4 fertig; Briefing-Detailseiten offen)
-- [ ] **Phase 11** — Rechtstexte (DE + EN)
+- [x] **Phase 11** — Rechtstexte (DE + EN)
 - [ ] **Phase 12** — Frontend-Redesign
 - [ ] **Anhang A** — Speaker-Kit („Akte")
 - [ ] **Phase 13** — SEO + Auffindbarkeit für KI-Systeme
@@ -183,6 +183,23 @@ des Assets).
   der Briefings-Übersicht ebenso.
 - **Linkkonsistenz Publikationen (Rheinwerk vs. Amazon):** manuell — Nicole
   vereinheitlicht auf die Verlagsseite, wo vorhanden (STOP, Anhang B).
+
+**Phase 11 — Rechtstexte**
+- 11.1 `docs/DATENVERARBEITUNG.md` vollständig (Hosting West Europe, Server-Logs
+  30 Tage, Auth nur Admin, Fonts self-hosted, keine Analytics, Karte ohne
+  Tile-Provider bestätigt, Cookies nur Admin → **kein Consent-Banner**).
+- 11.2 Impressum: § 5 DDG + § 18 Abs. 2 MStV, Name/Anschrift/E-Mail/LinkedIn aus
+  den Einstellungen (`<address>`), **keine USt-IdNr.** (Privatperson). Freie
+  Blöcke (Haftung, Links, Urheberrecht, Streitschlichtung ohne Pflicht-Suggestion)
+  vollständig DE+EN. Warnhinweis, wenn Anschrift/E-Mail fehlen.
+- 11.3 Datenschutzerklärung vollständig DE+EN, auf Basis der Inventur (keine
+  Textbausteine für ungenutzte Dienste).
+- 11.4 Barrierefreiheit als **freiwillige Selbstverpflichtung** (nicht BFSG/BITV),
+  WCAG 2.1 AA, bekannte Einschränkung Karte + Tabellen-Alternative.
+- 11.5 Alle drei als `LegalDoc` geseedet (im Admin per TipTap pflegbar), im Footer
+  verlinkt; Impressum zieht die Einstellungsfelder dynamisch.
+- **Keine Rechtsberatung** — vor dem Cutover fachkundig prüfen lassen.
+- **STOP:** Anschrift + E-Mail trägt Nicole ein (Einstellungen → Kontakt).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

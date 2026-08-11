@@ -259,3 +259,79 @@ export async function getPublishedIdentities(locale: Locale): Promise<IdentityCa
     return [];
   }
 }
+
+export interface IdentityDetail extends IdentityCard {
+  role: string;
+  descriptionJson: string;
+  since: string | null;
+  focus: string[];
+  languages: string[];
+  attributes: { label: string; value: string }[];
+  dispatches: { slug: string; title: string; format: string }[];
+  missions: { slug: string | null; eventName: string; city: string; date: Date }[];
+  briefings: { title: string }[];
+  publications: { title: string; year: number }[];
+  certifications: { name: string }[];
+}
+
+async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): Promise<IdentityDetail | null> {
+  const r = await db.identity.findFirst({
+    where: { slug, published: true },
+    include: {
+      portrait: true,
+      envelope: true,
+      attributes: { where: { displayPublic: true }, orderBy: { sortOrder: "asc" } },
+      dispatches: { include: { translations: true } },
+      missions: { include: { translations: true } },
+      talks: { include: { translations: true } },
+      publications: { include: { translations: true } },
+      certifications: true,
+    },
+  });
+  if (!r) return null;
+  const card = toCard(r, locale);
+  const trans = <T extends { locale: string }>(list: T[]): T | undefined =>
+    list.find((t) => t.locale === locale) ?? list.find((t) => t.locale === "de");
+
+  return {
+    ...card,
+    role: locale === "de" ? r.roleDe : r.roleEn || r.roleDe,
+    descriptionJson: locale === "en" && r.descriptionEn ? r.descriptionEn : r.descriptionDe,
+    since: r.since,
+    focus: parseStringList(locale === "en" ? r.focusEn : r.focusDe),
+    languages: parseStringList(r.languages),
+    attributes: r.attributes.map((a) => ({
+      label: locale === "en" && a.labelEn ? a.labelEn : a.labelDe,
+      value: locale === "en" && a.valueEn ? a.valueEn : a.valueDe,
+    })),
+    dispatches: r.dispatches
+      .filter((d) => d.status === "PUBLISHED" && (!d.publishedAt || d.publishedAt.getTime() <= nowMs))
+      .map((d) => {
+        const t = trans(d.translations.filter((x) => x.state === "REVIEWED")) ?? trans(d.translations);
+        return t ? { slug: t.slug, title: t.title, format: d.format } : null;
+      })
+      .filter((x): x is { slug: string; title: string; format: string } => x !== null),
+    missions: r.missions
+      .filter((m) => m.contentStatus === "PUBLISHED")
+      .map((m) => {
+        const t = trans(m.translations);
+        return { slug: t?.slug ?? null, eventName: m.eventName, city: m.city, date: m.startDate };
+      }),
+    briefings: r.talks.map((t) => ({ title: trans(t.translations)?.title ?? "" })).filter((b) => b.title),
+    publications: r.publications.map((p) => ({ title: trans(p.translations)?.title ?? "", year: p.year })).filter((p) => p.title),
+    certifications: r.certifications.map((c) => ({ name: c.name })),
+  };
+}
+
+export async function getIdentityBySlug(locale: Locale, slug: string): Promise<IdentityDetail | null> {
+  const run = cachedQuery(
+    (l: Locale, s: string) => loadIdentityBySlug(l, s, Date.now()),
+    ["identity", locale, slug],
+    [tags.identityList(locale)],
+  );
+  try {
+    return await run(locale, slug);
+  } catch {
+    return null;
+  }
+}

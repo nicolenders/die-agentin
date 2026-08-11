@@ -6,20 +6,12 @@ import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
 import { getHomeHero, getHomeStats } from "@/lib/queries/home";
 import { getMissions } from "@/lib/queries/missions";
-import { getPublishedPosts } from "@/lib/queries/posts";
+import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getBriefingRanking } from "@/lib/queries/briefings";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 import { formatDate } from "@/lib/format";
-import type { PostType } from "@/lib/domain";
 import styles from "./hq.module.scss";
-
-// Beitragstyp → CSS-Klasse für das farbige Tag (wie im Feed/Mockup).
-const TAG_CLASS: Record<PostType, string> = {
-  SIGNAL: "signal",
-  NOTE: "notiz",
-  BACKSTAGE: "backstage",
-};
 
 // HQ / Startseite (SPEC §5). Der Hero ist im Admin pflegbar (HomeContent), die
 // übrigen Blöcke ziehen sich aus den gepflegten Daten. Datenzugriffe sind
@@ -36,19 +28,19 @@ export default async function HQPage({
   if (!isLocale(locale)) notFound();
   const dict = await getDictionary(locale);
   const t = dict.hq;
-  const [hero, stats, missions, posts, ranking] = await Promise.all([
+  const [hero, stats, missions, dispatches, ranking] = await Promise.all([
     getHomeHero(locale),
     getHomeStats(),
     getMissions(locale),
-    getPublishedPosts(locale),
+    getPublishedDispatches(locale),
     getBriefingRanking(locale),
   ]);
 
   const nextMission = missions
     .filter((m) => m.future)
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())[0];
-  const recentPosts = posts.slice(0, 3);
-  const lastSignal = posts[0] ?? null;
+  const recentDispatches = dispatches.slice(0, 3);
+  const lastSignal = dispatches[0] ?? null;
   const topBriefing = ranking[0] ?? null;
   const missionHref = (m: typeof nextMission) =>
     m?.published && m.slug ? `/${locale}/einsaetze/${m.slug}` : `/${locale}/einsaetze`;
@@ -103,31 +95,29 @@ export default async function HQPage({
       <p className="eyebrow" style={{ marginTop: 52 }}>
         {t.recent}
       </p>
-      {recentPosts.length > 0 ? (
+      {recentDispatches.length > 0 ? (
         <div className={styles.cardGrid}>
-          {recentPosts.map((post) => (
+          {recentDispatches.map((d) => (
             <Link
-              key={post.id}
+              key={d.id}
               className="card bracket"
-              href={`/${locale}/signale/${post.slug}`}
+              href={`/${locale}/depeschen/${d.slug}`}
               style={{ display: "block" }}
             >
-              <span className={`tag ${TAG_CLASS[post.type]}`}>{dict.feed.types[post.type]}</span>
-              <h3 style={{ marginTop: 12 }}>{post.title}</h3>
-              {post.summary ? <p style={{ fontSize: "14.5px" }}>{post.summary}</p> : null}
+              <span className="tag" style={d.identities[0] ? { borderColor: d.identities[0].color } : undefined}>
+                {dict.dispatch.formats[d.format]}
+              </span>
+              <h3 style={{ marginTop: 12 }}>{d.title}</h3>
+              {d.summary ? <p style={{ fontSize: "14.5px" }}>{d.summary}</p> : null}
               <p className="meta">
-                {post.publishedAt ? formatDate(post.publishedAt, locale) : ""}
-                {post.fallback ? " · DE" : ""}
+                {d.publishedAt ? formatDate(d.publishedAt, locale) : ""}
+                {d.fallback ? " · DE" : ""}
               </p>
             </Link>
           ))}
         </div>
       ) : (
-        <p className="muted">
-          {locale === "de"
-            ? "Sobald ich etwas teile, erscheint es hier."
-            : "As soon as I share something, it shows up here."}
-        </p>
+        <p className="muted">{dict.dispatch.empty}</p>
       )}
 
       <div className={styles.counter}>

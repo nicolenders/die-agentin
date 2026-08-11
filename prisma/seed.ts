@@ -26,9 +26,11 @@ async function reset() {
   // Identitäten zuerst (referenzieren MediaAsset mit NoAction; Join-Tabellen
   // und Attribute hängen per Cascade an der Identität).
   await db.identityAttribute.deleteMany();
+  await db.channelTask.deleteMany();
+  await db.dispatchTranslation.deleteMany();
+  await db.dispatch.deleteMany();
   await db.identity.deleteMany();
   await db.tool.deleteMany();
-  await db.channelTask.deleteMany();
   await db.postTag.deleteMany();
   await db.postTranslation.deleteMany();
   await db.post.deleteMany();
@@ -451,8 +453,9 @@ async function main() {
       descEn: "ENTWURF — von Nicole zu prüfen. AI in software development, deliberately vendor-neutral and not tied to one ecosystem: tooling, engineering practice, and where AI actually holds up in day-to-day development.",
     },
   ];
+  const identityIds: Record<string, string> = {};
   for (const [i, id] of identities.entries()) {
-    await db.identity.create({
+    const created = await db.identity.create({
       data: {
         slug: id.slug,
         roleDe: id.roleDe,
@@ -461,12 +464,78 @@ async function main() {
         registryCode: id.registryCode,
         sortOrder: i,
         isPrimary: i === 0,
-        published: false,
+        // Seed-Identitäten sind veröffentlicht, damit die öffentlichen Seiten
+        // (Depeschen-Zuordnung, Identitäts-Übersicht) Daten haben. In Produktion
+        // legt der Import sie als Entwurf an; Nicole veröffentlicht nach Prüfung.
+        published: true,
         focusDe: JSON.stringify(id.focus),
         focusEn: JSON.stringify(id.focus),
         languages: JSON.stringify(["Deutsch", "English"]),
         descriptionDe: doc({ p: id.descDe }),
         descriptionEn: doc({ p: id.descEn }),
+      },
+    });
+    identityIds[id.slug] = created.id;
+  }
+
+  // --- Depeschen (Phase 3) --------------------------------------------------
+  // Aus den früheren Signalen/Dossiers zusammengeführt; Format aus dem alten Typ
+  // abgeleitet (SIGNAL→ANALYSIS, NOTE→NOTE, BACKSTAGE→BACKSTAGE, Dossier→REFERENCE),
+  // je an eine Identität gebunden.
+  const dispatches = [
+    {
+      format: "ANALYSIS", identity: "agentic-ai", topic: "tax-do-foundry",
+      publishedAt: "2026-07-28T14:20:00Z",
+      sourceUrl: "https://techcommunity.microsoft.com/example-tracing",
+      sourceTitle: "Tracing for agents in Microsoft Foundry", sourceSite: "techcommunity.microsoft.com",
+      de: { slug: "foundry-agent-tracing", title: "Microsoft Foundry bekommt Agent-Tracing", summary: "Warum das für Produktions-Agents mehr verändert als das Feature-Listing vermuten lässt." },
+      en: { slug: "foundry-agent-tracing-en", title: "Microsoft Foundry gets agent tracing", summary: "Why this changes more for production agents than the feature listing suggests." },
+    },
+    {
+      format: "NOTE", identity: "collaboration", topic: "tax-do-purview",
+      publishedAt: "2026-07-26T08:05:00Z",
+      de: { slug: "sensitivity-labels-auto-labeling-grenzen", title: "Sensitivity Labels: Neue Grenzen beim Auto-Labeling", summary: "Was sich in Purview zum 1. August ändert — und was du vorher prüfen solltest." },
+      en: { slug: "sensitivity-labels-auto-labeling-limits", title: "Sensitivity Labels: new auto-labeling limits", summary: "What changes in Purview on August 1 — and what to check beforehand." },
+    },
+    {
+      format: "BACKSTAGE", identity: "agentic-ai", topic: null,
+      publishedAt: "2026-07-21T19:40:00Z",
+      de: { slug: "vorbereitung-einsatz-wien", title: "Vorbereitung Einsatz Wien: 3 Demos, 1 Tenant", summary: "Wie ich Demo-Umgebungen baue, die auch ohne WLAN überleben." },
+      en: null,
+    },
+    {
+      format: "BACKSTAGE", identity: "collaboration", topic: null,
+      publishedAt: "2026-07-14T11:15:00Z",
+      de: { slug: "mvp-siebtes-mal", title: "Ziel erreicht: MVP Award zum siebten Mal", summary: "Sieben Jahre in Folge — und der Grund ist jedes Mal die Community." },
+      en: null,
+    },
+    {
+      format: "REFERENCE", identity: "collaboration", topic: "tax-do-purview",
+      publishedAt: "2026-02-04T00:00:00Z", reviewedAt: "2026-07-12T00:00:00Z",
+      de: { slug: "sensitivity-labels-sauber-ausrollen", title: "Sensitivity Labels sauber ausrollen", summary: "Von der Label-Taxonomie bis zum Rollout in vier Wellen." },
+      en: { slug: "rolling-out-sensitivity-labels", title: "Rolling out Sensitivity Labels cleanly", summary: "From label taxonomy to a four-wave rollout." },
+    },
+  ] as const;
+
+  for (const d of dispatches) {
+    await db.dispatch.create({
+      data: {
+        format: d.format,
+        status: "PUBLISHED",
+        publishedAt: new Date(d.publishedAt),
+        publishAt: new Date(d.publishedAt),
+        reviewedAt: "reviewedAt" in d && d.reviewedAt ? new Date(d.reviewedAt) : null,
+        sourceUrl: "sourceUrl" in d ? d.sourceUrl : null,
+        sourceTitle: "sourceTitle" in d ? d.sourceTitle : null,
+        sourceSite: "sourceSite" in d ? d.sourceSite : null,
+        identities: { connect: [{ id: identityIds[d.identity]! }] },
+        topics: d.topic ? { connect: [{ id: d.topic }] } : undefined,
+        translations: {
+          create: [
+            { locale: "de", slug: d.de.slug, title: d.de.title, summary: d.de.summary, tocEnabled: d.format === "REFERENCE", bodyJson: doc({ p: d.de.summary }, { h: "Einordnung" }, { p: "Der volle Text folgt im Editor." }), state: "REVIEWED" },
+            ...(d.en ? [{ locale: "en", slug: d.en.slug, title: d.en.title, summary: d.en.summary, tocEnabled: d.format === "REFERENCE", bodyJson: doc({ p: d.en.summary }), state: "REVIEWED" }] : []),
+          ],
+        },
       },
     });
   }

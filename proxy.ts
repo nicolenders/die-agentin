@@ -51,8 +51,30 @@ function withRobots(request: NextRequest, response: NextResponse): NextResponse 
   return response;
 }
 
+// Alt-URLs aus der Signale/Dossiers-Ära auf Depeschen umlenken (Phase 3.2).
+// 301, damit Ranking/Backlinks erhalten bleiben. Slugs bleiben identisch
+// (Migration friert sie ein), nur das Übersichts-Dossier bekommt den
+// REFERENCE-Filter, damit gespeicherte Links sinnvoll landen.
+function legacyRedirect(request: NextRequest, pathname: string): NextResponse | null {
+  const m = pathname.match(/^\/(de|en)\/(signale|dossiers)(\/.*)?$/);
+  if (!m) return null;
+  const [, locale, area, rest] = m;
+  const url = request.nextUrl.clone();
+  if (rest && rest !== "/") {
+    url.pathname = `/${locale}/depeschen${rest}`;
+    url.search = "";
+  } else {
+    url.pathname = `/${locale}/depeschen`;
+    url.search = area === "dossiers" ? "?format=REFERENCE" : "";
+  }
+  return withRobots(request, NextResponse.redirect(url, 301));
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const legacy = legacyRedirect(request, pathname);
+  if (legacy) return legacy;
 
   // Pfade, die nicht lokalisiert werden (API, Admin, maschinenlesbare Dateien,
   // Assets): kein Locale-Redirect, aber der noindex-Header muss trotzdem greifen.

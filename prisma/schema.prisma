@@ -305,17 +305,19 @@ model Taxonomy {
   talkMulti     Talk[]          @relation("TalkCategories")
   certMulti     Certification[] @relation("CertificationCategories")
   talkAudiences Talk[]          @relation("TalkAudiences")
+  dispatchTopics Dispatch[]     @relation("DispatchTopics")
 
   @@unique([kind, slug])
   @@index([kind, sortOrder])
 }
 
 model Tag {
-  id     String    @id @default(cuid())
-  nameDe String
-  nameEn String
-  slug   String    @unique
-  posts  PostTag[]
+  id         String     @id @default(cuid())
+  nameDe     String
+  nameEn     String
+  slug       String     @unique
+  posts      PostTag[]
+  dispatches Dispatch[] @relation("DispatchTags")
 }
 
 model PostTag {
@@ -361,6 +363,7 @@ model MediaAsset {
   identityEnvelopes Identity[] @relation("IdentityEnvelope")
   identityOgs       Identity[] @relation("IdentityOg")
   toolIcons         Tool[]     @relation("ToolIcon")
+  dispatchHeroes    Dispatch[] @relation("DispatchHero")
 }
 
 // ---------------------------------------------------------------------------
@@ -428,7 +431,7 @@ model Identity {
   talks          Talk[]          @relation("IdentityTalks")
   publications   Publication[]   @relation("IdentityPublications")
   certifications Certification[] @relation("IdentityCertifications")
-  // dispatches: n:m → Dispatch folgt in Phase 3
+  dispatches     Dispatch[]      @relation("IdentityDispatches")
 
   @@index([published, sortOrder])
 }
@@ -502,7 +505,11 @@ model ChannelAccount {
 
 model ChannelTask {
   id          String    @id @default(cuid())
-  postId      String
+  // Herkunft des Tasks: entweder ein (Alt-)Post oder eine Depesche. `postId`
+  // bleibt für Abwärtskompatibilität optional erhalten; neue Tasks tragen
+  // `dispatchId` (Phase 3).
+  postId      String?
+  dispatchId  String?
   platform    String // Platform
   state       String    @default("PENDING") // TaskState
   scheduledAt DateTime
@@ -512,10 +519,64 @@ model ChannelTask {
   lastError   String?   @db.NVarChar(Max)
   payload     String    @db.NVarChar(Max) // vorbereiteter Text + Asset-Referenz
 
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post     Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  dispatch Dispatch? @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
 
   @@index([state, scheduledAt])
   @@index([postId])
+  @@index([dispatchId])
+}
+
+// ---------------------------------------------------------------------------
+// Depeschen (Dispatch) — Phase 3. Führt Signale (Post) und Dossiers zu EINER
+// Entität zusammen. Der öffentlich sichtbare Name („Depesche"/„Dispatch") kommt
+// aus EINEM i18n-Key (lib/i18n/dictionaries), nicht aus Slugs/Klassen/Feldern —
+// ein späterer Namenswechsel erfordert weder Migration noch URL-Änderung.
+// Eine Depesche ist an eine Identität gebunden; das Format ist ein Filter.
+// ---------------------------------------------------------------------------
+
+model Dispatch {
+  id          String    @id @default(cuid())
+  format      String    @default("NOTE") // DispatchFormat: NOTE|ANALYSIS|REFERENCE|BACKSTAGE
+  status      String    @default("DRAFT") // ContentStatus
+  publishAt   DateTime?
+  publishedAt DateTime?
+  reviewedAt  DateTime? // sichtbar bei REFERENCE („Wissen mit Haltbarkeit")
+  sourceUrl   String?   @db.NVarChar(2048)
+  sourceTitle String?
+  sourceSite  String?
+  sourceImage String?   @db.NVarChar(2048)
+  heroAssetId String?
+  heroAsset   MediaAsset? @relation("DispatchHero", fields: [heroAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  translations DispatchTranslation[]
+  identities   Identity[]    @relation("IdentityDispatches")
+  topics       Taxonomy[]    @relation("DispatchTopics")
+  tags         Tag[]         @relation("DispatchTags")
+  tasks        ChannelTask[]
+
+  @@index([status, publishAt])
+  @@index([format])
+}
+
+model DispatchTranslation {
+  id         String  @id @default(cuid())
+  dispatchId String
+  locale     String
+  slug       String
+  title      String
+  summary    String? @db.NVarChar(600)
+  bodyJson   String  @db.NVarChar(Max)
+  socialText String? @db.NVarChar(2000)
+  tocEnabled Boolean @default(false)
+  state      String  @default("MISSING")
+
+  dispatch Dispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+
+  @@unique([dispatchId, locale])
+  @@unique([locale, slug])
 }
 
 // ---------------------------------------------------------------------------

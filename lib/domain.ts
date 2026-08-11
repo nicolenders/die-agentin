@@ -46,6 +46,12 @@ export type TaxonomyKind = (typeof TAXONOMY_KINDS)[number];
 export const PUBLICATION_TYPES = ["BOOK", "ARTICLE", "WHITEPAPER", "COURSE"] as const;
 export type PublicationType = (typeof PUBLICATION_TYPES)[number];
 
+// Depeschen-Format (Phase 3): NOTE kurze Meldung · ANALYSIS Einordnung ·
+// REFERENCE gepflegtes Nachschlagewerk (sichtbares Änderungsdatum) ·
+// BACKSTAGE Persönliches.
+export const DISPATCH_FORMATS = ["NOTE", "ANALYSIS", "REFERENCE", "BACKSTAGE"] as const;
+export type DispatchFormat = (typeof DISPATCH_FORMATS)[number];
+
 /** Generischer Prüfer: Ist `value` einer der erlaubten Werte? */
 export function isOneOf<T extends readonly string[]>(
   allowed: T,

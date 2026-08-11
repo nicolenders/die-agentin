@@ -63,7 +63,7 @@ export default async function LocaleLayout({
   const navItems: HeaderNavItem[] = mainNav.map((item) => ({
     segment: item.segment,
     href: item.segment ? `/${typedLocale}/${item.segment}` : `/${typedLocale}`,
-    label: dict.nav[item.labelKey],
+    label: item.label(dict),
   }));
 
   return (

@@ -11,6 +11,8 @@ import {
   SITE_SETTINGS_TAG,
   socialSettingKey,
   normalizeSocialUrl,
+  CONTACT_EMAIL_KEY,
+  CONTACT_ADDRESS_KEY,
 } from "@/lib/queries/settings";
 import { serializeRichValue } from "@/lib/content/rich";
 
@@ -65,4 +67,28 @@ export async function saveSocialLinks(formData: FormData): Promise<void> {
   }
   if (failed) redirect("/admin/einstellungen?err=failed");
   redirect("/admin/einstellungen?ok=social");
+}
+
+// Kontaktangaben (Phase 7.1): E-Mail + ladungsfähige Anschrift. Werden auch vom
+// Impressum gelesen. Rollenprüfung zuerst.
+export async function saveContactInfo(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const email = String(formData.get("contactEmail") ?? "").trim();
+  const postalAddress = String(formData.get("postalAddress") ?? "").trim();
+  let failed = false;
+  try {
+    for (const [key, value] of [
+      [CONTACT_EMAIL_KEY, email],
+      [CONTACT_ADDRESS_KEY, postalAddress],
+    ] as const) {
+      await db.siteSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+    }
+    invalidateTags([SITE_SETTINGS_TAG]);
+    revalidatePath("/de");
+    revalidatePath("/en");
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect("/admin/einstellungen?err=failed");
+  redirect("/admin/einstellungen?ok=contact");
 }

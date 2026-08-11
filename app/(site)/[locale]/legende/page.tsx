@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getLegend } from "@/lib/queries/legend";
-import { getSocialLinks } from "@/lib/queries/settings";
+import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
 import SocialLinks from "@/components/SocialLinks";
@@ -30,7 +30,7 @@ export default async function LegendePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const [legend, social] = await Promise.all([getLegend(locale), getSocialLinks()]);
+  const [legend, social, contact] = await Promise.all([getLegend(locale), getSocialLinks(), getContactInfo()]);
   const portraitSrc = legend.portrait?.url ?? brandAsset("portrait.jpg");
   const portraitAlt = legend.portrait?.alt ?? (isDe ? "Porträt von Nicole Enders" : "Portrait of Nicole Enders");
 
@@ -99,18 +99,27 @@ export default async function LegendePage({
         // LinkedIn-Profil. Ist keins von beidem gesetzt, wird der Button
         // ausgeblendet statt ins Leere zu verlinken. Vollständige Zwei-Kanal-
         // Lösung (LinkedIn + E-Mail) folgt in Phase 7.
-        const contactUrl =
+        // Zwei gleichwertige Kontaktwege (Phase 7.2): LinkedIn primär, E-Mail
+        // sekundär. Fällt die E-Mail weg, wird ihr Button ausgeblendet.
+        const linkedinUrl =
           legend.contactUrl && legend.contactUrl !== "#" ? legend.contactUrl : social.linkedin || "";
         return (
           <div className="card bracket" style={{ marginTop: 44, padding: 30 }}>
             <p className="eyebrow">{legend.contactEyebrow}</p>
             <h3>{legend.contactHeading}</h3>
             <p style={{ fontSize: 15 }}>{renderInlineFieldContent(parseRichValue(legend.contactText))}</p>
-            {contactUrl ? (
-              <a className="btn" href={contactUrl} target="_blank" rel="noopener noreferrer">
-                {legend.contactButton}
-              </a>
-            ) : null}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6 }}>
+              {linkedinUrl ? (
+                <a className="btn" href={linkedinUrl} target="_blank" rel="noopener noreferrer">
+                  {legend.contactButton}
+                </a>
+              ) : null}
+              {contact.email ? (
+                <a className="btn ghost" href={`mailto:${contact.email}`}>
+                  {isDe ? "E-Mail schreiben" : "Send an email"}
+                </a>
+              ) : null}
+            </div>
           </div>
         );
       })()}

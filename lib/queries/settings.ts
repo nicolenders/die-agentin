@@ -25,6 +25,36 @@ export const SITE_SETTINGS_TAG = "site-settings";
 
 export const socialSettingKey = (platform: string) => `social.${platform}`;
 
+// Kontaktangaben (Phase 7.1): E-Mail und ladungsfähige Anschrift. An EINER
+// Stelle gepflegt; auch das Impressum (Phase 11) liest sie hier aus.
+export const CONTACT_EMAIL_KEY = "contact.email";
+export const CONTACT_ADDRESS_KEY = "contact.postalAddress";
+
+export interface ContactInfo {
+  email: string;
+  postalAddress: string;
+}
+
+async function fetchContactInfo(): Promise<ContactInfo> {
+  const rows = await db.siteSetting.findMany({
+    where: { key: { in: [CONTACT_EMAIL_KEY, CONTACT_ADDRESS_KEY] } },
+    select: { key: true, value: true },
+  });
+  const map: Record<string, string> = {};
+  for (const row of rows) map[row.key] = row.value.trim();
+  return { email: map[CONTACT_EMAIL_KEY] ?? "", postalAddress: map[CONTACT_ADDRESS_KEY] ?? "" };
+}
+
+const loadContactInfo = cachedQuery(fetchContactInfo, ["site-settings", "contact"], [SITE_SETTINGS_TAG]);
+
+export async function getContactInfo(): Promise<ContactInfo> {
+  try {
+    return await loadContactInfo();
+  } catch {
+    return { email: "", postalAddress: "" };
+  }
+}
+
 /**
  * Bereinigt eine eingegebene Profil-URL: leert bei Leereingabe (Link wird
  * entfernt) und ergänzt ein fehlendes Schema um `https://`, damit der Footer

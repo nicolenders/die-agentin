@@ -21,7 +21,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
 - [x] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
 - [x] **Phase 6** — GitHub-Integration
-- [ ] **Phase 7** — Kontakt: LinkedIn + E-Mail
+- [x] **Phase 7** — Kontakt: LinkedIn + E-Mail
 - [ ] **Phase 8** — Sessionize-Backfill
 - [ ] **Phase 9** — Einsatzakte mit Belegmaterial
 - [ ] **Phase 10** — Briefings/Publikationen/Ausbildung ins Narrativ
@@ -126,6 +126,15 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 
 **Aus Phase 6 vertagt:** Repository-Felder auch im Publikations-Bearbeiten-
 Formular (aktuell nur im Anlageformular); EN-Beschreibung für Repositories.
+
+**Phase 7 — Kontakt**
+- 7.1 `contactEmail` + `postalAddress` als SiteSettings, an einer Stelle im
+  Admin (Einstellungen) gepflegt, gecacht (`getContactInfo`). Warnung im Admin,
+  wenn E-Mail/Anschrift fehlen. Impressum (Phase 11) liest dieselben Felder.
+- 7.2 Legende-Kontakt als zwei gleichwertige Kanäle: LinkedIn (Button) + E-Mail
+  (`mailto:`, JS-frei erreichbar). Fällt die E-Mail weg, wird ihr Button
+  ausgeblendet. Text als `ENTWURF` in den Legende-Defaults.
+- STOP-Werte (Anschrift, E-Mail) trägt Nicole ein (Anhang B).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

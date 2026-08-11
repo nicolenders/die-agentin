@@ -4,6 +4,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getMissions } from "@/lib/queries/missions";
 import { formatDate } from "@/lib/format";
+import { availableMissionYears, parseYearSelection, matchesYear } from "@/lib/missions";
 import WorldMap, { type MapMission } from "@/components/map/WorldMap";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,27 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function EinsaetzePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ jahr?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const missions = await getMissions(locale);
+  const { jahr } = await searchParams;
+  const allMissions = await getMissions(locale);
+
+  // Server-seitiger Jahresfilter (Phase 8.4). Standard: aktuelles Jahr + geplant.
+  // Die Auswahl steht in der URL; die Kennzahlen unten beziehen sich auf ALLE.
+  const selection = parseYearSelection(jahr);
+  const currentYear = new Date().getUTCFullYear();
+  const years = availableMissionYears(allMissions.map((m) => m.startDate.getUTCFullYear()));
+  const missions = allMissions.filter((m) =>
+    matchesYear(m.startDate.getUTCFullYear(), m.future, selection, currentYear),
+  );
+
+  const yearHref = (sel: string) => `/${locale}/einsaetze${sel === "aktuell" ? "" : `?jahr=${sel}`}`;
+  const isDe = locale === "de";
 
   const mapMissions: MapMission[] = missions.map((m) => ({
     id: m.id,
@@ -50,6 +66,25 @@ export default async function EinsaetzePage({
         {locale === "de"
           ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Die vollständige Liste steht als Tabelle unter der Karte."
           : "Every pin is a mission: an event, a briefing, a city. The full list is in the table below the map."}
+      </p>
+
+      <div className="year-filter" role="group" aria-label={isDe ? "Jahr wählen" : "Choose year"} style={{ marginTop: 22 }}>
+        <Link className="chip" aria-pressed={selection === "aktuell"} href={yearHref("aktuell")}>
+          {isDe ? "Aktuell & geplant" : "Current & planned"}
+        </Link>
+        {years.map((y) => (
+          <Link key={y} className="chip" aria-pressed={selection === y} href={yearHref(String(y))}>
+            {y}
+          </Link>
+        ))}
+        <Link className="chip" aria-pressed={selection === "alle"} href={yearHref("alle")}>
+          {isDe ? "Alle Jahre" : "All years"}
+        </Link>
+      </div>
+      <p className="meta" style={{ marginTop: 8 }}>
+        {isDe
+          ? `${missions.length} von ${allMissions.length} Einsätzen angezeigt (Kennzahlen zählen alle).`
+          : `Showing ${missions.length} of ${allMissions.length} missions (metrics count all).`}
       </p>
 
       <div style={{ marginTop: 26 }}>

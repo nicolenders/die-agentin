@@ -22,7 +22,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
 - [x] **Phase 6** — GitHub-Integration
 - [x] **Phase 7** — Kontakt: LinkedIn + E-Mail
-- [ ] **Phase 8** — Sessionize-Backfill
+- [~] **Phase 8** — Sessionize-Backfill (Infrastruktur fertig; Daten = STOP)
 - [ ] **Phase 9** — Einsatzakte mit Belegmaterial
 - [ ] **Phase 10** — Briefings/Publikationen/Ausbildung ins Narrativ
 - [ ] **Phase 11** — Rechtstexte (DE + EN)
@@ -135,6 +135,21 @@ Formular (aktuell nur im Anlageformular); EN-Beschreibung für Repositories.
   (`mailto:`, JS-frei erreichbar). Fällt die E-Mail weg, wird ihr Button
   ausgeblendet. Text als `ENTWURF` in den Legende-Defaults.
 - STOP-Werte (Anschrift, E-Mail) trägt Nicole ein (Anhang B).
+
+**Phase 8 — Backfill (teilweise: Infrastruktur fertig, Daten offen)**
+- 8.1 Befund: Alt-Pipeline (`build.py`, `die-agentin/import`) existierte NICHT
+  im Repo. Neu angelegt.
+- 8.2 Importer `scripts/import.ts` (`npm run db:import`): idempotenter Upsert
+  über Import-Slug, `--dry-run` mit Diff, zod-Validierung, Abschlussreport.
+- 8.3 Datenqualität (getestet: `lib/import/online.ts`): Online→Antarktis-Ring;
+  Einreichungsdatum (`dateSource:"submission"`) und fehlendes Datum → DRAFT +
+  Review-Liste (nie still als Eventdatum); Identitäten/Topics nur wenn angegeben.
+- 8.4 Einsätze-Ansicht: server-seitiger Jahresfilter (`lib/missions.ts`, getestet),
+  Standard „aktuelles Jahr + geplant", Auswahl in der URL, „Alle Jahre";
+  Kennzahl-Hinweis „x von y". WorldMap-Client-Jahresfilter entfernt (jetzt Server).
+- 8.5 `docs/IMPORT.md` (Schema v1, Ablauf, Regeln, STOP).
+- **STOP:** Quelldaten (MVP-Export, Sessionize mit bestätigten Terminen, neuer
+  LinkedIn-Export) liefert Nicole; Importer noch nicht gegen echte DB gelaufen.
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

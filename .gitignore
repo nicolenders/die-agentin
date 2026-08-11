@@ -37,3 +37,6 @@ next-env.d.ts
 
 # Uploads (lokale Medien)
 public/uploads/
+
+# Import-Rohdaten (Phase 8) — nicht committen
+data/import/*.json

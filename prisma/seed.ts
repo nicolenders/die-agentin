@@ -23,6 +23,11 @@ function doc(...blocks: Array<{ h?: string; p?: string }>): string {
 
 async function reset() {
   // Reihenfolge beachtet Fremdschlüssel.
+  // Identitäten zuerst (referenzieren MediaAsset mit NoAction; Join-Tabellen
+  // und Attribute hängen per Cascade an der Identität).
+  await db.identityAttribute.deleteMany();
+  await db.identity.deleteMany();
+  await db.tool.deleteMany();
   await db.channelTask.deleteMany();
   await db.postTag.deleteMany();
   await db.postTranslation.deleteMany();
@@ -397,6 +402,72 @@ async function main() {
     const { categoryId, ...rest } = c;
     await db.certification.create({
       data: { ...rest, categoryId, categories: { connect: [{ id: categoryId }] } },
+    });
+  }
+
+  // --- Identitäten (Decknamen) — Phase 2.5 ----------------------------------
+  // published=false, Beschreibungen als markierte ENTWÜRFE. Die Decknamen
+  // (codenameDe/En) bleiben LEER — STOP, Nicole füllt sie (Anhang B). Bis dahin
+  // fällt die Anzeige auf die Rolle zurück. Keine Chronologie, kein Enddatum.
+  const identities = [
+    {
+      slug: "collaboration",
+      roleDe: "Collaboration & Modern Work",
+      roleEn: "Collaboration & Modern Work",
+      color: "#8B5CF6",
+      registryCode: "ID-01",
+      focus: ["SharePoint", "Microsoft Teams", "Microsoft 365"],
+      descDe: "ENTWURF — von Nicole zu prüfen. Zusammenarbeit in Unternehmen: Informationsarchitektur in SharePoint, Modern Work mit Microsoft Teams und Microsoft 365. Die Grundlage, auf der später Copilot-Qualität steht.",
+      descEn: "ENTWURF — von Nicole zu prüfen. Collaboration in organisations: information architecture in SharePoint, modern work with Microsoft Teams and Microsoft 365 — the foundation that later Copilot quality sits on.",
+    },
+    {
+      slug: "low-code",
+      roleDe: "Power Platform & Business Applications",
+      roleEn: "Power Platform & Business Applications",
+      color: "#E879F9",
+      registryCode: "ID-02",
+      focus: ["Power Platform", "Dataverse", "Business Applications"],
+      descDe: "ENTWURF — von Nicole zu prüfen. Low Code auf der Power Platform, wo die Grenze zwischen Konfiguration und Code verhandelbar wird: Dataverse, Business Applications, Custom Connectors.",
+      descEn: "ENTWURF — von Nicole zu prüfen. Low code on the Power Platform, where the line between configuration and code becomes negotiable: Dataverse, business applications, custom connectors.",
+    },
+    {
+      slug: "agentic-ai",
+      roleDe: "Microsoft AI & Agents",
+      roleEn: "Microsoft AI & Agents",
+      color: "#38BDF8",
+      registryCode: "ID-03",
+      focus: ["Copilot", "Copilot Studio", "Microsoft Foundry", "Agentic AI"],
+      descDe: "ENTWURF — von Nicole zu prüfen. Agents mit Microsoft 365 Copilot, Copilot Studio und Microsoft Foundry — auf denselben Fundamenten aus Information Architecture und Governance, die seit Jahren tragen.",
+      descEn: "ENTWURF — von Nicole zu prüfen. Agents built with Microsoft 365 Copilot, Copilot Studio and Microsoft Foundry — on the same foundations of information architecture and governance that have held for years.",
+    },
+    {
+      slug: "dev-ai",
+      roleDe: "KI in der Softwareentwicklung",
+      roleEn: "AI in Software Development",
+      color: "#4ADE80",
+      registryCode: "ID-04",
+      focus: ["herstellerübergreifend", "Tooling", "Engineering-Praxis"],
+      descDe: "ENTWURF — von Nicole zu prüfen. KI in der Softwareentwicklung, bewusst herstellerübergreifend und nicht auf ein Ökosystem festgelegt: Tooling, Engineering-Praxis, die Frage, wo KI im Entwicklungsalltag wirklich trägt.",
+      descEn: "ENTWURF — von Nicole zu prüfen. AI in software development, deliberately vendor-neutral and not tied to one ecosystem: tooling, engineering practice, and where AI actually holds up in day-to-day development.",
+    },
+  ];
+  for (const [i, id] of identities.entries()) {
+    await db.identity.create({
+      data: {
+        slug: id.slug,
+        roleDe: id.roleDe,
+        roleEn: id.roleEn,
+        color: id.color,
+        registryCode: id.registryCode,
+        sortOrder: i,
+        isPrimary: i === 0,
+        published: false,
+        focusDe: JSON.stringify(id.focus),
+        focusEn: JSON.stringify(id.focus),
+        languages: JSON.stringify(["Deutsch", "English"]),
+        descriptionDe: doc({ p: id.descDe }),
+        descriptionEn: doc({ p: id.descEn }),
+      },
     });
   }
 

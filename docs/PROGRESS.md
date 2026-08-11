@@ -16,7 +16,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 ## Phasen-Checkliste
 
 - [x] **Phase 1** — Audit + Sofortmaßnahmen (`docs/AUDIT.md`)
-- [ ] **Phase 2** — Identitäten (Decknamen): Datenmodell
+- [x] **Phase 2** — Identitäten (Decknamen): Datenmodell + Admin
 - [ ] **Phase 3** — Signale + Dossiers → Depeschen
 - [ ] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
 - [ ] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
@@ -45,11 +45,33 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - 1.2(d) Karte: untersucht — die Karte rendert echte DB-Daten, „Beispieldaten"
   war ein bedingungsloses Label; entfernt. Details in `docs/AUDIT.md` §9(d).
 
+**Phase 2 — Identitäten (Decknamen)**
+- Schema: `Identity`, `IdentityAttribute`, `Tool` (+ n:m zu Mission, Talk,
+  Publication, Certification, Tool). Verboten-Felder bewusst weggelassen.
+  Migration `20260811120000_identities` (offline via `migrate diff` erzeugt).
+- `lib/identities.ts` (Anzeige-Fallback Deckname→Rolle, Kontrastprüfung) mit
+  Unit-Tests; `lib/queries/identities.ts` (Admin + öffentlich).
+- Admin: Menüpunkt „Identitäten", Übersicht (Reihenfolge ↑/↓, Veröffentlichen/
+  Zurückziehen, Löschschutz bei Verknüpfung), Editor mit Tabs (Stammdaten,
+  Beschreibung, Bilder, Darstellung, Werkzeuge, Merkmale, Verknüpftes, SEO),
+  Validierung (Rolle DE + Akzentfarbe blockierend; Warnungen im Formular).
+- Seed: 4 Identitäten (`published=false`), Decknamen leer (STOP), Beschreibungen
+  als `ENTWURF`.
+
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 
 - Per-Route `canonical` + vollständige `hreflang` (auch Detailseiten) → Phase 13.1.
 - Echte Einsatzdaten statt Seed (die Karte zeigt bis dahin Seed-Missionen) → Phase 8.
 - Lokalisierte englische Slugs → Phase 13.1.
+
+**Aus Phase 2 vertagt (Folgepunkte, kein Blocker):**
+- Öffentliche Identitäts-Seiten (`/identitaeten`, `/identitaeten/<slug>`) → Phase 3.4.
+- Identität ↔ Depesche (n:m) → Phase 3.
+- Bildzuschnitt (1:1 / 4:5) in der Medienverwaltung — aktuell Auswahl ohne Crop.
+- DE/EN als Nebeneinander statt Umschalter je Feld; Drag & Drop als ↑/↓-Buttons.
+- Globale Werkzeugliste der Legende aus Identitäts-Werkzeugen speisen → Phase 12.
+- TipTap-Beschreibung wird roh gespeichert; serverseitige Sanitisierung wie bei
+  Posts als Härtung nachziehen.
 
 ## Braucht Input von Nicole (Anhang B)
 

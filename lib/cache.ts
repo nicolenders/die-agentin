@@ -17,6 +17,8 @@ export const tags = {
   publicationList: (locale: string) => `list:publications:${locale}`,
   certificationList: (locale: string) => `list:certifications:${locale}`,
   legend: (locale: string) => `legend:${locale}`,
+  identity: (id: string) => `identity:${id}`,
+  identityList: (locale: string) => `list:identities:${locale}`,
 };
 
 // Vollständiger ISO-8601-Zeitstempel (so serialisiert Prisma `DateTime`).

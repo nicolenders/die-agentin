@@ -135,6 +135,7 @@ model Mission {
   photos       MissionPhoto[]
   deliveries   TalkDelivery[]
   posts        Post[]
+  identities   Identity[] @relation("IdentityMissions")
 
   @@index([startDate])
   @@index([contentStatus])
@@ -185,6 +186,7 @@ model Talk {
   deliveries   TalkDelivery[]
   categories   Taxonomy[]     @relation("TalkCategories")
   audiences    Taxonomy[]     @relation("TalkAudiences")
+  identities   Identity[]     @relation("IdentityTalks")
 
   @@index([categoryId])
 }
@@ -233,6 +235,7 @@ model Publication {
   updatedAt   DateTime @updatedAt
 
   translations PublicationTranslation[]
+  identities   Identity[] @relation("IdentityPublications")
 
   @@index([year])
 }
@@ -276,6 +279,7 @@ model Certification {
   logo        MediaAsset? @relation("CertificationLogo", fields: [logoAssetId], references: [id])
 
   categories Taxonomy[] @relation("CertificationCategories")
+  identities Identity[] @relation("IdentityCertifications")
 
   @@index([categoryId])
   @@index([series])
@@ -352,6 +356,113 @@ model MediaAsset {
   certificationLogos Certification[] @relation("CertificationLogo")
   missionBanners   Mission[]      @relation("MissionBanner")
   homeHeroes       HomeContent[]  @relation("HomeHero")
+  // Identitäten (Phase 2)
+  identityPortraits Identity[] @relation("IdentityPortrait")
+  identityEnvelopes Identity[] @relation("IdentityEnvelope")
+  identityOgs       Identity[] @relation("IdentityOg")
+  toolIcons         Tool[]     @relation("ToolIcon")
+}
+
+// ---------------------------------------------------------------------------
+// Identitäten (Decknamen) — Phase 2. Nicole tritt je nach Thema unter
+// verschiedenen Identitäten auf; diese sind PARALLEL und DAUERHAFT aktiv, nie
+// sequenziell. Eine Identität ist ein Objekt mit Inhalt („Umschlag"), kein Tag.
+//
+// VERBOTEN (CLAUDE_TASKS.md Phase 2.1): activeFrom, activeUntil, archived,
+// deprecated, phase, era, isActive. Eine Identität kann unveröffentlicht sein,
+// aber niemals „ehemalig". `since` ist als reines Anzeigefeld erlaubt — ohne
+// Gegenstück (kein „bis").
+// ---------------------------------------------------------------------------
+
+model Identity {
+  id   String @id @default(cuid())
+  slug String @unique // sprachneutral, URL-fähig
+
+  // — Benennung —
+  codenameDe   String  @default("") // Deckname; STOP: von Nicole zu füllen
+  codenameEn   String  @default("")
+  roleDe       String // nüchterne Rolle (Pflicht, blockierend beim Veröffentlichen)
+  roleEn       String  @default("")
+  taglineDe    String  @default("")
+  taglineEn    String  @default("")
+  registryCode String? // z. B. „ID-04". Rein dekorativ, nie als FK oder in URLs
+  since        String? // optionales Anzeige-„seit" (KEIN Gegenstück)
+
+  // — Inhalt —
+  descriptionDe String @default("") @db.NVarChar(Max) // TipTap JSON
+  descriptionEn String @default("") @db.NVarChar(Max)
+  shortBioDe    String @default("") @db.NVarChar(Max)
+  shortBioEn    String @default("") @db.NVarChar(Max)
+  focusDe       String @default("[]") @db.NVarChar(Max) // JSON string[]
+  focusEn       String @default("[]") @db.NVarChar(Max)
+  languages     String @default("[]") @db.NVarChar(Max) // JSON string[]
+
+  // — Bilder (über die Medienverwaltung) —
+  portraitAssetId String?
+  portrait        MediaAsset? @relation("IdentityPortrait", fields: [portraitAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  envelopeAssetId String?
+  envelope        MediaAsset? @relation("IdentityEnvelope", fields: [envelopeAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ogAssetId       String?
+  ogAsset         MediaAsset? @relation("IdentityOg", fields: [ogAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // — Darstellung —
+  color     String // Akzentfarbe (Hex), Pflicht, mit Kontrastprüfung
+  iconKey   String?
+  sortOrder Int     @default(0) // manuelle Reihenfolge, KEINE zeitliche
+  isPrimary Boolean @default(false)
+
+  // — SEO —
+  metaTitleDe       String?
+  metaTitleEn       String?
+  metaDescriptionDe String? @db.NVarChar(Max)
+  metaDescriptionEn String? @db.NVarChar(Max)
+
+  // — Status —
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attributes     IdentityAttribute[]
+  tools          Tool[]          @relation("IdentityTools")
+  missions       Mission[]       @relation("IdentityMissions")
+  talks          Talk[]          @relation("IdentityTalks")
+  publications   Publication[]   @relation("IdentityPublications")
+  certifications Certification[] @relation("IdentityCertifications")
+  // dispatches: n:m → Dispatch folgt in Phase 3
+
+  @@index([published, sortOrder])
+}
+
+// Erweiterbarkeit ohne Migration (Phase 2.2): freie Merkmale je Identität.
+model IdentityAttribute {
+  id            String  @id @default(cuid())
+  identityId    String
+  labelDe       String
+  labelEn       String  @default("")
+  valueDe       String  @db.NVarChar(Max)
+  valueEn       String  @default("") @db.NVarChar(Max)
+  sortOrder     Int     @default(0)
+  displayPublic Boolean @default(true)
+
+  identity Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+
+  @@index([identityId, sortOrder])
+}
+
+// Werkzeuge je Identität (Phase 2.3). Die globale Werkzeugliste auf der Legende
+// wird aus der Vereinigungsmenge aller Identitäts-Werkzeuge erzeugt.
+model Tool {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  iconAssetId String?
+  icon        MediaAsset? @relation("ToolIcon", fields: [iconAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  url         String?     @db.NVarChar(2048)
+  sortOrder   Int         @default(0)
+
+  identities Identity[] @relation("IdentityTools")
+
+  @@index([sortOrder])
 }
 
 // Inhalte der „Legende" (Über-mich-Seite, SPEC §5) — im Admin pflegbar, je

@@ -40,7 +40,7 @@ export default function WorldMap({
 }: {
   missions: MapMission[];
   locale: Locale;
-  labels: { done: string; planned: string; size: string; sample: string; open: string; all: string; view: string };
+  labels: { done: string; planned: string; size: string; open: string; all: string; view: string };
 }) {
   const [filter, setFilter] = useState<Filter>("alle");
   const [viewId, setViewId] = useState("welt");
@@ -206,7 +206,6 @@ export default function WorldMap({
           <span>
             <span style={{ color: "var(--signal)" }}>●</span> {labels.planned}
           </span>
-          <span style={{ marginLeft: "auto" }}>{labels.sample}</span>
         </div>
       </div>
     </div>

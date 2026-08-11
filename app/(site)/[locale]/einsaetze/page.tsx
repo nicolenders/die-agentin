@@ -62,7 +62,6 @@ export default async function EinsaetzePage({
               done: locale === "de" ? "Abgeschlossener Einsatz" : "Completed mission",
               planned: locale === "de" ? "Geplant" : "Planned",
               size: locale === "de" ? "Punktgröße = Anzahl" : "Dot size = count",
-              sample: locale === "de" ? "Karte: Beispieldaten" : "Map: sample data",
               open: locale === "de" ? "Veranstaltungswebsite" : "Event website",
               view: locale === "de" ? "Ansicht wählen" : "Choose view",
             }}

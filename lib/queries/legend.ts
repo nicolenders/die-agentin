@@ -48,7 +48,10 @@ export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
     contactHeading: "Am schnellsten über LinkedIn",
     contactText: "Für Anfragen zu Vorträgen, Workshops und Beratung schreib mir direkt auf LinkedIn. Rechtlich verpflichtend ist zusätzlich eine E-Mail-Adresse — die findest du im Impressum.",
     contactButton: "Nachricht auf LinkedIn",
-    contactUrl: "#",
+    // Leer statt "#": die Legende-Seite fällt dann auf das hinterlegte
+    // LinkedIn-Profil aus den Einstellungen zurück (Phase 1.2c, vollständig in
+    // Phase 7).
+    contactUrl: "",
     portrait: null,
   },
   en: {
@@ -70,7 +73,7 @@ export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
     contactHeading: "Fastest via LinkedIn",
     contactText: "For talks, workshops and consulting, message me directly on LinkedIn. A legally required email address is in the imprint.",
     contactButton: "Message on LinkedIn",
-    contactUrl: "#",
+    contactUrl: "",
     portrait: null,
   },
 };

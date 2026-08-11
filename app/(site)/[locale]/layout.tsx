@@ -5,6 +5,7 @@ import { isLocale, locales, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { mainNav } from "@/lib/nav";
 import { fontVariables } from "@/lib/fonts";
+import { siteOrigin } from "@/lib/site";
 import SiteHeader, { type HeaderNavItem } from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 
@@ -20,7 +21,10 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  // canonical/OG-Basis immer unter dem kanonischen Host (Phase 1.2b), unabhängig
+  // vom Request-Host. Die vollständige per-Route-canonical + hreflang folgt in
+  // Phase 13; hier wird die host-unabhängige Basis gesetzt.
+  const siteUrl = siteOrigin();
   return {
     metadataBase: new URL(siteUrl),
     title: {

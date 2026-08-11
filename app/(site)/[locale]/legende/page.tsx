@@ -93,14 +93,27 @@ export default async function LegendePage({
         </>
       ) : null}
 
-      <div className="card bracket" style={{ marginTop: 44, padding: 30 }}>
-        <p className="eyebrow">{legend.contactEyebrow}</p>
-        <h3>{legend.contactHeading}</h3>
-        <p style={{ fontSize: 15 }}>{renderInlineFieldContent(parseRichValue(legend.contactText))}</p>
-        <a className="btn" href={legend.contactUrl || "#"} target={legend.contactUrl && legend.contactUrl !== "#" ? "_blank" : undefined} rel="noopener noreferrer">
-          {legend.contactButton}
-        </a>
-      </div>
+      {(() => {
+        // Toter CTA behoben (Phase 1.2c): kein `href="#"` mehr. Der Button zeigt
+        // auf die gepflegte Kontakt-URL, sonst auf das hinterlegte
+        // LinkedIn-Profil. Ist keins von beidem gesetzt, wird der Button
+        // ausgeblendet statt ins Leere zu verlinken. Vollständige Zwei-Kanal-
+        // Lösung (LinkedIn + E-Mail) folgt in Phase 7.
+        const contactUrl =
+          legend.contactUrl && legend.contactUrl !== "#" ? legend.contactUrl : social.linkedin || "";
+        return (
+          <div className="card bracket" style={{ marginTop: 44, padding: 30 }}>
+            <p className="eyebrow">{legend.contactEyebrow}</p>
+            <h3>{legend.contactHeading}</h3>
+            <p style={{ fontSize: 15 }}>{renderInlineFieldContent(parseRichValue(legend.contactText))}</p>
+            {contactUrl ? (
+              <a className="btn" href={contactUrl} target="_blank" rel="noopener noreferrer">
+                {legend.contactButton}
+              </a>
+            ) : null}
+          </div>
+        );
+      })()}
     </section>
   );
 }

@@ -1,4 +1,79 @@
-# Fortschritt — Umsetzung M0–M8
+# Fortschritt
+
+Bei Beginn einer neuen Sitzung zuerst hier weiterlesen. Der obere Teil verfolgt
+den **Umbau „Die Agentin"** (CLAUDE_TASKS.md, 14 Phasen + Anhang A); darunter
+steht die ältere Bau-Historie **M0–M8** (SPEC-Meilensteine).
+
+---
+
+# Umbau „Die Agentin" — 14 Phasen
+
+Branch: `claude/claude-tasks-phases-8kzdg2` (durch die Ausführungsumgebung
+vorgegebener Push-Zweig; CLAUDE_TASKS.md nannte `feature/agentin-umbau`).
+Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
+`typecheck`, `test` grün.
+
+## Phasen-Checkliste
+
+- [x] **Phase 1** — Audit + Sofortmaßnahmen (`docs/AUDIT.md`)
+- [ ] **Phase 2** — Identitäten (Decknamen): Datenmodell
+- [ ] **Phase 3** — Signale + Dossiers → Depeschen
+- [ ] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
+- [ ] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
+- [ ] **Phase 6** — GitHub-Integration
+- [ ] **Phase 7** — Kontakt: LinkedIn + E-Mail
+- [ ] **Phase 8** — Sessionize-Backfill
+- [ ] **Phase 9** — Einsatzakte mit Belegmaterial
+- [ ] **Phase 10** — Briefings/Publikationen/Ausbildung ins Narrativ
+- [ ] **Phase 11** — Rechtstexte (DE + EN)
+- [ ] **Phase 12** — Frontend-Redesign
+- [ ] **Anhang A** — Speaker-Kit („Akte")
+- [ ] **Phase 13** — SEO + Auffindbarkeit für KI-Systeme
+- [ ] **Phase 14** — Domain-Migration + Cutover
+
+## Erledigt
+
+**Phase 1 — Audit + Sofortmaßnahmen**
+- `docs/AUDIT.md` geschrieben (vollständige Bestandsaufnahme nach 1.1).
+- 1.2(a) noindex nach Host: `proxy.ts` setzt `X-Robots-Tag: noindex, nofollow`
+  für jeden Host ≠ `PUBLIC_SITE_HOST` (neue ENV, `lib/site.ts`), inkl.
+  robots.txt/sitemap/Feeds (Matcher verbreitert).
+- 1.2(b) canonical-Basis: `metadataBase` aus `siteOrigin()` (host-unabhängig).
+  Per-Route-canonical + volle hreflang bewusst nach **Phase 13** verschoben.
+- 1.2(c) toter CTA `/legende`: `href="#"` entfernt; Button zeigt auf Kontakt-URL
+  bzw. hinterlegtes LinkedIn-Profil, sonst ausgeblendet.
+- 1.2(d) Karte: untersucht — die Karte rendert echte DB-Daten, „Beispieldaten"
+  war ein bedingungsloses Label; entfernt. Details in `docs/AUDIT.md` §9(d).
+
+## Offen (aus Phase 1, in späteren Phasen zu erledigen)
+
+- Per-Route `canonical` + vollständige `hreflang` (auch Detailseiten) → Phase 13.1.
+- Echte Einsatzdaten statt Seed (die Karte zeigt bis dahin Seed-Missionen) → Phase 8.
+- Lokalisierte englische Slugs → Phase 13.1.
+
+## Braucht Input von Nicole (Anhang B)
+
+| Was | Für Phase | Status |
+|---|---|---|
+| Decknamen der Identitäten (DE/EN) | 2 | offen |
+| Beschreibungstexte der Identitäten | 2 | offen |
+| Identitätsbilder (Portrait + Umschlag) | 12 | offen |
+| Akzentfarbe je Identität bestätigen | 2 | offen |
+| Ladungsfähige Anschrift | 11 | offen |
+| Kontakt-E-Mail-Adresse | 11 | offen |
+| GitHub-Account-URL | 6 | offen |
+| Sessionize- + MVP-Profil-URLs (`sameAs`) | 13 | offen |
+| Bestätigte Veranstaltungsdaten für unklare Einsätze | 8 | offen |
+| Neuer LinkedIn-Datenexport (letzter war leer) | 8 | offen |
+| Freigabe der `REVIEW`-Zeilen in der Redirect-Map | 14 | offen |
+| `PUBLIC_SITE_HOST` produktiv auf `nicolenders.com` setzen | 14 | offen |
+| Überarbeitung aller `ENTWURF`-Texte | laufend | offen |
+| Bio-Entwürfe (Anhang A.1) prüfen, ⚠-Angaben bestätigen | Anhang A | offen |
+| DNS-, Azure-, Search-Console-Aktionen | 14 | offen |
+
+---
+
+# Bau-Historie — Umsetzung M0–M8
 
 Diese Datei wird nach jedem Meilenstein aktualisiert. Bei Beginn einer neuen
 Sitzung zuerst hier weiterlesen.

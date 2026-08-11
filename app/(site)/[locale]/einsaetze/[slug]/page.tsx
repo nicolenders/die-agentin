@@ -6,9 +6,12 @@ import { getDictionary } from "@/lib/i18n";
 import { getMissionBySlug } from "@/lib/queries/missions";
 import { formatDate } from "@/lib/format";
 import { extractYouTubeId } from "@/lib/video";
+import { siteOrigin } from "@/lib/site";
+import { eventNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
 import Gallery from "@/components/content/Gallery";
 import RichText from "@/components/content/RichText";
 import VideoConsent from "@/components/content/VideoConsent";
+import JsonLd from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -47,8 +50,25 @@ export default async function EinsatzaktePage({
 
   const hasMaterial = Boolean(mission.slidesUrl || videoId || mission.photos.length > 0);
 
+  const url = `${siteOrigin()}/${locale}/einsaetze/${mission.slug}`;
+  const jsonLd = graph([
+    eventNode({
+      name: mission.eventName,
+      startDate: mission.startDate.toISOString(),
+      url: mission.eventUrl,
+      city: mission.city,
+      countryCode: mission.countryCode,
+      online: mission.countryCode === "AQ",
+    }),
+    breadcrumbNode([
+      { name: isDe ? "Einsätze" : "Missions", url: `${siteOrigin()}/${locale}/einsaetze` },
+      { name: mission.eventName, url },
+    ]),
+  ]);
+
   return (
     <section style={{ padding: "44px 0 90px" }} lang={mission.contentLocale}>
+      <JsonLd json={jsonLd} />
       <Link className="btn ghost" href={`/${locale}/einsaetze`}>
         ← {isDe ? "Zurück zur Karte" : "Back to the map"}
       </Link>

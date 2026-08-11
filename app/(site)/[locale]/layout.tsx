@@ -8,6 +8,9 @@ import { fontVariables } from "@/lib/fonts";
 import { siteOrigin } from "@/lib/site";
 import SiteHeader, { type HeaderNavItem } from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
+import JsonLd from "@/components/JsonLd";
+import { getPersonInput } from "@/lib/queries/person";
+import { personNode, webSiteNode, graph } from "@/lib/seo/jsonld";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -60,6 +63,10 @@ export default async function LocaleLayout({
   const typedLocale: Locale = locale;
   const dict = await getDictionary(typedLocale);
 
+  // Site-weite strukturierte Daten (Phase 13.3): Person + WebSite.
+  const person = await getPersonInput(typedLocale);
+  const siteJsonLd = graph([personNode(person), webSiteNode(dict.brand.name, typedLocale)]);
+
   const navItems: HeaderNavItem[] = mainNav.map((item) => ({
     segment: item.segment,
     href: item.segment ? `/${typedLocale}/${item.segment}` : `/${typedLocale}`,
@@ -69,6 +76,7 @@ export default async function LocaleLayout({
   return (
     <html lang={typedLocale} className={fontVariables}>
       <body>
+        <JsonLd json={siteJsonLd} />
         <a className="skip-link" href="#main-content">
           {dict.nav.skipToContent}
         </a>

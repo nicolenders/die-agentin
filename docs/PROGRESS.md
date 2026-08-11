@@ -28,7 +28,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 11** — Rechtstexte (DE + EN)
 - [~] **Phase 12** — Frontend-Redesign (Struktur/Inhalt; Motion vertagt)
 - [x] **Anhang A** — Speaker-Kit („Akte") (Kern; Testimonials vertagt)
-- [ ] **Phase 13** — SEO + Auffindbarkeit für KI-Systeme
+- [~] **Phase 13** — SEO (JSON-LD/robots/llms.txt fertig; OG-Images vertagt)
 - [ ] **Phase 14** — Domain-Migration + Cutover
 
 ## Erledigt
@@ -233,6 +233,25 @@ des Assets).
 Entität mit Freigabe-Flag; Pressefotos (Web/Druck) mit Credit/Nutzungshinweis;
 technische Anforderungen als Rich Text; lokalisierter EN-Slug `/kit` (Phase 13);
 Admin-Pflege der Bios (aktuell Seed/SiteSetting).
+
+**Phase 13 — SEO (teilweise)**
+- 13.3 **JSON-LD** (`lib/seo/jsonld.ts`, `components/JsonLd.tsx`): Person +
+  WebSite site-weit im Layout (`@graph`, stabile `@id`), BlogPosting je Depesche,
+  Event je Einsatz (VirtualLocation für Online), BreadcrumbList auf Detailseiten.
+  Person: sameAs aus Social-Profilen, knowsAbout aus Identitäten, award aus MVP/
+  Auszeichnungen (`lib/queries/person.ts`). Nur sichtbare Daten.
+- 13.4 **llms.txt** (`/llms.txt`, aus Entity-Daten generiert), **robots.txt**
+  (kanonischer Host, KI-Crawler ausdrücklich erlaubt — GPTBot/ClaudeBot/… nicht
+  gesperrt). RSS im Footer verlinkt. Fakten als Text auf /akte + Legende.
+- Titel bereits konsistent `%s · DIE AGENTIN` (Layout-Template).
+
+**Aus Phase 13 vertagt (Folgepunkte):**
+- 13.1 Per-Route eigene Descriptions (DE/EN) für alle statischen Seiten;
+  vollständige per-Route canonical + hreflang inkl. Detailseiten; **lokalisierte
+  EN-Slugs** (`/en/missions` …) mit Redirects (zweites Slug-Set).
+- 13.2 **Dynamische OG-Images** (`next/og`) je Entitätstyp.
+- Weitere JSON-LD-Typen (Book/Course/SoftwareSourceCode) auf /publikationen.
+- 13.5 Abschlussbericht (Beispiel-URLs + JSON-LD) — nach OG/Slugs.
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

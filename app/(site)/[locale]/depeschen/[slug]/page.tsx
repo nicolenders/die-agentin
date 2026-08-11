@@ -5,7 +5,10 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getDispatchBySlug } from "@/lib/queries/dispatches";
 import { formatDate } from "@/lib/format";
+import { siteOrigin } from "@/lib/site";
+import { blogPostingNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
 import ContentArticle from "@/components/content/ContentArticle";
+import JsonLd from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +39,24 @@ export default async function DispatchDetailPage({
   const d = await getDispatchBySlug(locale, slug);
   if (!d) notFound();
 
+  const url = `${siteOrigin()}/${locale}/depeschen/${d.slug}`;
+  const jsonLd = graph([
+    blogPostingNode({
+      headline: d.title,
+      description: d.summary,
+      url,
+      datePublished: d.publishedAt ? d.publishedAt.toISOString() : null,
+      dateModified: (d.reviewedAt ?? d.publishedAt)?.toISOString() ?? null,
+    }),
+    breadcrumbNode([
+      { name: dict.dispatch.namePlural, url: `${siteOrigin()}/${locale}/depeschen` },
+      { name: d.title, url },
+    ]),
+  ]);
+
   return (
     <section style={{ padding: "44px 0 90px" }}>
+      <JsonLd json={jsonLd} />
       <Link className="btn ghost" href={`/${locale}/depeschen`}>
         ← {dict.dispatch.namePlural}
       </Link>

@@ -67,6 +67,11 @@ export default async function EinsaetzePage({
           ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Die vollständige Liste steht als Tabelle unter der Karte."
           : "Every pin is a mission: an event, a briefing, a city. The full list is in the table below the map."}
       </p>
+      <p style={{ marginTop: 6 }}>
+        <Link className="btn ghost sm" href={`/${locale}/briefings`}>
+          {locale === "de" ? "Was ich mitbringe: Briefings" : "What I bring: briefings"} →
+        </Link>
+      </p>
 
       <div className="year-filter" role="group" aria-label={isDe ? "Jahr wählen" : "Choose year"} style={{ marginTop: 22 }}>
         <Link className="chip" aria-pressed={selection === "aktuell"} href={yearHref("aktuell")}>

@@ -121,29 +121,22 @@ export default async function HQPage({
       )}
 
       <div className={styles.counter}>
-        <div>
-          <b>{stats.missions}</b>
-          <span>{t.countMissions}</span>
-        </div>
-        <div>
-          <b>{stats.countries}</b>
-          <span>{t.countCountries}</span>
-        </div>
-        <div>
-          <b>{stats.briefings}</b>
-          <span>{t.countBriefings}</span>
-        </div>
+        {[
+          { n: stats.missions, sg: t.sgMissions, pl: t.countMissions },
+          { n: stats.countries, sg: t.sgCountries, pl: t.countCountries },
+          { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities },
+          { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings },
+          { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications },
+          { n: stats.books, sg: t.sgBooks, pl: t.countBooks },
+        ].map((c) => (
+          <div key={c.pl}>
+            <b>{c.n}</b>
+            <span>{c.n === 1 ? c.sg : c.pl}</span>
+          </div>
+        ))}
         <div>
           <b>{stats.mvpAwards}×</b>
           <span>{t.countMvp}</span>
-        </div>
-        <div>
-          <b>{stats.certifications}</b>
-          <span>{t.countCertifications}</span>
-        </div>
-        <div>
-          <b>{stats.books}</b>
-          <span>{t.countBooks}</span>
         </div>
       </div>
 

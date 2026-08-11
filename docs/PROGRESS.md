@@ -24,7 +24,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 7** — Kontakt: LinkedIn + E-Mail
 - [~] **Phase 8** — Sessionize-Backfill (Infrastruktur fertig; Daten = STOP)
 - [x] **Phase 9** — Einsatzakte mit Belegmaterial
-- [ ] **Phase 10** — Briefings/Publikationen/Ausbildung ins Narrativ
+- [~] **Phase 10** — Narrativ (10.4 fertig; Briefing-Detailseiten offen)
 - [ ] **Phase 11** — Rechtstexte (DE + EN)
 - [ ] **Phase 12** — Frontend-Redesign
 - [ ] **Anhang A** — Speaker-Kit („Akte")
@@ -166,6 +166,23 @@ Formular (aktuell nur im Anlageformular); EN-Beschreibung für Repositories.
 **Aus Phase 9 vertagt:** Recap-Rich-Text-Editor im MissionForm (Feld/Anzeige
 stehen; Eingabe folgt). Foto-Bildunterschrift/Credit je Foto (aktuell Alt/Credit
 des Assets).
+
+**Phase 10 — Narrativ (teilweise)**
+- 10.4 Kennzahlen: **Identitäten** als Kennzahl ergänzt; Singular/Plural
+  lokalisiert („1 Einsatz" statt „1 Einsätze"). Zähler getaggt mit Identitätsliste.
+- 10.1 Briefings aus der Hauptnav (schon Phase 3) + Einstieg von der Einsätze-
+  Seite („Was ich mitbringe: Briefings"). Identität↔Briefing ist über den
+  Identitäts-Editor pflegbar (Phase 2).
+- 10.2/10.3: Identitätszuordnung von Publikationen/Zertifizierungen über den
+  Identitäts-Editor; Reihenfolge Publikationen (Bücher→Kurse→Repos→…) aus Phase 6;
+  „In Ausbildung" oben aus Phase 5.3.
+
+**Aus Phase 10 vertagt / STOP:**
+- **Briefing-Detailseiten** (`/briefings/<slug>`): Talks haben keinen Slug —
+  braucht ein Slug-Feld o. Ä.; als Folgeschritt angelegt. Identitätsfilter auf
+  der Briefings-Übersicht ebenso.
+- **Linkkonsistenz Publikationen (Rheinwerk vs. Amazon):** manuell — Nicole
+  vereinheitlicht auf die Verlagsseite, wo vorhanden (STOP, Anhang B).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

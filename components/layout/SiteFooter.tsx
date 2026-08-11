@@ -47,6 +47,7 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
         <div>
           <h4>{dict.footer.aboutHeading}</h4>
           <Link href={l("legende")}>{dict.nav.legende}</Link>
+          <Link href={l("akte")}>{locale === "de" ? "Akte (Speaker-Kit)" : "Speaker kit"}</Link>
           <Link href={l("publikationen")}>{dict.nav.publikationen}</Link>
           <Link href={l("ausbildung")}>{dict.nav.ausbildung}</Link>
           <a href={`/feed${locale === "en" ? ".en" : ""}.xml`}>{dict.footer.rss}</a>

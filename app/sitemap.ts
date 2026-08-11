@@ -19,6 +19,7 @@ const SECTIONS = [
   "briefings",
   "publikationen",
   "ausbildung",
+  "akte",
   "legende",
   "impressum",
   "datenschutz",

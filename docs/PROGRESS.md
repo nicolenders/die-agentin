@@ -27,7 +27,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [~] **Phase 10** — Narrativ (10.4 fertig; Briefing-Detailseiten offen)
 - [x] **Phase 11** — Rechtstexte (DE + EN)
 - [~] **Phase 12** — Frontend-Redesign (Struktur/Inhalt; Motion vertagt)
-- [ ] **Anhang A** — Speaker-Kit („Akte")
+- [x] **Anhang A** — Speaker-Kit („Akte") (Kern; Testimonials vertagt)
 - [ ] **Phase 13** — SEO + Auffindbarkeit für KI-Systeme
 - [ ] **Phase 14** — Domain-Migration + Cutover
 
@@ -219,6 +219,20 @@ des Assets).
   Umschlag-Hover/Scroll-Reveal, Karten-Pins nach Identitätsfarbe. `prefers-
   reduced-motion` wird global respektiert (M0).
 - 12.6 Lighthouse/axe-Lauf (in dieser Umgebung nicht ausführbar; CI vorhanden).
+
+**Anhang A — Speaker-Kit „Akte"**
+- Route `/[locale]/akte` (Name „Akte", alt „Ausrüstung" — TODO(nicole)).
+- Bios in drei Längen (50/150/400) DE+EN aus A.1, als `ENTWURF` geseedet
+  (SiteSettings `bio.<len>.<locale>`), im Admin pflegbar; Copy-to-Clipboard
+  (`components/CopyButton.tsx`). ⚠-Angaben im Text belassen (TODO(nicole)).
+- Fakten live aus der DB (MVP/Bücher/Zert/Einsätze/Identitäten) — veralten nicht.
+- Fachgebiete/Identitäten verlinkt, Kontakt-CTA (LinkedIn + E-Mail). Footer- +
+  Sitemap-Eintrag.
+
+**Aus Anhang A vertagt (Folgepunkte):** Referenzen/Testimonials als eigene
+Entität mit Freigabe-Flag; Pressefotos (Web/Druck) mit Credit/Nutzungshinweis;
+technische Anforderungen als Rich Text; lokalisierter EN-Slug `/kit` (Phase 13);
+Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

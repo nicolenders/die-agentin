@@ -55,6 +55,34 @@ export async function getContactInfo(): Promise<ContactInfo> {
   }
 }
 
+// Speaker-Kit-Bios (Anhang A): drei Längen je Sprache, als SiteSettings gepflegt.
+export interface Bios {
+  short: string;
+  medium: string;
+  long: string;
+}
+
+async function fetchBios(locale: string): Promise<Bios> {
+  const keys = ["short", "medium", "long"].map((l) => `bio.${l}.${locale}`);
+  const rows = await db.siteSetting.findMany({ where: { key: { in: keys } }, select: { key: true, value: true } });
+  const map: Record<string, string> = {};
+  for (const row of rows) map[row.key] = row.value;
+  return {
+    short: map[`bio.short.${locale}`] ?? "",
+    medium: map[`bio.medium.${locale}`] ?? "",
+    long: map[`bio.long.${locale}`] ?? "",
+  };
+}
+
+export async function getBios(locale: string): Promise<Bios> {
+  const run = cachedQuery(fetchBios, ["site-settings", "bios", locale], [SITE_SETTINGS_TAG]);
+  try {
+    return await run(locale);
+  } catch {
+    return { short: "", medium: "", long: "" };
+  }
+}
+
 /**
  * Bereinigt eine eingegebene Profil-URL: leert bei Leereingabe (Link wird
  * entfernt) und ergänzt ein fehlendes Schema um `https://`, damit der Footer

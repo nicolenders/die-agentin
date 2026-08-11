@@ -17,7 +17,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 
 - [x] **Phase 1** — Audit + Sofortmaßnahmen (`docs/AUDIT.md`)
 - [x] **Phase 2** — Identitäten (Decknamen): Datenmodell + Admin
-- [ ] **Phase 3** — Signale + Dossiers → Depeschen
+- [x] **Phase 3** — Signale + Dossiers → Depeschen (öffentlich + Admin)
 - [ ] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
 - [ ] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
 - [ ] **Phase 6** — GitHub-Integration
@@ -57,6 +57,28 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
   Validierung (Rolle DE + Akzentfarbe blockierend; Warnungen im Formular).
 - Seed: 4 Identitäten (`published=false`), Decknamen leer (STOP), Beschreibungen
   als `ENTWURF`.
+
+**Phase 3 — Depeschen (Dispatch)**
+- Schema `Dispatch`/`DispatchTranslation` (+ n:m Identity/Taxonomy/Tag),
+  `format` NOTE|ANALYSIS|REFERENCE|BACKSTAGE, `ChannelTask.dispatchId`.
+  Migration `20260811130000_dispatches` (additiv, Post/Dossier bleiben erhalten).
+- Sichtbarer Name aus **einem** i18n-Key `dispatch.name`/`namePlural`.
+- Nav 8→5 (HQ · Einsätze · Identitäten · Depeschen · Legende); Publikationen/
+  Ausbildung im Footer, Briefings im Einsätze-Bereich (Phase 10.1 folgt).
+- Öffentlich: `/depeschen` (Format-Filter), `/depeschen/<slug>`; Identitäts-
+  Seiten `/identitaeten` + `/<slug>` (3.4). HQ/Feeds/Sitemap auf Depeschen.
+- 301-Redirects `/signale`,`/dossiers` → `/depeschen` in `proxy.ts`.
+- Admin: Menüpunkt „Depeschen" mit Liste + Editor (Format, Status, Zeitplan
+  Berlin, DE/EN, Identitäten, Fachgebiete, Quelle, Hero).
+- Seed: 5 Depeschen (Format aus altem Typ abgeleitet).
+
+**Aus Phase 3 vertagt (Folgepunkte):**
+- **Daten-Migration Bestand:** Post/Dossier-Zeilen in `Dispatch` kopieren (idem-
+  potentes Skript mit Dry-Run) — nötig nur für echte Bestandsdaten. Seed schreibt
+  bereits direkt `Dispatch`. Post/Dossier-Tabellen bleiben (abwärtskompatibel),
+  Alt-Admin (`beitraege`/`editor`/`dossiers`) aus der Nav entfernt, Routen noch da.
+- KI-Rohübersetzung (Foundry) für Depeschen-EN wie beim alten Dossier-Editor.
+- Zeitgesteuertes Veröffentlichen (SCHEDULED→PUBLISHED) → Phase 4.
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

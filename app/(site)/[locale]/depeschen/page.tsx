@@ -42,11 +42,11 @@ export default async function DepeschenPage({
       <p className="lead">{dict.dispatch.lead}</p>
 
       <div className="year-filter" role="group" aria-label={dict.dispatch.filterByFormat} style={{ marginTop: 20 }}>
-        <Link className="chip" aria-pressed={activeFormat === null} href={filterHref(null)}>
+        <Link className="chip" aria-current={activeFormat === null ? "true" : undefined} href={filterHref(null)}>
           {dict.common.all}
         </Link>
         {DISPATCH_FORMATS.map((f) => (
-          <Link key={f} className="chip" aria-pressed={activeFormat === f} href={filterHref(f)}>
+          <Link key={f} className="chip" aria-current={activeFormat === f ? "true" : undefined} href={filterHref(f)}>
             {dict.dispatch.formats[f]}
           </Link>
         ))}
@@ -59,7 +59,7 @@ export default async function DepeschenPage({
       ) : (
         <div className="grid g2" style={{ marginTop: 26, alignItems: "stretch" }}>
           {dispatches.map((d) => (
-            <Link key={d.id} href={`/${locale}/depeschen/${d.slug}`} className="card bracket cardlink" style={{ display: "flex", flexDirection: "column" }}>
+            <Link key={d.id} href={`/${locale}/depeschen/${d.slug}`} className="card bracket" style={{ display: "flex", flexDirection: "column" }}>
               <p className="meta" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: 0 }}>
                 <span className="tag">{dict.dispatch.formats[d.format]}</span>
                 {d.identities.map((i) => (

@@ -137,7 +137,7 @@ export default async function LegendePage({
           </p>
           <div className="grid g4" style={{ marginTop: 14, alignItems: "stretch" }}>
             {identities.map((i) => (
-              <Link key={i.id} href={`/${locale}/identitaeten/${i.slug}`} className="card bracket cardlink" style={{ display: "flex", flexDirection: "column", borderLeft: `3px solid ${i.color}` }}>
+              <Link key={i.id} href={`/${locale}/identitaeten/${i.slug}`} className="card bracket" style={{ display: "flex", flexDirection: "column", borderLeft: `3px solid ${i.color}` }}>
                 {i.envelopeUrl ? (
                   <AssetImage src={i.envelopeUrl} alt={i.envelopeAlt} imgStyle={{ width: "100%", borderRadius: 4, aspectRatio: "4 / 5", objectFit: "cover" }} style={{ marginBottom: 10 }} />
                 ) : (

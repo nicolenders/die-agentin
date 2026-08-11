@@ -74,15 +74,15 @@ export default async function EinsaetzePage({
       </p>
 
       <div className="year-filter" role="group" aria-label={isDe ? "Jahr wählen" : "Choose year"} style={{ marginTop: 22 }}>
-        <Link className="chip" aria-pressed={selection === "aktuell"} href={yearHref("aktuell")}>
+        <Link className="chip" aria-current={selection === "aktuell" ? "true" : undefined} href={yearHref("aktuell")}>
           {isDe ? "Aktuell & geplant" : "Current & planned"}
         </Link>
         {years.map((y) => (
-          <Link key={y} className="chip" aria-pressed={selection === y} href={yearHref(String(y))}>
+          <Link key={y} className="chip" aria-current={selection === y ? "true" : undefined} href={yearHref(String(y))}>
             {y}
           </Link>
         ))}
-        <Link className="chip" aria-pressed={selection === "alle"} href={yearHref("alle")}>
+        <Link className="chip" aria-current={selection === "alle" ? "true" : undefined} href={yearHref("alle")}>
           {isDe ? "Alle Jahre" : "All years"}
         </Link>
       </div>

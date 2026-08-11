@@ -31,6 +31,47 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [~] **Phase 13** — SEO (JSON-LD/robots/llms.txt fertig; OG-Images vertagt)
 - [~] **Phase 14** — Cutover (Doku + Vorlagen; Aktivierung = STOP/Nicole)
 
+## Review & Verifikation (Migration + Pipeline)
+
+Nach dem Umbau gezielt geprüft — gegen eine **echte SQL-Server-2022-Instanz**
+(Docker) und die vollständige Pipeline. Gefundene Probleme behoben:
+
+- **`migration_lock.toml`**: `provider = "sqlserver"` → **`mssql`**. `prisma
+  migrate deploy` (Pipeline-Schritt) brach sonst mit **P3019** ab (der Engine
+  vergleicht den Connector-Namen `mssql` gegen den Lock). Verifiziert: alle 17
+  Migrationen laufen jetzt durch.
+- **Migration `20260809140000_records_kind_focus` war kaputt** (Bestand, nie
+  gegen echte DB gelaufen): `UPDATE … SET [kind]` referenziert eine im selben
+  Batch erst per `ALTER … ADD [kind]` angelegte Spalte → SQL-Server-Fehler 207
+  „Invalid column name". Behoben mit dynamischem SQL (`EXEC(N'…')`), das erst zur
+  Laufzeit kompiliert. Verifiziert.
+- **`ChannelTask.postId` nullable machen** (meine Dispatch-Migration): auf echtem
+  SQL Server problemlos, kein FK-Drop nötig. Verifiziert.
+- **UI-Konsistenz:** `IdentityAttributesField` nutzte undefinierte Klassen
+  `field`/`field-label` (unstyled) → auf die Admin-Konvention `.f` umgestellt.
+  Redundante, undefinierte Klasse `cardlink` entfernt (`.card:hover` liefert die
+  Anhebung bereits).
+- **a11y (axe):** `aria-pressed` auf Link-Chips (`/depeschen`, `/einsaetze`) ist
+  ungültig (Rolle „link") → `aria-current` (CSS stylt beide identisch). axe-Suite
+  gegen die laufende App: **18/18 grün, 0 kritische Verstöße**.
+- **Tests aktualisiert:** a11y- und E2E-Routenlisten auf den neuen Stand
+  (Depeschen/Identitäten/Akte statt Signale/Dossiers) + Redirect-Assertions;
+  E2E-`locale: "de-DE"`, damit `/` deterministisch auf `/de` leitet. E2E-Smoke
+  **12/12 grün**.
+
+Verifizierter Gesamtstand: `typecheck`, `lint`, **120 Unit-Tests**, **18 axe**,
+**12 E2E**, **`next build`**, `migrate deploy` (17 Migrationen) und `db:seed`
+laufen alle grün; alle öffentlichen Routen liefern 200, `/de/signale` → 301 →
+`/de/depeschen`, JSON-LD im HTML.
+
+**Hinweis (nicht blockierend):** `npm audit` meldet 4 High-CVEs in `sharp`
+(transitiv über Next). Der Pipeline-Schritt ist `continueOnError: true`
+(„Hinweis, blockt nicht"), und der Auto-Fix erzwingt `next@16.3.0` — eine
+Stack-Änderung, die laut `CLAUDE.md` nicht ohne Rückfrage erfolgt. Bewusst
+offen gelassen; Nicole entscheidet über das Dependency-Update.
+
+---
+
 ## Erledigt
 
 **Phase 1 — Audit + Sofortmaßnahmen**

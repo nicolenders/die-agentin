@@ -49,22 +49,22 @@ export default function IdentityAttributesField({
         {rows.map((r, i) => (
           <div key={i} className="card bracket" style={{ padding: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <label className="field">
-                <span className="field-label">Label DE</span>
-                <input type="text" value={r.labelDe} onChange={(e) => patch(i, { labelDe: e.target.value })} />
-              </label>
-              <label className="field">
-                <span className="field-label">Label EN</span>
-                <input type="text" value={r.labelEn} onChange={(e) => patch(i, { labelEn: e.target.value })} />
-              </label>
-              <label className="field">
-                <span className="field-label">Wert DE</span>
-                <input type="text" value={r.valueDe} onChange={(e) => patch(i, { valueDe: e.target.value })} />
-              </label>
-              <label className="field">
-                <span className="field-label">Wert EN</span>
-                <input type="text" value={r.valueEn} onChange={(e) => patch(i, { valueEn: e.target.value })} />
-              </label>
+              <div>
+                <label className="f">Label DE</label>
+                <input className="f" type="text" value={r.labelDe} onChange={(e) => patch(i, { labelDe: e.target.value })} />
+              </div>
+              <div>
+                <label className="f">Label EN</label>
+                <input className="f" type="text" value={r.labelEn} onChange={(e) => patch(i, { labelEn: e.target.value })} />
+              </div>
+              <div>
+                <label className="f">Wert DE</label>
+                <input className="f" type="text" value={r.valueDe} onChange={(e) => patch(i, { valueDe: e.target.value })} />
+              </div>
+              <div>
+                <label className="f">Wert EN</label>
+                <input className="f" type="text" value={r.valueEn} onChange={(e) => patch(i, { valueEn: e.target.value })} />
+              </div>
             </div>
             <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
               <label style={{ display: "flex", gap: 6, alignItems: "center" }}>

@@ -119,7 +119,7 @@ export default async function HQPage({
               <Link
                 key={i.id}
                 href={`/${locale}/identitaeten/${i.slug}`}
-                className="card bracket cardlink"
+                className="card bracket"
                 style={{ display: "flex", flexDirection: "column", borderLeft: `3px solid ${i.color}` }}
               >
                 {i.envelopeUrl ? (

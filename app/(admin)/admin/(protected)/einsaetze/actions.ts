@@ -6,13 +6,53 @@ import { requireAdmin, ForbiddenError } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
-import { MISSION_STATUSES, isOneOf } from "@/lib/domain";
+import { MISSION_STATUSES, SESSION_TYPES, isOneOf } from "@/lib/domain";
 import { serializeRichValue } from "@/lib/content/rich";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface MissionTextInput {
   eventText: string;
   talkText: string;
+}
+
+// Belegmaterial (Phase 9.1) — alle Felder optional.
+export interface MissionMaterialInput {
+  slidesUrl?: string | null;
+  slidesPlatform?: string | null;
+  recordingUrl?: string | null;
+  sessionType?: string | null;
+  sessionLanguage?: string | null;
+  attendeeCount?: number | null;
+  feedbackScore?: number | null;
+  feedbackSource?: string | null;
+  coSpeakers?: string | null; // Rohtext: eine Zeile je Person, „Name | url"
+}
+
+/** „Name | url"-Zeilen in JSON [{name,url}] übersetzen. */
+function parseCoSpeakers(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const list = raw
+    .split("\n")
+    .map((line) => {
+      const [name, url] = line.split("|").map((s) => s.trim());
+      return name ? { name, url: url || null } : null;
+    })
+    .filter(Boolean);
+  return list.length ? JSON.stringify(list) : null;
+}
+
+function materialData(m: MissionMaterialInput | undefined) {
+  return {
+    slidesUrl: m?.slidesUrl?.trim() || null,
+    slidesPlatform: m?.slidesPlatform?.trim() || null,
+    recordingUrl: m?.recordingUrl?.trim() || null,
+    sessionType: isOneOf(SESSION_TYPES, m?.sessionType ?? "") ? m!.sessionType! : null,
+    sessionLanguage: m?.sessionLanguage?.trim() || null,
+    attendeeCount: m?.attendeeCount != null && Number.isFinite(m.attendeeCount) ? Math.trunc(m.attendeeCount) : null,
+    feedbackScore: m?.feedbackScore != null && Number.isFinite(m.feedbackScore) ? m.feedbackScore : null,
+    feedbackSource: m?.feedbackSource?.trim() || null,
+    coSpeakers: parseCoSpeakers(m?.coSpeakers),
+  };
 }
 
 export interface SaveMissionInput {
@@ -32,6 +72,7 @@ export interface SaveMissionInput {
   de: MissionTextInput;
   en?: MissionTextInput | null;
   photoAssetIds: string[];
+  material?: MissionMaterialInput;
   intent: "draft" | "publish";
 }
 
@@ -91,6 +132,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         contentStatus,
         eventUrl: input.eventUrl || null,
         bannerAssetId: input.bannerAssetId || null,
+        ...materialData(input.material),
       },
       update: {
         eventName: input.eventName,
@@ -104,6 +146,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         contentStatus,
         eventUrl: input.eventUrl || null,
         bannerAssetId: input.bannerAssetId || null,
+        ...materialData(input.material),
       },
     });
 

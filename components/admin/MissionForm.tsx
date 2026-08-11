@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { computeGeo, project } from "@/lib/map/geo";
-import { MISSION_STATUSES } from "@/lib/domain";
+import { MISSION_STATUSES, SESSION_TYPES } from "@/lib/domain";
 import MediaPicker, { type MediaItem } from "@/components/admin/editor/MediaPicker";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
@@ -34,7 +34,25 @@ export interface MissionFormInitial {
   en: { eventText: string; talkText: string } | null;
   photos: { id: string; url: string }[];
   banner: { id: string; url: string } | null;
+  material: MissionMaterialForm;
 }
+
+export interface MissionMaterialForm {
+  slidesUrl: string;
+  slidesPlatform: string;
+  recordingUrl: string;
+  sessionType: string;
+  sessionLanguage: string;
+  attendeeCount: string;
+  feedbackScore: string;
+  feedbackSource: string;
+  coSpeakers: string;
+}
+
+export const EMPTY_MATERIAL: MissionMaterialForm = {
+  slidesUrl: "", slidesPlatform: "", recordingUrl: "", sessionType: "", sessionLanguage: "",
+  attendeeCount: "", feedbackScore: "", feedbackSource: "", coSpeakers: "",
+};
 
 const STATUS_LABEL: Record<string, string> = {
   PLANNED: "Geplant",
@@ -87,6 +105,8 @@ export default function MissionForm({
   const [enText, setEnText] = useState(initial.en ?? { eventText: "", talkText: "" });
   const [photos, setPhotos] = useState<{ id: string; url: string }[]>(initial.photos);
   const [banner, setBanner] = useState<{ id: string; url: string } | null>(initial.banner);
+  const [material, setMaterial] = useState<MissionMaterialForm>(initial.material);
+  const setMat = (part: Partial<MissionMaterialForm>) => setMaterial((prev) => ({ ...prev, ...part }));
   const [showPicker, setShowPicker] = useState(false);
   const [showBannerPicker, setShowBannerPicker] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
@@ -136,6 +156,17 @@ export default function MissionForm({
       de: deText,
       en: enEnabled ? enText : null,
       photoAssetIds: photos.map((p) => p.id),
+      material: {
+        slidesUrl: material.slidesUrl,
+        slidesPlatform: material.slidesPlatform,
+        recordingUrl: material.recordingUrl,
+        sessionType: material.sessionType || null,
+        sessionLanguage: material.sessionLanguage,
+        attendeeCount: material.attendeeCount ? Number(material.attendeeCount) : null,
+        feedbackScore: material.feedbackScore ? Number(material.feedbackScore) : null,
+        feedbackSource: material.feedbackSource,
+        coSpeakers: material.coSpeakers,
+      },
       intent,
     });
     if (res.ok) {
@@ -404,6 +435,43 @@ export default function MissionForm({
             + Hochladen
           </button>
         </div>
+      </div>
+
+      <div className="card bracket" style={{ marginTop: 16 }}>
+        <p className="eyebrow">Belegmaterial (Phase 9)</p>
+        <p className="meta" style={{ marginTop: 0 }}>Alles optional. Leere Angaben erscheinen öffentlich nicht.</p>
+        <div className="grid g2" style={{ gap: 12, alignItems: "start" }}>
+          <label className="f">Folien-URL
+            <input className="f" value={material.slidesUrl} onChange={(e) => setMat({ slidesUrl: e.target.value })} placeholder="https://…" />
+          </label>
+          <label className="f">Folien-Plattform
+            <input className="f" value={material.slidesPlatform} onChange={(e) => setMat({ slidesPlatform: e.target.value })} placeholder="SpeakerDeck, SlideShare …" />
+          </label>
+          <label className="f">Aufzeichnung (YouTube-URL)
+            <input className="f" value={material.recordingUrl} onChange={(e) => setMat({ recordingUrl: e.target.value })} placeholder="https://youtu.be/…" />
+          </label>
+          <label className="f">Art des Auftritts
+            <select className="f" value={material.sessionType} onChange={(e) => setMat({ sessionType: e.target.value })}>
+              <option value="">— keine —</option>
+              {SESSION_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <label className="f">Sprache des Auftritts
+            <input className="f" value={material.sessionLanguage} onChange={(e) => setMat({ sessionLanguage: e.target.value })} placeholder="Deutsch" />
+          </label>
+          <label className="f">Teilnehmende (Anzahl)
+            <input className="f" type="number" value={material.attendeeCount} onChange={(e) => setMat({ attendeeCount: e.target.value })} />
+          </label>
+          <label className="f">Feedback-Wert
+            <input className="f" type="number" step="0.1" value={material.feedbackScore} onChange={(e) => setMat({ feedbackScore: e.target.value })} placeholder="4.7" />
+          </label>
+          <label className="f">Feedback-Quelle
+            <input className="f" value={material.feedbackSource} onChange={(e) => setMat({ feedbackSource: e.target.value })} placeholder="Sessionize" />
+          </label>
+        </div>
+        <label className="f" style={{ marginTop: 8 }}>Co-Speaker (eine Zeile je Person: „Name | https://…“)</label>
+        <textarea className="f" rows={2} value={material.coSpeakers} onChange={(e) => setMat({ coSpeakers: e.target.value })} placeholder={"Max Muster | https://linkedin.com/in/…"} />
+        <p className="meta">Rückblick-Text (Recap) wird im nächsten Schritt ergänzt.</p>
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 18 }}>

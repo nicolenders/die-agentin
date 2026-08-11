@@ -23,7 +23,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 6** — GitHub-Integration
 - [x] **Phase 7** — Kontakt: LinkedIn + E-Mail
 - [~] **Phase 8** — Sessionize-Backfill (Infrastruktur fertig; Daten = STOP)
-- [ ] **Phase 9** — Einsatzakte mit Belegmaterial
+- [x] **Phase 9** — Einsatzakte mit Belegmaterial
 - [ ] **Phase 10** — Briefings/Publikationen/Ausbildung ins Narrativ
 - [ ] **Phase 11** — Rechtstexte (DE + EN)
 - [ ] **Phase 12** — Frontend-Redesign
@@ -150,6 +150,22 @@ Formular (aktuell nur im Anlageformular); EN-Beschreibung für Repositories.
 - 8.5 `docs/IMPORT.md` (Schema v1, Ablauf, Regeln, STOP).
 - **STOP:** Quelldaten (MVP-Export, Sessionize mit bestätigten Terminen, neuer
   LinkedIn-Export) liefert Nicole; Importer noch nicht gegen echte DB gelaufen.
+
+**Phase 9 — Einsatzakte mit Belegmaterial**
+- 9.1 Mission um optionale Felder erweitert (slidesUrl/-platform, recordingUrl,
+  recapDe/En, feedbackScore/-source, coSpeakers, sessionType, sessionLanguage,
+  attendeeCount). Migration `20260811160000_mission_material`. Altdaten brechen
+  nicht (alles optional). Identitäten↔Mission bereits aus Phase 2.
+- 9.2 Detailseite in der Reihenfolge Fakten → Identität(en) → Briefing → Material
+  (Folien/Video/Fotos) → Recap. Leere Sektionen entfallen. Video über
+  `VideoConsent` (youtube-nocookie, Zwei-Klick; `lib/video.ts` getestet).
+- `docs/DATENVERARBEITUNG.md` mit Video-/Karten-Notiz angelegt (für Phase 11.1).
+- Admin: „Belegmaterial"-Karte im MissionForm (Folien, Aufzeichnung, Art,
+  Teilnehmende, Feedback, Co-Speaker).
+
+**Aus Phase 9 vertagt:** Recap-Rich-Text-Editor im MissionForm (Feld/Anzeige
+stehen; Eingabe folgt). Foto-Bildunterschrift/Credit je Foto (aktuell Alt/Credit
+des Assets).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

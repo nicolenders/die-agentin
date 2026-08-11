@@ -1,9 +1,24 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
-import MissionForm, { type MissionFormInitial } from "@/components/admin/MissionForm";
+import MissionForm, { type MissionFormInitial, EMPTY_MATERIAL } from "@/components/admin/MissionForm";
 
 export const metadata = { title: "Einsatz bearbeiten · Zentrale" };
+
+/** JSON [{name,url}] → „Name | url"-Zeilen für das Textfeld. */
+function coSpeakersToText(json: string | null): string {
+  if (!json) return "";
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return "";
+    return parsed
+      .map((c) => (c?.url ? `${c.name} | ${c.url}` : String(c?.name ?? "")))
+      .filter(Boolean)
+      .join("\n");
+  } catch {
+    return "";
+  }
+}
 
 export default async function EinsatzBearbeitenPage({
   searchParams,
@@ -31,6 +46,7 @@ export default async function EinsatzBearbeitenPage({
     en: null,
     photos: [],
     banner: null,
+    material: EMPTY_MATERIAL,
   };
 
   try {
@@ -74,6 +90,17 @@ export default async function EinsatzBearbeitenPage({
           en: en ? { eventText: en.eventText, talkText: en.talkText } : null,
           photos: mission.photos.map((p) => ({ id: p.assetId, url: assetUrl(p.asset.blobPath) })),
           banner: mission.banner ? { id: mission.banner.id, url: assetUrl(mission.banner.blobPath) } : null,
+          material: {
+            slidesUrl: mission.slidesUrl ?? "",
+            slidesPlatform: mission.slidesPlatform ?? "",
+            recordingUrl: mission.recordingUrl ?? "",
+            sessionType: mission.sessionType ?? "",
+            sessionLanguage: mission.sessionLanguage ?? "",
+            attendeeCount: mission.attendeeCount != null ? String(mission.attendeeCount) : "",
+            feedbackScore: mission.feedbackScore != null ? String(mission.feedbackScore) : "",
+            feedbackSource: mission.feedbackSource ?? "",
+            coSpeakers: coSpeakersToText(mission.coSpeakers),
+          },
         };
       }
     }

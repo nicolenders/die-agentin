@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { cachedQuery, tags } from "@/lib/cache";
 import { pickTranslation } from "@/lib/content/pick";
 import { assetUrl } from "@/lib/media/url";
+import { identityDisplayName } from "@/lib/identities";
 import type { Locale } from "@/lib/i18n/config";
 import type { MissionStatus } from "@/lib/domain";
 
@@ -84,6 +85,31 @@ export interface MissionDetail {
   contentLocale: Locale;
   photos: { url: string; alt: string; decorative: boolean; ai: boolean }[];
   briefing: { title: string; language: string } | null;
+  // Belegmaterial (Phase 9)
+  identities: { slug: string; name: string; color: string }[];
+  slidesUrl: string | null;
+  slidesPlatform: string | null;
+  recordingUrl: string | null;
+  recap: string | null;
+  feedbackScore: number | null;
+  feedbackSource: string | null;
+  coSpeakers: { name: string; url: string | null }[];
+  sessionType: string | null;
+  sessionLanguage: string | null;
+  attendeeCount: number | null;
+}
+
+function parseCoSpeakers(json: string | null): { name: string; url: string | null }[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((c) => ({ name: String(c?.name ?? "").trim(), url: c?.url ? String(c.url) : null }))
+      .filter((c) => c.name);
+  } catch {
+    return [];
+  }
 }
 
 async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionDetail | null> {
@@ -95,6 +121,7 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
           translations: true,
           photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
           deliveries: { include: { talk: { include: { translations: true } } }, orderBy: { heldOn: "desc" }, take: 1 },
+          identities: { orderBy: { sortOrder: "asc" } },
         },
       },
     },
@@ -131,6 +158,17 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
       ai: p.asset.source === "AI",
     })),
     briefing: delivery && talkTitle ? { title: talkTitle, language: delivery.language } : null,
+    identities: mission.identities.map((i) => ({ slug: i.slug, name: identityDisplayName(i, locale), color: i.color })),
+    slidesUrl: mission.slidesUrl,
+    slidesPlatform: mission.slidesPlatform,
+    recordingUrl: mission.recordingUrl,
+    recap: locale === "en" && mission.recapEn ? mission.recapEn : mission.recapDe,
+    feedbackScore: mission.feedbackScore,
+    feedbackSource: mission.feedbackSource,
+    coSpeakers: parseCoSpeakers(mission.coSpeakers),
+    sessionType: mission.sessionType,
+    sessionLanguage: mission.sessionLanguage,
+    attendeeCount: mission.attendeeCount,
   };
 }
 

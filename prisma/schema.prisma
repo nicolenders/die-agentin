@@ -126,6 +126,18 @@ model Mission {
   status        String    @default("PLANNED") // MissionStatus
   eventUrl      String?   @db.NVarChar(2048)
   contentStatus String    @default("DRAFT") // ContentStatus
+  // Belegmaterial (Phase 9.1) — alle optional, Altdaten dürfen nicht brechen.
+  slidesUrl       String? @db.NVarChar(2048)
+  slidesPlatform  String?
+  recordingUrl    String? @db.NVarChar(2048) // YouTube o. Ä., datenschutzfreundlich eingebettet
+  recapDe         String? @db.NVarChar(Max) // TipTap JSON
+  recapEn         String? @db.NVarChar(Max)
+  feedbackScore   Float?
+  feedbackSource  String?
+  coSpeakers      String? @db.NVarChar(Max) // JSON [{ name, url }]
+  sessionType     String? // SessionType: KEYNOTE | SESSION | WORKSHOP | PANEL
+  sessionLanguage String?
+  attendeeCount   Int?
   bannerAssetId String?
   banner        MediaAsset? @relation("MissionBanner", fields: [bannerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt     DateTime  @default(now())

@@ -56,6 +56,10 @@ export type DispatchFormat = (typeof DISPATCH_FORMATS)[number];
 export const CERTIFICATION_STATUSES = ["PLANNED", "ACHIEVED", "EXPIRED"] as const;
 export type CertificationStatus = (typeof CERTIFICATION_STATUSES)[number];
 
+// Art des Auftritts (Phase 9.1).
+export const SESSION_TYPES = ["KEYNOTE", "SESSION", "WORKSHOP", "PANEL"] as const;
+export type SessionType = (typeof SESSION_TYPES)[number];
+
 /** Generischer Prüfer: Ist `value` einer der erlaubten Werte? */
 export function isOneOf<T extends readonly string[]>(
   allowed: T,

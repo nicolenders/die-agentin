@@ -12,8 +12,11 @@ export interface PublicationItem {
   isbn: string | null;
   publisher: string | null;
   url: string | null;
+  repoUrl: string | null;
+  language: string | null;
   title: string;
   role: string | null;
+  description: string | null;
   coverUrl: string | null;
   coverAlt: string;
   coverAi: boolean;
@@ -34,8 +37,11 @@ async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
       isbn: p.isbn,
       publisher: p.publisher,
       url: p.url,
+      repoUrl: p.repoUrl,
+      language: p.language,
       title,
       role: picked?.translation.role ?? null,
+      description: picked?.translation.description ?? null,
       coverUrl: p.coverAsset ? assetUrl(p.coverAsset.blobPath) : null,
       coverAlt:
         p.coverAsset && !p.coverAsset.decorative

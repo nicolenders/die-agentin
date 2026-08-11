@@ -20,7 +20,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 3** — Signale + Dossiers → Depeschen (öffentlich + Admin)
 - [x] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
 - [x] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
-- [ ] **Phase 6** — GitHub-Integration
+- [x] **Phase 6** — GitHub-Integration
 - [ ] **Phase 7** — Kontakt: LinkedIn + E-Mail
 - [ ] **Phase 8** — Sessionize-Backfill
 - [ ] **Phase 9** — Einsatzakte mit Belegmaterial
@@ -114,6 +114,18 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 **Aus Phase 5 vertagt:**
 - „In Ausbildung" zieht Themen aus `FocusTopic` (bestehendes Radar). Der Plan
   nennt die Identitäts-`focus`-Felder — Zusammenführung als Folgeschritt.
+
+**Phase 6 — GitHub**
+- 6.1 GitHub als Social-Kanal (`SOCIAL_PLATFORMS` + Inline-SVG-Icon) — erscheint
+  automatisch im Footer, in der Legende („Folgen & vernetzen") und im
+  Einstellungen-Admin. GitHub-URL ist Nicole-Input (Anhang B).
+- 6.2 Publikationstyp `REPOSITORY` (+ `repoUrl`, `language`; Beschreibung
+  lokalisiert über `PublicationTranslation.description`). Migration
+  `20260811150000_publication_repository`. Öffentlicher Abschnitt „Repositories"
+  nach Büchern & Kursen; Admin-Anlageformular. Keine Live-GitHub-API (wie gefordert).
+
+**Aus Phase 6 vertagt:** Repository-Felder auch im Publikations-Bearbeiten-
+Formular (aktuell nur im Anlageformular); EN-Beschreibung für Repositories.
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

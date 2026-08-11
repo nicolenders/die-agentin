@@ -223,10 +223,13 @@ model TalkDelivery {
 
 model Publication {
   id          String   @id @default(cuid())
-  type        String // PublicationType: BOOK | ARTICLE | WHITEPAPER
+  type        String // PublicationType: BOOK | COURSE | REPOSITORY | ARTICLE | PODCAST | INTERVIEW | WHITEPAPER
   year        Int
   isbn        String?
   publisher   String?
+  // Nur bei type = REPOSITORY (Phase 6.2):
+  repoUrl     String?  @db.NVarChar(2048)
+  language    String? // Programmiersprache, optional
   coverAssetId String?
   coverAsset  MediaAsset? @relation("PublicationCover", fields: [coverAssetId], references: [id])
   url         String?  @db.NVarChar(2048)

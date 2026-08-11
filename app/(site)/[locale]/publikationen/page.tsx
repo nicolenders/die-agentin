@@ -25,12 +25,13 @@ export default async function PublikationenPage({
   const all = await getPublications(locale);
   const books = all.filter((p) => p.type === "BOOK");
   const courses = all.filter((p) => p.type === "COURSE");
-  const others = all.filter((p) => p.type !== "BOOK" && p.type !== "COURSE");
+  const repos = all.filter((p) => p.type === "REPOSITORY");
+  const others = all.filter((p) => !["BOOK", "COURSE", "REPOSITORY"].includes(p.type));
 
   const typeLabel = (t: string) =>
     isDe
-      ? { BOOK: "Buch", ARTICLE: "Fachartikel", WHITEPAPER: "Whitepaper", COURSE: "Kurs" }[t] ?? t
-      : { BOOK: "Book", ARTICLE: "Article", WHITEPAPER: "Whitepaper", COURSE: "Course" }[t] ?? t;
+      ? { BOOK: "Buch", ARTICLE: "Fachartikel", WHITEPAPER: "Whitepaper", COURSE: "Kurs", REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview" }[t] ?? t
+      : { BOOK: "Book", ARTICLE: "Article", WHITEPAPER: "Whitepaper", COURSE: "Course", REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview" }[t] ?? t;
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
@@ -100,6 +101,31 @@ export default async function PublikationenPage({
                     </a>
                   ) : null}
                 </div>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {repos.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 40 }}>
+            {isDe ? "Repositories" : "Repositories"}
+          </p>
+          <div className="grid g2" style={{ marginTop: 18, alignItems: "stretch" }}>
+            {repos.map((r) => (
+              <article key={r.id} className="card bracket" style={{ display: "flex", flexDirection: "column" }}>
+                <div className="pub-tags">
+                  <span className="tag">{typeLabel(r.type)}</span>
+                  {r.language ? <span className="pub-year">{r.language}</span> : null}
+                </div>
+                <h3 style={{ marginTop: 8 }}>{r.title}</h3>
+                {r.description ? <p style={{ flex: 1, fontSize: "14.5px" }}>{r.description}</p> : <span style={{ flex: 1 }} />}
+                {r.repoUrl ?? r.url ? (
+                  <a className="btn ghost sm" href={r.repoUrl ?? r.url ?? undefined} target="_blank" rel="noopener noreferrer" style={{ marginTop: "auto" }}>
+                    {isDe ? "Zum Repository" : "View repository"} ↗
+                  </a>
+                ) : null}
               </article>
             ))}
           </div>

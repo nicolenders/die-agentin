@@ -18,6 +18,7 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
   { key: "facebook", label: "Facebook", icon: "fb", placeholder: "https://www.facebook.com/…" },
   { key: "youtube", label: "YouTube", icon: "yt", placeholder: "https://www.youtube.com/@…" },
   { key: "x", label: "X", icon: "x", placeholder: "https://x.com/…" },
+  { key: "github", label: "GitHub", icon: "gh", placeholder: "https://github.com/…" },
 ];
 
 export const SITE_SETTINGS_TAG = "site-settings";

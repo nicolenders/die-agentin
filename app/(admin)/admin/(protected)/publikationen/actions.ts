@@ -54,8 +54,10 @@ export async function createPublication(formData: FormData): Promise<void> {
         isbn: str(formData, "isbn") || null,
         publisher: str(formData, "publisher") || null,
         url: str(formData, "url") || null,
+        repoUrl: str(formData, "repoUrl") || null,
+        language: str(formData, "language") || null,
         coverAssetId: str(formData, "coverAssetId") || null,
-        translations: { create: [{ locale: "de", title: deTitle, role: str(formData, "role") || null }] },
+        translations: { create: [{ locale: "de", title: deTitle, role: str(formData, "role") || null, description: str(formData, "description") || null }] },
       },
     });
   } catch {
@@ -86,12 +88,14 @@ export async function updatePublication(formData: FormData): Promise<void> {
         isbn: str(formData, "isbn") || null,
         publisher: str(formData, "publisher") || null,
         url: str(formData, "url") || null,
+        repoUrl: str(formData, "repoUrl") || null,
+        language: str(formData, "language") || null,
         coverAssetId: str(formData, "coverAssetId") || null,
         translations: {
           upsert: {
             where: { publicationId_locale: { publicationId: id, locale: "de" } },
-            create: { locale: "de", title: deTitle, role: str(formData, "role") || null },
-            update: { title: deTitle, role: str(formData, "role") || null },
+            create: { locale: "de", title: deTitle, role: str(formData, "role") || null, description: str(formData, "description") || null },
+            update: { title: deTitle, role: str(formData, "role") || null, description: str(formData, "description") || null },
           },
         },
       },

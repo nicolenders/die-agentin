@@ -26,7 +26,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 9** — Einsatzakte mit Belegmaterial
 - [~] **Phase 10** — Narrativ (10.4 fertig; Briefing-Detailseiten offen)
 - [x] **Phase 11** — Rechtstexte (DE + EN)
-- [ ] **Phase 12** — Frontend-Redesign
+- [~] **Phase 12** — Frontend-Redesign (Struktur/Inhalt; Motion vertagt)
 - [ ] **Anhang A** — Speaker-Kit („Akte")
 - [ ] **Phase 13** — SEO + Auffindbarkeit für KI-Systeme
 - [ ] **Phase 14** — Domain-Migration + Cutover
@@ -200,6 +200,25 @@ des Assets).
   verlinkt; Impressum zieht die Einstellungsfelder dynamisch.
 - **Keine Rechtsberatung** — vor dem Cutover fachkundig prüfen lassen.
 - **STOP:** Anschrift + E-Mail trägt Nicole ein (Einstellungen → Kontakt).
+
+**Phase 12 — Redesign (Struktur/Inhalt fertig, Motion vertagt)**
+- 12.0 Keine SPA (App Router beibehalten) — kein Widerspruch zu Phase 13, kein STOP.
+- 12.1 `docs/DESIGN.md` (Palette, Typo, Signature = Umschlag, Wireframes,
+  Anti-Beliebigkeit-Prüfung).
+- 12.2 Startseite: „Die Agentin"-Doppeldeutigkeit (ENTWURF) + „Die Identitäten"
+  (Umschlag-Karten, Identitätsfarbe als Rand) + Legende-Kurzlink. Kennzahlen inkl.
+  Identitäten (Phase 10.4).
+- 12.3 Legende: „Warum Agentin" (Doppeldeutigkeit, 3 Absätze, ENTWURF), „Die
+  Identitäten" (Umschläge), „Codebuch" (Glossar der Sektionsnamen). Werkzeuge +
+  Säulen bleiben hier.
+- 12.4 `docs/BILDPROMPTS.md`: Umschlag-Basisprompt + Portrait-Kurzvariante + Objekte/
+  Farbe je Identität. (Bilder erzeugt/lädt Nicole, Anhang B.)
+
+**Aus Phase 12 vertagt (Folgepunkte):**
+- 12.5 Motion: View Transitions (Übersicht→Detail, Element-Kontinuität),
+  Umschlag-Hover/Scroll-Reveal, Karten-Pins nach Identitätsfarbe. `prefers-
+  reduced-motion` wird global respektiert (M0).
+- 12.6 Lighthouse/axe-Lauf (in dieser Umgebung nicht ausführbar; CI vorhanden).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

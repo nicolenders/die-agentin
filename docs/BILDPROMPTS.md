@@ -86,6 +86,53 @@ Passende Prompts:
   mit Demo-Umgebung, dezentes violettes Licht, ruhig und konzentriert. 16:9.
   *(Stil-Baustein.)*
 
+## Identitäten — Umschlag-Motive (Phase 12.4)
+
+Jede Identität hat **zwei** Bilder, die als **Paar** erkennbar sein müssen:
+ein **Umschlag-Motiv** (Querformat/4:5, `envelopeImageId`) und ein einfacheres
+**Portrait** (quadratisch 1:1, `portraitImageId`). Upload im Admin unter
+„Identitäten → Bilder". Ergebnis als **WebP**, mindestens **1600 px** lange Kante,
+mit lokalisierten Alt-Texten.
+
+**Wichtig für die ganze Serie:**
+- Pro Identität nur **die Objekte** und die **Akzentfarbe** austauschen — alles
+  andere gleich lassen, damit die Serie als Serie erkennbar bleibt.
+- **Keine echten Microsoft-Marken** in generierten Bildern („no logos, no brand
+  marks").
+- **Kein Gesicht** — die Identität ist die Rolle, nicht die Person. Das Porträt
+  der Person bleibt der Legende vorbehalten.
+
+### Basis-Prompt Umschlag (4:5) — pro Identität anpassen
+
+> A cinematic still-life photograph, top-down flat lay on a dark matte surface.
+> An opened manila envelope with its contents spilled out: a laminated ID badge,
+> a folded dossier with visible but unreadable text, a few banknotes, a small
+> brass key, and a handwritten note. The objects relate to **[THEMA DER IDENTITÄT]** —
+> **[KONKRETE OBJEKTE]**. Muted color grading, one dominant accent color:
+> **[IDENTITÄTSFARBE]**. Hard directional light from the upper left, deep shadows,
+> shallow depth of field. Analog film grain, 35mm. No visible faces, no legible
+> text, no logos, no brand marks. Editorial photography, understated, not glossy.
+> Aspect ratio 4:5.
+
+### Kurzvariante Portrait (1:1) — dasselbe Motiv, reduziert
+
+> Same style and lighting as the envelope series. A single hero object of the
+> identity, filling the square frame on the same dark matte surface:
+> **[ZENTRALES OBJEKT]**, one dominant accent color **[IDENTITÄTSFARBE]**.
+> Analog film grain, 35mm, no faces, no legible text, no logos. Aspect ratio 1:1.
+
+### Pro Identität einsetzen
+
+| Identität | Farbe | Objekte (Umschlag) | Zentrales Objekt (Portrait) |
+|---|---|---|---|
+| collaboration | `#8B5CF6` | a network/site-map sketch, a small headset, sticky notes forming a hierarchy | the laminated ID badge on a site-map sketch |
+| low-code | `#E879F9` | a flow-diagram sketch, connector cables, a toy building block | a single connector plug on a flow sketch |
+| agentic-ai | `#38BDF8` | a circuit-like schematic, a small chip, a chat-bubble stamp on the badge | the chip on the ID badge |
+| dev-ai | `#4ADE80` | a terminal-style printout, a USB stick, a code snippet on paper (vendor-neutral) | the USB stick on a code printout |
+
+Hinweis dev-ai: bewusst **nicht** Microsoft-exklusiv — das darf im Motiv sichtbar
+sein (herstellerneutrale Objekte).
+
 ### Social-Sharing-Bild
 
 Wird **automatisch** erzeugt (`app/(site)/[locale]/opengraph-image.tsx`) und

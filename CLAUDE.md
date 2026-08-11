@@ -9,6 +9,8 @@ Die visuelle Referenz liegt als klickbares Mockup in `docs/mockups/`.
 Eine einzelne Person pflegt diese Website nebenbei. Jede Entscheidung wird daran gemessen,
 ob sie den Wartungsaufwand für einen Menschen senkt oder erhöht.
 
+Der aktuelle Arbeitsplan steht in CLAUDE_TASKS.md.
+
 ## Befehle
 
 ```bash

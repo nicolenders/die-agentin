@@ -267,6 +267,9 @@ model Certification {
   // Zertifizierungen öffentlich in zwei Bereiche.
   family     String    @default("MICROSOFT")
   shortCode  String? // Kürzel, z. B. AI-102
+  // Status (Phase 5.3): PLANNED (in Ausbildung) | ACHIEVED | EXPIRED.
+  status     String    @default("ACHIEVED")
+  plannedFor String? // optionales Ziel, Datum oder Freitext („Q4 2026")
   categoryId String?
   category   Taxonomy? @relation("CertificationCategory", fields: [categoryId], references: [id])
   acquiredOn DateTime

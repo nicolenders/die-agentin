@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { invalidateTags, tags } from "@/lib/cache";
-import { PUBLICATION_TYPES, isOneOf } from "@/lib/domain";
+import { PUBLICATION_TYPES, CERTIFICATION_STATUSES, isOneOf } from "@/lib/domain";
 import { toCertKind, toCertFamily } from "@/lib/records/kind";
 import { FOCUS_TAG } from "@/lib/queries/records";
 
@@ -125,7 +125,9 @@ export async function deletePublication(formData: FormData): Promise<void> {
 export async function createCertification(formData: FormData): Promise<void> {
   await requireAdmin();
   const name = str(formData, "name");
-  const acquiredOn = monthToDate(str(formData, "acquiredOn"));
+  const status = isOneOf(CERTIFICATION_STATUSES, str(formData, "status")) ? str(formData, "status") : "ACHIEVED";
+  // Geplante Zertifizierungen brauchen kein Erwerbsdatum; als Platzhalter now.
+  const acquiredOn = monthToDate(str(formData, "acquiredOn")) ?? (status === "PLANNED" ? new Date() : null);
   if (!name || !acquiredOn) redirect(`${CERT_LIST}?err=missing-fields`);
   const categoryIds = ids(formData, "categoryIds");
 
@@ -136,6 +138,8 @@ export async function createCertification(formData: FormData): Promise<void> {
         name,
         kind: toCertKind(str(formData, "kind")),
         family: toCertFamily(str(formData, "family")),
+        status,
+        plannedFor: str(formData, "plannedFor") || null,
         shortCode: str(formData, "shortCode") || null,
         categoryId: categoryIds[0] ?? null,
         categories: { connect: categoryIds.map((id) => ({ id })) },
@@ -159,7 +163,8 @@ export async function updateCertification(formData: FormData): Promise<void> {
   const id = str(formData, "id");
   if (!id) redirect(`${CERT_LIST}?err=not-found`);
   const name = str(formData, "name");
-  const acquiredOn = monthToDate(str(formData, "acquiredOn"));
+  const status = isOneOf(CERTIFICATION_STATUSES, str(formData, "status")) ? str(formData, "status") : "ACHIEVED";
+  const acquiredOn = monthToDate(str(formData, "acquiredOn")) ?? (status === "PLANNED" ? new Date() : null);
   if (!name || !acquiredOn) redirect(`${CERT_LIST}/bearbeiten?cert=${id}&err=missing-fields`);
   const categoryIds = ids(formData, "categoryIds");
 
@@ -171,6 +176,8 @@ export async function updateCertification(formData: FormData): Promise<void> {
         name,
         kind: toCertKind(str(formData, "kind")),
         family: toCertFamily(str(formData, "family")),
+        status,
+        plannedFor: str(formData, "plannedFor") || null,
         shortCode: str(formData, "shortCode") || null,
         categoryId: categoryIds[0] ?? null,
         categories: { set: categoryIds.map((id) => ({ id })) },

@@ -399,6 +399,8 @@ async function main() {
     { name: "Microsoft 365 Administrator Expert", shortCode: "MS-102", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-06-01T00:00:00Z"), sortOrder: 0 },
     { name: "Information Protection Administrator", shortCode: "SC-400", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-02-01T00:00:00Z"), sortOrder: 1 },
     { name: "Power Platform Solution Architect Expert", shortCode: "PL-600", categoryId: "tax-ce-power", acquiredOn: new Date("2023-09-01T00:00:00Z"), sortOrder: 0 },
+    // In Ausbildung (Phase 5.3): geplant, ohne Erwerbsdatum-Anzeige.
+    { name: "Designing and Implementing a Microsoft Azure AI Solution (Renewal)", shortCode: "AI-102", categoryId: "tax-ce-azure", acquiredOn: new Date("2026-08-01T00:00:00Z"), status: "PLANNED", plannedFor: "Q4 2026", sortOrder: 2 },
   ];
   for (const c of certs) {
     const { categoryId, ...rest } = c;

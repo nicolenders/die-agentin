@@ -19,7 +19,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [x] **Phase 2** — Identitäten (Decknamen): Datenmodell + Admin
 - [x] **Phase 3** — Signale + Dossiers → Depeschen (öffentlich + Admin)
 - [x] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
-- [ ] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
+- [x] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
 - [ ] **Phase 6** — GitHub-Integration
 - [ ] **Phase 7** — Kontakt: LinkedIn + E-Mail
 - [ ] **Phase 8** — Sessionize-Backfill
@@ -100,6 +100,21 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - Admin-Vorschau-Banner für nicht sichtbare Detail-URLs (Teilen via bestehendem
   `/preview/[token]`).
 
+**Phase 5 — Admin aufräumen + ergänzen**
+- 5.1 Briefings-Admin auf Tabs (Neues Briefing · Alle · Auswertung · Kategorien
+  · Zielgruppen), aktiver Tab in der URL (`?tab=`), server-gerendert.
+- 5.2 **STOP:** „Zeitplan & Kanäle" NICHT gelöscht — die Seite enthält
+  einzigartige Funktionen (LinkedIn-OAuth, Kanal-Status, Task-Retry), nicht nur
+  Social-Profile. `TODO(nicole)` in `lib/admin-nav.ts`; Nicole entscheidet.
+- 5.3 Zertifizierungs-Status PLANNED|ACHIEVED|EXPIRED + `plannedFor`. Migration
+  `20260811140000_cert_status`. Öffentlicher Abschnitt „In Ausbildung · laufende
+  Vorbereitung" (geplante Zerts + Fokus-Themen), klar von erworbenen getrennt,
+  ohne Datum/Badge. Admin-Formulare + Seed-Beispiel ergänzt.
+
+**Aus Phase 5 vertagt:**
+- „In Ausbildung" zieht Themen aus `FocusTopic` (bestehendes Radar). Der Plan
+  nennt die Identitäts-`focus`-Felder — Zusammenführung als Folgeschritt.
+
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 
 - Per-Route `canonical` + vollständige `hreflang` (auch Detailseiten) → Phase 13.1.
@@ -131,6 +146,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 | Neuer LinkedIn-Datenexport (letzter war leer) | 8 | offen |
 | Freigabe der `REVIEW`-Zeilen in der Redirect-Map | 14 | offen |
 | `PUBLIC_SITE_HOST` produktiv auf `nicolenders.com` setzen | 14 | offen |
+| Entscheidung „Zeitplan & Kanäle" (behalten/umbenennen/einbetten) | 5.2 | offen |
 | Überarbeitung aller `ENTWURF`-Texte | laufend | offen |
 | Bio-Entwürfe (Anhang A.1) prüfen, ⚠-Angaben bestätigen | Anhang A | offen |
 | DNS-, Azure-, Search-Console-Aktionen | 14 | offen |

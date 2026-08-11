@@ -1,0 +1,21 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- AlterTable
+ALTER TABLE [dbo].[Certification] ADD [plannedFor] NVARCHAR(1000),
+[status] NVARCHAR(1000) NOT NULL CONSTRAINT [Certification_status_df] DEFAULT 'ACHIEVED';
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH
+

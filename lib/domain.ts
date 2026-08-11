@@ -52,6 +52,10 @@ export type PublicationType = (typeof PUBLICATION_TYPES)[number];
 export const DISPATCH_FORMATS = ["NOTE", "ANALYSIS", "REFERENCE", "BACKSTAGE"] as const;
 export type DispatchFormat = (typeof DISPATCH_FORMATS)[number];
 
+// Zertifizierungs-Status (Phase 5.3): PLANNED = „In Ausbildung".
+export const CERTIFICATION_STATUSES = ["PLANNED", "ACHIEVED", "EXPIRED"] as const;
+export type CertificationStatus = (typeof CERTIFICATION_STATUSES)[number];
+
 /** Generischer Prüfer: Ist `value` einer der erlaubten Werte? */
 export function isOneOf<T extends readonly string[]>(
   allowed: T,

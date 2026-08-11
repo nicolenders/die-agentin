@@ -1,0 +1,5 @@
+from,to,statusCode,note
+# Redirect-Map (Phase 14.2). REVIEW = vor Aktivierung von Nicole prüfen.
+# Bereits aktiv in proxy.ts (nicht aus dieser CSV): /de/signale* -> /de/depeschen*, /de/dossiers* -> /de/depeschen*
+/about-me/,/de/legende,301,ok
+/blog/,/de/depeschen,301,REVIEW

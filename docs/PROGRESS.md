@@ -29,7 +29,7 @@ Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
 - [~] **Phase 12** — Frontend-Redesign (Struktur/Inhalt; Motion vertagt)
 - [x] **Anhang A** — Speaker-Kit („Akte") (Kern; Testimonials vertagt)
 - [~] **Phase 13** — SEO (JSON-LD/robots/llms.txt fertig; OG-Images vertagt)
-- [ ] **Phase 14** — Domain-Migration + Cutover
+- [~] **Phase 14** — Cutover (Doku + Vorlagen; Aktivierung = STOP/Nicole)
 
 ## Erledigt
 
@@ -252,6 +252,41 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 - 13.2 **Dynamische OG-Images** (`next/og`) je Entitätstyp.
 - Weitere JSON-LD-Typen (Book/Course/SoftwareSourceCode) auf /publikationen.
 - 13.5 Abschlussbericht (Beispiel-URLs + JSON-LD) — nach OG/Slugs.
+
+**Phase 14 — Cutover (Doku + Vorlagen)**
+- `docs/CUTOVER.md`: vollständige Checkliste mit Reihenfolge, Rollback-Punkt und
+  STOP-Markierungen (DNS, Azure, Entra, Search Console = Nicole).
+- Vorlagen `data/legacy-urls.csv`, `data/redirects.csv` (Heuristik + REVIEW).
+  Redirects `/signale`,`/dossiers` → `/depeschen` bereits aktiv (proxy.ts).
+- 14.5 Abschlussliste unten (`TODO(nicole)`, `ENTWURF`, leere Pflichtfelder).
+
+**Aus Phase 14 vertagt / STOP:**
+- URL-Inventar + Redirect-Map mit echten Daten (WordPress-Sitemap +
+  Search-Console-Export liefert Nicole); CSV-getriebene Redirect-Middleware +
+  Test-Suite folgt nach Freigabe der REVIEW-Zeilen.
+- „Kalte Akten"-Route (braucht migrierte Altinhalte).
+- DNS/Azure/Entra/Search-Console-Aktionen (STOP, Nicole).
+
+---
+
+## 14.5 — Abschlussliste (Stand dieser Sitzung)
+
+**`TODO(nicole)`-Marker (grep):**
+- `app/(site)/[locale]/akte/page.tsx:13` — finalen Namen „Akte" vs. „Ausrüstung" bestätigen.
+- `lib/admin-nav.ts:25` — Entscheidung „Zeitplan & Kanäle" (Phase 5.2).
+- `prisma/seed.ts` — ⚠-Angaben in den Bio-Entwürfen bestätigen (Anhang A).
+
+**`ENTWURF`-Texte, die Nicole überarbeitet:**
+- Identitäts-Beschreibungen (Seed, 4×), Bio-Entwürfe (Anhang A, 6×).
+- Startseite „Die Agentin"-Doppeldeutigkeit; Legende „Warum Agentin"; Legende
+  Kontakttext (`lib/queries/legend.ts`).
+
+**Leere Pflichtfelder / STOP-Werte:**
+- Decknamen der Identitäten (DE/EN), Akzentfarben bestätigen.
+- Anschrift + Kontakt-E-Mail (Impressum darf sonst nicht öffentlich gehen).
+- GitHub-, Sessionize-, MVP-Profil-URLs.
+- Bestätigte Veranstaltungsdaten + Quelldaten für den Backfill.
+- Identitätsbilder (Portrait + Umschlag).
 
 ## Offen (aus Phase 1, in späteren Phasen zu erledigen)
 

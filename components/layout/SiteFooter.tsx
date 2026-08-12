@@ -38,15 +38,16 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
 
         <div>
           <h4>{dict.footer.contentHeading}</h4>
-          <Link href={l("signale")}>{dict.nav.signale}</Link>
-          <Link href={l("dossiers")}>{dict.nav.dossiers}</Link>
           <Link href={l("einsaetze")}>{dict.nav.einsaetze}</Link>
+          <Link href={l("identitaeten")}>{dict.nav.identitaeten}</Link>
+          <Link href={l("depeschen")}>{dict.dispatch.namePlural}</Link>
           <Link href={l("briefings")}>{dict.nav.briefings}</Link>
         </div>
 
         <div>
           <h4>{dict.footer.aboutHeading}</h4>
           <Link href={l("legende")}>{dict.nav.legende}</Link>
+          <Link href={l("akte")}>{locale === "de" ? "Akte (Speaker-Kit)" : "Speaker kit"}</Link>
           <Link href={l("publikationen")}>{dict.nav.publikationen}</Link>
           <Link href={l("ausbildung")}>{dict.nav.ausbildung}</Link>
           <a href={`/feed${locale === "en" ? ".en" : ""}.xml`}>{dict.footer.rss}</a>

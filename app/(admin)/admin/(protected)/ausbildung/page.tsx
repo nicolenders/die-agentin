@@ -113,6 +113,14 @@ export default async function AusbildungAdminPage({
               <option key={f} value={f}>{CERT_FAMILY_SHORT[f]}</option>
             ))}
           </select>
+          <label className="f">Status</label>
+          <select className="f" name="status" defaultValue="ACHIEVED">
+            <option value="ACHIEVED">Erworben</option>
+            <option value="PLANNED">In Ausbildung (geplant)</option>
+            <option value="EXPIRED">Abgelaufen</option>
+          </select>
+          <label className="f">Ziel (nur „In Ausbildung“, z. B. „Q4 2026“)</label>
+          <input className="f" name="plannedFor" />
         </>
       ) : (
         <input type="hidden" name="family" value="MICROSOFT" />
@@ -123,8 +131,8 @@ export default async function AusbildungAdminPage({
       <input className="f" name="name" placeholder="z. B. Azure AI Engineer Associate" required />
       <label className="f">Kürzel</label>
       <input className="f" name="shortCode" placeholder="AI-102" />
-      <label className="f">{kind === "MVP" ? "Ausgezeichnet am" : kind === "TRAINING" ? "Absolviert am" : "Erworben am"}</label>
-      <input className="f" name="acquiredOn" type="month" required />
+      <label className="f">{kind === "MVP" ? "Ausgezeichnet am" : kind === "TRAINING" ? "Absolviert am" : "Erworben am (leer bei „In Ausbildung“)"}</label>
+      <input className="f" name="acquiredOn" type="month" />
       <label className="f">Gültig bis (optional)</label>
       <input className="f" name="validUntil" type="month" />
       {kind === "MVP" ? (

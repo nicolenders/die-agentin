@@ -1,25 +1,26 @@
 import { buildRssFeed, type FeedItem } from "@/lib/feed";
-import { getPublishedPosts } from "@/lib/queries/posts";
+import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getDictionary } from "@/lib/i18n";
+import { siteOrigin } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE = siteOrigin();
 
-// Englischer RSS-Feed (SPEC §5).
+// Englischer RSS-Feed (SPEC §5) — jetzt Depeschen (Phase 3).
 export async function GET() {
   const dict = await getDictionary("en");
-  const posts = await getPublishedPosts("en");
-  const items: FeedItem[] = posts.map((p) => ({
-    title: p.title,
-    link: `${SITE}/en/signale/${p.slug}`,
-    description: p.summary ?? "",
-    pubDate: p.publishedAt,
-    guid: `${p.id}-en`,
+  const dispatches = await getPublishedDispatches("en");
+  const items: FeedItem[] = dispatches.map((d) => ({
+    title: d.title,
+    link: `${SITE}/en/depeschen/${d.slug}`,
+    description: d.summary ?? "",
+    pubDate: d.publishedAt,
+    guid: `${d.id}-en`,
   }));
   const xml = buildRssFeed({
-    title: `${dict.brand.name} — ${dict.nav.signale}`,
-    description: dict.feed.lead,
+    title: `${dict.brand.name} — ${dict.dispatch.namePlural}`,
+    description: dict.dispatch.lead,
     siteUrl: `${SITE}/en`,
     feedUrl: `${SITE}/feed.en.xml`,
     locale: "en",

@@ -1,16 +1,18 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-// axe-core über die 8 Hauptrouten in beiden Sprachen (SPEC §17): 0 kritische
-// Verstöße als Gate.
+// axe-core über die Hauptrouten in beiden Sprachen (SPEC §17): 0 kritische
+// Verstöße als Gate. Routenliste nach dem Umbau aktualisiert (Depeschen statt
+// Signale/Dossiers, neue Identitäten- und Akte-Seiten).
 const ROUTES = [
   "",
-  "signale",
-  "dossiers",
+  "depeschen",
+  "identitaeten",
   "einsaetze",
   "briefings",
   "publikationen",
   "ausbildung",
+  "akte",
   "legende",
 ];
 const LOCALES = ["de", "en"] as const;

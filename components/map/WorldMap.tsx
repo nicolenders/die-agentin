@@ -28,8 +28,6 @@ export interface MapMission {
   bannerAi: boolean;
 }
 
-type Filter = "alle" | "geplant" | string;
-
 // Weltkarte (SPEC §11). Interaktiv, aber Beiwerk: die vollständige Tabelle unter
 // der Karte ist immer sichtbar (in der Seite, nicht hier). Pins sind
 // fokussierbar und per Enter aktivierbar.
@@ -40,9 +38,8 @@ export default function WorldMap({
 }: {
   missions: MapMission[];
   locale: Locale;
-  labels: { done: string; planned: string; size: string; sample: string; open: string; all: string; view: string };
+  labels: { done: string; planned: string; size: string; open: string; all: string; view: string };
 }) {
-  const [filter, setFilter] = useState<Filter>("alle");
   const [viewId, setViewId] = useState("welt");
   const [selected, setSelected] = useState<MapMission | null>(null);
 
@@ -57,39 +54,20 @@ export default function WorldMap({
     [activeBounds, activeCountries],
   );
 
-  const years = useMemo(
-    () => [...new Set(missions.map((m) => m.year))].sort((a, b) => b - a),
-    [missions],
-  );
-
-  const visible = missions.filter((m) => {
-    if (!inBounds(activeBounds, m.lon, m.lat)) return false;
-    if (filter === "alle") return true;
-    if (filter === "geplant") return m.future;
-    return String(m.year) === filter;
-  });
+  // Jahresfilter ist jetzt server-seitig (Phase 8.4). Die Karte zeigt genau die
+  // übergebenen Einsätze, nur eingeschränkt durch die gewählte Ansicht (Bounds).
+  const visible = missions.filter((m) => inBounds(activeBounds, m.lon, m.lat));
 
   function chooseView(id: string) {
     setViewId(id);
     setSelected(null); // Popup schließen — der Pin liegt evtl. außerhalb der neuen Ansicht.
   }
 
-  const chip = (value: Filter, label: string) => (
-    <button
-      key={value}
-      className="chip"
-      aria-pressed={filter === value}
-      onClick={() => setFilter(value)}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <div>
-      {/* Ansicht (Welt/Kontinente/DACH) und Zeitfilter in einer Zeile. */}
-      <div className="map-filters">
-        {views.length > 1 ? (
+      {/* Ansicht (Welt/Kontinente/DACH). */}
+      {views.length > 1 ? (
+        <div className="map-filters">
           <div className="year-filter" role="group" aria-label={labels.view}>
             {views.map((v) => (
               <button
@@ -102,18 +80,8 @@ export default function WorldMap({
               </button>
             ))}
           </div>
-        ) : null}
-
-        <div
-          className="year-filter"
-          role="group"
-          aria-label={locale === "de" ? "Jahr filtern" : "Filter by year"}
-        >
-          {chip("alle", labels.all)}
-          {chip("geplant", labels.planned)}
-          {years.map((y) => chip(String(y), String(y)))}
         </div>
-      </div>
+      ) : null}
 
       <div className="map-shell" style={{ position: "relative" }}>
         <svg
@@ -206,7 +174,6 @@ export default function WorldMap({
           <span>
             <span style={{ color: "var(--signal)" }}>●</span> {labels.planned}
           </span>
-          <span style={{ marginLeft: "auto" }}>{labels.sample}</span>
         </div>
       </div>
     </div>

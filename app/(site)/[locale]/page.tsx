@@ -6,20 +6,14 @@ import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
 import { getHomeHero, getHomeStats } from "@/lib/queries/home";
 import { getMissions } from "@/lib/queries/missions";
-import { getPublishedPosts } from "@/lib/queries/posts";
+import { getPublishedDispatches } from "@/lib/queries/dispatches";
+import { getPublishedIdentities } from "@/lib/queries/identities";
 import { getBriefingRanking } from "@/lib/queries/briefings";
+import AssetImage from "@/components/media/AssetImage";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 import { formatDate } from "@/lib/format";
-import type { PostType } from "@/lib/domain";
 import styles from "./hq.module.scss";
-
-// Beitragstyp → CSS-Klasse für das farbige Tag (wie im Feed/Mockup).
-const TAG_CLASS: Record<PostType, string> = {
-  SIGNAL: "signal",
-  NOTE: "notiz",
-  BACKSTAGE: "backstage",
-};
 
 // HQ / Startseite (SPEC §5). Der Hero ist im Admin pflegbar (HomeContent), die
 // übrigen Blöcke ziehen sich aus den gepflegten Daten. Datenzugriffe sind
@@ -36,19 +30,21 @@ export default async function HQPage({
   if (!isLocale(locale)) notFound();
   const dict = await getDictionary(locale);
   const t = dict.hq;
-  const [hero, stats, missions, posts, ranking] = await Promise.all([
+  const [hero, stats, missions, dispatches, ranking, identities] = await Promise.all([
     getHomeHero(locale),
     getHomeStats(),
     getMissions(locale),
-    getPublishedPosts(locale),
+    getPublishedDispatches(locale),
     getBriefingRanking(locale),
+    getPublishedIdentities(locale),
   ]);
+  const isDe = locale === "de";
 
   const nextMission = missions
     .filter((m) => m.future)
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())[0];
-  const recentPosts = posts.slice(0, 3);
-  const lastSignal = posts[0] ?? null;
+  const recentDispatches = dispatches.slice(0, 3);
+  const lastSignal = dispatches[0] ?? null;
   const topBriefing = ranking[0] ?? null;
   const missionHref = (m: typeof nextMission) =>
     m?.published && m.slug ? `/${locale}/einsaetze/${m.slug}` : `/${locale}/einsaetze`;
@@ -100,60 +96,91 @@ export default async function HQPage({
         </div>
       </section>
 
+      {/* Die Agentin — die Doppeldeutigkeit, explizit ausgesprochen. ENTWURF, von Nicole zu prüfen (Phase 12.2). */}
+      <div className="card bracket" style={{ marginTop: 52, padding: 30 }}>
+        <p className="eyebrow">{isDe ? "Die Agentin" : "The agent"}</p>
+        <p style={{ fontSize: 18, fontFamily: "var(--display)", fontWeight: 300, lineHeight: 1.55, margin: 0 }}>
+          {isDe
+            ? "„Agentin“ hat zwei Bedeutungen — und ich meine beide: die, die im Verborgenen arbeitet und Fäden verbindet, und die, die AI Agents baut. „Enders“ heißt: keine losen Enden."
+            : "“Agent” means two things here — and I mean both: the one who works in the background and connects the threads, and the one who builds AI agents. “Enders” stands for: no loose ends."}
+        </p>
+        <p style={{ marginTop: 12 }}>
+          <Link className="btn ghost sm" href={`/${locale}/legende`}>
+            {isDe ? "Die ganze Legende" : "The full legend"} →
+          </Link>
+        </p>
+      </div>
+
+      {identities.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 52 }}>{isDe ? "Die Identitäten" : "The identities"}</p>
+          <div className="grid g4" style={{ marginTop: 14, alignItems: "stretch" }}>
+            {identities.map((i) => (
+              <Link
+                key={i.id}
+                href={`/${locale}/identitaeten/${i.slug}`}
+                className="card bracket"
+                style={{ display: "flex", flexDirection: "column", borderLeft: `3px solid ${i.color}` }}
+              >
+                {i.envelopeUrl ? (
+                  <AssetImage src={i.envelopeUrl} alt={i.envelopeAlt} imgStyle={{ width: "100%", borderRadius: 4, aspectRatio: "4 / 5", objectFit: "cover" }} style={{ marginBottom: 10 }} />
+                ) : (
+                  <div aria-hidden style={{ aspectRatio: "4 / 5", borderRadius: 4, marginBottom: 10, background: i.color, opacity: 0.22 }} />
+                )}
+                <p className="meta" style={{ margin: 0, fontFamily: "var(--mono)" }}>{i.registryCode ?? ""}</p>
+                <h3 style={{ marginTop: 4, fontSize: 16 }}>{i.name}</h3>
+                <p className="meta" style={{ margin: "2px 0 0" }}>{i.role}</p>
+              </Link>
+            ))}
+          </div>
+        </>
+      ) : null}
+
       <p className="eyebrow" style={{ marginTop: 52 }}>
         {t.recent}
       </p>
-      {recentPosts.length > 0 ? (
+      {recentDispatches.length > 0 ? (
         <div className={styles.cardGrid}>
-          {recentPosts.map((post) => (
+          {recentDispatches.map((d) => (
             <Link
-              key={post.id}
+              key={d.id}
               className="card bracket"
-              href={`/${locale}/signale/${post.slug}`}
+              href={`/${locale}/depeschen/${d.slug}`}
               style={{ display: "block" }}
             >
-              <span className={`tag ${TAG_CLASS[post.type]}`}>{dict.feed.types[post.type]}</span>
-              <h3 style={{ marginTop: 12 }}>{post.title}</h3>
-              {post.summary ? <p style={{ fontSize: "14.5px" }}>{post.summary}</p> : null}
+              <span className="tag" style={d.identities[0] ? { borderColor: d.identities[0].color } : undefined}>
+                {dict.dispatch.formats[d.format]}
+              </span>
+              <h3 style={{ marginTop: 12 }}>{d.title}</h3>
+              {d.summary ? <p style={{ fontSize: "14.5px" }}>{d.summary}</p> : null}
               <p className="meta">
-                {post.publishedAt ? formatDate(post.publishedAt, locale) : ""}
-                {post.fallback ? " · DE" : ""}
+                {d.publishedAt ? formatDate(d.publishedAt, locale) : ""}
+                {d.fallback ? " · DE" : ""}
               </p>
             </Link>
           ))}
         </div>
       ) : (
-        <p className="muted">
-          {locale === "de"
-            ? "Sobald ich etwas teile, erscheint es hier."
-            : "As soon as I share something, it shows up here."}
-        </p>
+        <p className="muted">{dict.dispatch.empty}</p>
       )}
 
       <div className={styles.counter}>
-        <div>
-          <b>{stats.missions}</b>
-          <span>{t.countMissions}</span>
-        </div>
-        <div>
-          <b>{stats.countries}</b>
-          <span>{t.countCountries}</span>
-        </div>
-        <div>
-          <b>{stats.briefings}</b>
-          <span>{t.countBriefings}</span>
-        </div>
+        {[
+          { n: stats.missions, sg: t.sgMissions, pl: t.countMissions },
+          { n: stats.countries, sg: t.sgCountries, pl: t.countCountries },
+          { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities },
+          { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings },
+          { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications },
+          { n: stats.books, sg: t.sgBooks, pl: t.countBooks },
+        ].map((c) => (
+          <div key={c.pl}>
+            <b>{c.n}</b>
+            <span>{c.n === 1 ? c.sg : c.pl}</span>
+          </div>
+        ))}
         <div>
           <b>{stats.mvpAwards}×</b>
           <span>{t.countMvp}</span>
-        </div>
-        <div>
-          <b>{stats.certifications}</b>
-          <span>{t.countCertifications}</span>
-        </div>
-        <div>
-          <b>{stats.books}</b>
-          <span>{t.countBooks}</span>
         </div>
       </div>
 

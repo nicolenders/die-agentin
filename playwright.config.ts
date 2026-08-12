@@ -10,6 +10,10 @@ export default defineConfig({
   reporter: process.env.CI ? "line" : "list",
   use: {
     baseURL: "http://localhost:3000",
+    // Deutschsprachiger Primärnutzer: setzt Accept-Language de-DE, damit `/`
+    // deterministisch auf `/de` weiterleitet (SPEC §5: DE ist Quellsprache).
+    // Ohne das folgt der Browser-Default (en-US) und `/` ginge auf `/en`.
+    locale: "de-DE",
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

@@ -6,7 +6,10 @@ BEGIN TRAN;
 ALTER TABLE [dbo].[Certification] ADD [kind] NVARCHAR(1000) NOT NULL CONSTRAINT [Certification_kind_df] DEFAULT 'CERTIFICATION';
 
 -- Bestehende „MVP"-Reihen als MVP-Einträge markieren (Backfill).
-UPDATE [dbo].[Certification] SET [kind] = 'MVP' WHERE [series] IS NOT NULL AND [series] LIKE '%MVP%';
+-- Als dynamisches SQL (EXEC), damit die Anweisung erst zur Laufzeit kompiliert
+-- wird — die Spalte [kind] wird im selben Batch oben erst hinzugefügt und wäre
+-- bei statischer Kompilierung „Invalid column name" (SQL Server, Fehler 207).
+EXEC(N'UPDATE [dbo].[Certification] SET [kind] = ''MVP'' WHERE [series] IS NOT NULL AND [series] LIKE ''%MVP%''');
 
 -- CreateTable: aktuelle Lernthemen
 CREATE TABLE [dbo].[FocusTopic] (

@@ -12,9 +12,10 @@ export const metadata = { title: "Publikationen · Zentrale" };
 
 const PUB_TYPES = [
   { id: "BOOK", label: "Bücher", singular: "Buch" },
+  { id: "COURSE", label: "Kurse", singular: "Kurs" },
+  { id: "REPOSITORY", label: "Repositories", singular: "Repository" },
   { id: "ARTICLE", label: "Fachartikel", singular: "Fachartikel" },
   { id: "WHITEPAPER", label: "Whitepaper", singular: "Whitepaper" },
-  { id: "COURSE", label: "Kurse", singular: "Kurs" },
 ] as const;
 
 interface PubRow {
@@ -128,7 +129,17 @@ export default async function PublikationenAdminPage({
           <input className="f" name="isbn" />
         </>
       ) : null}
-      <label className="f">{type === "COURSE" ? "Link zum Kurs" : "Link (optional)"}</label>
+      {type === "REPOSITORY" ? (
+        <>
+          <label className="f">Repository-URL</label>
+          <input className="f" name="repoUrl" placeholder="https://github.com/…" />
+          <label className="f">Programmiersprache (optional)</label>
+          <input className="f" name="language" placeholder="TypeScript" />
+          <label className="f">Beschreibung (DE)</label>
+          <textarea className="f" name="description" rows={2} />
+        </>
+      ) : null}
+      <label className="f">{type === "COURSE" ? "Link zum Kurs" : type === "REPOSITORY" ? "Alternativer Link (optional)" : "Link (optional)"}</label>
       <input className="f" name="url" placeholder="https://…" />
       {type === "BOOK" ? (
         <>

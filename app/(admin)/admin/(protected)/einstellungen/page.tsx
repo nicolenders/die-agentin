@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
-import { SOCIAL_PLATFORMS, socialSettingKey } from "@/lib/queries/settings";
+import { SOCIAL_PLATFORMS, socialSettingKey, getContactInfo } from "@/lib/queries/settings";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
-import { saveLegalDoc, saveSocialLinks } from "./actions";
+import { saveLegalDoc, saveSocialLinks, saveContactInfo } from "./actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
 
@@ -44,6 +44,8 @@ export default async function EinstellungenPage({
   }
   const find = (key: string, locale: string) => docs.find((d) => d.docKey === key && d.locale === locale);
 
+  const contact = await getContactInfo();
+
   const social: Record<string, string> = {};
   try {
     const rows = await db.siteSetting.findMany({
@@ -60,6 +62,23 @@ export default async function EinstellungenPage({
       <h1>Einstellungen</h1>
       <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
+
+      <div className="card bracket" style={{ marginTop: 20 }}>
+        <p className="eyebrow">Kontakt (Phase 7)</p>
+        <p className="meta" style={{ marginTop: 0 }}>
+          E-Mail und Anschrift werden hier an EINER Stelle gepflegt — die Legende und das Impressum lesen sie aus.
+          {!contact.email || !contact.postalAddress ? (
+            <span style={{ color: "var(--warn)" }}> ⚠ Ohne E-Mail und Anschrift darf das Impressum nicht öffentlich gehen.</span>
+          ) : null}
+        </p>
+        <form action={saveContactInfo} style={{ maxWidth: 520 }}>
+          <label className="f">Kontakt-E-Mail</label>
+          <input className="f" name="contactEmail" type="email" defaultValue={contact.email} placeholder="name@example.com" />
+          <label className="f">Ladungsfähige Anschrift (mehrzeilig)</label>
+          <textarea className="f" name="postalAddress" rows={4} defaultValue={contact.postalAddress} placeholder={"Vorname Nachname\nStraße Hausnr.\nPLZ Ort"} />
+          <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Kontaktangaben speichern</button>
+        </form>
+      </div>
 
       <div className="grid g2" style={{ marginTop: 20 }}>
         <div className="card bracket">

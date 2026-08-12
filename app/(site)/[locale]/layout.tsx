@@ -5,8 +5,12 @@ import { isLocale, locales, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { mainNav } from "@/lib/nav";
 import { fontVariables } from "@/lib/fonts";
+import { siteOrigin } from "@/lib/site";
 import SiteHeader, { type HeaderNavItem } from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
+import JsonLd from "@/components/JsonLd";
+import { getPersonInput } from "@/lib/queries/person";
+import { personNode, webSiteNode, graph } from "@/lib/seo/jsonld";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -20,7 +24,10 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  // canonical/OG-Basis immer unter dem kanonischen Host (Phase 1.2b), unabhängig
+  // vom Request-Host. Die vollständige per-Route-canonical + hreflang folgt in
+  // Phase 13; hier wird die host-unabhängige Basis gesetzt.
+  const siteUrl = siteOrigin();
   return {
     metadataBase: new URL(siteUrl),
     title: {
@@ -56,15 +63,20 @@ export default async function LocaleLayout({
   const typedLocale: Locale = locale;
   const dict = await getDictionary(typedLocale);
 
+  // Site-weite strukturierte Daten (Phase 13.3): Person + WebSite.
+  const person = await getPersonInput(typedLocale);
+  const siteJsonLd = graph([personNode(person), webSiteNode(dict.brand.name, typedLocale)]);
+
   const navItems: HeaderNavItem[] = mainNav.map((item) => ({
     segment: item.segment,
     href: item.segment ? `/${typedLocale}/${item.segment}` : `/${typedLocale}`,
-    label: dict.nav[item.labelKey],
+    label: item.label(dict),
   }));
 
   return (
     <html lang={typedLocale} className={fontVariables}>
       <body>
+        <JsonLd json={siteJsonLd} />
         <a className="skip-link" href="#main-content">
           {dict.nav.skipToContent}
         </a>

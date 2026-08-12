@@ -1,4 +1,373 @@
-# Fortschritt — Umsetzung M0–M8
+# Fortschritt
+
+Bei Beginn einer neuen Sitzung zuerst hier weiterlesen. Der obere Teil verfolgt
+den **Umbau „Die Agentin"** (CLAUDE_TASKS.md, 14 Phasen + Anhang A); darunter
+steht die ältere Bau-Historie **M0–M8** (SPEC-Meilensteine).
+
+---
+
+# Umbau „Die Agentin" — 14 Phasen
+
+Branch: `claude/claude-tasks-phases-8kzdg2` (durch die Ausführungsumgebung
+vorgegebener Push-Zweig; CLAUDE_TASKS.md nannte `feature/agentin-umbau`).
+Ein Commit pro Phase, Format `feat(phase-NN): …`. Vor jedem Commit: `lint`,
+`typecheck`, `test` grün.
+
+## Phasen-Checkliste
+
+- [x] **Phase 1** — Audit + Sofortmaßnahmen (`docs/AUDIT.md`)
+- [x] **Phase 2** — Identitäten (Decknamen): Datenmodell + Admin
+- [x] **Phase 3** — Signale + Dossiers → Depeschen (öffentlich + Admin)
+- [x] **Phase 4** — Publikationsdatum, Archiv, Redaktionsplan
+- [x] **Phase 5** — Adminbereich: Aufräumen + Ergänzungen
+- [x] **Phase 6** — GitHub-Integration
+- [x] **Phase 7** — Kontakt: LinkedIn + E-Mail
+- [~] **Phase 8** — Sessionize-Backfill (Infrastruktur fertig; Daten = STOP)
+- [x] **Phase 9** — Einsatzakte mit Belegmaterial
+- [~] **Phase 10** — Narrativ (10.4 fertig; Briefing-Detailseiten offen)
+- [x] **Phase 11** — Rechtstexte (DE + EN)
+- [~] **Phase 12** — Frontend-Redesign (Struktur/Inhalt; Motion vertagt)
+- [x] **Anhang A** — Speaker-Kit („Akte") (Kern; Testimonials vertagt)
+- [~] **Phase 13** — SEO (JSON-LD/robots/llms.txt fertig; OG-Images vertagt)
+- [~] **Phase 14** — Cutover (Doku + Vorlagen; Aktivierung = STOP/Nicole)
+
+## Review & Verifikation (Migration + Pipeline)
+
+Nach dem Umbau gezielt geprüft — gegen eine **echte SQL-Server-2022-Instanz**
+(Docker) und die vollständige Pipeline. Gefundene Probleme behoben:
+
+- **`migration_lock.toml`**: `provider = "sqlserver"` → **`mssql`**. `prisma
+  migrate deploy` (Pipeline-Schritt) brach sonst mit **P3019** ab (der Engine
+  vergleicht den Connector-Namen `mssql` gegen den Lock). Verifiziert: alle 17
+  Migrationen laufen jetzt durch.
+- **Migration `20260809140000_records_kind_focus` war kaputt** (Bestand, nie
+  gegen echte DB gelaufen): `UPDATE … SET [kind]` referenziert eine im selben
+  Batch erst per `ALTER … ADD [kind]` angelegte Spalte → SQL-Server-Fehler 207
+  „Invalid column name". Behoben mit dynamischem SQL (`EXEC(N'…')`), das erst zur
+  Laufzeit kompiliert. Verifiziert.
+- **`ChannelTask.postId` nullable machen** (meine Dispatch-Migration): auf echtem
+  SQL Server problemlos, kein FK-Drop nötig. Verifiziert.
+- **UI-Konsistenz:** `IdentityAttributesField` nutzte undefinierte Klassen
+  `field`/`field-label` (unstyled) → auf die Admin-Konvention `.f` umgestellt.
+  Redundante, undefinierte Klasse `cardlink` entfernt (`.card:hover` liefert die
+  Anhebung bereits).
+- **a11y (axe):** `aria-pressed` auf Link-Chips (`/depeschen`, `/einsaetze`) ist
+  ungültig (Rolle „link") → `aria-current` (CSS stylt beide identisch). axe-Suite
+  gegen die laufende App: **18/18 grün, 0 kritische Verstöße**.
+- **Tests aktualisiert:** a11y- und E2E-Routenlisten auf den neuen Stand
+  (Depeschen/Identitäten/Akte statt Signale/Dossiers) + Redirect-Assertions;
+  E2E-`locale: "de-DE"`, damit `/` deterministisch auf `/de` leitet. E2E-Smoke
+  **12/12 grün**.
+
+Verifizierter Gesamtstand: `typecheck`, `lint`, **120 Unit-Tests**, **18 axe**,
+**12 E2E**, **`next build`**, `migrate deploy` (17 Migrationen) und `db:seed`
+laufen alle grün; alle öffentlichen Routen liefern 200, `/de/signale` → 301 →
+`/de/depeschen`, JSON-LD im HTML.
+
+**Hinweis (nicht blockierend):** `npm audit` meldet 4 High-CVEs in `sharp`
+(transitiv über Next). Der Pipeline-Schritt ist `continueOnError: true`
+(„Hinweis, blockt nicht"), und der Auto-Fix erzwingt `next@16.3.0` — eine
+Stack-Änderung, die laut `CLAUDE.md` nicht ohne Rückfrage erfolgt. Bewusst
+offen gelassen; Nicole entscheidet über das Dependency-Update.
+
+---
+
+## Erledigt
+
+**Phase 1 — Audit + Sofortmaßnahmen**
+- `docs/AUDIT.md` geschrieben (vollständige Bestandsaufnahme nach 1.1).
+- 1.2(a) noindex nach Host: `proxy.ts` setzt `X-Robots-Tag: noindex, nofollow`
+  für jeden Host ≠ `PUBLIC_SITE_HOST` (neue ENV, `lib/site.ts`), inkl.
+  robots.txt/sitemap/Feeds (Matcher verbreitert).
+- 1.2(b) canonical-Basis: `metadataBase` aus `siteOrigin()` (host-unabhängig).
+  Per-Route-canonical + volle hreflang bewusst nach **Phase 13** verschoben.
+- 1.2(c) toter CTA `/legende`: `href="#"` entfernt; Button zeigt auf Kontakt-URL
+  bzw. hinterlegtes LinkedIn-Profil, sonst ausgeblendet.
+- 1.2(d) Karte: untersucht — die Karte rendert echte DB-Daten, „Beispieldaten"
+  war ein bedingungsloses Label; entfernt. Details in `docs/AUDIT.md` §9(d).
+
+**Phase 2 — Identitäten (Decknamen)**
+- Schema: `Identity`, `IdentityAttribute`, `Tool` (+ n:m zu Mission, Talk,
+  Publication, Certification, Tool). Verboten-Felder bewusst weggelassen.
+  Migration `20260811120000_identities` (offline via `migrate diff` erzeugt).
+- `lib/identities.ts` (Anzeige-Fallback Deckname→Rolle, Kontrastprüfung) mit
+  Unit-Tests; `lib/queries/identities.ts` (Admin + öffentlich).
+- Admin: Menüpunkt „Identitäten", Übersicht (Reihenfolge ↑/↓, Veröffentlichen/
+  Zurückziehen, Löschschutz bei Verknüpfung), Editor mit Tabs (Stammdaten,
+  Beschreibung, Bilder, Darstellung, Werkzeuge, Merkmale, Verknüpftes, SEO),
+  Validierung (Rolle DE + Akzentfarbe blockierend; Warnungen im Formular).
+- Seed: 4 Identitäten (`published=false`), Decknamen leer (STOP), Beschreibungen
+  als `ENTWURF`.
+
+**Phase 3 — Depeschen (Dispatch)**
+- Schema `Dispatch`/`DispatchTranslation` (+ n:m Identity/Taxonomy/Tag),
+  `format` NOTE|ANALYSIS|REFERENCE|BACKSTAGE, `ChannelTask.dispatchId`.
+  Migration `20260811130000_dispatches` (additiv, Post/Dossier bleiben erhalten).
+- Sichtbarer Name aus **einem** i18n-Key `dispatch.name`/`namePlural`.
+- Nav 8→5 (HQ · Einsätze · Identitäten · Depeschen · Legende); Publikationen/
+  Ausbildung im Footer, Briefings im Einsätze-Bereich (Phase 10.1 folgt).
+- Öffentlich: `/depeschen` (Format-Filter), `/depeschen/<slug>`; Identitäts-
+  Seiten `/identitaeten` + `/<slug>` (3.4). HQ/Feeds/Sitemap auf Depeschen.
+- 301-Redirects `/signale`,`/dossiers` → `/depeschen` in `proxy.ts`.
+- Admin: Menüpunkt „Depeschen" mit Liste + Editor (Format, Status, Zeitplan
+  Berlin, DE/EN, Identitäten, Fachgebiete, Quelle, Hero).
+- Seed: 5 Depeschen (Format aus altem Typ abgeleitet).
+
+**Aus Phase 3 vertagt (Folgepunkte):**
+- **Daten-Migration Bestand:** Post/Dossier-Zeilen in `Dispatch` kopieren (idem-
+  potentes Skript mit Dry-Run) — nötig nur für echte Bestandsdaten. Seed schreibt
+  bereits direkt `Dispatch`. Post/Dossier-Tabellen bleiben (abwärtskompatibel),
+  Alt-Admin (`beitraege`/`editor`/`dossiers`) aus der Nav entfernt, Routen noch da.
+- KI-Rohübersetzung (Foundry) für Depeschen-EN wie beim alten Dossier-Editor.
+- Zeitgesteuertes Veröffentlichen (SCHEDULED→PUBLISHED) → Phase 4.
+
+**Phase 4 — Status, Archiv, Redaktionsplan**
+- Sichtbarkeitsregel zentral in `lib/visibility.ts` (`isPublic`, `publishedWhere`,
+  `isPlanned`) mit Unit-Tests. Regel: PUBLISHED UND publishedAt ≤ now.
+- Publish-Job (`lib/publish`) verarbeitet jetzt auch terminierte Depeschen
+  (SCHEDULED→PUBLISHED, idempotent) und invalidiert die Depeschen-Cache-Tags —
+  damit greift die Zeitsteuerung trotz Caching (Latenz ≤ revalidate 1 h bzw.
+  sofort beim Job-Lauf; dokumentiert).
+- Admin „Archiv" (Tabs Depeschen/Einsätze): Wiederherstellen (→DRAFT),
+  endgültig löschen mit Bestätigung.
+- Admin „Redaktionsplan": Tabelle (sortier-/filterbar, Auswahl in der URL) +
+  Monatskalender als CSS-Grid (keine Kalenderbibliothek), eingefärbt nach
+  Identitätsfarbe, „+n weitere" bei Überlauf.
+
+**Aus Phase 4 vertagt:**
+- Talk/Publication haben noch kein Status-/`ARCHIVED`-Feld → Archiv-/Plan-Tabs
+  dafür fehlen (Folgeschritt: Statusfeld ergänzen). Missionen nutzen `contentStatus`.
+- Drag & Drop im Kalender (nur Anzeige umgesetzt, wie in 4.3 erlaubt).
+- Admin-Vorschau-Banner für nicht sichtbare Detail-URLs (Teilen via bestehendem
+  `/preview/[token]`).
+
+**Phase 5 — Admin aufräumen + ergänzen**
+- 5.1 Briefings-Admin auf Tabs (Neues Briefing · Alle · Auswertung · Kategorien
+  · Zielgruppen), aktiver Tab in der URL (`?tab=`), server-gerendert.
+- 5.2 **STOP:** „Zeitplan & Kanäle" NICHT gelöscht — die Seite enthält
+  einzigartige Funktionen (LinkedIn-OAuth, Kanal-Status, Task-Retry), nicht nur
+  Social-Profile. `TODO(nicole)` in `lib/admin-nav.ts`; Nicole entscheidet.
+- 5.3 Zertifizierungs-Status PLANNED|ACHIEVED|EXPIRED + `plannedFor`. Migration
+  `20260811140000_cert_status`. Öffentlicher Abschnitt „In Ausbildung · laufende
+  Vorbereitung" (geplante Zerts + Fokus-Themen), klar von erworbenen getrennt,
+  ohne Datum/Badge. Admin-Formulare + Seed-Beispiel ergänzt.
+
+**Aus Phase 5 vertagt:**
+- „In Ausbildung" zieht Themen aus `FocusTopic` (bestehendes Radar). Der Plan
+  nennt die Identitäts-`focus`-Felder — Zusammenführung als Folgeschritt.
+
+**Phase 6 — GitHub**
+- 6.1 GitHub als Social-Kanal (`SOCIAL_PLATFORMS` + Inline-SVG-Icon) — erscheint
+  automatisch im Footer, in der Legende („Folgen & vernetzen") und im
+  Einstellungen-Admin. GitHub-URL ist Nicole-Input (Anhang B).
+- 6.2 Publikationstyp `REPOSITORY` (+ `repoUrl`, `language`; Beschreibung
+  lokalisiert über `PublicationTranslation.description`). Migration
+  `20260811150000_publication_repository`. Öffentlicher Abschnitt „Repositories"
+  nach Büchern & Kursen; Admin-Anlageformular. Keine Live-GitHub-API (wie gefordert).
+
+**Aus Phase 6 vertagt:** Repository-Felder auch im Publikations-Bearbeiten-
+Formular (aktuell nur im Anlageformular); EN-Beschreibung für Repositories.
+
+**Phase 7 — Kontakt**
+- 7.1 `contactEmail` + `postalAddress` als SiteSettings, an einer Stelle im
+  Admin (Einstellungen) gepflegt, gecacht (`getContactInfo`). Warnung im Admin,
+  wenn E-Mail/Anschrift fehlen. Impressum (Phase 11) liest dieselben Felder.
+- 7.2 Legende-Kontakt als zwei gleichwertige Kanäle: LinkedIn (Button) + E-Mail
+  (`mailto:`, JS-frei erreichbar). Fällt die E-Mail weg, wird ihr Button
+  ausgeblendet. Text als `ENTWURF` in den Legende-Defaults.
+- STOP-Werte (Anschrift, E-Mail) trägt Nicole ein (Anhang B).
+
+**Phase 8 — Backfill (teilweise: Infrastruktur fertig, Daten offen)**
+- 8.1 Befund: Alt-Pipeline (`build.py`, `die-agentin/import`) existierte NICHT
+  im Repo. Neu angelegt.
+- 8.2 Importer `scripts/import.ts` (`npm run db:import`): idempotenter Upsert
+  über Import-Slug, `--dry-run` mit Diff, zod-Validierung, Abschlussreport.
+- 8.3 Datenqualität (getestet: `lib/import/online.ts`): Online→Antarktis-Ring;
+  Einreichungsdatum (`dateSource:"submission"`) und fehlendes Datum → DRAFT +
+  Review-Liste (nie still als Eventdatum); Identitäten/Topics nur wenn angegeben.
+- 8.4 Einsätze-Ansicht: server-seitiger Jahresfilter (`lib/missions.ts`, getestet),
+  Standard „aktuelles Jahr + geplant", Auswahl in der URL, „Alle Jahre";
+  Kennzahl-Hinweis „x von y". WorldMap-Client-Jahresfilter entfernt (jetzt Server).
+- 8.5 `docs/IMPORT.md` (Schema v1, Ablauf, Regeln, STOP).
+- **STOP:** Quelldaten (MVP-Export, Sessionize mit bestätigten Terminen, neuer
+  LinkedIn-Export) liefert Nicole; Importer noch nicht gegen echte DB gelaufen.
+
+**Phase 9 — Einsatzakte mit Belegmaterial**
+- 9.1 Mission um optionale Felder erweitert (slidesUrl/-platform, recordingUrl,
+  recapDe/En, feedbackScore/-source, coSpeakers, sessionType, sessionLanguage,
+  attendeeCount). Migration `20260811160000_mission_material`. Altdaten brechen
+  nicht (alles optional). Identitäten↔Mission bereits aus Phase 2.
+- 9.2 Detailseite in der Reihenfolge Fakten → Identität(en) → Briefing → Material
+  (Folien/Video/Fotos) → Recap. Leere Sektionen entfallen. Video über
+  `VideoConsent` (youtube-nocookie, Zwei-Klick; `lib/video.ts` getestet).
+- `docs/DATENVERARBEITUNG.md` mit Video-/Karten-Notiz angelegt (für Phase 11.1).
+- Admin: „Belegmaterial"-Karte im MissionForm (Folien, Aufzeichnung, Art,
+  Teilnehmende, Feedback, Co-Speaker).
+
+**Aus Phase 9 vertagt:** Recap-Rich-Text-Editor im MissionForm (Feld/Anzeige
+stehen; Eingabe folgt). Foto-Bildunterschrift/Credit je Foto (aktuell Alt/Credit
+des Assets).
+
+**Phase 10 — Narrativ (teilweise)**
+- 10.4 Kennzahlen: **Identitäten** als Kennzahl ergänzt; Singular/Plural
+  lokalisiert („1 Einsatz" statt „1 Einsätze"). Zähler getaggt mit Identitätsliste.
+- 10.1 Briefings aus der Hauptnav (schon Phase 3) + Einstieg von der Einsätze-
+  Seite („Was ich mitbringe: Briefings"). Identität↔Briefing ist über den
+  Identitäts-Editor pflegbar (Phase 2).
+- 10.2/10.3: Identitätszuordnung von Publikationen/Zertifizierungen über den
+  Identitäts-Editor; Reihenfolge Publikationen (Bücher→Kurse→Repos→…) aus Phase 6;
+  „In Ausbildung" oben aus Phase 5.3.
+
+**Aus Phase 10 vertagt / STOP:**
+- **Briefing-Detailseiten** (`/briefings/<slug>`): Talks haben keinen Slug —
+  braucht ein Slug-Feld o. Ä.; als Folgeschritt angelegt. Identitätsfilter auf
+  der Briefings-Übersicht ebenso.
+- **Linkkonsistenz Publikationen (Rheinwerk vs. Amazon):** manuell — Nicole
+  vereinheitlicht auf die Verlagsseite, wo vorhanden (STOP, Anhang B).
+
+**Phase 11 — Rechtstexte**
+- 11.1 `docs/DATENVERARBEITUNG.md` vollständig (Hosting West Europe, Server-Logs
+  30 Tage, Auth nur Admin, Fonts self-hosted, keine Analytics, Karte ohne
+  Tile-Provider bestätigt, Cookies nur Admin → **kein Consent-Banner**).
+- 11.2 Impressum: § 5 DDG + § 18 Abs. 2 MStV, Name/Anschrift/E-Mail/LinkedIn aus
+  den Einstellungen (`<address>`), **keine USt-IdNr.** (Privatperson). Freie
+  Blöcke (Haftung, Links, Urheberrecht, Streitschlichtung ohne Pflicht-Suggestion)
+  vollständig DE+EN. Warnhinweis, wenn Anschrift/E-Mail fehlen.
+- 11.3 Datenschutzerklärung vollständig DE+EN, auf Basis der Inventur (keine
+  Textbausteine für ungenutzte Dienste).
+- 11.4 Barrierefreiheit als **freiwillige Selbstverpflichtung** (nicht BFSG/BITV),
+  WCAG 2.1 AA, bekannte Einschränkung Karte + Tabellen-Alternative.
+- 11.5 Alle drei als `LegalDoc` geseedet (im Admin per TipTap pflegbar), im Footer
+  verlinkt; Impressum zieht die Einstellungsfelder dynamisch.
+- **Keine Rechtsberatung** — vor dem Cutover fachkundig prüfen lassen.
+- **STOP:** Anschrift + E-Mail trägt Nicole ein (Einstellungen → Kontakt).
+
+**Phase 12 — Redesign (Struktur/Inhalt fertig, Motion vertagt)**
+- 12.0 Keine SPA (App Router beibehalten) — kein Widerspruch zu Phase 13, kein STOP.
+- 12.1 `docs/DESIGN.md` (Palette, Typo, Signature = Umschlag, Wireframes,
+  Anti-Beliebigkeit-Prüfung).
+- 12.2 Startseite: „Die Agentin"-Doppeldeutigkeit (ENTWURF) + „Die Identitäten"
+  (Umschlag-Karten, Identitätsfarbe als Rand) + Legende-Kurzlink. Kennzahlen inkl.
+  Identitäten (Phase 10.4).
+- 12.3 Legende: „Warum Agentin" (Doppeldeutigkeit, 3 Absätze, ENTWURF), „Die
+  Identitäten" (Umschläge), „Codebuch" (Glossar der Sektionsnamen). Werkzeuge +
+  Säulen bleiben hier.
+- 12.4 `docs/BILDPROMPTS.md`: Umschlag-Basisprompt + Portrait-Kurzvariante + Objekte/
+  Farbe je Identität. (Bilder erzeugt/lädt Nicole, Anhang B.)
+
+**Aus Phase 12 vertagt (Folgepunkte):**
+- 12.5 Motion: View Transitions (Übersicht→Detail, Element-Kontinuität),
+  Umschlag-Hover/Scroll-Reveal, Karten-Pins nach Identitätsfarbe. `prefers-
+  reduced-motion` wird global respektiert (M0).
+- 12.6 Lighthouse/axe-Lauf (in dieser Umgebung nicht ausführbar; CI vorhanden).
+
+**Anhang A — Speaker-Kit „Akte"**
+- Route `/[locale]/akte` (Name „Akte", alt „Ausrüstung" — TODO(nicole)).
+- Bios in drei Längen (50/150/400) DE+EN aus A.1, als `ENTWURF` geseedet
+  (SiteSettings `bio.<len>.<locale>`), im Admin pflegbar; Copy-to-Clipboard
+  (`components/CopyButton.tsx`). ⚠-Angaben im Text belassen (TODO(nicole)).
+- Fakten live aus der DB (MVP/Bücher/Zert/Einsätze/Identitäten) — veralten nicht.
+- Fachgebiete/Identitäten verlinkt, Kontakt-CTA (LinkedIn + E-Mail). Footer- +
+  Sitemap-Eintrag.
+
+**Aus Anhang A vertagt (Folgepunkte):** Referenzen/Testimonials als eigene
+Entität mit Freigabe-Flag; Pressefotos (Web/Druck) mit Credit/Nutzungshinweis;
+technische Anforderungen als Rich Text; lokalisierter EN-Slug `/kit` (Phase 13);
+Admin-Pflege der Bios (aktuell Seed/SiteSetting).
+
+**Phase 13 — SEO (teilweise)**
+- 13.3 **JSON-LD** (`lib/seo/jsonld.ts`, `components/JsonLd.tsx`): Person +
+  WebSite site-weit im Layout (`@graph`, stabile `@id`), BlogPosting je Depesche,
+  Event je Einsatz (VirtualLocation für Online), BreadcrumbList auf Detailseiten.
+  Person: sameAs aus Social-Profilen, knowsAbout aus Identitäten, award aus MVP/
+  Auszeichnungen (`lib/queries/person.ts`). Nur sichtbare Daten.
+- 13.4 **llms.txt** (`/llms.txt`, aus Entity-Daten generiert), **robots.txt**
+  (kanonischer Host, KI-Crawler ausdrücklich erlaubt — GPTBot/ClaudeBot/… nicht
+  gesperrt). RSS im Footer verlinkt. Fakten als Text auf /akte + Legende.
+- Titel bereits konsistent `%s · DIE AGENTIN` (Layout-Template).
+
+**Aus Phase 13 vertagt (Folgepunkte):**
+- 13.1 Per-Route eigene Descriptions (DE/EN) für alle statischen Seiten;
+  vollständige per-Route canonical + hreflang inkl. Detailseiten; **lokalisierte
+  EN-Slugs** (`/en/missions` …) mit Redirects (zweites Slug-Set).
+- 13.2 **Dynamische OG-Images** (`next/og`) je Entitätstyp.
+- Weitere JSON-LD-Typen (Book/Course/SoftwareSourceCode) auf /publikationen.
+- 13.5 Abschlussbericht (Beispiel-URLs + JSON-LD) — nach OG/Slugs.
+
+**Phase 14 — Cutover (Doku + Vorlagen)**
+- `docs/CUTOVER.md`: vollständige Checkliste mit Reihenfolge, Rollback-Punkt und
+  STOP-Markierungen (DNS, Azure, Entra, Search Console = Nicole).
+- Vorlagen `data/legacy-urls.csv`, `data/redirects.csv` (Heuristik + REVIEW).
+  Redirects `/signale`,`/dossiers` → `/depeschen` bereits aktiv (proxy.ts).
+- 14.5 Abschlussliste unten (`TODO(nicole)`, `ENTWURF`, leere Pflichtfelder).
+
+**Aus Phase 14 vertagt / STOP:**
+- URL-Inventar + Redirect-Map mit echten Daten (WordPress-Sitemap +
+  Search-Console-Export liefert Nicole); CSV-getriebene Redirect-Middleware +
+  Test-Suite folgt nach Freigabe der REVIEW-Zeilen.
+- „Kalte Akten"-Route (braucht migrierte Altinhalte).
+- DNS/Azure/Entra/Search-Console-Aktionen (STOP, Nicole).
+
+---
+
+## 14.5 — Abschlussliste (Stand dieser Sitzung)
+
+**`TODO(nicole)`-Marker (grep):**
+- `app/(site)/[locale]/akte/page.tsx:13` — finalen Namen „Akte" vs. „Ausrüstung" bestätigen.
+- `lib/admin-nav.ts:25` — Entscheidung „Zeitplan & Kanäle" (Phase 5.2).
+- `prisma/seed.ts` — ⚠-Angaben in den Bio-Entwürfen bestätigen (Anhang A).
+
+**`ENTWURF`-Texte, die Nicole überarbeitet:**
+- Identitäts-Beschreibungen (Seed, 4×), Bio-Entwürfe (Anhang A, 6×).
+- Startseite „Die Agentin"-Doppeldeutigkeit; Legende „Warum Agentin"; Legende
+  Kontakttext (`lib/queries/legend.ts`).
+
+**Leere Pflichtfelder / STOP-Werte:**
+- Decknamen der Identitäten (DE/EN), Akzentfarben bestätigen.
+- Anschrift + Kontakt-E-Mail (Impressum darf sonst nicht öffentlich gehen).
+- GitHub-, Sessionize-, MVP-Profil-URLs.
+- Bestätigte Veranstaltungsdaten + Quelldaten für den Backfill.
+- Identitätsbilder (Portrait + Umschlag).
+
+## Offen (aus Phase 1, in späteren Phasen zu erledigen)
+
+- Per-Route `canonical` + vollständige `hreflang` (auch Detailseiten) → Phase 13.1.
+- Echte Einsatzdaten statt Seed (die Karte zeigt bis dahin Seed-Missionen) → Phase 8.
+- Lokalisierte englische Slugs → Phase 13.1.
+
+**Aus Phase 2 vertagt (Folgepunkte, kein Blocker):**
+- Öffentliche Identitäts-Seiten (`/identitaeten`, `/identitaeten/<slug>`) → Phase 3.4.
+- Identität ↔ Depesche (n:m) → Phase 3.
+- Bildzuschnitt (1:1 / 4:5) in der Medienverwaltung — aktuell Auswahl ohne Crop.
+- DE/EN als Nebeneinander statt Umschalter je Feld; Drag & Drop als ↑/↓-Buttons.
+- Globale Werkzeugliste der Legende aus Identitäts-Werkzeugen speisen → Phase 12.
+- TipTap-Beschreibung wird roh gespeichert; serverseitige Sanitisierung wie bei
+  Posts als Härtung nachziehen.
+
+## Braucht Input von Nicole (Anhang B)
+
+| Was | Für Phase | Status |
+|---|---|---|
+| Decknamen der Identitäten (DE/EN) | 2 | offen |
+| Beschreibungstexte der Identitäten | 2 | offen |
+| Identitätsbilder (Portrait + Umschlag) | 12 | offen |
+| Akzentfarbe je Identität bestätigen | 2 | offen |
+| Ladungsfähige Anschrift | 11 | offen |
+| Kontakt-E-Mail-Adresse | 11 | offen |
+| GitHub-Account-URL | 6 | offen |
+| Sessionize- + MVP-Profil-URLs (`sameAs`) | 13 | offen |
+| Bestätigte Veranstaltungsdaten für unklare Einsätze | 8 | offen |
+| Neuer LinkedIn-Datenexport (letzter war leer) | 8 | offen |
+| Freigabe der `REVIEW`-Zeilen in der Redirect-Map | 14 | offen |
+| `PUBLIC_SITE_HOST` produktiv auf `nicolenders.com` setzen | 14 | offen |
+| Entscheidung „Zeitplan & Kanäle" (behalten/umbenennen/einbetten) | 5.2 | offen |
+| Überarbeitung aller `ENTWURF`-Texte | laufend | offen |
+| Bio-Entwürfe (Anhang A.1) prüfen, ⚠-Angaben bestätigen | Anhang A | offen |
+| DNS-, Azure-, Search-Console-Aktionen | 14 | offen |
+
+---
+
+# Bau-Historie — Umsetzung M0–M8
 
 Diese Datei wird nach jedem Meilenstein aktualisiert. Bei Beginn einer neuen
 Sitzung zuerst hier weiterlesen.

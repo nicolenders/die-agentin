@@ -18,11 +18,70 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = [
   { key: "facebook", label: "Facebook", icon: "fb", placeholder: "https://www.facebook.com/…" },
   { key: "youtube", label: "YouTube", icon: "yt", placeholder: "https://www.youtube.com/@…" },
   { key: "x", label: "X", icon: "x", placeholder: "https://x.com/…" },
+  { key: "github", label: "GitHub", icon: "gh", placeholder: "https://github.com/…" },
 ];
 
 export const SITE_SETTINGS_TAG = "site-settings";
 
 export const socialSettingKey = (platform: string) => `social.${platform}`;
+
+// Kontaktangaben (Phase 7.1): E-Mail und ladungsfähige Anschrift. An EINER
+// Stelle gepflegt; auch das Impressum (Phase 11) liest sie hier aus.
+export const CONTACT_EMAIL_KEY = "contact.email";
+export const CONTACT_ADDRESS_KEY = "contact.postalAddress";
+
+export interface ContactInfo {
+  email: string;
+  postalAddress: string;
+}
+
+async function fetchContactInfo(): Promise<ContactInfo> {
+  const rows = await db.siteSetting.findMany({
+    where: { key: { in: [CONTACT_EMAIL_KEY, CONTACT_ADDRESS_KEY] } },
+    select: { key: true, value: true },
+  });
+  const map: Record<string, string> = {};
+  for (const row of rows) map[row.key] = row.value.trim();
+  return { email: map[CONTACT_EMAIL_KEY] ?? "", postalAddress: map[CONTACT_ADDRESS_KEY] ?? "" };
+}
+
+const loadContactInfo = cachedQuery(fetchContactInfo, ["site-settings", "contact"], [SITE_SETTINGS_TAG]);
+
+export async function getContactInfo(): Promise<ContactInfo> {
+  try {
+    return await loadContactInfo();
+  } catch {
+    return { email: "", postalAddress: "" };
+  }
+}
+
+// Speaker-Kit-Bios (Anhang A): drei Längen je Sprache, als SiteSettings gepflegt.
+export interface Bios {
+  short: string;
+  medium: string;
+  long: string;
+}
+
+async function fetchBios(locale: string): Promise<Bios> {
+  const keys = ["short", "medium", "long"].map((l) => `bio.${l}.${locale}`);
+  const rows = await db.siteSetting.findMany({ where: { key: { in: keys } }, select: { key: true, value: true } });
+  const map: Record<string, string> = {};
+  for (const row of rows) map[row.key] = row.value;
+  return {
+    short: map[`bio.short.${locale}`] ?? "",
+    medium: map[`bio.medium.${locale}`] ?? "",
+    long: map[`bio.long.${locale}`] ?? "",
+  };
+}
+
+export async function getBios(locale: string): Promise<Bios> {
+  const run = cachedQuery(fetchBios, ["site-settings", "bios", locale], [SITE_SETTINGS_TAG]);
+  try {
+    return await run(locale);
+  } catch {
+    return { short: "", medium: "", long: "" };
+  }
+}
 
 /**
  * Bereinigt eine eingegebene Profil-URL: leert bei Leereingabe (Link wird

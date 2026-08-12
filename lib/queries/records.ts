@@ -12,8 +12,11 @@ export interface PublicationItem {
   isbn: string | null;
   publisher: string | null;
   url: string | null;
+  repoUrl: string | null;
+  language: string | null;
   title: string;
   role: string | null;
+  description: string | null;
   coverUrl: string | null;
   coverAlt: string;
   coverAi: boolean;
@@ -34,8 +37,11 @@ async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
       isbn: p.isbn,
       publisher: p.publisher,
       url: p.url,
+      repoUrl: p.repoUrl,
+      language: p.language,
       title,
       role: picked?.translation.role ?? null,
+      description: picked?.translation.description ?? null,
       coverUrl: p.coverAsset ? assetUrl(p.coverAsset.blobPath) : null,
       coverAlt:
         p.coverAsset && !p.coverAsset.decorative
@@ -63,6 +69,8 @@ export interface CertificationRecord {
   shortCode: string | null;
   kind: string; // CERTIFICATION | MVP | TRAINING | AWARD
   family: string; // MICROSOFT | METHODICAL (nur bei kind=CERTIFICATION relevant)
+  status: string; // PLANNED | ACHIEVED | EXPIRED (Phase 5.3)
+  plannedFor: string | null;
   acquiredOn: Date;
   validUntil: Date | null;
   proofUrl: string | null;
@@ -85,6 +93,8 @@ async function loadCertifications(locale: Locale): Promise<CertificationRecord[]
     shortCode: c.shortCode,
     kind: c.kind,
     family: c.family,
+    status: c.status,
+    plannedFor: c.plannedFor,
     acquiredOn: c.acquiredOn,
     validUntil: c.validUntil,
     proofUrl: c.proofUrl,

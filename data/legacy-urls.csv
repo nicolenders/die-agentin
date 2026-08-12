@@ -1,0 +1,6 @@
+url,typ,titel,datum
+# Vorlage (Phase 14.1). Aus WordPress.com-Sitemap + Search-Console-Export füllen.
+# typ: post | page | category | tag | attachment
+# Beispielzeilen (durch echte ersetzen):
+https://nicolenders.com/about-me/,page,About me,
+https://nicolenders.com/blog/,page,Blog,

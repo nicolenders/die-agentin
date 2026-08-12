@@ -59,14 +59,22 @@ export default async function CertEditPage({
               <option key={f} value={f}>{CERT_FAMILY_SHORT[f]}</option>
             ))}
           </select>
+          <label className="f">Status</label>
+          <select className="f" name="status" defaultValue={row.status}>
+            <option value="ACHIEVED">Erworben</option>
+            <option value="PLANNED">In Ausbildung (geplant)</option>
+            <option value="EXPIRED">Abgelaufen</option>
+          </select>
+          <label className="f">Ziel (nur „In Ausbildung“, z. B. „Q4 2026“)</label>
+          <input className="f" name="plannedFor" defaultValue={row.plannedFor ?? ""} />
           <label className="f">Kategorien (optional, Mehrfachauswahl)</label>
           <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={row.categories.map((c) => c.id)} />
           <label className="f">Bezeichnung</label>
           <input className="f" name="name" defaultValue={row.name} required />
           <label className="f">Kürzel</label>
           <input className="f" name="shortCode" defaultValue={row.shortCode ?? ""} />
-          <label className="f">Erworben am</label>
-          <input className="f" name="acquiredOn" type="month" defaultValue={monthValue(row.acquiredOn)} required />
+          <label className="f">Erworben am (leer lassen bei „In Ausbildung“)</label>
+          <input className="f" name="acquiredOn" type="month" defaultValue={monthValue(row.acquiredOn)} />
           <label className="f">Gültig bis (optional)</label>
           <input className="f" name="validUntil" type="month" defaultValue={monthValue(row.validUntil)} />
           <label className="f">Reihe (Mehrfachauszeichnung, z. B. MVP)</label>

@@ -14,10 +14,18 @@ test("HQ ist in EN erreichbar", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
-for (const path of ["signale", "dossiers", "einsaetze", "briefings", "publikationen", "ausbildung"]) {
+for (const path of ["depeschen", "identitaeten", "einsaetze", "briefings", "publikationen", "ausbildung", "akte"]) {
   test(`Route /de/${path} lädt`, async ({ page }) => {
     const res = await page.goto(`/de/${path}`);
     expect(res?.status()).toBeLessThan(400);
+  });
+}
+
+// Alt-URLs aus der Signale/Dossiers-Ära leiten auf Depeschen um (Phase 3).
+for (const path of ["signale", "dossiers"]) {
+  test(`Alt-Route /de/${path} leitet auf /de/depeschen um`, async ({ page }) => {
+    await page.goto(`/de/${path}`);
+    await expect(page).toHaveURL(/\/de\/depeschen/);
   });
 }
 

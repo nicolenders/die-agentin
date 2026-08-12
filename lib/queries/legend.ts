@@ -45,10 +45,14 @@ export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
     ],
     tools: ["MICROSOFT FOUNDRY", "COPILOT STUDIO", "MICROSOFT 365", "MICROSOFT AZURE", "MICROSOFT TEAMS", "POWER PLATFORM"],
     contactEyebrow: "Kontakt aufnehmen",
-    contactHeading: "Am schnellsten über LinkedIn",
-    contactText: "Für Anfragen zu Vorträgen, Workshops und Beratung schreib mir direkt auf LinkedIn. Rechtlich verpflichtend ist zusätzlich eine E-Mail-Adresse — die findest du im Impressum.",
+    contactHeading: "Zwei Kanäle",
+    // ENTWURF — von Nicole zu prüfen (Phase 7.2).
+    contactText: "Für Anfragen zu Vorträgen, Workshops und Beratung erreichst du mich am schnellsten über LinkedIn. Wenn dir E-Mail lieber ist, geht das genauso.",
     contactButton: "Nachricht auf LinkedIn",
-    contactUrl: "#",
+    // Leer statt "#": die Legende-Seite fällt dann auf das hinterlegte
+    // LinkedIn-Profil aus den Einstellungen zurück (Phase 1.2c, vollständig in
+    // Phase 7).
+    contactUrl: "",
     portrait: null,
   },
   en: {
@@ -67,10 +71,11 @@ export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
     ],
     tools: ["MICROSOFT FOUNDRY", "COPILOT STUDIO", "MICROSOFT 365", "MICROSOFT AZURE", "MICROSOFT TEAMS", "POWER PLATFORM"],
     contactEyebrow: "Get in touch",
-    contactHeading: "Fastest via LinkedIn",
-    contactText: "For talks, workshops and consulting, message me directly on LinkedIn. A legally required email address is in the imprint.",
+    contactHeading: "Two channels",
+    // ENTWURF — von Nicole zu prüfen (Phase 7.2).
+    contactText: "For talks, workshops and consulting, LinkedIn is the fastest way to reach me. If you prefer email, that works just as well.",
     contactButton: "Message on LinkedIn",
-    contactUrl: "#",
+    contactUrl: "",
     portrait: null,
   },
 };

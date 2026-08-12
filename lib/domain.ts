@@ -43,8 +43,22 @@ export type TaskState = (typeof TASK_STATES)[number];
 export const TAXONOMY_KINDS = ["DOSSIER", "TALK", "CERTIFICATION"] as const;
 export type TaxonomyKind = (typeof TAXONOMY_KINDS)[number];
 
-export const PUBLICATION_TYPES = ["BOOK", "ARTICLE", "WHITEPAPER", "COURSE"] as const;
+export const PUBLICATION_TYPES = ["BOOK", "COURSE", "REPOSITORY", "ARTICLE", "PODCAST", "INTERVIEW", "WHITEPAPER"] as const;
 export type PublicationType = (typeof PUBLICATION_TYPES)[number];
+
+// Depeschen-Format (Phase 3): NOTE kurze Meldung · ANALYSIS Einordnung ·
+// REFERENCE gepflegtes Nachschlagewerk (sichtbares Änderungsdatum) ·
+// BACKSTAGE Persönliches.
+export const DISPATCH_FORMATS = ["NOTE", "ANALYSIS", "REFERENCE", "BACKSTAGE"] as const;
+export type DispatchFormat = (typeof DISPATCH_FORMATS)[number];
+
+// Zertifizierungs-Status (Phase 5.3): PLANNED = „In Ausbildung".
+export const CERTIFICATION_STATUSES = ["PLANNED", "ACHIEVED", "EXPIRED"] as const;
+export type CertificationStatus = (typeof CERTIFICATION_STATUSES)[number];
+
+// Art des Auftritts (Phase 9.1).
+export const SESSION_TYPES = ["KEYNOTE", "SESSION", "WORKSHOP", "PANEL"] as const;
+export type SessionType = (typeof SESSION_TYPES)[number];
 
 /** Generischer Prüfer: Ist `value` einer der erlaubten Werte? */
 export function isOneOf<T extends readonly string[]>(

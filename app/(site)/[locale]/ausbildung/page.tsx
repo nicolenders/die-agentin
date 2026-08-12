@@ -53,11 +53,17 @@ export default async function AusbildungPage({
   const familyLabel = (f: (typeof CERT_FAMILIES)[number]) =>
     isDe ? CERT_FAMILY_LABEL[f] : CERT_FAMILY_LABEL_EN[f];
 
+  // In Ausbildung (Phase 5.3): geplante Zertifizierungen erscheinen NICHT in den
+  // erworbenen Abschnitten, sondern in einem eigenen Abschnitt oben — ohne
+  // Erwerbsdatum, ohne Badge, klar unterschieden.
+  const planned = certs.filter((c) => c.status === "PLANNED");
+  const achieved = certs.filter((c) => c.status !== "PLANNED");
+
   // Abschnitte untereinander. Zertifizierungen werden zusätzlich nach Microsoft
   // und methodisch getrennt; die übrigen Arten bleiben ein Abschnitt.
   const sections: { key: string; label: string; items: CertificationRecord[] }[] = [];
   for (const kind of CERT_KINDS) {
-    const inKind = certs.filter((c) => c.kind === kind);
+    const inKind = achieved.filter((c) => c.kind === kind);
     if (inKind.length === 0) continue;
     if (kind === "CERTIFICATION") {
       for (const fam of CERT_FAMILIES) {
@@ -79,28 +85,40 @@ export default async function AusbildungPage({
           : "Certifications, MVP awards, trainings and current topics — grouped by area."}
       </p>
 
-      {focus.length > 0 ? (
-        <div className="card bracket" style={{ margin: "24px 0", padding: 24 }}>
-          <p className="eyebrow">{isDe ? "Aufklärung · auf dem Radar" : "Recon · on the radar"}</p>
-          <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 6 }}>
-            {focus.map((f) => (
-              <span
-                key={f.id}
-                title={f.note ?? undefined}
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "11px",
-                  letterSpacing: ".14em",
-                  color: "var(--violet-text)",
-                  border: "1px solid var(--line)",
-                  padding: "7px 13px",
-                  borderRadius: "var(--r)",
-                }}
-              >
-                {f.title}
-              </span>
-            ))}
-          </div>
+      {planned.length > 0 || focus.length > 0 ? (
+        <div className="card bracket" style={{ margin: "24px 0", padding: 24, borderColor: "var(--signal)" }}>
+          <p className="eyebrow" style={{ color: "var(--signal)" }}>{isDe ? "In Ausbildung · laufende Vorbereitung" : "In progress · currently preparing"}</p>
+          {planned.length > 0 ? (
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {planned.map((c) => (
+                <li key={c.id}>
+                  <b>{c.name}</b>
+                  {c.plannedFor ? <span className="meta"> · {isDe ? "Ziel" : "target"} {c.plannedFor}</span> : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {focus.length > 0 ? (
+            <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: planned.length > 0 ? 14 : 6 }}>
+              {focus.map((f) => (
+                <span
+                  key={f.id}
+                  title={f.note ?? undefined}
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "11px",
+                    letterSpacing: ".14em",
+                    color: "var(--violet-text)",
+                    border: "1px solid var(--line)",
+                    padding: "7px 13px",
+                    borderRadius: "var(--r)",
+                  }}
+                >
+                  {f.title}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

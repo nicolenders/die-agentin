@@ -47,6 +47,15 @@ Nach dem Umbau gezielt geprüft — gegen eine **echte SQL-Server-2022-Instanz**
   Laufzeit kompiliert. Verifiziert.
 - **`ChannelTask.postId` nullable machen** (meine Dispatch-Migration): auf echtem
   SQL Server problemlos, kein FK-Drop nötig. Verifiziert.
+- **`/admin` war unerreichbar (kritische Regression aus Phase 1):** der
+  verbreiterte Middleware-Matcher ließ `proxy.ts` auch auf `/admin` laufen, und
+  der Ausschluss-Regex `…(api|admin|_next)\/…` verlangte einen Schrägstrich —
+  der exakte Pfad `/admin` wurde deshalb fälschlich auf `/de/admin` umgeleitet
+  (404). Dasselbe traf `/preview/*`. Behoben: Routing-Entscheidungen nach
+  `lib/routing.ts` ausgelagert (mit `(\/|$)`-Grenze, zusätzlich `preview`/`media`
+  ausgeschlossen) und mit Unit-Tests abgesichert. Verifiziert gegen die laufende
+  App: `/admin` → 307 → `/admin/anmelden`; `/de/signale` → 301 → `/de/depeschen`.
+  **Der Adminbereich liegt unter `/admin` (nicht `/de/admin`).**
 - **UI-Konsistenz:** `IdentityAttributesField` nutzte undefinierte Klassen
   `field`/`field-label` (unstyled) → auf die Admin-Konvention `.f` umgestellt.
   Redundante, undefinierte Klasse `cardlink` entfernt (`.card:hover` liefert die

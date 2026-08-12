@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { locales, defaultLocale } from "./lib/i18n/config";
 import { canonicalHost } from "./lib/site";
+import { isNonLocalizedPath, hasLocalePrefix, pickLocaleFrom, legacyDispatchTarget } from "./lib/routing";
 
 // Locale-Routing (SPEC §5) UND Host-basiertes noindex (Phase 1.2a).
 //
@@ -13,18 +13,6 @@ import { canonicalHost } from "./lib/site";
 // Antwort mit `X-Robots-Tag: noindex, nofollow` versehen — auch robots.txt,
 // sitemap.xml und die Feeds. Das verhindert eine zweite indexierte Domain mit
 // Duplicate Content, die beim Cutover gegen nicolenders.com konkurrieren würde.
-
-function pickLocale(request: NextRequest): string {
-  const header = request.headers.get("accept-language");
-  if (header) {
-    const preferred = header
-      .split(",")
-      .map((part) => part.split(";")[0]?.trim().slice(0, 2).toLowerCase())
-      .find((code) => code && (locales as readonly string[]).includes(code));
-    if (preferred) return preferred;
-  }
-  return defaultLocale;
-}
 
 /** Host der Anfrage (bevorzugt X-Forwarded-Host hinter dem Container-Apps-Proxy). */
 function requestHost(request: NextRequest): string {
@@ -51,48 +39,25 @@ function withRobots(request: NextRequest, response: NextResponse): NextResponse 
   return response;
 }
 
-// Alt-URLs aus der Signale/Dossiers-Ära auf Depeschen umlenken (Phase 3.2).
-// 301, damit Ranking/Backlinks erhalten bleiben. Slugs bleiben identisch
-// (Migration friert sie ein), nur das Übersichts-Dossier bekommt den
-// REFERENCE-Filter, damit gespeicherte Links sinnvoll landen.
-function legacyRedirect(request: NextRequest, pathname: string): NextResponse | null {
-  const m = pathname.match(/^\/(de|en)\/(signale|dossiers)(\/.*)?$/);
-  if (!m) return null;
-  const [, locale, area, rest] = m;
-  const url = request.nextUrl.clone();
-  if (rest && rest !== "/") {
-    url.pathname = `/${locale}/depeschen${rest}`;
-    url.search = "";
-  } else {
-    url.pathname = `/${locale}/depeschen`;
-    url.search = area === "dossiers" ? "?format=REFERENCE" : "";
-  }
-  return withRobots(request, NextResponse.redirect(url, 301));
-}
-
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const legacy = legacyRedirect(request, pathname);
-  if (legacy) return legacy;
+  // Alt-URLs Signale/Dossiers → Depeschen (301). Logik in lib/routing (getestet).
+  const legacy = legacyDispatchTarget(pathname);
+  if (legacy) {
+    const url = request.nextUrl.clone();
+    url.pathname = legacy.path;
+    url.search = legacy.search;
+    return withRobots(request, NextResponse.redirect(url, 301));
+  }
 
-  // Pfade, die nicht lokalisiert werden (API, Admin, maschinenlesbare Dateien,
-  // Assets): kein Locale-Redirect, aber der noindex-Header muss trotzdem greifen.
-  const isLocalizable =
-    !/^\/(api|admin|_next)\//.test(pathname) &&
-    !/^\/(robots\.txt|sitemap\.xml|feed\.xml|feed\.en\.xml|favicon\.ico|icon\.svg)$/.test(pathname) &&
-    !/\.[a-zA-Z0-9]+$/.test(pathname);
-
-  if (!isLocalizable) {
+  // Admin, API, Vorschau, Medien, Next-Interna und Dateien werden nicht
+  // lokalisiert — nur durchreichen (mit noindex-Header auf Nicht-Zielhosts).
+  if (isNonLocalizedPath(pathname) || hasLocalePrefix(pathname)) {
     return withRobots(request, NextResponse.next());
   }
 
-  const hasLocale = locales.some(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
-  );
-  if (hasLocale) return withRobots(request, NextResponse.next());
-
-  const locale = pickLocale(request);
+  const locale = pickLocaleFrom(request.headers.get("accept-language"));
   const url = request.nextUrl.clone();
   url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
   return withRobots(request, NextResponse.redirect(url));

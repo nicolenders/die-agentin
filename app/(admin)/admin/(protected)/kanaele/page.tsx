@@ -1,150 +1,81 @@
-import { db } from "@/lib/db";
-import { PLATFORMS, type Platform } from "@/lib/domain";
-import { expiryState, daysUntil } from "@/lib/channels/expiry";
-import { formatDateTime } from "@/lib/format";
-import ManualShareCard from "@/components/admin/ManualShareCard";
-import { setChannelConnected, disconnectLinkedIn, retryTask } from "./actions";
+import { SOCIAL_PLATFORMS, getSocialLinks, getShareTemplates } from "@/lib/queries/settings";
+import { SHARE_TYPES, SHARE_TYPE_LABEL, shareTemplateKey } from "@/lib/share";
+import Flash from "@/components/admin/Flash";
+import { saveSocialLinks, saveShareTemplates } from "./config-actions";
 
-export const metadata = { title: "Zeitplan & Kanäle · Zentrale" };
+export const metadata = { title: "Kanäle · Zentrale" };
 
-const PLATFORM_LABEL: Record<Platform, string> = {
-  LINKEDIN: "LinkedIn",
-  X: "X",
-  INSTAGRAM: "Instagram",
-  FACEBOOK: "Facebook",
-  YOUTUBE: "YouTube",
-};
-
-function parsePayload(payload: string): { text: string; url: string } {
-  try {
-    const p = JSON.parse(payload) as { text?: string; url?: string };
-    return { text: p.text ?? "", url: p.url ?? "" };
-  } catch {
-    return { text: "", url: "" };
-  }
-}
-
+// „Kanäle": Social-Media-Profile und die wiedererkennbaren Teilen-Vorlagen.
+// Beiträge werden manuell geteilt (Text kopieren + Profil öffnen) — die Vorlagen
+// je Typ und Sprache stehen hier.
 export default async function KanaelePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ ok?: string; err?: string }>;
 }) {
-  const { error } = await searchParams;
-  const linkedinConfigured = Boolean(process.env.LINKEDIN_CLIENT_ID);
-
-  let accounts: Awaited<ReturnType<typeof db.channelAccount.findMany>> = [];
-  let manualTasks: Awaited<ReturnType<typeof db.channelTask.findMany>> = [];
-  let failedTasks: typeof manualTasks = [];
-  let dbError = false;
-  try {
-    accounts = await db.channelAccount.findMany();
-    manualTasks = await db.channelTask.findMany({ where: { state: "MANUAL_OPEN" }, orderBy: { scheduledAt: "asc" } });
-    failedTasks = await db.channelTask.findMany({ where: { state: "FAILED" }, orderBy: { scheduledAt: "asc" } });
-  } catch {
-    dbError = true;
-  }
-
-  const byPlatform = new Map(accounts.map((a) => [a.platform, a]));
+  const { ok, err } = await searchParams;
+  const [social, templates] = await Promise.all([getSocialLinks(), getShareTemplates()]);
 
   return (
     <section>
-      <h1>Zeitplan &amp; Kanäle</h1>
-      <p className="muted">Der Zustand der Verbindungen und offene Ein-Klick-Aufgaben.</p>
+      <h1>Kanäle</h1>
+      <p className="muted">
+        Deine Social-Media-Profile und die Vorlagetexte fürs Teilen. Beiträge (Einsätze, Briefings,
+        Depeschen) teilst du manuell: im Eintrag auf „Teilen“ klicken, Text kopieren und dein Profil öffnen.
+      </p>
+      <Flash ok={ok} err={err} />
 
-      {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
-
-      {error === "linkedin-not-configured" || !linkedinConfigured ? (
-        <div className="card bracket" style={{ marginTop: 12, borderLeft: "2px solid var(--warn)" }}>
-          <p className="eyebrow" style={{ margin: 0 }}>LinkedIn noch nicht eingerichtet</p>
-          <p className="meta" style={{ marginTop: 6 }}>
-            Automatisches Posten auf LinkedIn braucht einmalig eine LinkedIn-App
-            (Client ID/Secret). Anleitung: <code>docs/LINKEDIN.md</code>. Danach
-            funktioniert „Verbinden“. X, Instagram und Facebook laufen ohnehin
-            über die Ein-Klick-Freigabe — dort ist nichts einzurichten.
-          </p>
-        </div>
-      ) : null}
-
-      <p className="eyebrow" style={{ marginTop: 20 }}>Kanäle</p>
-      <div className="grid g3">
-        {PLATFORMS.map((platform) => {
-          const account = byPlatform.get(platform);
-          const connected = account?.connected ?? false;
-          const state = expiryState(account?.expiresAt ?? null);
-          const days = daysUntil(account?.expiresAt ?? null);
-          return (
-            <div className="card bracket" key={platform}>
-              <p className="eyebrow">{PLATFORM_LABEL[platform]}</p>
-              {connected ? (
-                <span className={`st ${state === "expired" ? "err" : state === "warn" ? "sched" : "live"}`}>
-                  {state === "expired" ? "Abgelaufen" : "Verbunden"}
-                </span>
-              ) : account?.lastError ? (
-                <span className="st err">Fehler</span>
-              ) : (
-                <span className="st draft">Nicht verbunden</span>
-              )}
-
-              {platform === "LINKEDIN" && connected && state === "warn" ? (
-                <p className="meta" style={{ marginTop: 10, color: "var(--warn)" }}>
-                  Zugriff läuft in {days} Tagen ab — bitte neu autorisieren.
-                </p>
-              ) : null}
-              {account?.lastError ? <p className="meta" style={{ marginTop: 10, color: "var(--danger)" }}>{account.lastError}</p> : null}
-
-              <div style={{ marginTop: 10 }}>
-                {platform === "LINKEDIN" ? (
-                  connected ? (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {/* Vollständige Navigation zum OAuth-Endpunkt (Route Handler), kein next/link. */}
-                      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-                      <a className="btn ghost sm" href="/api/admin/channels/linkedin/authorize">Neu autorisieren</a>
-                      <form action={disconnectLinkedIn}>
-                        <button className="btn ghost sm" type="submit">Trennen</button>
-                      </form>
-                    </div>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-html-link-for-pages
-                    <a className="btn ghost sm" href="/api/admin/channels/linkedin/authorize">Verbinden</a>
-                  )
-                ) : (
-                  <form action={setChannelConnected}>
-                    <input type="hidden" name="platform" value={platform} />
-                    <input type="hidden" name="connected" value={connected ? "false" : "true"} />
-                    <button className="btn ghost sm" type="submit">{connected ? "Deaktivieren" : "Aktivieren"}</button>
-                  </form>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {manualTasks.length > 0 ? (
-        <>
-          <p className="eyebrow" style={{ marginTop: 28 }}>Ein-Klick-Freigaben</p>
-          {manualTasks.map((t) => {
-            const { text, url } = parsePayload(t.payload);
-            return <ManualShareCard key={t.id} id={t.id} platform={PLATFORM_LABEL[t.platform as Platform] ?? t.platform} text={text} url={url} />;
-          })}
-        </>
-      ) : null}
-
-      {failedTasks.length > 0 ? (
-        <>
-          <p className="eyebrow" style={{ marginTop: 28 }}>Fehlgeschlagen</p>
-          {failedTasks.map((t) => (
-            <div className="card bracket" key={t.id} style={{ marginBottom: 12, borderLeft: "2px solid var(--danger)" }}>
-              <b>{PLATFORM_LABEL[t.platform as Platform] ?? t.platform}</b>
-              <div className="meta">{formatDateTime(t.scheduledAt, "de")} · {t.lastError ?? "Fehler"}</div>
-              <form action={retryTask} style={{ marginTop: 8 }}>
-                <input type="hidden" name="id" value={t.id} />
-                <button className="btn ghost sm" type="submit">Erneut senden</button>
-              </form>
+      <p className="eyebrow" style={{ marginTop: 24 }}>Social-Media-Profile</p>
+      <p className="meta">
+        Erscheinen als anklickbare Icons im Footer und auf der Legende. Leeres Feld = Link ausgeblendet.
+        Ohne vollständige Adresse wird <code>https://</code> ergänzt. GitHub und YouTube werden beim Teilen
+        nicht angeboten.
+      </p>
+      <form action={saveSocialLinks} className="card bracket">
+        <div className="grid g2">
+          {SOCIAL_PLATFORMS.map((p) => (
+            <div key={p.key}>
+              <label className="f" htmlFor={`social-${p.key}`}>{p.label}</label>
+              <input
+                id={`social-${p.key}`}
+                className="f"
+                name={p.key}
+                type="url"
+                inputMode="url"
+                defaultValue={social[p.key] ?? ""}
+                placeholder={p.placeholder}
+              />
             </div>
           ))}
-        </>
-      ) : null}
+        </div>
+        <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Profile speichern</button>
+      </form>
+
+      <p className="eyebrow" style={{ marginTop: 28 }}>Teilen-Vorlagen</p>
+      <p className="meta">
+        Ein wiedererkennbarer Text je Typ, auf Deutsch und Englisch. Platzhalter:{" "}
+        <code>{"{title}"}</code>, <code>{"{url}"}</code>, <code>{"{identities}"}</code>,{" "}
+        <code>{"{city}"}</code> (Einsatz), <code>{"{date}"}</code> (Einsatz). Sind keine Identitäten
+        verknüpft, wird <code>{"{identities}"}</code> zu „die Agentin“ / „the Agent“.
+      </p>
+      <form action={saveShareTemplates}>
+        {SHARE_TYPES.map((type) => (
+          <div className="card bracket" key={type} style={{ marginBottom: 14 }}>
+            <p className="eyebrow" style={{ margin: 0 }}>{SHARE_TYPE_LABEL[type]}</p>
+            <div className="grid g2" style={{ marginTop: 10 }}>
+              <div>
+                <label className="f" htmlFor={`${type}-de`}>Deutsch</label>
+                <textarea id={`${type}-de`} className="f" name={shareTemplateKey(type, "de")} rows={4} defaultValue={templates[type].de} />
+              </div>
+              <div>
+                <label className="f" htmlFor={`${type}-en`}>Englisch</label>
+                <textarea id={`${type}-en`} className="f" name={shareTemplateKey(type, "en")} rows={4} defaultValue={templates[type].en} />
+              </div>
+            </div>
+          </div>
+        ))}
+        <button className="btn solid sm" type="submit">Vorlagen speichern</button>
+      </form>
     </section>
   );
 }

@@ -28,5 +28,6 @@ export const adminNav: AdminNavItem[] = [
   // LinkedIn-OAuth-Rücksprung und die manuelle Teilen-Karte (siehe PR-Hinweis).
   { href: "/admin/struktur", label: "Stammdaten", icon: "⧉", section: "System" },
   { href: "/admin/medien", label: "Medien", icon: "▣" },
+  { href: "/admin/kanaele", label: "Kanäle", icon: "⤳" },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: "⚙" },
 ];

@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getBriefingRanking } from "@/lib/queries/briefings";
+import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
+import { renderShareText, sharePublicPath } from "@/lib/share";
+import { identityDisplayName } from "@/lib/identities";
 import { formatDate } from "@/lib/format";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import Flash from "@/components/admin/Flash";
+import SharePanel from "@/components/admin/SharePanel";
 import {
   createTalkCategory,
   renameTalkCategory,
@@ -37,29 +41,47 @@ export default async function BriefingsAdminPage({
 }) {
   const { tab, von, bis, ok, err } = await searchParams;
   const active = TABS.find((t) => t.id === tab)?.id ?? "alle";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
 
   let categories: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
   let audienceTags: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
-  let talks: { id: string; title: string; category: string; audience: string; level: string | null; durationMin: number | null; deliveries: number; active: boolean }[] = [];
+  let talks: { id: string; title: string; category: string; audience: string; level: string | null; durationMin: number | null; deliveries: number; active: boolean; share: { textDe: string; textEn: string } | null }[] = [];
   let dbError = false;
   try {
     const [cats, auds, talkRows] = await Promise.all([
       db.taxonomy.findMany({ where: { kind: "TALK" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { talkMulti: true } } } }),
       db.taxonomy.findMany({ where: { kind: "AUDIENCE" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { talkAudiences: true } } } }),
-      db.talk.findMany({ orderBy: { createdAt: "desc" }, include: { translations: { where: { locale: "de" } }, categories: true, audiences: true, _count: { select: { deliveries: true } } } }),
+      db.talk.findMany({ orderBy: { createdAt: "desc" }, include: { translations: true, categories: true, audiences: true, identities: { select: { codenameDe: true, codenameEn: true, roleDe: true, roleEn: true } }, _count: { select: { deliveries: true } } } }),
     ]);
     categories = cats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.talkMulti }));
     audienceTags = auds.map((a) => ({ id: a.id, nameDe: a.nameDe, nameEn: a.nameEn, count: a._count.talkAudiences }));
-    talks = talkRows.map((t) => ({
-      id: t.id,
-      title: t.translations[0]?.title ?? "(ohne Titel)",
-      category: t.categories.map((c) => c.nameDe).join(", ") || "—",
-      audience: t.audiences.map((a) => a.nameDe).join(", ") || "—",
-      level: t.level,
-      durationMin: t.durationMin,
-      deliveries: t._count.deliveries,
-      active: t.active,
-    }));
+    talks = talkRows.map((t) => {
+      const de = t.translations.find((x) => x.locale === "de");
+      const en = t.translations.find((x) => x.locale === "en");
+      const names = t.identities.map((i) => identityDisplayName(i, "de"));
+      const title = de?.title ?? "(ohne Titel)";
+      // Briefings haben keine eigene öffentliche Detailseite → Link auf die
+      // Briefings-Übersicht. Teilen nur für aktive Briefings mit Titel.
+      const share =
+        t.active && de?.title
+          ? {
+              textDe: renderShareText(templates.briefing.de, { title, url: base + sharePublicPath("briefing", "de", null), identities: names }, "de"),
+              textEn: renderShareText(templates.briefing.en, { title: en?.title ?? title, url: base + sharePublicPath("briefing", "en", null), identities: names }, "en"),
+            }
+          : null;
+      return {
+        id: t.id,
+        title,
+        category: t.categories.map((c) => c.nameDe).join(", ") || "—",
+        audience: t.audiences.map((a) => a.nameDe).join(", ") || "—",
+        level: t.level,
+        durationMin: t.durationMin,
+        deliveries: t._count.deliveries,
+        active: t.active,
+        share,
+      };
+    });
   } catch {
     dbError = true;
   }
@@ -112,6 +134,11 @@ export default async function BriefingsAdminPage({
                       <td>{t.deliveries}</td>
                       <td><span className={`st ${t.active ? "live" : ""}`}>{t.active ? "Aktiv" : "Inaktiv"}</span></td>
                       <td style={{ whiteSpace: "nowrap" }}>
+                        {t.share ? (
+                          <>
+                            <SharePanel title={t.title} textDe={t.share.textDe} textEn={t.share.textEn} profiles={shareProfiles} />{" "}
+                          </>
+                        ) : null}
                         <Link className="btn ghost sm" href={`/admin/briefings/bearbeiten?id=${t.id}`}>Bearbeiten</Link>{" "}
                         <form action={deleteTalk} style={{ display: "inline" }}>
                           <input type="hidden" name="id" value={t.id} />

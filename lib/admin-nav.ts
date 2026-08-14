@@ -22,21 +22,11 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/publikationen", label: "Publikationen", icon: "★" },
   { href: "/admin/ausbildung", label: "Ausbildung & Auszeichnungen", icon: "✦" },
   { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "⌖" },
-  // TODO(nicole): Phase 5.2 — „Zeitplan & Kanäle" NICHT entfernt (STOP). Anders
-  // als im Plan angenommen enthält diese Seite (/admin/kanaele) Funktionen, die
-  // es sonst nirgends gibt: LinkedIn-OAuth (Verbinden/Trennen), Kanal-Status und
-  // Ablaufwarnung, Wiederholung fehlgeschlagener ChannelTasks. Das ist NICHT das
-  // Gleiche wie die Social-Profil-URLs unter Einstellungen. Vorschlag: Menüpunkt
-  // in „Kanäle" umbenennen und behalten, oder in die Einstellungen einbetten.
-  // Nicole entscheidet, bevor gelöscht wird (siehe docs/PROGRESS.md).
-  {
-    href: "/admin/kanaele",
-    label: "Zeitplan & Kanäle",
-    icon: "⧗",
-    section: "Ausspielung",
-  },
+  // „Stammdaten" (früher „Kategorien & Tags"), „Medien" und „Einstellungen" bilden
+  // den System-Bereich. Der frühere Bereich „Ausspielung" (Zeitplan & Kanäle) ist
+  // entfernt; die Seite /admin/kanaele existiert nur noch verdeckt für den
+  // LinkedIn-OAuth-Rücksprung und die manuelle Teilen-Karte (siehe PR-Hinweis).
+  { href: "/admin/struktur", label: "Stammdaten", icon: "⧉", section: "System" },
   { href: "/admin/medien", label: "Medien", icon: "▣" },
-  { href: "/admin/struktur", label: "Kategorien & Tags", icon: "⧉", section: "System" },
-  { href: "/admin/mobil", label: "Mobil erfassen", icon: "▯" },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: "⚙" },
 ];

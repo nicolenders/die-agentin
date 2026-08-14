@@ -93,6 +93,8 @@ export default async function EinsatzBearbeitenPage({
           material: {
             slidesUrl: mission.slidesUrl ?? "",
             slidesPlatform: mission.slidesPlatform ?? "",
+            slidesFilePath: mission.slidesFilePath ?? "",
+            slidesFileName: mission.slidesFileName ?? "",
             recordingUrl: mission.recordingUrl ?? "",
             sessionType: mission.sessionType ?? "",
             sessionLanguage: mission.sessionLanguage ?? "",

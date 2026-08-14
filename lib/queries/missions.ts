@@ -89,6 +89,8 @@ export interface MissionDetail {
   identities: { slug: string; name: string; color: string }[];
   slidesUrl: string | null;
   slidesPlatform: string | null;
+  slidesFileUrl: string | null; // öffentlicher Download-Link der hochgeladenen PDF
+  slidesFileName: string | null;
   recordingUrl: string | null;
   recap: string | null;
   feedbackScore: number | null;
@@ -161,6 +163,8 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
     identities: mission.identities.map((i) => ({ slug: i.slug, name: identityDisplayName(i, locale), color: i.color })),
     slidesUrl: mission.slidesUrl,
     slidesPlatform: mission.slidesPlatform,
+    slidesFileUrl: mission.slidesFilePath ? assetUrl(mission.slidesFilePath) : null,
+    slidesFileName: mission.slidesFileName,
     recordingUrl: mission.recordingUrl,
     recap: locale === "en" && mission.recapEn ? mission.recapEn : mission.recapDe,
     feedbackScore: mission.feedbackScore,

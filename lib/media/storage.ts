@@ -48,13 +48,14 @@ function getContainerClient(): ContainerClient {
 export async function storeFile(
   relativePath: string,
   buffer: Buffer,
+  contentType = "image/webp",
 ): Promise<StoredFile> {
   if (isBlobConfigured()) {
     const blob = getContainerClient().getBlockBlobClient(relativePath);
     await blob.uploadData(buffer, {
       blobHTTPHeaders: {
-        blobContentType: "image/webp",
-        // Bilder sind unveränderlich (Name enthält die ID) → lange cachebar.
+        blobContentType: contentType,
+        // Dateinamen enthalten eine ID → Inhalt ist unveränderlich, lange cachebar.
         blobCacheControl: "public, max-age=31536000, immutable",
       },
     });

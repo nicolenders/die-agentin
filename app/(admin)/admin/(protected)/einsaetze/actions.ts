@@ -19,6 +19,8 @@ export interface MissionTextInput {
 export interface MissionMaterialInput {
   slidesUrl?: string | null;
   slidesPlatform?: string | null;
+  slidesFilePath?: string | null; // hochgeladene PDF-Folien (Pfad in der Medienablage)
+  slidesFileName?: string | null; // Originalname für den Download-Link
   recordingUrl?: string | null;
   sessionType?: string | null;
   sessionLanguage?: string | null;
@@ -45,6 +47,8 @@ function materialData(m: MissionMaterialInput | undefined) {
   return {
     slidesUrl: m?.slidesUrl?.trim() || null,
     slidesPlatform: m?.slidesPlatform?.trim() || null,
+    slidesFilePath: m?.slidesFilePath?.trim() || null,
+    slidesFileName: m?.slidesFileName?.trim() || null,
     recordingUrl: m?.recordingUrl?.trim() || null,
     sessionType: isOneOf(SESSION_TYPES, m?.sessionType ?? "") ? m!.sessionType! : null,
     sessionLanguage: m?.sessionLanguage?.trim() || null,

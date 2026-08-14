@@ -3,7 +3,9 @@
 
 .heroRow {
   display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
+  // Porträt links bewusst schmaler (~2/3 der früheren Größe), damit rechts
+  // weniger Leerraum zwischen den Social-Kanälen und der Mission entsteht.
+  grid-template-columns: 0.63fr 1.37fr;
   gap: 40px;
   align-items: stretch;
 }

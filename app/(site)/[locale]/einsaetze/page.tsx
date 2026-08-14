@@ -62,17 +62,15 @@ export default async function EinsaetzePage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+      {/* Überschrift und „Briefings"-Button in einer Zeile — spart Höhe. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <h1 className="eyebrow" style={{ flex: 1, margin: 0 }}>
+          {isDe ? "Einsätze vor Ort" : "Missions on site"}
+        </h1>
         <Link className="btn ghost sm" href={`/${locale}/briefings`}>
           {isDe ? "Briefings" : "Briefings"} →
         </Link>
       </div>
-      <h1 className="eyebrow">{isDe ? "Einsätze vor Ort" : "Missions on site"}</h1>
-      <p className="lead">
-        {isDe
-          ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Suche und Filter wirken auf Karte und Liste gleichermaßen; die vollständige Liste steht als Tabelle unter der Karte."
-          : "Every pin is a mission: an event, a briefing, a city. Search and filters apply to both map and list; the full list is in the table below the map."}
-      </p>
 
       <MissionExplorer
         locale={locale}

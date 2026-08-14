@@ -3,6 +3,8 @@ import { cachedQuery, tags } from "@/lib/cache";
 import { assetUrl } from "@/lib/media/url";
 import { parseStringList, identityDisplayName } from "@/lib/identities";
 import type { Locale } from "@/lib/i18n/config";
+import type { PublicationType } from "@/lib/domain";
+import type { PublicationItem, CertificationRecord } from "@/lib/queries/records";
 
 // Datenzugriff für Identitäten (Phase 2). Admin-Lesezugriffe gehen direkt an die
 // DB (nur für Admins, brauchen frische Daten); öffentliche Lesezugriffe sind
@@ -290,12 +292,15 @@ export interface IdentityDetail extends IdentityCard {
   since: string | null;
   focus: string[];
   languages: string[];
+  tools: string[];
   attributes: { label: string; value: string }[];
   dispatches: { slug: string; title: string; format: string }[];
   missions: { slug: string | null; eventName: string; city: string; date: Date }[];
   briefings: { title: string }[];
-  publications: { title: string; year: number }[];
-  certifications: { name: string }[];
+  // Volle Datensätze, damit die Detailseite dieselben Layouts wie die
+  // eigenständigen Seiten (Publikationen, Ausbildung) rendern kann.
+  publications: PublicationItem[];
+  certifications: CertificationRecord[];
 }
 
 async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): Promise<IdentityDetail | null> {
@@ -304,12 +309,13 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
     include: {
       portrait: true,
       envelope: true,
+      tools: { orderBy: { sortOrder: "asc" } },
       attributes: { where: { displayPublic: true }, orderBy: { sortOrder: "asc" } },
       dispatches: { include: { translations: true } },
       missions: { include: { translations: true } },
       talks: { include: { translations: true } },
-      publications: { include: { translations: true } },
-      certifications: true,
+      publications: { include: { translations: true, coverAsset: true } },
+      certifications: { include: { logo: true } },
     },
   });
   if (!r) return null;
@@ -324,6 +330,7 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
     since: r.since,
     focus: parseStringList(locale === "en" ? r.focusEn : r.focusDe),
     languages: parseStringList(r.languages),
+    tools: r.tools.map((t) => t.name),
     attributes: r.attributes.map((a) => ({
       label: locale === "en" && a.labelEn ? a.labelEn : a.labelDe,
       value: locale === "en" && a.valueEn ? a.valueEn : a.valueDe,
@@ -342,8 +349,58 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
         return { slug: t?.slug ?? null, eventName: m.eventName, city: m.city, date: m.startDate };
       }),
     briefings: r.talks.map((t) => ({ title: trans(t.translations)?.title ?? "" })).filter((b) => b.title),
-    publications: r.publications.map((p) => ({ title: trans(p.translations)?.title ?? "", year: p.year })).filter((p) => p.title),
-    certifications: r.certifications.map((c) => ({ name: c.name })),
+    publications: r.publications
+      .map((p): PublicationItem => {
+        const t = trans(p.translations);
+        const title = t?.title ?? "";
+        return {
+          id: p.id,
+          type: p.type as PublicationType,
+          year: p.year,
+          isbn: p.isbn,
+          publisher: p.publisher,
+          url: p.url,
+          repoUrl: p.repoUrl,
+          language: p.language,
+          title,
+          role: t?.role ?? null,
+          description: t?.description ?? null,
+          coverUrl: p.coverAsset ? assetUrl(p.coverAsset.blobPath) : null,
+          coverAlt:
+            p.coverAsset && !p.coverAsset.decorative
+              ? locale === "en" && p.coverAsset.altEn
+                ? p.coverAsset.altEn
+                : p.coverAsset.altDe
+              : title,
+          coverAi: p.coverAsset?.source === "AI",
+        };
+      })
+      .filter((p) => p.title)
+      .sort((a, b) => b.year - a.year),
+    certifications: r.certifications
+      .slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder || b.acquiredOn.getTime() - a.acquiredOn.getTime())
+      .map((c): CertificationRecord => ({
+        id: c.id,
+        name: c.name,
+        shortCode: c.shortCode,
+        kind: c.kind,
+        family: c.family,
+        status: c.status,
+        plannedFor: c.plannedFor,
+        acquiredOn: c.acquiredOn,
+        validUntil: c.validUntil,
+        proofUrl: c.proofUrl,
+        series: c.series,
+        logoUrl: c.logo ? assetUrl(c.logo.blobPath) : null,
+        logoAlt:
+          c.logo && !c.logo.decorative
+            ? locale === "en" && c.logo.altEn
+              ? c.logo.altEn
+              : c.logo.altDe
+            : c.name,
+        logoAi: c.logo?.source === "AI",
+      })),
   };
 }
 

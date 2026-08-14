@@ -25,6 +25,7 @@ export interface LegendData {
   contactText: string;
   contactButton: string;
   contactUrl: string;
+  employer: { name: string; url: string } | null;
   portrait: { url: string; alt: string; ai: boolean } | null;
 }
 
@@ -49,6 +50,7 @@ export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
     // ENTWURF — von Nicole zu prüfen (Phase 7.2).
     contactText: "Für Anfragen zu Vorträgen, Workshops und Beratung erreichst du mich am schnellsten über LinkedIn. Wenn dir E-Mail lieber ist, geht das genauso.",
     contactButton: "Nachricht auf LinkedIn",
+    employer: null,
     // Leer statt "#": die Legende-Seite fällt dann auf das hinterlegte
     // LinkedIn-Profil aus den Einstellungen zurück (Phase 1.2c, vollständig in
     // Phase 7).
@@ -76,6 +78,7 @@ export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
     contactText: "For talks, workshops and consulting, LinkedIn is the fastest way to reach me. If you prefer email, that works just as well.",
     contactButton: "Message on LinkedIn",
     contactUrl: "",
+    employer: null,
     portrait: null,
   },
 };
@@ -108,6 +111,7 @@ async function loadLegend(locale: Locale): Promise<LegendData> {
     contactText: row.contactText,
     contactButton: row.contactButton,
     contactUrl: row.contactUrl,
+    employer: row.employerName ? { name: row.employerName, url: row.employerUrl ?? "" } : null,
     portrait: row.portrait
       ? {
           url: assetUrl(row.portrait.blobPath),

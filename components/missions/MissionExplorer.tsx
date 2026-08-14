@@ -25,6 +25,7 @@ export interface ExplorerMission {
   bannerAlt: string;
   bannerAi: boolean;
   identitySlugs: string[];
+  tools: { slug: string; name: string }[];
 }
 
 export interface ExplorerIdentity {
@@ -42,6 +43,8 @@ export interface ExplorerLabels {
   yearAll: string;
   moreYears: string;
   onlineToggle: string;
+  toolLabel: string;
+  toolClear: string;
   all: string;
   reset: string;
   missionsWord: string;
@@ -62,19 +65,21 @@ interface FilterState {
   year: string; // "aktuell" | "alle" | Jahreszahl
   ids: string[];
   showOnline: boolean;
+  werkzeug: string; // Werkzeug-Slug oder "" (kein Werkzeug-Filter)
 }
 
 const STORE_KEY = "einsaetze:filter";
-const DEFAULT_STATE: FilterState = { q: "", year: "alle", ids: [], showOnline: true };
+const DEFAULT_STATE: FilterState = { q: "", year: "alle", ids: [], showOnline: true, werkzeug: "" };
 
 function readFromSearch(search: string): FilterState | null {
   const p = new URLSearchParams(search);
-  if (!p.has("jahr") && !p.has("identitaet") && !p.has("q") && !p.has("online")) return null;
+  if (!p.has("jahr") && !p.has("identitaet") && !p.has("q") && !p.has("online") && !p.has("werkzeug")) return null;
   return {
     q: p.get("q") ?? "",
     year: p.get("jahr") ?? "alle",
     ids: (p.get("identitaet") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     showOnline: p.get("online") !== "0",
+    werkzeug: p.get("werkzeug") ?? "",
   };
 }
 
@@ -88,6 +93,7 @@ function readFromStore(): FilterState | null {
       year: typeof parsed.year === "string" ? parsed.year : "alle",
       ids: Array.isArray(parsed.ids) ? parsed.ids.filter((x): x is string => typeof x === "string") : [],
       showOnline: parsed.showOnline !== false,
+      werkzeug: typeof parsed.werkzeug === "string" ? parsed.werkzeug : "",
     };
   } catch {
     return null;
@@ -141,6 +147,7 @@ export default function MissionExplorer({
     if (state.year && state.year !== "alle") p.set("jahr", state.year);
     if (state.ids.length) p.set("identitaet", state.ids.join(","));
     if (!state.showOnline) p.set("online", "0");
+    if (state.werkzeug) p.set("werkzeug", state.werkzeug);
     const qs = p.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
   }, [state, mounted]);
@@ -163,10 +170,21 @@ export default function MissionExplorer({
           (state.showOnline || !m.isOnline) &&
           matchesYear(m.year, m.future, selection, currentYear) &&
           (state.ids.length === 0 || m.identitySlugs.some((s) => state.ids.includes(s))) &&
+          (!state.werkzeug || m.tools.some((t) => t.slug === state.werkzeug)) &&
           (!needle || `${m.eventName} ${m.city} ${m.countryCode}`.toLowerCase().includes(needle)),
       ),
-    [missions, state.showOnline, state.ids, selection, currentYear, needle],
+    [missions, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
   );
+
+  // Anzeigename des aktiven Werkzeug-Filters (aus den Einsätzen, sonst der Slug).
+  const werkzeugName = useMemo(() => {
+    if (!state.werkzeug) return "";
+    for (const m of missions) {
+      const t = m.tools.find((x) => x.slug === state.werkzeug);
+      if (t) return t.name;
+    }
+    return state.werkzeug;
+  }, [missions, state.werkzeug]);
 
   const mapMissions: MapMission[] = filtered
     .filter((m) => !m.isOnline)
@@ -189,7 +207,7 @@ export default function MissionExplorer({
     }));
 
   const isDefault =
-    state.q === "" && state.year === "alle" && state.ids.length === 0 && state.showOnline;
+    state.q === "" && state.year === "alle" && state.ids.length === 0 && state.showOnline && state.werkzeug === "";
 
   const set = (patch: Partial<FilterState>) => setState((s) => ({ ...s, ...patch }));
 
@@ -242,6 +260,17 @@ export default function MissionExplorer({
             onClick={() => set({ showOnline: !state.showOnline })}
           >
             {labels.onlineToggle}
+          </button>
+        ) : null}
+        {state.werkzeug ? (
+          <button
+            type="button"
+            className="chip sm"
+            aria-pressed="true"
+            onClick={() => set({ werkzeug: "" })}
+            title={labels.toolClear}
+          >
+            {labels.toolLabel}: {werkzeugName} ✕
           </button>
         ) : null}
         {!isDefault ? (

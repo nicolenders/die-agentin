@@ -156,3 +156,36 @@ export async function getFocusTopics(locale: Locale): Promise<FocusTopicItem[]> 
     return [];
   }
 }
+
+// Radar-Themen für die Legende: aktive Themen mit optionaler Identitätsfarbe
+// (falls einer veröffentlichten Identität zugeordnet). Farbe = erste zugeordnete
+// veröffentlichte Identität.
+export interface RadarTopicItem {
+  id: string;
+  title: string;
+  note: string | null;
+  color: string | null;
+}
+
+async function loadRadarTopics(locale: Locale): Promise<RadarTopicItem[]> {
+  const rows = await db.focusTopic.findMany({
+    where: { active: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    include: { identities: { where: { published: true }, select: { color: true }, orderBy: { sortOrder: "asc" } } },
+  });
+  return rows.map((t) => ({
+    id: t.id,
+    title: locale === "en" && t.titleEn ? t.titleEn : t.titleDe,
+    note: t.note,
+    color: t.identities[0]?.color ?? null,
+  }));
+}
+
+export async function getRadarTopics(locale: Locale): Promise<RadarTopicItem[]> {
+  const run = cachedQuery(loadRadarTopics, ["radar", locale], [FOCUS_TAG, tags.identityList(locale)]);
+  try {
+    return await run(locale);
+  } catch {
+    return [];
+  }
+}

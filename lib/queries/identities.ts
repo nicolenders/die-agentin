@@ -292,19 +292,19 @@ export async function getPublishedIdentities(locale: Locale): Promise<IdentityCa
  * Namen, ohne Groß-/Kleinschreibung) entfernt, alphabetisch sortiert. Ersetzt die
  * frühere freie Werkzeug-Liste der Legende; gepflegt wird jetzt je Identität.
  */
-export async function getIdentityToolNames(): Promise<string[]> {
+export async function getIdentityTools(): Promise<{ name: string; slug: string }[]> {
   try {
     const rows = await db.tool.findMany({
       where: { identities: { some: { published: true } } },
-      select: { name: true },
+      select: { name: true, slug: true },
     });
-    const seen = new Map<string, string>();
+    const seen = new Map<string, { name: string; slug: string }>();
     for (const r of rows) {
       const name = r.name.trim();
       const key = name.toLowerCase();
-      if (name && !seen.has(key)) seen.set(key, name);
+      if (name && !seen.has(key)) seen.set(key, { name, slug: r.slug });
     }
-    return [...seen.values()].sort((a, b) => a.localeCompare(b, "de"));
+    return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, "de"));
   } catch {
     return [];
   }
@@ -316,7 +316,7 @@ export interface IdentityDetail extends IdentityCard {
   since: string | null;
   focus: string[];
   languages: string[];
-  tools: string[];
+  tools: { name: string; slug: string }[];
   attributes: { label: string; value: string }[];
   dispatches: { slug: string; title: string; format: string }[];
   missions: { slug: string | null; eventName: string; city: string; date: Date }[];
@@ -357,7 +357,7 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
     since: r.since,
     focus: parseStringList(locale === "en" ? r.focusEn : r.focusDe),
     languages: parseStringList(r.languages),
-    tools: r.tools.map((t) => t.name),
+    tools: r.tools.map((t) => ({ name: t.name, slug: t.slug })),
     attributes: r.attributes.map((a) => ({
       label: locale === "en" && a.labelEn ? a.labelEn : a.labelDe,
       value: locale === "en" && a.valueEn ? a.valueEn : a.valueDe,

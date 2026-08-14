@@ -36,6 +36,7 @@ export interface MissionFormInitial {
   en: { eventText: string; talkText: string } | null;
   photos: { id: string; url: string }[];
   banner: { id: string; url: string } | null;
+  toolIds: string[];
   material: MissionMaterialForm;
 }
 
@@ -69,12 +70,14 @@ export default function MissionForm({
   existingPins,
   talks,
   categories = [],
+  allTools = [],
   isEdit = false,
 }: {
   initial: MissionFormInitial;
   existingPins: { lat: number; lon: number }[];
-  talks: { id: string; name: string }[];
+  talks: { id: string; name: string; toolIds: string[] }[];
   categories?: { id: string; name: string }[];
+  allTools?: { id: string; name: string }[];
   isEdit?: boolean;
 }) {
   const router = useRouter();
@@ -110,6 +113,11 @@ export default function MissionForm({
   const [enText, setEnText] = useState(initial.en ?? { eventText: "", talkText: "" });
   const [photos, setPhotos] = useState<{ id: string; url: string }[]>(initial.photos);
   const [banner, setBanner] = useState<{ id: string; url: string } | null>(initial.banner);
+  // Werkzeuge des Einsatzes: beim Wählen/Ändern eines Briefings von diesem
+  // übernommen, danach frei anpassbar.
+  const [toolIds, setToolIds] = useState<string[]>(initial.toolIds);
+  const toggleTool = (tid: string) =>
+    setToolIds((prev) => (prev.includes(tid) ? prev.filter((x) => x !== tid) : [...prev, tid]));
   const [material, setMaterial] = useState<MissionMaterialForm>(initial.material);
   const setMat = (part: Partial<MissionMaterialForm>) => setMaterial((prev) => ({ ...prev, ...part }));
   const slidesInputRef = useRef<HTMLInputElement>(null);
@@ -185,6 +193,7 @@ export default function MissionForm({
       de: deText,
       en: enEnabled ? enText : null,
       photoAssetIds: photos.map((p) => p.id),
+      toolIds,
       material: {
         slidesUrl: material.slidesUrl,
         slidesPlatform: material.slidesPlatform,
@@ -230,8 +239,9 @@ export default function MissionForm({
       return;
     }
     // Neues Briefing in die Auswahl übernehmen und direkt selektieren.
-    setTalkList((prev) => [{ id: res.id!, name: res.name ?? newTalkTitle }, ...prev]);
+    setTalkList((prev) => [{ id: res.id!, name: res.name ?? newTalkTitle, toolIds: [] }, ...prev]);
     setTalkId(res.id);
+    setToolIds([]);
     setShowNewTalk(false);
     setNewTalkTitle("");
     setNewTalkLevel("");
@@ -336,7 +346,18 @@ export default function MissionForm({
               {showNewTalk ? "Abbrechen" : "+ Neues Briefing"}
             </button>
           </div>
-          <select className="f" value={talkId} onChange={(e) => setTalkId(e.target.value)}>
+          <select
+            className="f"
+            value={talkId}
+            onChange={(e) => {
+              const v = e.target.value;
+              setTalkId(v);
+              const t = talkList.find((x) => x.id === v);
+              // Werkzeuge des gewählten Briefings übernehmen (leert die Auswahl,
+              // wenn „keins" gewählt ist); danach weiter anpassbar.
+              setToolIds(t ? t.toolIds : []);
+            }}
+          >
             <option value="">— keins —</option>
             {talkList.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
@@ -387,6 +408,28 @@ export default function MissionForm({
             <option value="de">Deutsch</option>
             <option value="en">Englisch</option>
           </select>
+
+          <label className="f" style={{ marginTop: 10 }}>Werkzeuge</label>
+          <p className="meta" style={{ marginTop: 0 }}>
+            Beim Wählen eines Briefings übernommen — hier anpassbar (an-/abwählen).
+          </p>
+          {allTools.length === 0 ? (
+            <p className="meta" style={{ margin: 0 }}>Noch keine Werkzeuge angelegt (bei den Identitäten pflegen).</p>
+          ) : (
+            <div className="filter-row">
+              {allTools.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="chip sm"
+                  aria-pressed={toolIds.includes(t.id)}
+                  onClick={() => toggleTool(t.id)}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

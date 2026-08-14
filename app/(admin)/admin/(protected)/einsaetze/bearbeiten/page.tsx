@@ -28,8 +28,9 @@ export default async function EinsatzBearbeitenPage({
   const { id } = await searchParams;
 
   let existingPins: { lat: number; lon: number }[] = [];
-  let talks: { id: string; name: string }[] = [];
+  let talks: { id: string; name: string; toolIds: string[] }[] = [];
   let categories: { id: string; name: string }[] = [];
+  let allTools: { id: string; name: string }[] = [];
   let initial: MissionFormInitial = {
     eventName: "",
     city: "",
@@ -47,18 +48,21 @@ export default async function EinsatzBearbeitenPage({
     en: null,
     photos: [],
     banner: null,
+    toolIds: [],
     material: EMPTY_MATERIAL,
   };
 
   try {
-    const [missions, talkRows, catRows] = await Promise.all([
+    const [missions, talkRows, catRows, toolRows] = await Promise.all([
       db.mission.findMany({ select: { lat: true, lon: true } }),
-      db.talk.findMany({ include: { translations: { where: { locale: "de" } } } }),
+      db.talk.findMany({ include: { translations: { where: { locale: "de" } }, tools: { select: { id: true } } } }),
       db.taxonomy.findMany({ where: { kind: "TALK" }, orderBy: { sortOrder: "asc" }, select: { id: true, nameDe: true } }),
+      db.tool.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
     ]);
     existingPins = missions;
-    talks = talkRows.map((t) => ({ id: t.id, name: t.translations[0]?.title ?? t.id }));
+    talks = talkRows.map((t) => ({ id: t.id, name: t.translations[0]?.title ?? t.id, toolIds: t.tools.map((x) => x.id) }));
     categories = catRows.map((c) => ({ id: c.id, name: c.nameDe }));
+    allTools = toolRows.map((t) => ({ id: t.id, name: t.name }));
 
     if (id) {
       const mission = await db.mission.findUnique({
@@ -68,6 +72,7 @@ export default async function EinsatzBearbeitenPage({
           photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
           deliveries: { take: 1, orderBy: { heldOn: "desc" } },
           banner: true,
+          tools: { select: { id: true } },
         },
       });
       if (mission) {
@@ -92,6 +97,7 @@ export default async function EinsatzBearbeitenPage({
           en: en ? { eventText: en.eventText, talkText: en.talkText } : null,
           photos: mission.photos.map((p) => ({ id: p.assetId, url: assetUrl(p.asset.blobPath) })),
           banner: mission.banner ? { id: mission.banner.id, url: assetUrl(mission.banner.blobPath) } : null,
+          toolIds: mission.tools.map((t) => t.id),
           material: {
             slidesUrl: mission.slidesUrl ?? "",
             slidesPlatform: mission.slidesPlatform ?? "",
@@ -117,7 +123,7 @@ export default async function EinsatzBearbeitenPage({
       <div style={{ marginBottom: 12 }}>
         <Link className="btn ghost sm" href="/admin/einsaetze">← Zurück zur Liste</Link>
       </div>
-      <MissionForm initial={initial} existingPins={existingPins} talks={talks} categories={categories} isEdit={Boolean(id)} />
+      <MissionForm initial={initial} existingPins={existingPins} talks={talks} categories={categories} allTools={allTools} isEdit={Boolean(id)} />
     </>
   );
 }

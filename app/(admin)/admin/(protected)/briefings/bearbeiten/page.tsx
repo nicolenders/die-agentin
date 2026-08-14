@@ -15,7 +15,7 @@ export default async function BriefingEditPage({
 }) {
   const { id, err } = await searchParams;
 
-  const [cats, audiences] = await Promise.all([
+  const [cats, audiences, tools] = await Promise.all([
     db.taxonomy.findMany({
       where: { kind: "TALK" },
       orderBy: { sortOrder: "asc" },
@@ -26,12 +26,13 @@ export default async function BriefingEditPage({
       orderBy: { sortOrder: "asc" },
       select: { id: true, nameDe: true },
     }),
+    db.tool.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const talk = id
     ? await db.talk.findUnique({
         where: { id },
-        include: { translations: true, categories: true, audiences: true },
+        include: { translations: true, categories: true, audiences: true, tools: { select: { id: true } } },
       })
     : null;
 
@@ -98,6 +99,14 @@ export default async function BriefingEditPage({
             defaultSelected={talk?.audiences.map((a) => a.id) ?? []}
             emptyHint="Erst eine Zielgruppe anlegen (Übersicht → Zielgruppen)."
           />
+          <label className="f">Werkzeuge (Mehrfachauswahl)</label>
+          <CategoryMultiSelect
+            name="toolIds"
+            options={tools.map((t) => ({ id: t.id, name: t.name }))}
+            defaultSelected={talk?.tools.map((t) => t.id) ?? []}
+            emptyHint="Werkzeuge werden bei den Identitäten gepflegt."
+          />
+          <p className="meta" style={{ marginTop: 4 }}>Werden bei einem Einsatz mit diesem Briefing automatisch übernommen (dort anpassbar).</p>
           <label className="f">Level</label>
           <input className="f" name="level" defaultValue={talk?.level ?? ""} placeholder="300" />
           <label className="f">Dauer (Minuten)</label>

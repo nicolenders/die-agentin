@@ -111,7 +111,7 @@ export default async function HQPage({
               { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings, href: `/${locale}/briefings` },
               { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications, href: `/${locale}/ausbildung` },
               { n: stats.books, sg: t.sgBooks, pl: t.countBooks, href: `/${locale}/publikationen` },
-              { n: stats.mvpAwards, sg: t.countMvp, pl: t.countMvp, href: `/${locale}/ausbildung` },
+              { n: stats.mvpAwards, sg: t.countMvp, pl: t.countMvp, href: `/${locale}/ausbildung#mvp` },
             ].map((c) =>
               c.href ? (
                 <Link key={c.pl} href={c.href}>

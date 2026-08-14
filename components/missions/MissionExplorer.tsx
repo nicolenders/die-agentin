@@ -149,6 +149,9 @@ export default function MissionExplorer({
     () => [...new Set(missions.map((m) => m.year))].sort((a, b) => b - a),
     [missions],
   );
+  // Den Online-Filter nur anbieten, wenn es überhaupt Online-Einsätze gibt —
+  // sonst wirkt er (zu Recht) folgenlos und verwirrt nur.
+  const hasOnline = useMemo(() => missions.some((m) => m.isOnline), [missions]);
   const currentYear = new Date().getUTCFullYear();
   const selection: YearSelection = parseYearSelection(state.year);
   const needle = state.q.trim().toLowerCase();
@@ -231,14 +234,16 @@ export default function MissionExplorer({
               )
               : null}
         </span>
-        <button
-          type="button"
-          className="chip sm"
-          aria-pressed={state.showOnline}
-          onClick={() => set({ showOnline: !state.showOnline })}
-        >
-          {labels.onlineToggle}
-        </button>
+        {hasOnline ? (
+          <button
+            type="button"
+            className="chip sm"
+            aria-pressed={state.showOnline}
+            onClick={() => set({ showOnline: !state.showOnline })}
+          >
+            {labels.onlineToggle}
+          </button>
+        ) : null}
         {!isDefault ? (
           <button
             type="button"

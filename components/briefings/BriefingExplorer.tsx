@@ -8,6 +8,7 @@ export interface ExplorerItem {
   searchText: string; // Titel + Inhalt (Plain) für die Suche
   categories: string[];
   audiences: string[];
+  identitySlugs: string[];
   level: string | null;
   durationMin: number | null;
   deCount: number;
@@ -16,24 +17,35 @@ export interface ExplorerItem {
   abstractNode: ReactNode; // serverseitig gerenderter Rich-Text
 }
 
+export interface ExplorerIdentity {
+  slug: string;
+  name: string;
+  color: string;
+}
+
 // Filterbare Briefing-Liste: Freitextsuche + anklickbare Mehrfach-Kategorie-
 // filter (OR: ein Treffer je ausgewählter Kategorie genügt). Passende Kategorien
 // werden am Eintrag hervorgehoben. Jedes Briefing erscheint genau einmal.
 export default function BriefingExplorer({
   items,
   categories,
+  identities = [],
   locale,
 }: {
   items: ExplorerItem[];
   categories: string[];
+  identities?: ExplorerIdentity[];
   locale: string;
 }) {
   const isDe = locale === "de";
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const toggle = (cat: string) =>
     setSelected((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
+  const toggleId = (slug: string) =>
+    setSelectedIds((prev) => (prev.includes(slug) ? prev.filter((c) => c !== slug) : [...prev, slug]));
 
   const max = useMemo(() => items.reduce((m, i) => Math.max(m, i.total), 1), [items]);
 
@@ -42,9 +54,10 @@ export default function BriefingExplorer({
     return items.filter((it) => {
       if (needle && !it.searchText.toLowerCase().includes(needle)) return false;
       if (selected.length > 0 && !it.categories.some((c) => selected.includes(c))) return false;
+      if (selectedIds.length > 0 && !it.identitySlugs.some((s) => selectedIds.includes(s))) return false;
       return true;
     });
-  }, [items, q, selected]);
+  }, [items, q, selected, selectedIds]);
 
   return (
     <div>
@@ -66,6 +79,25 @@ export default function BriefingExplorer({
           {categories.map((cat) => (
             <button key={cat} className="chip" aria-pressed={selected.includes(cat)} onClick={() => toggle(cat)}>
               {cat}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {identities.length > 0 ? (
+        <div className="year-filter" role="group" aria-label={isDe ? "Nach Identität filtern" : "Filter by identity"} style={{ marginBottom: 8 }}>
+          <button className="chip" aria-pressed={selectedIds.length === 0} onClick={() => setSelectedIds([])}>
+            {isDe ? "Alle Identitäten" : "All identities"}
+          </button>
+          {identities.map((i) => (
+            <button
+              key={i.slug}
+              className="chip"
+              aria-pressed={selectedIds.includes(i.slug)}
+              onClick={() => toggleId(i.slug)}
+              style={selectedIds.includes(i.slug) ? { borderColor: i.color } : undefined}
+            >
+              {i.name}
             </button>
           ))}
         </div>

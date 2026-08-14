@@ -1246,3 +1246,71 @@ svg.map {
   white-space: nowrap;
   border: 0;
 }
+
+// ---------------------------------------------------------------------------
+// Druck: Lebenslauf-Seite (/cv) sauber auf Papier bzw. als PDF ausgeben.
+// Kopf-/Fußzeile und interaktive Elemente ausblenden, dunkles Theme auf hellen
+// Grund mit dunkler Schrift umstellen, die Ziel-Ecken-Klammern entfernen.
+// ---------------------------------------------------------------------------
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .cv-doc {
+    color: #111 !important;
+
+    h1,
+    h2,
+    h3,
+    b,
+    .eyebrow,
+    .meta,
+    .lead,
+    .cert-name,
+    .cert-year,
+    .pub-title,
+    .pub-year,
+    .tag {
+      color: #111 !important;
+    }
+
+    a {
+      color: #111 !important;
+      text-decoration: underline;
+    }
+
+    .card,
+    .bracket {
+      background: #fff !important;
+      border-color: #bbb !important;
+      box-shadow: none !important;
+    }
+
+    .bracket::before,
+    .bracket::after {
+      display: none !important;
+    }
+
+    .tag,
+    .pub-year,
+    .cert .badge {
+      border-color: #999 !important;
+    }
+
+    // Kacheln möglichst nicht über Seitenumbrüche zerreißen.
+    .cert,
+    .pub-card,
+    .course-card,
+    article {
+      break-inside: avoid;
+    }
+  }
+}

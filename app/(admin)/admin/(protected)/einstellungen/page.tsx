@@ -1,11 +1,32 @@
 import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
-import { SOCIAL_PLATFORMS, socialSettingKey, getContactInfo } from "@/lib/queries/settings";
+import { getContactInfo } from "@/lib/queries/settings";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
-import { saveLegalDoc, saveSocialLinks, saveContactInfo } from "./actions";
+import InfoPopover from "@/components/admin/InfoPopover";
+import { saveLegalDoc, saveContactInfo } from "./actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
+
+// Rein informative Abschnitte (kein Formular) — hinter dem Info-Icon oben rechts.
+const INFO_SECTIONS = [
+  {
+    heading: "Zugang",
+    text: "Anmeldung ausschließlich über Microsoft Entra ID mit MFA. Keine Passwörter in der Anwendung, keine öffentliche Registrierung.",
+  },
+  {
+    heading: "Sprachen",
+    text: "Deutsch (Standard) und Englisch. Fehlt eine Übersetzung, wird auf Deutsch zurückgefallen — mit sichtbarem Hinweis.",
+  },
+  {
+    heading: "Consent",
+    text: "Consent wird nur für YouTube-Einbindungen benötigt (Zwei-Klick). Ohne Video-Block erscheint kein Banner.",
+  },
+  {
+    heading: "Betrieb",
+    text: "Deployment automatisch über GitHub Actions (Push auf main → Build → Deploy). Datenbank-Backup gemäß Azure-SQL-Konfiguration; Rollback per Traffic-Switch auf eine ältere Revision.",
+  },
+];
 
 const LEGAL_LABEL: Record<LegalKey, string> = {
   IMPRINT: "Impressum",
@@ -46,25 +67,19 @@ export default async function EinstellungenPage({
 
   const contact = await getContactInfo();
 
-  const social: Record<string, string> = {};
-  try {
-    const rows = await db.siteSetting.findMany({
-      where: { key: { in: SOCIAL_PLATFORMS.map((p) => socialSettingKey(p.key)) } },
-      select: { key: true, value: true },
-    });
-    for (const row of rows) social[row.key.replace(/^social\./, "")] = row.value;
-  } catch {
-    dbError = true;
-  }
-
   return (
     <section>
-      <h1>Einstellungen</h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <h1 style={{ margin: 0 }}>Einstellungen</h1>
+        <div style={{ marginLeft: "auto" }}>
+          <InfoPopover title="Betrieb & Rahmen" sections={INFO_SECTIONS} />
+        </div>
+      </div>
       <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 
       <div className="card bracket" style={{ marginTop: 20 }}>
-        <p className="eyebrow">Kontakt (Phase 7)</p>
+        <p className="eyebrow">Kontaktinformationen</p>
         <p className="meta" style={{ marginTop: 0 }}>
           E-Mail und Anschrift werden hier an EINER Stelle gepflegt — die Legende und das Impressum lesen sie aus.
           {!contact.email || !contact.postalAddress ? (
@@ -79,68 +94,6 @@ export default async function EinstellungenPage({
           <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Kontaktangaben speichern</button>
         </form>
       </div>
-
-      <div className="grid g2" style={{ marginTop: 20 }}>
-        <div className="card bracket">
-          <p className="eyebrow">Zugang</p>
-          <p style={{ fontSize: 14 }}>
-            Anmeldung ausschließlich über Microsoft Entra ID mit MFA. Keine
-            Passwörter in der Anwendung, keine öffentliche Registrierung.
-          </p>
-        </div>
-        <div className="card bracket">
-          <p className="eyebrow">Sprachen</p>
-          <p style={{ fontSize: 14 }}>
-            Deutsch (Standard) und Englisch. Fehlt eine Übersetzung, wird auf
-            Deutsch zurückgefallen — mit sichtbarem Hinweis.
-          </p>
-        </div>
-        <div className="card bracket">
-          <p className="eyebrow">Consent</p>
-          <p style={{ fontSize: 14 }}>
-            Consent wird nur für YouTube-Einbindungen benötigt (Zwei-Klick). Ohne
-            Video-Block erscheint kein Banner.
-          </p>
-        </div>
-        <div className="card bracket">
-          <p className="eyebrow">Betrieb</p>
-          <p style={{ fontSize: 14 }}>
-            Deployment automatisch über GitHub Actions (Push auf <code>main</code> →
-            Build → Deploy). Datenbank-Backup gemäß Azure-SQL-Konfiguration;
-            Rollback per Traffic-Switch auf eine ältere Revision.
-          </p>
-        </div>
-      </div>
-
-      <p className="eyebrow" style={{ marginTop: 28 }}>Social-Media-Profile</p>
-      <p className="meta">
-        Erscheinen als anklickbare Icons im Footer und auf der Legende-Seite.
-        Leeres Feld = Link wird ausgeblendet. Ohne vollständige Adresse wird{" "}
-        <code>https://</code> ergänzt.
-      </p>
-      <form action={saveSocialLinks} className="card bracket" style={{ marginBottom: 16 }}>
-        <div className="grid g2">
-          {SOCIAL_PLATFORMS.map((p) => (
-            <div key={p.key}>
-              <label className="f" htmlFor={`social-${p.key}`}>
-                {p.label}
-              </label>
-              <input
-                id={`social-${p.key}`}
-                className="f"
-                name={p.key}
-                type="url"
-                inputMode="url"
-                defaultValue={social[p.key] ?? ""}
-                placeholder={p.placeholder}
-              />
-            </div>
-          ))}
-        </div>
-        <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>
-          Profile speichern
-        </button>
-      </form>
 
       <p className="eyebrow" style={{ marginTop: 28 }}>Rechtliche Seiten</p>
       <p className="meta">Bereits gespeicherter Text wird angezeigt und kann bearbeitet werden — je Sprache getrennt.</p>

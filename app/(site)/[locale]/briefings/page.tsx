@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getBriefingList } from "@/lib/queries/briefings";
+import { getPublishedIdentities } from "@/lib/queries/identities";
 import { richValueToPlain } from "@/lib/content/rich";
 import RichText from "@/components/content/RichText";
 import BriefingExplorer, { type ExplorerItem } from "@/components/briefings/BriefingExplorer";
@@ -24,10 +25,18 @@ export default async function BriefingsPage({
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
 
-  const list = await getBriefingList(locale);
+  const [list, identities] = await Promise.all([
+    getBriefingList(locale),
+    getPublishedIdentities(locale),
+  ]);
   const categories = [...new Set(list.flatMap((i) => i.categories))].sort((a, b) =>
     a.localeCompare(b, locale),
   );
+  // Nur Identitäten anbieten, die tatsächlich mit einem Briefing verknüpft sind.
+  const usedSlugs = new Set(list.flatMap((i) => i.identitySlugs));
+  const filterIdentities = identities
+    .filter((i) => usedSlugs.has(i.slug))
+    .map((i) => ({ slug: i.slug, name: i.name, color: i.color }));
 
   const items: ExplorerItem[] = list.map((i) => ({
     id: i.id,
@@ -35,6 +44,7 @@ export default async function BriefingsPage({
     searchText: `${i.title} ${richValueToPlain(i.abstract)} ${i.categories.join(" ")} ${i.audiences.join(" ")}`,
     categories: i.categories,
     audiences: i.audiences,
+    identitySlugs: i.identitySlugs,
     level: i.level,
     durationMin: i.durationMin,
     deCount: i.deCount,
@@ -59,7 +69,7 @@ export default async function BriefingsPage({
         </div>
       ) : (
         <div style={{ marginTop: 24 }}>
-          <BriefingExplorer items={items} categories={categories} locale={locale} />
+          <BriefingExplorer items={items} categories={categories} identities={filterIdentities} locale={locale} />
         </div>
       )}
     </section>

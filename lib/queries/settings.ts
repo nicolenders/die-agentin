@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { cachedQuery } from "@/lib/cache";
+import type { Locale } from "@/lib/i18n/config";
+import { SHARE_TYPES, type ShareType, shareTemplateKey, DEFAULT_SHARE_TEMPLATES, shareableProfiles } from "@/lib/share";
 
 // Seiteneinstellungen als Schlüssel/Wert. Aktuell die Social-Media-Profile im
 // Footer — von Nicole in den Einstellungen pflegbar, ohne Deployment.
@@ -130,4 +132,61 @@ export async function getSocialLinks(): Promise<Record<string, string>> {
   } catch {
     return {};
   }
+}
+
+export interface ShareProfile {
+  key: string;
+  label: string;
+  icon: string;
+  url: string;
+}
+
+/** true, wenn LinkedIn verbunden und das Zugriffstoken (noch) gültig ist. */
+export async function getLinkedInConnected(): Promise<boolean> {
+  try {
+    const a = await db.channelAccount.findUnique({
+      where: { platform: "LINKEDIN" },
+      select: { connected: true, tokenRef: true, expiresAt: true },
+    });
+    return Boolean(a?.connected && a.tokenRef && (!a.expiresAt || a.expiresAt > new Date()));
+  } catch {
+    return false;
+  }
+}
+
+// Teilbare Profile mit Anzeige-Metadaten (Label, Icon-Kürzel) für das Teilen-
+// Popup. GitHub/YouTube und leere Profile sind bereits ausgenommen.
+export async function getShareProfiles(): Promise<ShareProfile[]> {
+  const social = await getSocialLinks();
+  const meta = new Map(SOCIAL_PLATFORMS.map((p) => [p.key, p]));
+  return shareableProfiles(social).map(({ key, url }) => ({
+    key,
+    url,
+    label: meta.get(key)?.label ?? key,
+    icon: meta.get(key)?.icon ?? key,
+  }));
+}
+
+// Teilen-Vorlagen je Typ und Sprache. Gepflegte Werte überschreiben die
+// Standardtexte; fehlt etwas oder ist die DB nicht erreichbar, greifen die
+// Standardtexte aus lib/share. Admin-Nutzung → nicht gecacht.
+export async function getShareTemplates(): Promise<Record<ShareType, Record<Locale, string>>> {
+  const result = {} as Record<ShareType, Record<Locale, string>>;
+  for (const type of SHARE_TYPES) {
+    result[type] = { de: DEFAULT_SHARE_TEMPLATES[type].de, en: DEFAULT_SHARE_TEMPLATES[type].en };
+  }
+  const keys = SHARE_TYPES.flatMap((t) => [shareTemplateKey(t, "de"), shareTemplateKey(t, "en")]);
+  try {
+    const rows = await db.siteSetting.findMany({ where: { key: { in: keys } }, select: { key: true, value: true } });
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    for (const type of SHARE_TYPES) {
+      for (const locale of ["de", "en"] as Locale[]) {
+        const v = map.get(shareTemplateKey(type, locale));
+        if (v && v.trim()) result[type][locale] = v;
+      }
+    }
+  } catch {
+    // Standardtexte
+  }
+  return result;
 }

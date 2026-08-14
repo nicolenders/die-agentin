@@ -129,6 +129,11 @@ model Mission {
   // Belegmaterial (Phase 9.1) — alle optional, Altdaten dürfen nicht brechen.
   slidesUrl       String? @db.NVarChar(2048)
   slidesPlatform  String?
+  // Hochgeladene Foliendatei (PDF). Pfad in der Medienablage + Originalname für
+  // den Download-Link. Getrennt von MediaAsset, damit die Bild-Mediathek sauber
+  // bleibt. Öffentlich als Download angeboten (Phase: Einsätze-Umbau).
+  slidesFilePath  String? @db.NVarChar(2048)
+  slidesFileName  String?
   recordingUrl    String? @db.NVarChar(2048) // YouTube o. Ä., datenschutzfreundlich eingebettet
   recapDe         String? @db.NVarChar(Max) // TipTap JSON
   recapEn         String? @db.NVarChar(Max)
@@ -190,7 +195,8 @@ model Talk {
   category    Taxonomy @relation("TalkCategory", fields: [categoryId], references: [id])
   level       String? // "100" | "200" | "300" | "400"
   durationMin Int?
-  active      Boolean  @default(true)
+  active      Boolean  @default(true) // öffentlich sichtbar (auf der Website angezeigt)
+  sortOrder   Int      @default(0) // manuelle Reihenfolge auf der öffentlichen Seite
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -201,6 +207,7 @@ model Talk {
   identities   Identity[]     @relation("IdentityTalks")
 
   @@index([categoryId])
+  @@index([sortOrder])
 }
 
 model TalkTranslation {

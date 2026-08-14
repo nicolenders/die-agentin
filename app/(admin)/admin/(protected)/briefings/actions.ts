@@ -282,6 +282,52 @@ export async function createTalkQuick(input: QuickTalkInput): Promise<QuickTalkR
   }
 }
 
+// Öffentliche Sichtbarkeit eines Briefings umschalten (steuert die Anzeige auf
+// der Website). `active` ist das Sichtbarkeitsflag.
+export async function toggleTalkVisibility(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!id) redirect(`${LIST}?err=not-found`);
+  let failed = false;
+  try {
+    const current = await db.talk.findUnique({ where: { id }, select: { active: true } });
+    if (current) await db.talk.update({ where: { id }, data: { active: !current.active } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=failed`);
+  invalidate();
+  redirect(`${LIST}?ok=toggled`);
+}
+
+// Reihenfolge eines Briefings auf der öffentlichen Seite um eine Position ändern.
+export async function reorderTalk(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const dir = str(formData, "dir");
+  if (!id) redirect(`${LIST}?err=not-found`);
+  try {
+    const all = await db.talk.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      select: { id: true },
+    });
+    const index = all.findIndex((t) => t.id === id);
+    const swapWith = dir === "down" ? index + 1 : index - 1;
+    const order = all.map((t) => t.id);
+    const a = order[index];
+    const b = order[swapWith];
+    if (a !== undefined && b !== undefined) {
+      order[index] = b;
+      order[swapWith] = a;
+      await db.$transaction(order.map((tid, i) => db.talk.update({ where: { id: tid }, data: { sortOrder: i } })));
+    }
+  } catch {
+    redirect(`${LIST}?err=failed`);
+  }
+  invalidate();
+  redirect(`${LIST}?ok=reordered`);
+}
+
 export async function deleteTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");

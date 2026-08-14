@@ -23,12 +23,13 @@ export interface MissionListItem {
   bannerUrl: string | null;
   bannerAlt: string;
   bannerAi: boolean;
+  identitySlugs: string[]; // verknüpfte Identitäten (für den Identitätsfilter)
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
   const missions = await db.mission.findMany({
     orderBy: { startDate: "desc" },
-    include: { translations: true, banner: true },
+    include: { translations: true, banner: true, identities: { select: { slug: true } } },
   });
   return missions.map((m) => {
     const picked = pickTranslation(m.translations, locale);
@@ -45,6 +46,7 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       future: m.startDate.getTime() > nowMs,
       eventUrl: m.eventUrl,
       published: m.contentStatus === "PUBLISHED",
+      identitySlugs: m.identities.map((i) => i.slug),
       bannerAi: m.banner?.source === "AI",
       bannerUrl: m.banner ? assetUrl(m.banner.blobPath) : null,
       bannerAlt:
@@ -89,6 +91,8 @@ export interface MissionDetail {
   identities: { slug: string; name: string; color: string }[];
   slidesUrl: string | null;
   slidesPlatform: string | null;
+  slidesFileUrl: string | null; // öffentlicher Download-Link der hochgeladenen PDF
+  slidesFileName: string | null;
   recordingUrl: string | null;
   recap: string | null;
   feedbackScore: number | null;
@@ -161,6 +165,8 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
     identities: mission.identities.map((i) => ({ slug: i.slug, name: identityDisplayName(i, locale), color: i.color })),
     slidesUrl: mission.slidesUrl,
     slidesPlatform: mission.slidesPlatform,
+    slidesFileUrl: mission.slidesFilePath ? assetUrl(mission.slidesFilePath) : null,
+    slidesFileName: mission.slidesFileName,
     recordingUrl: mission.recordingUrl,
     recap: locale === "en" && mission.recapEn ? mission.recapEn : mission.recapDe,
     feedbackScore: mission.feedbackScore,

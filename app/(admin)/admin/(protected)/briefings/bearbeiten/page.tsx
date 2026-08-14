@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import MaskBar from "@/components/admin/MaskBar";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import RichTextField from "@/components/admin/editor/RichTextField";
+import { rankRelatedBriefings } from "@/lib/related-briefings";
 import { createTalk, updateTalk } from "../actions";
 
 export const metadata = { title: "Briefing bearbeiten · Zentrale" };
@@ -48,6 +49,23 @@ export default async function BriefingEditPage({
   const de = talk?.translations.find((t) => t.locale === "de");
   const en = talk?.translations.find((t) => t.locale === "en");
   const isEdit = Boolean(talk);
+
+  // Verwandte Briefings: gleiche Kategorie (Thema), nach Überschneidung sortiert.
+  let related: { id: string; title: string; categories: string; shared: number }[] = [];
+  if (talk) {
+    const targetCatIds = talk.categories.map((c) => c.id);
+    if (targetCatIds.length > 0) {
+      const others = await db.talk.findMany({
+        where: { id: { not: talk.id }, categories: { some: { id: { in: targetCatIds } } } },
+        include: { translations: { where: { locale: "de" } }, categories: { select: { id: true, nameDe: true } } },
+      });
+      const ranked = rankRelatedBriefings(
+        targetCatIds,
+        others.map((o) => ({ id: o.id, categoryIds: o.categories.map((c) => c.id), title: o.translations[0]?.title ?? "(ohne Titel)", categoryNames: o.categories.map((c) => c.nameDe) })),
+      );
+      related = ranked.map((r) => ({ id: r.item.id, title: r.item.title, categories: r.item.categoryNames.join(", "), shared: r.shared }));
+    }
+  }
 
   return (
     <section>
@@ -95,6 +113,25 @@ export default async function BriefingEditPage({
           </button>
         </form>
       </div>
+
+      {isEdit ? (
+        <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
+          <p className="eyebrow" style={{ margin: 0 }}>Verwandte Briefings</p>
+          <p className="meta" style={{ marginTop: 6 }}>Gleiches Thema (gemeinsame Kategorie), nach Überschneidung sortiert.</p>
+          {related.length === 0 ? (
+            <p className="muted" style={{ margin: 0 }}>Noch keine verwandten Briefings — ein anderes Briefing mit gleicher Kategorie erscheint hier.</p>
+          ) : (
+            <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+              {related.map((r) => (
+                <li key={r.id} style={{ marginBottom: 4 }}>
+                  <Link href={`/admin/briefings/bearbeiten?id=${r.id}`}>{r.title}</Link>{" "}
+                  <span className="meta">· {r.categories} · {r.shared} gemeinsame {r.shared === 1 ? "Kategorie" : "Kategorien"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

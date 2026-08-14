@@ -79,6 +79,7 @@ export interface BriefingListItem {
   enCount: number;
   total: number;
   lastHeld: string | null; // ISO
+  identitySlugs: string[]; // verknüpfte Identitäten (für den Identitätsfilter)
 }
 
 // Jedes aktive Briefing GENAU EINMAL, mit allen Kategorien als Liste, sortiert
@@ -92,9 +93,13 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
       categories: { select: { nameDe: true, nameEn: true } },
       audiences: { select: { nameDe: true, nameEn: true } },
       deliveries: { select: { language: true, heldOn: true } },
+      identities: { select: { slug: true } },
     },
   });
 
+  // Manuelle Reihenfolge (sortOrder) hat Vorrang; bei Gleichstand die häufiger
+  // gehaltenen zuerst.
+  const order = new Map(talks.map((t) => [t.id, t.sortOrder]));
   const items = talks.map((t): BriefingListItem => {
     const picked = pickTranslation(t.translations, locale);
     const lastHeld = t.deliveries.reduce<Date | null>(
@@ -113,11 +118,15 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
       enCount: t.deliveries.filter((d) => d.language === "en").length,
       total: t.deliveries.length,
       lastHeld: lastHeld ? lastHeld.toISOString() : null,
+      identitySlugs: t.identities.map((i) => i.slug),
     };
   });
 
   return items.sort(
-    (a, b) => b.total - a.total || a.title.localeCompare(b.title, locale),
+    (a, b) =>
+      (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) ||
+      b.total - a.total ||
+      a.title.localeCompare(b.title, locale),
   );
 }
 

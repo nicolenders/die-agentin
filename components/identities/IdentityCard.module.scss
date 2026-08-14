@@ -1,0 +1,100 @@
+// Kompakte Identitätskarte (Startseite, Legende) und Feature-Karte
+// (Identitäten-Übersicht, Banner + überlagertes Porträt wie ein Social-Profil).
+
+.compact {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 11px 14px;
+  border: 1px solid var(--line-soft);
+  border-left-width: 3px;
+  border-radius: var(--r);
+  background: linear-gradient(180deg, rgba(18, 10, 36, 0.7), rgba(11, 5, 24, 0.7));
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.compact:hover {
+  transform: translateY(-2px);
+  border-color: var(--violet-bright, #8b5cf6);
+}
+
+.avatar,
+.avatarFallback {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.compactBody {
+  min-width: 0;
+}
+.code {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  margin: 0;
+  opacity: 0.7;
+}
+.name {
+  font-size: 15px;
+  margin: 2px 0 0;
+  line-height: 1.2;
+}
+.role {
+  font-size: 12.5px;
+  margin: 2px 0 0;
+  opacity: 0.8;
+}
+
+// ---- Feature-Karte (Übersicht) ----
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-soft);
+  border-top-width: 3px;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(18, 10, 36, 0.72), rgba(11, 5, 24, 0.72));
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.feature:hover {
+  transform: translateY(-2px);
+  border-color: var(--violet-bright, #8b5cf6);
+}
+
+.bannerWrap {
+  position: relative;
+}
+.banner,
+.bannerFallback {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+.featureAvatar,
+.featureAvatarFallback {
+  position: absolute;
+  left: 14px;
+  bottom: -24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--bg, #0b0518);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+}
+.featureBody {
+  padding: 32px 15px 16px;
+}
+.tagline {
+  font-size: 13px;
+  margin: 8px 0 0;
+  opacity: 0.85;
+}

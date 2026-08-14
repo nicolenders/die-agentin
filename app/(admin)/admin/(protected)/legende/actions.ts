@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { invalidateTags, tags } from "@/lib/cache";
 import { serializeRichValue } from "@/lib/content/rich";
+import { CONTACT_EMAIL_KEY, SITE_SETTINGS_TAG } from "@/lib/queries/settings";
 
 const PAGE = "/admin/legende";
 
@@ -29,10 +30,6 @@ export async function saveLegend(formData: FormData): Promise<void> {
       return { title: (title ?? "").trim(), text: rest.join("|").trim() };
     })
     .filter((p) => p.title);
-  const toolsList = str(formData, "tools")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
 
   const data = {
     eyebrow: str(formData, "eyebrow"),
@@ -41,7 +38,8 @@ export async function saveLegend(formData: FormData): Promise<void> {
     missionEyebrow: str(formData, "missionEyebrow"),
     missionText: serializeRichValue(str(formData, "missionText")),
     pillarsJson: JSON.stringify(pillars),
-    toolsJson: JSON.stringify(toolsList),
+    // Werkzeuge werden je Identität gepflegt; die Legende-Spalte bleibt leer.
+    toolsJson: "[]",
     contactEyebrow: str(formData, "contactEyebrow"),
     contactHeading: str(formData, "contactHeading"),
     contactText: serializeRichValue(str(formData, "contactText")),
@@ -50,6 +48,10 @@ export async function saveLegend(formData: FormData): Promise<void> {
     portraitAssetId: str(formData, "portraitAssetId") || null,
   };
 
+  // Kontakt-E-Mail an EINER Stelle (SiteSetting) speichern — dieselbe Quelle wie
+  // die Einstellungen und das Impressum. Der Wert ist sprachunabhängig.
+  const contactEmail = str(formData, "contactEmail");
+
   let failed = false;
   try {
     await db.legendContent.upsert({
@@ -57,10 +59,15 @@ export async function saveLegend(formData: FormData): Promise<void> {
       create: { locale, ...data },
       update: data,
     });
+    await db.siteSetting.upsert({
+      where: { key: CONTACT_EMAIL_KEY },
+      create: { key: CONTACT_EMAIL_KEY, value: contactEmail },
+      update: { value: contactEmail },
+    });
   } catch {
     failed = true;
   }
   if (failed) redirect(`${PAGE}?locale=${locale}&err=failed`);
-  invalidateTags([tags.legend(locale)]);
+  invalidateTags([tags.legend(locale), SITE_SETTINGS_TAG]);
   redirect(`${PAGE}?locale=${locale}&ok=saved`);
 }

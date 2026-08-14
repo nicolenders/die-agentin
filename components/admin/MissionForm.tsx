@@ -7,6 +7,7 @@ import { MISSION_STATUSES, SESSION_TYPES } from "@/lib/domain";
 import MediaPicker, { type MediaItem } from "@/components/admin/editor/MediaPicker";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
+import { assetUrl } from "@/lib/media/url";
 import {
   saveMission,
   type SaveMissionInput,
@@ -40,6 +41,8 @@ export interface MissionFormInitial {
 export interface MissionMaterialForm {
   slidesUrl: string;
   slidesPlatform: string;
+  slidesFilePath: string;
+  slidesFileName: string;
   recordingUrl: string;
   sessionType: string;
   sessionLanguage: string;
@@ -50,8 +53,8 @@ export interface MissionMaterialForm {
 }
 
 export const EMPTY_MATERIAL: MissionMaterialForm = {
-  slidesUrl: "", slidesPlatform: "", recordingUrl: "", sessionType: "", sessionLanguage: "",
-  attendeeCount: "", feedbackScore: "", feedbackSource: "", coSpeakers: "",
+  slidesUrl: "", slidesPlatform: "", slidesFilePath: "", slidesFileName: "", recordingUrl: "",
+  sessionType: "", sessionLanguage: "", attendeeCount: "", feedbackScore: "", feedbackSource: "", coSpeakers: "",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -107,6 +110,9 @@ export default function MissionForm({
   const [banner, setBanner] = useState<{ id: string; url: string } | null>(initial.banner);
   const [material, setMaterial] = useState<MissionMaterialForm>(initial.material);
   const setMat = (part: Partial<MissionMaterialForm>) => setMaterial((prev) => ({ ...prev, ...part }));
+  const slidesInputRef = useRef<HTMLInputElement>(null);
+  const [slidesBusy, setSlidesBusy] = useState(false);
+  const [slidesError, setSlidesError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [showBannerPicker, setShowBannerPicker] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
@@ -136,6 +142,26 @@ export default function MissionForm({
     setBanner({ id: item.id, url: item.url });
   }
 
+  async function uploadSlides(file: File) {
+    setSlidesError(null);
+    setSlidesBusy(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/admin/missions/slides", { method: "POST", body });
+      const data = await res.json();
+      if (!res.ok) {
+        setSlidesError(data.error ?? "Upload fehlgeschlagen.");
+        return;
+      }
+      setMat({ slidesFilePath: data.path, slidesFileName: data.name });
+    } catch {
+      setSlidesError("Upload fehlgeschlagen. Bitte erneut versuchen.");
+    } finally {
+      setSlidesBusy(false);
+    }
+  }
+
   async function handleSave(intent: SaveMissionInput["intent"]) {
     setSaving(true);
     setSaveStatus(null);
@@ -159,6 +185,8 @@ export default function MissionForm({
       material: {
         slidesUrl: material.slidesUrl,
         slidesPlatform: material.slidesPlatform,
+        slidesFilePath: material.slidesFilePath || null,
+        slidesFileName: material.slidesFileName || null,
         recordingUrl: material.recordingUrl,
         sessionType: material.sessionType || null,
         sessionLanguage: material.sessionLanguage,
@@ -469,6 +497,43 @@ export default function MissionForm({
             <input className="f" value={material.feedbackSource} onChange={(e) => setMat({ feedbackSource: e.target.value })} placeholder="Sessionize" />
           </label>
         </div>
+
+        <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
+          <p className="eyebrow" style={{ marginTop: 0 }}>Folien als PDF</p>
+          <p className="meta" style={{ marginTop: 0 }}>
+            PDF hochladen (max. 20 MB) — wird auf der öffentlichen Einsatzseite zum Download angeboten.
+          </p>
+          <input
+            ref={slidesInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void uploadSlides(f);
+              e.target.value = "";
+            }}
+          />
+          {material.slidesFilePath ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <a className="btn ghost sm" href={assetUrl(material.slidesFilePath)} target="_blank" rel="noopener noreferrer">
+                📄 {material.slidesFileName || "folien.pdf"}
+              </a>
+              <button type="button" className="btn ghost sm" disabled={slidesBusy} onClick={() => slidesInputRef.current?.click()}>
+                {slidesBusy ? "Lädt hoch …" : "Ersetzen"}
+              </button>
+              <button type="button" className="btn ghost sm" onClick={() => setMat({ slidesFilePath: "", slidesFileName: "" })}>
+                Entfernen
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="btn ghost sm" disabled={slidesBusy} onClick={() => slidesInputRef.current?.click()}>
+              {slidesBusy ? "Lädt hoch …" : "PDF hochladen"}
+            </button>
+          )}
+          {slidesError ? <p className="meta" style={{ marginTop: 8, color: "var(--danger)" }}>{slidesError}</p> : null}
+        </div>
+
         <label className="f" style={{ marginTop: 8 }}>Co-Speaker (eine Zeile je Person: „Name | https://…“)</label>
         <textarea className="f" rows={2} value={material.coSpeakers} onChange={(e) => setMat({ coSpeakers: e.target.value })} placeholder={"Max Muster | https://linkedin.com/in/…"} />
         <p className="meta">Rückblick-Text (Recap) wird im nächsten Schritt ergänzt.</p>

@@ -16,6 +16,7 @@ const CONTENT_TYPES: Record<string, string> = {
   avif: "image/avif",
   gif: "image/gif",
   svg: "image/svg+xml",
+  pdf: "application/pdf",
 };
 
 function contentType(name: string): string {

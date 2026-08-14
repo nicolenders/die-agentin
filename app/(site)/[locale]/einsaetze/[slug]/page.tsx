@@ -48,7 +48,9 @@ export default async function EinsatzaktePage({
     mission.feedbackScore != null ? `${isDe ? "Feedback" : "Feedback"} ${mission.feedbackScore}${mission.feedbackSource ? ` (${mission.feedbackSource})` : ""}` : null,
   ].filter(Boolean);
 
-  const hasMaterial = Boolean(mission.slidesUrl || videoId || mission.photos.length > 0);
+  const hasMaterial = Boolean(
+    mission.slidesUrl || mission.slidesFileUrl || videoId || mission.photos.length > 0,
+  );
 
   const url = `${siteOrigin()}/${locale}/einsaetze/${mission.slug}`;
   const jsonLd = graph([
@@ -143,6 +145,19 @@ export default async function EinsatzaktePage({
         {hasMaterial ? (
           <>
             <h3 style={{ marginTop: 38 }}>{isDe ? "Material" : "Material"}</h3>
+            {mission.slidesFileUrl ? (
+              <p>
+                <a
+                  className="btn ghost sm"
+                  href={mission.slidesFileUrl}
+                  download={mission.slidesFileName ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {isDe ? "Folien herunterladen (PDF)" : "Download slides (PDF)"} ↓
+                </a>
+              </p>
+            ) : null}
             {mission.slidesUrl ? (
               <p>
                 <a className="btn ghost sm" href={mission.slidesUrl} target="_blank" rel="noopener noreferrer">

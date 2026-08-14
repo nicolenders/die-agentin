@@ -1277,6 +1277,11 @@ svg.map {
 // Kopf-/Fußzeile und interaktive Elemente ausblenden, dunkles Theme auf hellen
 // Grund mit dunkler Schrift umstellen, die Ziel-Ecken-Klammern entfernen.
 // ---------------------------------------------------------------------------
+// DIN A4 mit angemessenem Rand — der Lebenslauf soll einer Bewerbung beiliegen.
+@page {
+  size: A4;
+  margin: 16mm;
+}
 @media print {
   header,
   footer,

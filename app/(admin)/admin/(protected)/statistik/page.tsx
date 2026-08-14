@@ -39,25 +39,46 @@ function sectionLabel(key: string): string {
   return map[key] ?? key;
 }
 
-// Einfache, textbasierte Balkenzeile (keine Chart-Bibliothek).
-function BarRow({ label, value, max }: { label: string; value: number; max: number }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+// Grafische Verlaufsdarstellung (Fläche + Linie) der Aufrufe pro Tag als inline
+// SVG — ohne Chart-Bibliothek, theme-fähig über CSS-Variablen.
+function DayChart({ data }: { data: Bucket[] }) {
+  if (data.length === 0) return <p className="muted">Keine Daten im Zeitraum.</p>;
+  const W = 760;
+  const H = 200;
+  const padL = 6;
+  const padR = 6;
+  const padT = 14;
+  const padB = 26;
+  const n = data.length;
+  const max = Math.max(...data.map((d) => d.views), 1);
+  const x = (i: number) => (n === 1 ? W / 2 : padL + (i / (n - 1)) * (W - padL - padR));
+  const y = (v: number) => padT + (1 - v / max) * (H - padT - padB);
+  const line = data.map((d, i) => `${x(i).toFixed(1)},${y(d.views).toFixed(1)}`).join(" ");
+  const area = `${padL},${H - padB} ${line} ${x(n - 1).toFixed(1)},${H - padB}`;
+  const first = data[0]?.key ?? "";
+  const last = data[n - 1]?.key ?? "";
+  const peak = data.reduce((m, d) => (d.views > m.views ? d : m), data[0] as Bucket);
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
-      <span className="meta" style={{ minWidth: 96, flexShrink: 0 }}>{label}</span>
-      <span
-        aria-hidden
-        style={{
-          height: 10,
-          width: `${pct}%`,
-          minWidth: value > 0 ? 3 : 0,
-          background: "linear-gradient(92deg, var(--violet-bright), var(--magenta))",
-          borderRadius: 3,
-          display: "inline-block",
-        }}
-      />
-      <b style={{ fontSize: 13 }}>{value}</b>
-    </div>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={`Aufrufe pro Tag, Höchstwert ${max}`}>
+      <defs>
+        <linearGradient id="cvArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--violet-bright)" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="var(--violet-bright)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Grundlinie */}
+      <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="var(--line-soft)" strokeWidth="1" />
+      <polygon points={area} fill="url(#cvArea)" />
+      <polyline points={line} fill="none" stroke="var(--violet-bright)" strokeWidth="2" strokeLinejoin="round" />
+      {n <= 40 ? data.map((d, i) => <circle key={d.key} cx={x(i)} cy={y(d.views)} r={2.4} fill="var(--violet-bright)" />) : null}
+      {/* Höchstwert markieren */}
+      <text x={padL} y={padT - 2} fill="var(--muted)" fontFamily="var(--mono)" fontSize="10">
+        max {max} · {peak?.key}
+      </text>
+      <text x={padL} y={H - 8} fill="var(--muted)" fontFamily="var(--mono)" fontSize="10">{first}</text>
+      <text x={W - padR} y={H - 8} textAnchor="end" fill="var(--muted)" fontFamily="var(--mono)" fontSize="10">{last}</text>
+    </svg>
   );
 }
 
@@ -133,7 +154,6 @@ export default async function StatistikPage({
   }
 
   const summary = await getAnalyticsSummary({ from, to, country: land || null });
-  const maxDay = summary.byDay.reduce((m, r) => Math.max(m, r.views), 0);
 
   return (
     <section>
@@ -216,13 +236,7 @@ export default async function StatistikPage({
             <>
               <div className="card bracket" style={{ marginBottom: 16 }}>
                 <p className="eyebrow" style={{ marginTop: 0 }}>Aufrufe pro Tag</p>
-                {summary.byDay.length > 0 ? (
-                  summary.byDay.map((d) => (
-                    <BarRow key={d.key} label={d.key} value={d.views} max={maxDay} />
-                  ))
-                ) : (
-                  <p className="muted">Keine Daten im Zeitraum.</p>
-                )}
+                <DayChart data={summary.byDay} />
               </div>
 
               <div className="grid g2" style={{ alignItems: "start" }}>

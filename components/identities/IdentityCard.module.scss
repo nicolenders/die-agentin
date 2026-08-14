@@ -15,8 +15,15 @@
   min-width: 240px;
   max-width: calc(33.333% - 10px);
 }
+// Zwei-Spalten-Variante: breitere Boxen, wenn nur zwei nebeneinander stehen
+// (z. B. in der Legende, wo die Spalte schmaler ist).
+.two > * {
+  flex: 1 1 calc(50% - 7px);
+  max-width: calc(50% - 7px);
+}
 @media (max-width: 760px) {
-  .compactGrid > * {
+  .compactGrid > *,
+  .two > * {
     max-width: 100%;
   }
 }
@@ -137,6 +144,14 @@
   opacity: 0.82;
   margin: 10px 0 0;
   min-height: 3em;
+}
+// Aktiver Zeitraum (aus ältestem/neuestem verknüpften Einsatz), z. B. „2016–2020".
+.featurePeriod {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--violet-text);
+  margin: 6px 0 0;
 }
 // Zitat der Identität in ihrer Rolle: kursiv, mit Anführungszeichen, eigener Ton.
 .featureTagline {

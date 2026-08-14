@@ -20,16 +20,21 @@ export interface PublicationItem {
   coverUrl: string | null;
   coverAlt: string;
   coverAi: boolean;
+  // Verkaufte Exemplare (Summe über alle Halbjahre): gedruckt = printed + bundle,
+  // PDF = pdf + bundle. null, wenn noch keine Zahlen gepflegt sind.
+  salesPrinted?: number | null;
+  salesPdf?: number | null;
 }
 
 async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
   const pubs = await db.publication.findMany({
     orderBy: [{ year: "desc" }, { sortOrder: "asc" }],
-    include: { translations: true, coverAsset: true },
+    include: { translations: true, coverAsset: true, sales: true },
   });
   return pubs.map((p) => {
     const picked = pickTranslation(p.translations, locale);
     const title = picked?.translation.title ?? "";
+    const hasSales = p.sales.length > 0;
     return {
       id: p.id,
       type: p.type as PublicationType,
@@ -50,6 +55,8 @@ async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
             : p.coverAsset.altDe
           : title,
       coverAi: p.coverAsset?.source === "AI",
+      salesPrinted: hasSales ? p.sales.reduce((s, x) => s + x.printedCount + x.bundleCount, 0) : null,
+      salesPdf: hasSales ? p.sales.reduce((s, x) => s + x.pdfCount + x.bundleCount, 0) : null,
     };
   });
 }

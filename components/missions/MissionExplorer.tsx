@@ -40,6 +40,7 @@ export interface ExplorerLabels {
   yearLabel: string;
   yearCurrent: string;
   yearAll: string;
+  moreYears: string;
   onlineToggle: string;
   all: string;
   reset: string;
@@ -110,6 +111,7 @@ export default function MissionExplorer({
 }) {
   const [state, setState] = useState<FilterState>(DEFAULT_STATE);
   const [mounted, setMounted] = useState(false);
+  const [yearsExpanded, setYearsExpanded] = useState(false);
 
   // Beim Aufbau: erst URL (teilbarer Deep-Link), sonst die zuletzt genutzten
   // Einstellungen aus der Sitzung. Server und erste Client-Ausgabe nutzen die
@@ -188,59 +190,68 @@ export default function MissionExplorer({
 
   const set = (patch: Partial<FilterState>) => setState((s) => ({ ...s, ...patch }));
 
-  // Filterleiste — bewusst zweimal (über der Karte und über der Tabelle)
-  // gerendert; beide teilen sich denselben Zustand und bleiben synchron.
-  const controls = (idPrefix: string) => (
-    <div className="filter-row" style={{ marginTop: 8, alignItems: "center" }}>
-      <input
-        id={`${idPrefix}-q`}
-        className="f"
-        type="search"
-        placeholder={labels.search}
-        aria-label={labels.search}
-        value={state.q}
-        onChange={(e) => set({ q: e.target.value })}
-        style={{ maxWidth: 260 }}
-      />
-      <label className="meta" htmlFor={`${idPrefix}-year`} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        {labels.yearLabel}
-        <select
-          id={`${idPrefix}-year`}
-          className="f"
-          value={state.year}
-          onChange={(e) => set({ year: e.target.value })}
-        >
-          <option value="alle">{labels.yearAll}</option>
-          <option value="aktuell">{labels.yearCurrent}</option>
-          {years.map((y) => (
-            <option key={y} value={String(y)}>
-              {y}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="meta" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <input
-          type="checkbox"
-          checked={state.showOnline}
-          onChange={(e) => set({ showOnline: e.target.checked })}
-        />
-        {labels.onlineToggle}
-      </label>
-      {!isDefault ? (
-        <button type="button" className="btn ghost sm" onClick={() => setState(DEFAULT_STATE)}>
-          {labels.reset}
-        </button>
-      ) : null}
-      <span className="meta" style={{ marginLeft: "auto" }}>
-        {filtered.length}/{missions.length} {labels.missionsWord}
-      </span>
-    </div>
+  // Jahres-Blibs: „Alle Jahre" und „Aktuell & geplant" sind immer sichtbar; die
+  // einzelnen Jahre klappen erst nach „weitere Jahre" auf (oder wenn ein
+  // konkretes Jahr aktiv ist).
+  const showYearList = yearsExpanded || (state.year !== "alle" && state.year !== "aktuell");
+  const yearChip = (value: string, label: string) => (
+    <button
+      type="button"
+      className="chip sm"
+      aria-pressed={state.year === value}
+      onClick={() => set({ year: value })}
+    >
+      {label}
+    </button>
   );
 
-  return (
-    <div>
-      {controls("top")}
+  // Ein einziger Filterblock zwischen Karte und Tabelle — steuert beide.
+  const filterBlock = (
+    <div className="einsatz-filter">
+      <div className="filter-row">
+        <input
+          className="f"
+          type="search"
+          placeholder={labels.search}
+          aria-label={labels.search}
+          value={state.q}
+          onChange={(e) => set({ q: e.target.value })}
+          style={{ maxWidth: 260 }}
+        />
+        <span className="filter-years" role="group" aria-label={labels.yearLabel}>
+          {yearChip("alle", labels.yearAll)}
+          {yearChip("aktuell", labels.yearCurrent)}
+          {showYearList
+            ? years.map((y) => yearChip(String(y), String(y)))
+            : years.length > 0
+              ? (
+                <button type="button" className="chip sm" onClick={() => setYearsExpanded(true)}>
+                  {labels.moreYears}
+                </button>
+              )
+              : null}
+        </span>
+        <button
+          type="button"
+          className="chip sm"
+          aria-pressed={state.showOnline}
+          onClick={() => set({ showOnline: !state.showOnline })}
+        >
+          {labels.onlineToggle}
+        </button>
+        {!isDefault ? (
+          <button
+            type="button"
+            className="btn ghost sm"
+            onClick={() => {
+              setState(DEFAULT_STATE);
+              setYearsExpanded(false);
+            }}
+          >
+            {labels.reset}
+          </button>
+        ) : null}
+      </div>
 
       {identities.length > 0 ? (
         <div className="filter-row" role="group" aria-label={labels.all} style={{ marginTop: 8 }}>
@@ -277,8 +288,16 @@ export default function MissionExplorer({
           })}
         </div>
       ) : null}
+    </div>
+  );
 
-      <div style={{ marginTop: 14 }}>
+  return (
+    <div>
+      {/* Karte mit der Kennzahl (angezeigt/gesamt) oben rechts. */}
+      <div className="map-wrap">
+        <span className="map-count">
+          {filtered.length}/{missions.length} {labels.missionsWord}
+        </span>
         {mapMissions.length > 0 ? (
           <WorldMap missions={mapMissions} locale={locale} labels={labels.map} />
         ) : (
@@ -288,8 +307,9 @@ export default function MissionExplorer({
         )}
       </div>
 
-      <p className="eyebrow" style={{ marginTop: 44 }}>{labels.listTitle}</p>
-      {controls("bottom")}
+      {filterBlock}
+
+      <p className="eyebrow" style={{ marginTop: 24 }}>{labels.listTitle}</p>
       {filtered.length > 0 ? (
         <table style={{ marginTop: 12 }}>
           <thead>

@@ -95,6 +95,7 @@ function linkConnect(formData: FormData) {
     talks: ids(formData, "talkIds"),
     publications: ids(formData, "publicationIds"),
     certifications: ids(formData, "certificationIds"),
+    focusTopics: ids(formData, "focusTopicIds"),
   };
 }
 
@@ -158,6 +159,7 @@ export async function createIdentity(formData: FormData): Promise<void> {
         talks: { connect: links.talks.map((id) => ({ id })) },
         publications: { connect: links.publications.map((id) => ({ id })) },
         certifications: { connect: links.certifications.map((id) => ({ id })) },
+        focusTopics: { connect: links.focusTopics.map((id) => ({ id })) },
         attributes: { create: attrs.map((a, i) => ({ ...a, sortOrder: i })) },
       },
     });
@@ -194,6 +196,7 @@ export async function updateIdentity(formData: FormData): Promise<void> {
         talks: { set: links.talks.map((id) => ({ id })) },
         publications: { set: links.publications.map((id) => ({ id })) },
         certifications: { set: links.certifications.map((id) => ({ id })) },
+        focusTopics: { set: links.focusTopics.map((id) => ({ id })) },
         // Merkmale komplett ersetzen (einfachste konsistente Strategie).
         attributes: { deleteMany: {}, create: attrs.map((a, i) => ({ ...a, sortOrder: i })) },
       },

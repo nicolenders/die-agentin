@@ -44,7 +44,6 @@ export default async function HQPage({
     .filter((m) => m.future)
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())[0];
   const recentDispatches = dispatches.slice(0, 3);
-  const lastSignal = dispatches[0] ?? null;
   const topBriefing = ranking[0] ?? null;
   const missionHref = (m: typeof nextMission) =>
     m?.published && m.slug ? `/${locale}/einsaetze/${m.slug}` : `/${locale}/einsaetze`;
@@ -52,17 +51,7 @@ export default async function HQPage({
   return (
     <>
       <section className={styles.hero}>
-        <div className="hero-grid">
-          <div>
-            <p className="eyebrow">{hero.eyebrow}</p>
-            <h1>{renderInlineFieldContent(parseRichValue(hero.headlineValue))}</h1>
-            <p className="lead">{renderInlineFieldContent(parseRichValue(hero.leadValue))}</p>
-            <div className={styles.roles}>
-              {hero.roles.map((role) => (
-                <span key={role}>{role}</span>
-              ))}
-            </div>
-          </div>
+        <div className={`hero-grid ${styles.heroFlip}`}>
           <div className="hero-visual">
             <BrandImage
               src={hero.heroImage?.url ?? brandAsset("hero.jpg")}
@@ -76,23 +65,56 @@ export default async function HQPage({
               ai={hero.heroImage?.ai ?? false}
             />
           </div>
+          <div>
+            <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span>{isDe ? "Ort: Hauptquartier" : "Location: Headquarters"}</span>
+              <span aria-hidden style={{ opacity: 0.45 }}>·</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                {isDe ? "Status:" : "Status:"}
+                <i className={styles.dot} aria-hidden="true" />
+                {isDe ? "aktiv" : "active"}
+              </span>
+            </p>
+            <h1>{renderInlineFieldContent(parseRichValue(hero.headlineValue))}</h1>
+            <p className="lead">{renderInlineFieldContent(parseRichValue(hero.leadValue))}</p>
+            <div className={styles.roles}>
+              {hero.roles.map((role) => (
+                <span key={role}>{role}</span>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className={styles.statusStrip}>
-          <span>
-            <i className={styles.dot} aria-hidden="true" />
-            {nextMission
-              ? `${t.nextMission}: ${formatDate(nextMission.startDate, locale)} · ${nextMission.city}`
-              : t.noMission}
-          </span>
-          {lastSignal?.publishedAt ? (
-            <span>
-              {t.lastSignal}: {formatDate(lastSignal.publishedAt, locale)}
-            </span>
-          ) : null}
-          <span>
-            {stats.missions} {t.countMissions} · {stats.countries} {t.countCountries}
-          </span>
-          <span>{t.classification}</span>
+      </section>
+
+      {/* Kennzahlen — prominent direkt unter dem Hero, mit Überschrift und zentriert.
+          Jede Kachel (außer „Länder", das keine eigene Seite hat) führt auf ihre
+          Übersicht. */}
+      <section style={{ marginTop: 46 }}>
+        <p className="eyebrow" style={{ textAlign: "center" }}>
+          {isDe ? "Die Agentin in Zahlen" : "By the numbers"}
+        </p>
+        <div className={styles.counter}>
+          {[
+            { n: stats.missions, sg: t.sgMissions, pl: t.countMissions, href: `/${locale}/einsaetze` },
+            { n: stats.countries, sg: t.sgCountries, pl: t.countCountries, href: null },
+            { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities, href: `/${locale}/identitaeten` },
+            { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings, href: `/${locale}/briefings` },
+            { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications, href: `/${locale}/ausbildung` },
+            { n: stats.books, sg: t.sgBooks, pl: t.countBooks, href: `/${locale}/publikationen` },
+            { n: stats.mvpAwards, sg: t.countMvp, pl: t.countMvp, href: `/${locale}/ausbildung` },
+          ].map((c) =>
+            c.href ? (
+              <Link key={c.pl} href={c.href}>
+                <b>{c.n}</b>
+                <span>{c.n === 1 ? c.sg : c.pl}</span>
+              </Link>
+            ) : (
+              <div key={c.pl}>
+                <b>{c.n}</b>
+                <span>{c.n === 1 ? c.sg : c.pl}</span>
+              </div>
+            ),
+          )}
         </div>
       </section>
 
@@ -151,30 +173,7 @@ export default async function HQPage({
         <p className="muted">{dict.dispatch.empty}</p>
       )}
 
-      {/* Kennzahlen sind Einstiegspunkte: jede Kachel führt auf die passende
-          Übersicht — so erreicht man Auszeichnungen, Publikationen und
-          Zertifizierungen auch unabhängig von einer Identität. */}
-      <div className={styles.counter}>
-        {[
-          { n: stats.missions, sg: t.sgMissions, pl: t.countMissions, href: `/${locale}/einsaetze` },
-          { n: stats.countries, sg: t.sgCountries, pl: t.countCountries, href: `/${locale}/einsaetze` },
-          { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities, href: `/${locale}/identitaeten` },
-          { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings, href: `/${locale}/briefings` },
-          { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications, href: `/${locale}/ausbildung` },
-          { n: stats.books, sg: t.sgBooks, pl: t.countBooks, href: `/${locale}/publikationen` },
-        ].map((c) => (
-          <Link key={c.pl} href={c.href}>
-            <b>{c.n}</b>
-            <span>{c.n === 1 ? c.sg : c.pl}</span>
-          </Link>
-        ))}
-        <Link href={`/${locale}/ausbildung`}>
-          <b>{stats.mvpAwards}×</b>
-          <span>{t.countMvp}</span>
-        </Link>
-      </div>
-
-      <div className="grid g2" style={{ marginTop: 20 }}>
+      <div className="grid g2" style={{ marginTop: 52 }}>
         <article className="card bracket">
           <p className="eyebrow">{t.nextMission}</p>
           {nextMission ? (

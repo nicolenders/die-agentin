@@ -121,6 +121,22 @@ export default function PublicationSections({
                 <p className="meta pub-meta">
                   {[b.role, b.publisher, b.isbn ? `ISBN ${b.isbn}` : null].filter(Boolean).join(" · ")}
                 </p>
+                {b.salesPrinted != null || b.salesPdf != null ? (
+                  <div className="pub-sales" aria-label={isDe ? "Verkaufte Exemplare" : "Copies sold"}>
+                    {b.salesPrinted != null ? (
+                      <span className="pub-sale">
+                        <b>{b.salesPrinted.toLocaleString("de-DE")}</b>
+                        {isDe ? "gedruckt" : "printed"}
+                      </span>
+                    ) : null}
+                    {b.salesPdf != null ? (
+                      <span className="pub-sale">
+                        <b>{b.salesPdf.toLocaleString("de-DE")}</b>
+                        {isDe ? "als PDF" : "as PDF"}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
                 {b.url ? (
                   <a className="btn ghost sm pub-link" href={b.url} target="_blank" rel="noopener noreferrer">
                     {isDe ? "Weitere Infos" : "More info"}

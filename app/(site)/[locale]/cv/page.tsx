@@ -22,14 +22,28 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 // Lebenslauf: Ausbildung, Auszeichnungen und Publikationen — unabhängig von den
-// Identitäten, in einem druckbaren Layout. Öffnet in einem neuen Tab und lässt
-// sich über den Browser (Drucken → Als PDF speichern) ausgeben.
-export default async function CvPage({ params }: { params: Promise<{ locale: string }> }) {
+// Identitäten, in einem druckbaren A4-Layout. Öffnet in einem neuen Tab und lässt
+// sich über den Browser (Drucken → Als PDF speichern) ausgeben. Über die
+// Query-Parameter `art` (alle|publikationen|ausbildung) und `von`/`bis` (Jahr)
+// lässt sich der Auszug aus dem Adminbereich eingrenzen.
+export default async function CvPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ art?: string; von?: string; bis?: string }>;
+}) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
+  const { art, von, bis } = await searchParams;
+  const kind = art === "publikationen" || art === "ausbildung" ? art : "alle";
+  const fromYear = Number(von) || null;
+  const toYear = Number(bis) || null;
+  const inRange = (year: number) =>
+    (fromYear === null || year >= fromYear) && (toYear === null || year <= toYear);
 
-  const [certs, focus, pubs, legend, contact, social] = await Promise.all([
+  const [certsAll, focus, pubsAll, legend, contact, social] = await Promise.all([
     getCertifications(locale),
     getFocusTopics(locale),
     getPublications(locale),
@@ -37,6 +51,15 @@ export default async function CvPage({ params }: { params: Promise<{ locale: str
     getContactInfo(),
     getSocialLinks(),
   ]);
+
+  const showPubs = kind === "alle" || kind === "publikationen";
+  const showCerts = kind === "alle" || kind === "ausbildung";
+  const pubs = showPubs ? pubsAll.filter((p) => inRange(p.year)) : [];
+  const certs = showCerts
+    ? certsAll.filter((c) => inRange(c.acquiredOn.getUTCFullYear()))
+    : [];
+  // Aktuelle Themen (Radar) nur im vollständigen bzw. Ausbildungs-Auszug zeigen.
+  const focusShown = showCerts ? focus : [];
 
   const contactBits = [
     contact.email ? contact.email : null,
@@ -65,10 +88,10 @@ export default async function CvPage({ params }: { params: Promise<{ locale: str
       </div>
 
       {/* Ausbildung, Zertifizierungen & Auszeichnungen */}
-      {certs.length > 0 || focus.length > 0 ? (
+      {certs.length > 0 || focusShown.length > 0 ? (
         <div style={{ marginTop: 30 }}>
           <h2>{isDe ? "Ausbildung, Zertifizierungen & Auszeichnungen" : "Education, certifications & awards"}</h2>
-          <CertificationSections certs={certs} focus={focus} locale={locale} />
+          <CertificationSections certs={certs} focus={focusShown} locale={locale} />
         </div>
       ) : null}
 
@@ -80,7 +103,7 @@ export default async function CvPage({ params }: { params: Promise<{ locale: str
         </div>
       ) : null}
 
-      {certs.length === 0 && focus.length === 0 && pubs.length === 0 ? (
+      {certs.length === 0 && focusShown.length === 0 && pubs.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 24 }}>
           <p className="muted">{isDe ? "Noch keine Einträge erfasst." : "Nothing recorded yet."}</p>
         </div>

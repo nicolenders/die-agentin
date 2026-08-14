@@ -25,13 +25,7 @@ export default async function PublikationenPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{isDe ? "Publikationen" : "Publications"}</p>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>{isDe ? "Schriftlich festgehalten" : "Put down in writing"}</h2>
-        <a className="btn ghost sm" href={`/${locale}/cv`} target="_blank" rel="noopener noreferrer" style={{ marginLeft: "auto" }}>
-          {isDe ? "Als Lebenslauf drucken" : "Print as CV"} ↗
-        </a>
-      </div>
+      <h1 className="eyebrow">{isDe ? "Publikationen" : "Publications"}</h1>
 
       <PublicationSections items={all} locale={locale} />
 

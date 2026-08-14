@@ -94,6 +94,42 @@ export default async function DashboardPage() {
           <div className="meta">Social-Media-Verbindungen und Vorlagen</div>
         </Link>
       </div>
+
+      {/* Lebenslauf-Export: öffnet einen druckfertigen A4-Auszug in einem neuen
+          Tab (Browser → Drucken → Als PDF speichern). Auswahl nach Datenart und
+          Zeitraum; per GET direkt an die /cv-Seite. */}
+      <p className="eyebrow" style={{ marginTop: 26 }}>Lebenslauf exportieren</p>
+      <div className="card bracket" style={{ marginTop: 12, maxWidth: 620 }}>
+        <p className="meta" style={{ marginTop: 0 }}>
+          Erzeugt einen druckfertigen Lebenslauf im A4-Format (zum Ausdrucken oder als
+          PDF für eine Bewerbung). Öffnet in einem neuen Tab.
+        </p>
+        <form action="/de/cv" method="get" target="_blank">
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label className="f" style={{ margin: 0 }}>
+              Datenart
+              <select className="f" name="art" defaultValue="alle">
+                <option value="alle">Alles</option>
+                <option value="publikationen">Nur Publikationen</option>
+                <option value="ausbildung">Nur Ausbildung & Auszeichnungen</option>
+              </select>
+            </label>
+            <label className="f" style={{ margin: 0 }}>
+              Von Jahr
+              <input className="f" name="von" type="number" placeholder="z. B. 2018" style={{ maxWidth: 130 }} />
+            </label>
+            <label className="f" style={{ margin: 0 }}>
+              Bis Jahr
+              <input className="f" name="bis" type="number" placeholder="z. B. 2026" style={{ maxWidth: 130 }} />
+            </label>
+            <button className="btn solid sm" type="submit">Lebenslauf öffnen</button>
+          </div>
+        </form>
+        <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
+          Leere Jahresfelder = kein Zeitfilter. Englische Fassung:{" "}
+          <a href="/en/cv" target="_blank" rel="noopener noreferrer">/en/cv</a>.
+        </p>
+      </div>
     </section>
   );
 }

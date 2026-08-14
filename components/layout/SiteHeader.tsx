@@ -44,8 +44,8 @@ export default function SiteHeader({
     <header className={styles.top}>
       <div className={`wrap ${styles.topbar}`}>
         <Link className={styles.brand} href={`/${locale}`} aria-label={brand.name}>
-          <span className={styles.sigil} aria-hidden="true">
-            N.E
+          <span className={styles.sigil} aria-hidden="true" title="Nicole Enders is Online">
+            NEO
           </span>
           <span className={styles.brandText}>
             <b>{brand.name}</b>

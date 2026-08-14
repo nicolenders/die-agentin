@@ -22,8 +22,8 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
       <div className={`wrap ${styles.grid}`}>
         <div>
           <div className={styles.brand}>
-            <span className={styles.sigil} aria-hidden="true">
-              N.E
+            <span className={styles.sigil} aria-hidden="true" title="Nicole Enders is Online">
+              NEO
             </span>
             <span className={styles.brandText}>
               <b>{dict.brand.name}</b>

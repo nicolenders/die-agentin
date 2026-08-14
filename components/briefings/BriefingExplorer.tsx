@@ -42,11 +42,19 @@ export default function BriefingExplorer({
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
   const toggle = (cat: string) =>
     setSelected((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
   const toggleId = (slug: string) =>
     setSelectedIds((prev) => (prev.includes(slug) ? prev.filter((c) => c !== slug) : [...prev, slug]));
+  const toggleOpen = (id: string) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const max = useMemo(() => items.reduce((m, i) => Math.max(m, i.total), 1), [items]);
 
@@ -119,47 +127,66 @@ export default function BriefingExplorer({
       {filtered.length === 0 ? (
         <p className="muted">{isDe ? "Keine Briefings passen zu Suche/Filter." : "No briefings match the search/filter."}</p>
       ) : (
-        <div className="grid g2">
-          {filtered.map((it) => (
-            <article key={it.id} className="card bracket">
-              <h3>{it.title}</h3>
-
-              {it.categories.length > 0 ? (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 0" }}>
-                  {it.categories.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      className={`cat-tag${selected.includes(cat) ? " on" : ""}`}
-                      onClick={() => toggle(cat)}
-                      title={isDe ? "Nach dieser Kategorie filtern" : "Filter by this category"}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
-              <div style={{ fontSize: "14.5px" }}>{it.abstractNode}</div>
-
-              {it.audiences.length > 0 ? (
-                <p className="meta">{isDe ? "Für: " : "For: "}{it.audiences.join(" · ")}</p>
-              ) : null}
-
-              <p className="meta">
-                {it.total}× {isDe ? "gehalten" : "delivered"}
-                {it.level ? ` · Level ${it.level}` : ""}
-                {it.durationMin ? ` · ${it.durationMin} Min.` : ""}
-              </p>
-              <div className="bar" aria-hidden="true">
-                <i style={{ width: `${Math.round((it.total / max) * 100)}%` }} />
+        <div className="acc">
+          {filtered.map((it) => {
+            const open = openIds.has(it.id);
+            return (
+              <div key={it.id} className={`acc-item${open ? " open" : ""}`}>
+                <button
+                  type="button"
+                  className="acc-head"
+                  aria-expanded={open}
+                  onClick={() => toggleOpen(it.id)}
+                >
+                  <span className="acc-chevron" aria-hidden>{open ? "−" : "+"}</span>
+                  <span className="acc-title">{it.title}</span>
+                  <span className="acc-tags">
+                    {it.categories.slice(0, 2).map((cat) => (
+                      <span key={cat} className="tag">{cat}</span>
+                    ))}
+                  </span>
+                  <span className="acc-count meta">
+                    {it.total}×{it.durationMin ? ` · ${it.durationMin}′` : ""}
+                  </span>
+                </button>
+                {open ? (
+                  <div className="acc-body">
+                    {it.categories.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                        {it.categories.map((cat) => (
+                          <button
+                            key={cat}
+                            type="button"
+                            className={`cat-tag${selected.includes(cat) ? " on" : ""}`}
+                            onClick={() => toggle(cat)}
+                            title={isDe ? "Nach dieser Kategorie filtern" : "Filter by this category"}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ fontSize: "14.5px" }}>{it.abstractNode}</div>
+                    {it.audiences.length > 0 ? (
+                      <p className="meta">{isDe ? "Für: " : "For: "}{it.audiences.join(" · ")}</p>
+                    ) : null}
+                    <p className="meta">
+                      {it.total}× {isDe ? "gehalten" : "delivered"}
+                      {it.level ? ` · Level ${it.level}` : ""}
+                      {it.durationMin ? ` · ${it.durationMin} Min.` : ""}
+                    </p>
+                    <div className="bar" aria-hidden="true">
+                      <i style={{ width: `${Math.round((it.total / max) * 100)}%` }} />
+                    </div>
+                    <p style={{ marginTop: 8 }}>
+                      <span className={`lang-badge ${it.deCount > 0 ? "on" : ""}`}>DE {it.deCount > 0 ? `✓ ${it.deCount}×` : "—"}</span>{" "}
+                      <span className={`lang-badge ${it.enCount > 0 ? "on" : ""}`}>EN {it.enCount > 0 ? `✓ ${it.enCount}×` : "—"}</span>
+                    </p>
+                  </div>
+                ) : null}
               </div>
-              <p style={{ marginTop: 8 }}>
-                <span className={`lang-badge ${it.deCount > 0 ? "on" : ""}`}>DE {it.deCount > 0 ? `✓ ${it.deCount}×` : "—"}</span>{" "}
-                <span className={`lang-badge ${it.enCount > 0 ? "on" : ""}`}>EN {it.enCount > 0 ? `✓ ${it.enCount}×` : "—"}</span>
-              </p>
-            </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

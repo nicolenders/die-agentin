@@ -9,26 +9,32 @@ export interface AdminNavItem {
   section?: string;
 }
 
+// Vier Gruppen: die Einsatzzentrale (Dashboard), alles Redaktionelle unter
+// „Inhalte", die überblickenden Werkzeuge unter „Planung & Reichweite" und die
+// technischen Grundlagen unter „System".
 export const adminNav: AdminNavItem[] = [
   { href: "/admin", label: "Einsatzzentrale", icon: "◈" },
+
+  // Inhalte — alles, was redaktionell gepflegt und veröffentlicht wird.
   { href: "/admin/startseite", label: "Startseite", icon: "⌂", section: "Inhalte" },
-  { href: "/admin/depeschen", label: "Depeschen", icon: "≡" },
-  { href: "/admin/redaktionsplan", label: "Redaktionsplan", icon: "▦" },
-  { href: "/admin/statistik", label: "Auswertung", icon: "▤" },
-  { href: "/admin/archiv", label: "Archiv", icon: "⊟" },
-  { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },
-  { href: "/admin/identitaeten", label: "Identitäten", icon: "⬡", section: "Struktur" },
+  { href: "/admin/identitaeten", label: "Identitäten", icon: "⬡" },
   { href: "/admin/einsaetze", label: "Einsätze", icon: "◎" },
   { href: "/admin/briefings", label: "Briefings", icon: "▶" },
+  { href: "/admin/depeschen", label: "Depeschen", icon: "≡" },
   { href: "/admin/publikationen", label: "Publikationen", icon: "★" },
   { href: "/admin/ausbildung", label: "Ausbildung & Auszeichnungen", icon: "✦" },
   { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "⌖" },
-  // „Stammdaten" (früher „Kategorien & Tags"), „Medien" und „Einstellungen" bilden
-  // den System-Bereich. Der frühere Bereich „Ausspielung" (Zeitplan & Kanäle) ist
-  // entfernt; die Seite /admin/kanaele existiert nur noch verdeckt für den
-  // LinkedIn-OAuth-Rücksprung und die manuelle Teilen-Karte (siehe PR-Hinweis).
-  { href: "/admin/struktur", label: "Stammdaten", icon: "⧉", section: "System" },
+  { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },
+
+  // Planung & Reichweite — Überblick über Geplantes, Reichweite und Archiv.
+  { href: "/admin/redaktionsplan", label: "Redaktionsplan", icon: "▦", section: "Planung & Reichweite" },
+  { href: "/admin/statistik", label: "Auswertung", icon: "▤" },
+  { href: "/admin/archiv", label: "Archiv", icon: "⊟" },
+
+  // System — technische Grundlagen. „Kanäle" bündelt die Social-Media-Verbindungen
+  // und den LinkedIn-OAuth-Rücksprung.
+  { href: "/admin/kanaele", label: "Kanäle", icon: "⤳", section: "System" },
   { href: "/admin/medien", label: "Medien", icon: "▣" },
-  { href: "/admin/kanaele", label: "Kanäle", icon: "⤳" },
+  { href: "/admin/struktur", label: "Stammdaten", icon: "⧉" },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: "⚙" },
 ];

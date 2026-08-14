@@ -260,6 +260,30 @@ export async function getPublishedIdentities(locale: Locale): Promise<IdentityCa
   }
 }
 
+/**
+ * Öffentliche Werkzeugliste der Legende: die Vereinigung aller Werkzeuge, die
+ * mindestens einer veröffentlichten Identität zugeordnet sind — Duplikate (nach
+ * Namen, ohne Groß-/Kleinschreibung) entfernt, alphabetisch sortiert. Ersetzt die
+ * frühere freie Werkzeug-Liste der Legende; gepflegt wird jetzt je Identität.
+ */
+export async function getIdentityToolNames(): Promise<string[]> {
+  try {
+    const rows = await db.tool.findMany({
+      where: { identities: { some: { published: true } } },
+      select: { name: true },
+    });
+    const seen = new Map<string, string>();
+    for (const r of rows) {
+      const name = r.name.trim();
+      const key = name.toLowerCase();
+      if (name && !seen.has(key)) seen.set(key, name);
+    }
+    return [...seen.values()].sort((a, b) => a.localeCompare(b, "de"));
+  } catch {
+    return [];
+  }
+}
+
 export interface IdentityDetail extends IdentityCard {
   role: string;
   descriptionJson: string;

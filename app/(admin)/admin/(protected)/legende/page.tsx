@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import { isLocale } from "@/lib/i18n/config";
+import { getContactInfo } from "@/lib/queries/settings";
 import { LEGEND_DEFAULTS, type LegendPillar } from "@/lib/queries/legend";
 import Flash from "@/components/admin/Flash";
 import LegendPortraitField from "@/components/admin/LegendPortraitField";
@@ -43,9 +44,8 @@ export default async function LegendeAdminPage({
     portraitAssetId: row?.portraitAssetId ?? null,
   };
   const pillars: LegendPillar[] = row ? safeParse(row.pillarsJson, defaults.pillars) : defaults.pillars;
-  const tools: string[] = row ? safeParse(row.toolsJson, defaults.tools) : defaults.tools;
   const pillarsText = pillars.map((p) => `${p.title} | ${p.text}`).join("\n");
-  const toolsText = tools.join("\n");
+  const contact = await getContactInfo();
 
   return (
     <section>
@@ -96,12 +96,17 @@ export default async function LegendeAdminPage({
 
         <div className="card bracket" style={{ marginTop: 16 }}>
           <p className="eyebrow">Werkzeuge</p>
-          <p className="meta">Ein Werkzeug pro Zeile.</p>
-          <textarea className="f" name="tools" rows={7} defaultValue={toolsText} style={{ fontFamily: "var(--mono)" }} />
+          <p className="meta">
+            Werkzeuge werden jetzt je Identität gepflegt (unter <Link href="/admin/identitaeten">Identitäten</Link>).
+            Öffentlich zeigt die Legende die Summe aller Identitäts-Werkzeuge, Duplikate entfernt, alphabetisch.
+          </p>
         </div>
 
         <div className="card bracket" style={{ marginTop: 16 }}>
           <p className="eyebrow">Kontakt</p>
+          <label className="f">E-Mail-Adresse (erscheint öffentlich im Kontaktbereich)</label>
+          <input className="f" name="contactEmail" type="email" defaultValue={contact.email} placeholder="name@example.com" />
+          <p className="meta" style={{ marginTop: 0 }}>Dieselbe Adresse wie unter Einstellungen · sie speist auch das Impressum.</p>
           <label className="f">Überschrift (klein)</label>
           <input className="f" name="contactEyebrow" defaultValue={val.contactEyebrow} />
           <label className="f">Überschrift</label>

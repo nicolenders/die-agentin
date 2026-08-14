@@ -4,7 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import Link from "next/link";
 import { getLegend } from "@/lib/queries/legend";
 import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
-import { getPublishedIdentities } from "@/lib/queries/identities";
+import { getPublishedIdentities, getIdentityToolNames } from "@/lib/queries/identities";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
 import AssetImage from "@/components/media/AssetImage";
@@ -33,11 +33,12 @@ export default async function LegendePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const [legend, social, contact, identities, dict] = await Promise.all([
+  const [legend, social, contact, identities, toolNames, dict] = await Promise.all([
     getLegend(locale),
     getSocialLinks(),
     getContactInfo(),
     getPublishedIdentities(locale),
+    getIdentityToolNames(),
     getDictionary(locale),
   ]);
 
@@ -165,11 +166,16 @@ export default async function LegendePage({
         </tbody>
       </table>
 
-      {legend.tools.length > 0 ? (
+      {toolNames.length > 0 ? (
         <>
           <p className="eyebrow" style={{ marginTop: 44 }}>{isDe ? "Werkzeuge" : "Tools"}</p>
+          <p className="meta" style={{ marginTop: 0 }}>
+            {isDe
+              ? "Die Summe der Werkzeuge über alle Identitäten hinweg."
+              : "The combined toolset across all identities."}
+          </p>
           <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-            {legend.tools.map((t) => (
+            {toolNames.map((t) => (
               <span key={t} style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".2em", color: "var(--violet-text)", border: "1px solid var(--line)", padding: "6px 12px", borderRadius: "var(--r)" }}>
                 {t}
               </span>

@@ -5,6 +5,7 @@ import FormTabs, { type FormTabDef } from "@/components/admin/FormTabs";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import AssetPickerField from "@/components/admin/AssetPickerField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
+import IdentityToolsField from "@/components/admin/IdentityToolsField";
 import StringListField from "@/components/admin/StringListField";
 import IdentityAttributesField from "@/components/admin/IdentityAttributesField";
 import ColorField from "@/components/admin/ColorField";
@@ -155,10 +156,7 @@ export default async function IdentityEditPage({
   );
 
   const werkzeuge = (
-    <div>
-      <p className="meta">Werkzeuge dieser Identität. Die globale Werkzeugliste der Legende entsteht aus der Vereinigung aller Identitäts-Werkzeuge.</p>
-      <CategoryMultiSelect options={options.tools} name="toolIds" defaultSelected={data.toolIds} emptyHint="Noch keine Werkzeuge angelegt (unter Kategorien & Tags bzw. später separat)." />
-    </div>
+    <IdentityToolsField initialOptions={options.tools} defaultSelected={data.toolIds} />
   );
 
   const merkmale = (

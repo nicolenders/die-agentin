@@ -98,6 +98,41 @@ function linkConnect(formData: FormData) {
   };
 }
 
+/**
+ * Legt ein neues Werkzeug an (wird beim Bearbeiten einer Identität inline
+ * erzeugt und dort direkt verknüpft). Werkzeuge werden ausschließlich hier
+ * gepflegt; die öffentliche Legende zeigt die Vereinigung aller Identitäts-
+ * Werkzeuge. Der slug wird eindeutig gehalten.
+ */
+export async function createTool(input: {
+  name: string;
+}): Promise<{ ok: boolean; id?: string; name?: string; error?: string }> {
+  await requireAdmin();
+  const name = input.name.trim();
+  if (!name) return { ok: false, error: "Name fehlt." };
+  try {
+    // Doppelten Namen (ohne Groß-/Kleinschreibung) wiederverwenden statt duplizieren.
+    const existing = await db.tool.findFirst({
+      where: { name: { equals: name } },
+      select: { id: true, name: true },
+    });
+    if (existing) return { ok: true, id: existing.id, name: existing.name };
+
+    const base = slugify(name) || "werkzeug";
+    let slug = base;
+    let n = 1;
+    while (await db.tool.findUnique({ where: { slug }, select: { id: true } })) {
+      n += 1;
+      slug = `${base}-${n}`;
+    }
+    const tool = await db.tool.create({ data: { name, slug } });
+    invalidateIdentities();
+    return { ok: true, id: tool.id, name: tool.name };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Anlegen fehlgeschlagen." };
+  }
+}
+
 export async function createIdentity(formData: FormData): Promise<void> {
   await requireAdmin();
   const roleDe = str(formData, "roleDe");

@@ -79,6 +79,7 @@ export interface BriefingListItem {
   enCount: number;
   total: number;
   lastHeld: string | null; // ISO
+  identitySlugs: string[]; // verknüpfte Identitäten (für den Identitätsfilter)
 }
 
 // Jedes aktive Briefing GENAU EINMAL, mit allen Kategorien als Liste, sortiert
@@ -92,6 +93,7 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
       categories: { select: { nameDe: true, nameEn: true } },
       audiences: { select: { nameDe: true, nameEn: true } },
       deliveries: { select: { language: true, heldOn: true } },
+      identities: { select: { slug: true } },
     },
   });
 
@@ -113,6 +115,7 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
       enCount: t.deliveries.filter((d) => d.language === "en").length,
       total: t.deliveries.length,
       lastHeld: lastHeld ? lastHeld.toISOString() : null,
+      identitySlugs: t.identities.map((i) => i.slug),
     };
   });
 

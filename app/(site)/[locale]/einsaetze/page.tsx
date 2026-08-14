@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getMissions } from "@/lib/queries/missions";
+import { getPublishedIdentities } from "@/lib/queries/identities";
 import { formatDate } from "@/lib/format";
 import { availableMissionYears, parseYearSelection, matchesYear } from "@/lib/missions";
+import { parseCsvParam, toggleCsv } from "@/lib/filters";
 import WorldMap, { type MapMission } from "@/components/map/WorldMap";
 
 export const dynamic = "force-dynamic";
@@ -21,24 +23,44 @@ export default async function EinsaetzePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ jahr?: string }>;
+  searchParams: Promise<{ jahr?: string; identitaet?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const { jahr } = await searchParams;
-  const allMissions = await getMissions(locale);
+  const { jahr, identitaet } = await searchParams;
+  const [allMissions, identities] = await Promise.all([
+    getMissions(locale),
+    getPublishedIdentities(locale),
+  ]);
 
   // Server-seitiger Jahresfilter (Phase 8.4). Standard: aktuelles Jahr + geplant.
   // Die Auswahl steht in der URL; die Kennzahlen unten beziehen sich auf ALLE.
   const selection = parseYearSelection(jahr);
   const currentYear = new Date().getUTCFullYear();
   const years = availableMissionYears(allMissions.map((m) => m.startDate.getUTCFullYear()));
-  const missions = allMissions.filter((m) =>
-    matchesYear(m.startDate.getUTCFullYear(), m.future, selection, currentYear),
+
+  // Identitätsfilter (Mehrfachauswahl): ein Einsatz passt, wenn er mindestens
+  // einer der ausgewählten Identitäten zugeordnet ist.
+  const selectedIdentities = parseCsvParam(identitaet).filter((slug) =>
+    identities.some((i) => i.slug === slug),
+  );
+  const missions = allMissions.filter(
+    (m) =>
+      matchesYear(m.startDate.getUTCFullYear(), m.future, selection, currentYear) &&
+      (selectedIdentities.length === 0 ||
+        m.identitySlugs.some((s) => selectedIdentities.includes(s))),
   );
 
-  const yearHref = (sel: string) => `/${locale}/einsaetze${sel === "aktuell" ? "" : `?jahr=${sel}`}`;
   const isDe = locale === "de";
+  const jahrStr = selection === "aktuell" ? "aktuell" : selection === "alle" ? "alle" : String(selection);
+  const buildHref = (jahrSel: string, ids: string[]): string => {
+    const p = new URLSearchParams();
+    if (jahrSel && jahrSel !== "aktuell") p.set("jahr", jahrSel);
+    if (ids.length) p.set("identitaet", ids.join(","));
+    const q = p.toString();
+    return `/${locale}/einsaetze${q ? `?${q}` : ""}`;
+  };
+  const yearHref = (sel: string) => buildHref(sel, selectedIdentities);
 
   const mapMissions: MapMission[] = missions.map((m) => ({
     id: m.id,
@@ -86,6 +108,29 @@ export default async function EinsaetzePage({
           {isDe ? "Alle Jahre" : "All years"}
         </Link>
       </div>
+
+      {identities.length > 0 ? (
+        <div className="year-filter" role="group" aria-label={isDe ? "Nach Identität filtern" : "Filter by identity"} style={{ marginTop: 10 }}>
+          <Link className="chip" aria-current={selectedIdentities.length === 0 ? "true" : undefined} href={buildHref(jahrStr, [])}>
+            {isDe ? "Alle Identitäten" : "All identities"}
+          </Link>
+          {identities.map((i) => {
+            const on = selectedIdentities.includes(i.slug);
+            return (
+              <Link
+                key={i.id}
+                className="chip"
+                aria-current={on ? "true" : undefined}
+                href={buildHref(jahrStr, toggleCsv(selectedIdentities, i.slug))}
+                style={on ? { borderColor: i.color } : undefined}
+              >
+                {i.name}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+
       <p className="meta" style={{ marginTop: 8 }}>
         {isDe
           ? `${missions.length} von ${allMissions.length} Einsätzen angezeigt (Kennzahlen zählen alle).`

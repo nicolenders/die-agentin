@@ -121,6 +121,9 @@ model Mission {
   countryCode   String    @db.Char(2)
   lat           Float
   lon           Float
+  // Online-/Remote-Veranstaltung ohne festen Ort. Wird auf der Karte nicht
+  // geplottet und kann in der Einsatzliste aus-/eingeblendet werden.
+  isOnline      Boolean   @default(false)
   startDate     DateTime
   endDate       DateTime?
   status        String    @default("PLANNED") // MissionStatus
@@ -692,4 +695,26 @@ model HomeContent {
   heroAssetId String?
   heroAsset   MediaAsset? @relation("HomeHero", fields: [heroAssetId], references: [id])
   updatedAt   DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Reichweite: eigene, datensparsame Zugriffszählung (kein Drittanbieter, keine
+// Cookies, keine IP-Speicherung). Je Seitenaufruf eine Zeile mit grobem Land
+// und einem tagesbezogenen, nicht umkehrbaren Besucher-Hash (Salt + IP + Tag)
+// für eine ungefähre Unique-Zählung. Auswertung im Admin nach Zeitraum und Land.
+// ---------------------------------------------------------------------------
+model Pageview {
+  id          String   @id @default(cuid())
+  at          DateTime @default(now())
+  day         DateTime @db.Date // UTC-Tag, für schnelle Zeitraum-Aggregation
+  path        String   @db.NVarChar(512) // Pfad ohne Sprach-Präfix und ohne Query
+  locale      String   @db.Char(2)
+  section     String   @db.NVarChar(64) // grobe Rubrik (einsaetze, identitaeten, …)
+  country     String   @db.Char(2) // ISO-Ländercode oder „XX", wenn unbekannt
+  visitorHash String   @db.Char(64) // SHA-256(Salt + IP + Tag), tagesbezogen
+
+  @@index([day])
+  @@index([country])
+  @@index([section])
+  @@index([day, visitorHash])
 }

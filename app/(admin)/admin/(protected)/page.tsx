@@ -59,23 +59,39 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid g3">
-        <Link className="card bracket" href="/admin/editor" style={{ color: "inherit" }}>
-          <p className="eyebrow">Schnell erfassen</p>
-          <b>Signal anlegen</b>
-          <div className="meta">
-            Link einfügen → Titel und Vorschau werden automatisch geholt
-          </div>
+      {/* Alles, was zum Erfassen von Inhalten gebraucht wird — direkt griffbereit. */}
+      <p className="eyebrow" style={{ marginTop: 26 }}>Neuen Inhalt erfassen</p>
+      <div className="grid g3" style={{ marginTop: 12 }}>
+        {[
+          { href: "/admin/depeschen/bearbeiten", title: "Depesche", meta: "Kurzmeldung oder Fund — Link einfügen, Vorschau wird geholt" },
+          { href: "/admin/einsaetze/bearbeiten", title: "Einsatz", meta: "Vor Ort oder online — Ort, Datum und Briefing zuordnen" },
+          { href: "/admin/briefings/bearbeiten", title: "Briefing", meta: "Vortrag ins Repertoire aufnehmen" },
+          { href: "/admin/publikationen/bearbeiten", title: "Publikation", meta: "Buch, Artikel, Kurs oder Repository" },
+          { href: "/admin/identitaeten/bearbeiten", title: "Identität", meta: "Deckname mit Fokus und Werkzeugen" },
+          { href: "/admin/ausbildung/bearbeiten", title: "Auszeichnung / Zertifizierung", meta: "MVP, Zertifikat oder aktuelles Lernthema" },
+          { href: "/admin/medien", title: "Fotos", meta: "Bilder hochladen — Alt-Texte werden abgefragt" },
+        ].map((q) => (
+          <Link key={q.href + q.title} className="card bracket" href={q.href} style={{ color: "inherit" }}>
+            <p className="eyebrow">Neu anlegen</p>
+            <b>{q.title}</b>
+            <div className="meta">{q.meta}</div>
+          </Link>
+        ))}
+      </div>
+
+      <p className="eyebrow" style={{ marginTop: 26 }}>Überblick</p>
+      <div className="grid g3" style={{ marginTop: 12 }}>
+        <Link className="card bracket" href="/admin/redaktionsplan" style={{ color: "inherit" }}>
+          <b>Redaktionsplan</b>
+          <div className="meta">Was ist geplant, was ist eingetaktet</div>
         </Link>
-        <Link className="card bracket" href="/admin/einsaetze/bearbeiten" style={{ color: "inherit" }}>
-          <p className="eyebrow">Schnell erfassen</p>
-          <b>Einsatz nachtragen</b>
-          <div className="meta">Ort auf der Karte setzen, Briefing zuordnen</div>
+        <Link className="card bracket" href="/admin/statistik" style={{ color: "inherit" }}>
+          <b>Auswertung</b>
+          <div className="meta">Seitenaufrufe und Besucher nach Zeitraum und Land</div>
         </Link>
-        <Link className="card bracket" href="/admin/medien" style={{ color: "inherit" }}>
-          <p className="eyebrow">Schnell erfassen</p>
-          <b>Fotos hochladen</b>
-          <div className="meta">Alt-Texte werden beim Upload abgefragt</div>
+        <Link className="card bracket" href="/admin/kanaele" style={{ color: "inherit" }}>
+          <b>Kanäle</b>
+          <div className="meta">Social-Media-Verbindungen und Vorlagen</div>
         </Link>
       </div>
     </section>

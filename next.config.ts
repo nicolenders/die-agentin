@@ -47,6 +47,17 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
   poweredByHeader: false,
+  // geoip-lite liest seine Datendateien beim Laden über __dirname. Es darf nicht
+  // gebündelt werden, sonst zeigt der Pfad ins Leere. Als externes Server-Paket
+  // wird es zur Laufzeit regulär aus node_modules geladen.
+  serverExternalPackages: ["geoip-lite"],
+  // Die Reichweiten-Erfassung (/api/track) liest die GeoIP-Datendateien von
+  // geoip-lite zur Laufzeit über einen berechneten Pfad; Next erkennt diese
+  // Abhängigkeit beim Tracing nicht automatisch. Ohne diesen Eintrag fehlen die
+  // .dat-Dateien im Standalone-Build und die Länder-Zuordnung fällt auf „XX".
+  outputFileTracingIncludes: {
+    "/api/track": ["./node_modules/geoip-lite/data/**/*"],
+  },
   experimental: {
     // Ermöglicht forbidden()/unauthorized() für die Rollenprüfung im Admin.
     authInterrupts: true,

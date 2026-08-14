@@ -66,6 +66,7 @@ export interface SaveMissionInput {
   countryCode: string;
   lat: number;
   lon: number;
+  isOnline?: boolean;
   startDate: string; // YYYY-MM-DD
   endDate?: string | null; // YYYY-MM-DD, optional
   status: string; // MissionStatus
@@ -130,6 +131,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         countryCode: input.countryCode.slice(0, 2).toUpperCase() || "XX",
         lat: input.lat,
         lon: input.lon,
+        isOnline: input.isOnline ?? false,
         startDate,
         endDate,
         status,
@@ -144,6 +146,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         countryCode: input.countryCode.slice(0, 2).toUpperCase() || "XX",
         lat: input.lat,
         lon: input.lon,
+        isOnline: input.isOnline ?? false,
         startDate,
         endDate,
         status,

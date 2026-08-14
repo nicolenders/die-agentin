@@ -30,22 +30,63 @@ export default function PublicationSections({
 }) {
   const isDe = locale === "de";
 
-  // Kompakte Darstellung (z. B. auf der Identitäts-Detailseite): dichte Liste
-  // ohne große Cover — platzsparend.
+  // Kompakte Darstellung (z. B. auf der Identitäts-Detailseite): zweispaltiges
+  // Raster, jede Karte mit kleinem Cover (Bücher/Kurse) neben Titel und Meta.
   if (compact) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: 14,
+          marginTop: 16,
+        }}
+      >
         {items.map((p) => {
           const link = p.repoUrl ?? p.url;
+          const showCover = p.type === "BOOK" || p.type === "COURSE";
+          const ratio = p.type === "COURSE" ? "16 / 9" : "2 / 3";
+          const coverWidth = p.type === "COURSE" ? 96 : 60;
           return (
-            <div key={p.id} style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-              <span className="tag">{typeLabel(p.type, isDe)}</span>
-              <b style={{ fontSize: "14.5px" }}>{p.title}</b>
-              <span className="meta">{[p.year, p.role, p.publisher].filter(Boolean).join(" · ")}</span>
-              {link ? (
-                <a className="meta" href={link} target="_blank" rel="noopener noreferrer" aria-label={isDe ? "Öffnen" : "Open"}>↗</a>
+            <article
+              key={p.id}
+              className="card bracket"
+              style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: 14 }}
+            >
+              {showCover ? (
+                <div style={{ flex: `0 0 ${coverWidth}px`, width: coverWidth }}>
+                  <BrandImage
+                    src={p.coverUrl ?? brandAsset(`cover-${p.id}.jpg`)}
+                    alt={p.coverAlt || `Cover: ${p.title}`}
+                    label="Cover"
+                    sub={p.type === "COURSE" ? (isDe ? "Kurs" : "Course") : isDe ? "Buchcover" : "Book cover"}
+                    ratio={ratio}
+                    ai={p.coverAi}
+                  />
+                </div>
               ) : null}
-            </div>
+              <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span className="tag">{typeLabel(p.type, isDe)}</span>
+                  {p.year ? <span className="pub-year">{p.year}</span> : null}
+                </div>
+                <b style={{ fontSize: "14.5px", lineHeight: 1.25 }}>{p.title}</b>
+                {[p.role, p.publisher].filter(Boolean).length > 0 ? (
+                  <span className="meta">{[p.role, p.publisher].filter(Boolean).join(" · ")}</span>
+                ) : null}
+                {link ? (
+                  <a
+                    className="btn ghost sm"
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ marginTop: "auto", alignSelf: "flex-start" }}
+                  >
+                    {isDe ? "Öffnen" : "Open"} ↗
+                  </a>
+                ) : null}
+              </div>
+            </article>
           );
         })}
       </div>

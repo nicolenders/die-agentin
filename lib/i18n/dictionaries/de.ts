@@ -55,7 +55,7 @@ const de = {
     recent: "Zuletzt eingegangen",
     countMissions: "Einsätze",
     countCountries: "Länder",
-    countBriefings: "Briefings im Repertoire",
+    countBriefings: "Briefings",
     countMvp: "MVP Award",
     countCertifications: "Zertifizierungen",
     countBooks: "Bücher",
@@ -63,7 +63,7 @@ const de = {
     // Singularformen für die Kennzahlen (Phase 10.4: „1 Einsätze" vermeiden).
     sgMissions: "Einsatz",
     sgCountries: "Land",
-    sgBriefings: "Briefing im Repertoire",
+    sgBriefings: "Briefing",
     sgCertifications: "Zertifizierung",
     sgBooks: "Buch",
     sgIdentities: "Identität",
@@ -113,7 +113,7 @@ const de = {
   },
   footer: {
     contentHeading: "Inhalte",
-    aboutHeading: "Über",
+    aboutHeading: "Über mich als Agentin",
     legalHeading: "Rechtliches",
     imprint: "Impressum",
     privacy: "Datenschutzerklärung",

@@ -37,8 +37,7 @@ export default async function DepeschenPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{dict.dispatch.eyebrow}</p>
-      <h2>{dict.dispatch.title}</h2>
+      <h1 className="eyebrow">{dict.dispatch.eyebrow}</h1>
       <p className="lead">{dict.dispatch.lead}</p>
 
       <div className="year-filter" role="group" aria-label={dict.dispatch.filterByFormat} style={{ marginTop: 20 }}>

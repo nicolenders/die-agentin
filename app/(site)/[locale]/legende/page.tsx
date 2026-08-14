@@ -77,9 +77,19 @@ export default async function LegendePage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      {/* Reihe 1: Kopf — links Name/Lead/Kanäle und darunter die Mission (bündig
-          mit dem Porträt), rechts das Porträt. */}
+      {/* Reihe 1: Kopf — links das Porträt, rechts Name/Lead/Kanäle und darunter
+          die Mission (bündig mit dem Porträt). */}
       <div className={styles.heroRow}>
+        <div className={styles.heroRight}>
+          <BrandImage
+            src={portraitSrc}
+            alt={portraitAlt}
+            label={isDe ? "Porträt" : "Portrait"}
+            sub={legend.name}
+            ratio="4 / 5"
+            ai={legend.portrait?.ai ?? false}
+          />
+        </div>
         <div className={styles.heroLeft}>
           <p className="eyebrow">{legend.eyebrow}</p>
           <h2>{legend.name}</h2>
@@ -98,16 +108,6 @@ export default async function LegendePage({
               {renderInlineFieldContent(parseRichValue(legend.missionText))}
             </p>
           </div>
-        </div>
-        <div className={styles.heroRight}>
-          <BrandImage
-            src={portraitSrc}
-            alt={portraitAlt}
-            label={isDe ? "Porträt" : "Portrait"}
-            sub={legend.name}
-            ratio="4 / 5"
-            ai={legend.portrait?.ai ?? false}
-          />
         </div>
       </div>
 
@@ -146,7 +146,7 @@ export default async function LegendePage({
                 ? "Eine Identität kommt als Umschlag — mit Ausweis, Geld und Unterlagen. Offen als meine eigene ausgewiesen, keine Verschleierung."
                 : "An identity arrives as an envelope — with an ID, money and papers. Openly declared as my own, no concealment."}
             </p>
-            {identities.length > 0 ? <IdentityCompactGrid identities={identities} locale={locale} /> : null}
+            {identities.length > 0 ? <IdentityCompactGrid identities={identities} locale={locale} columns={2} /> : null}
           </div>
           {legend.pillars.length > 0 ? (
             <div className={styles.pillarStack}>

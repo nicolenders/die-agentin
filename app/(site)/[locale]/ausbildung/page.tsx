@@ -25,13 +25,7 @@ export default async function AusbildungPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{isDe ? "Ausbildung · Zertifizierungen" : "Credentials · certifications"}</p>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>{isDe ? "Eine Agentin bildet sich weiter" : "An agent keeps learning"}</h2>
-        <a className="btn ghost sm" href={`/${locale}/cv`} target="_blank" rel="noopener noreferrer" style={{ marginLeft: "auto" }}>
-          {isDe ? "Als Lebenslauf drucken" : "Print as CV"} ↗
-        </a>
-      </div>
+      <h1 className="eyebrow">{isDe ? "Ausbildung · Zertifizierungen" : "Credentials · certifications"}</h1>
       <p className="lead">
         {isDe
           ? "Zertifizierungen, MVP-Auszeichnungen, Schulungen und aktuelle Themen — getrennt nach Bereichen."

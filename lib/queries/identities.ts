@@ -205,6 +205,22 @@ export interface IdentityCard {
   portraitAlt: string;
   envelopeUrl: string | null;
   envelopeAlt: string;
+  // Aktiver Zeitraum aus dem ältesten/neuesten verknüpften Einsatz, z. B. „2016–2020".
+  activePeriod: string | null;
+}
+
+/** „2016–2020" (oder „2018", wenn nur ein Jahr) aus verknüpften Einsätzen. */
+function missionPeriod(missions: { startDate: Date }[] | undefined): string | null {
+  if (!missions || missions.length === 0) return null;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const m of missions) {
+    const y = m.startDate.getUTCFullYear();
+    if (y < min) min = y;
+    if (y > max) max = y;
+  }
+  if (!Number.isFinite(min)) return null;
+  return min === max ? String(min) : `${min}–${max}`;
 }
 
 function toCard(
@@ -222,6 +238,7 @@ function toCard(
     isPrimary: boolean;
     portrait: { blobPath: string; altDe: string; altEn: string | null; decorative: boolean } | null;
     envelope: { blobPath: string; altDe: string; altEn: string | null; decorative: boolean } | null;
+    missions?: { startDate: Date }[];
   },
   locale: Locale,
 ): IdentityCard {
@@ -241,6 +258,7 @@ function toCard(
     portraitAlt: alt(r.portrait, name),
     envelopeUrl: r.envelope ? assetUrl(r.envelope.blobPath) : null,
     envelopeAlt: alt(r.envelope, name),
+    activePeriod: missionPeriod(r.missions),
   };
 }
 
@@ -248,7 +266,7 @@ async function loadPublishedIdentities(locale: Locale): Promise<IdentityCard[]> 
   const rows = await db.identity.findMany({
     where: { published: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: { portrait: true, envelope: true },
+    include: { portrait: true, envelope: true, missions: { select: { startDate: true } } },
   });
   return rows.map((r) => toCard(r, locale));
 }

@@ -37,16 +37,20 @@ export function IdentityCardCompact({
   );
 }
 
-/** Raster kompakter Karten: max. 3 pro Zeile, unvollständige letzte Zeile mittig. */
+/** Raster kompakter Karten: max. 3 pro Zeile (Standard) oder 2 (breitere Boxen,
+ *  z. B. in der Legende), unvollständige letzte Zeile mittig. */
 export function IdentityCompactGrid({
   identities,
   locale,
+  columns = 3,
 }: {
   identities: IdentityCardData[];
   locale: string;
+  columns?: 2 | 3;
 }) {
+  const cls = columns === 2 ? `${styles.compactGrid} ${styles.two}` : styles.compactGrid;
   return (
-    <div className={styles.compactGrid}>
+    <div className={cls}>
       {identities.map((i) => (
         <IdentityCardCompact key={i.id} identity={i} locale={locale} />
       ))}
@@ -81,6 +85,7 @@ export function IdentityCardFeature({
         {i.registryCode ? <p className={styles.code}>{i.registryCode}</p> : null}
         <p className={styles.featureName}>{i.name}</p>
         <p className={styles.featureRole}>{i.role}</p>
+        {i.activePeriod ? <p className={styles.featurePeriod}>{i.activePeriod}</p> : null}
         {i.tagline ? (
           <p className={styles.featureTagline}>
             {locale === "en" ? `“${i.tagline}”` : `„${i.tagline}“`}

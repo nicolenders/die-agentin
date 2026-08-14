@@ -6,7 +6,7 @@ import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
 import { getPublishedIdentities, getIdentityToolNames } from "@/lib/queries/identities";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
-import { IdentityCardCompact } from "@/components/identities/IdentityCard";
+import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
 import SocialLinks from "@/components/SocialLinks";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
@@ -135,18 +135,7 @@ export default async function LegendePage({
               ? "Eine Identität kommt als Umschlag — mit Ausweis, Geld und Unterlagen. Offen als meine eigene ausgewiesen, keine Verschleierung."
               : "An identity arrives as an envelope — with an ID, money and papers. Openly declared as my own, no concealment."}
           </p>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
-              gap: 12,
-              marginTop: 14,
-            }}
-          >
-            {identities.map((i) => (
-              <IdentityCardCompact key={i.id} identity={i} locale={locale} />
-            ))}
-          </div>
+          <IdentityCompactGrid identities={identities} locale={locale} />
         </>
       ) : null}
 

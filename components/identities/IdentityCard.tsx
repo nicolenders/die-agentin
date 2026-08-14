@@ -37,6 +37,23 @@ export function IdentityCardCompact({
   );
 }
 
+/** Raster kompakter Karten: max. 3 pro Zeile, unvollständige letzte Zeile mittig. */
+export function IdentityCompactGrid({
+  identities,
+  locale,
+}: {
+  identities: IdentityCardData[];
+  locale: string;
+}) {
+  return (
+    <div className={styles.compactGrid}>
+      {identities.map((i) => (
+        <IdentityCardCompact key={i.id} identity={i} locale={locale} />
+      ))}
+    </div>
+  );
+}
+
 export function IdentityCardFeature({
   identity: i,
   locale,
@@ -62,9 +79,13 @@ export function IdentityCardFeature({
       </span>
       <span className={styles.featureBody}>
         {i.registryCode ? <p className={styles.code}>{i.registryCode}</p> : null}
-        <p className={styles.name} style={{ fontSize: 17 }}>{i.name}</p>
-        <p className={styles.role}>{i.role}</p>
-        {i.tagline ? <p className={styles.tagline}>{i.tagline}</p> : null}
+        <p className={styles.featureName}>{i.name}</p>
+        <p className={styles.featureRole}>{i.role}</p>
+        {i.tagline ? (
+          <p className={styles.featureTagline}>
+            {locale === "en" ? `“${i.tagline}”` : `„${i.tagline}“`}
+          </p>
+        ) : null}
       </span>
     </Link>
   );

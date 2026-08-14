@@ -1,0 +1,23 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- AlterTable
+ALTER TABLE [dbo].[Talk] ADD [sortOrder] INT NOT NULL CONSTRAINT [Talk_sortOrder_df] DEFAULT 0;
+
+-- CreateIndex
+CREATE NONCLUSTERED INDEX [Talk_sortOrder_idx] ON [dbo].[Talk]([sortOrder]);
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH
+

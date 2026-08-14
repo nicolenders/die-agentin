@@ -5,7 +5,7 @@ import ConfirmButton from "@/components/admin/ConfirmButton";
 import SharePanel from "@/components/admin/SharePanel";
 import { formatDate } from "@/lib/format";
 import { identityDisplayName } from "@/lib/identities";
-import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
+import { getShareTemplates, getShareProfiles, getLinkedInConnected } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { deleteDispatch } from "./actions";
 
@@ -28,7 +28,11 @@ export default async function DepeschenAdminPage({
 }) {
   const { ok, err } = await searchParams;
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
+  const [templates, shareProfiles, linkedInConnected] = await Promise.all([
+    getShareTemplates(),
+    getShareProfiles(),
+    getLinkedInConnected(),
+  ]);
 
   let rows: Row[] = [];
   let dbError = false;
@@ -113,7 +117,7 @@ export default async function DepeschenAdminPage({
                 <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
                   {r.share ? (
                     <>
-                      <SharePanel title={r.title} textDe={r.share.textDe} textEn={r.share.textEn} profiles={shareProfiles} />{" "}
+                      <SharePanel title={r.title} textDe={r.share.textDe} textEn={r.share.textEn} profiles={shareProfiles} linkedInConnected={linkedInConnected} />{" "}
                     </>
                   ) : null}
                   <Link className="btn ghost sm" href={`/admin/depeschen/bearbeiten?id=${r.id}`}>Bearbeiten</Link>{" "}

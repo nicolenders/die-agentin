@@ -195,7 +195,8 @@ model Talk {
   category    Taxonomy @relation("TalkCategory", fields: [categoryId], references: [id])
   level       String? // "100" | "200" | "300" | "400"
   durationMin Int?
-  active      Boolean  @default(true)
+  active      Boolean  @default(true) // öffentlich sichtbar (auf der Website angezeigt)
+  sortOrder   Int      @default(0) // manuelle Reihenfolge auf der öffentlichen Seite
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -206,6 +207,7 @@ model Talk {
   identities   Identity[]     @relation("IdentityTalks")
 
   @@index([categoryId])
+  @@index([sortOrder])
 }
 
 model TalkTranslation {

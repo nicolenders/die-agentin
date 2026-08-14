@@ -97,6 +97,9 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
     },
   });
 
+  // Manuelle Reihenfolge (sortOrder) hat Vorrang; bei Gleichstand die häufiger
+  // gehaltenen zuerst.
+  const order = new Map(talks.map((t) => [t.id, t.sortOrder]));
   const items = talks.map((t): BriefingListItem => {
     const picked = pickTranslation(t.translations, locale);
     const lastHeld = t.deliveries.reduce<Date | null>(
@@ -120,7 +123,10 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
   });
 
   return items.sort(
-    (a, b) => b.total - a.total || a.title.localeCompare(b.title, locale),
+    (a, b) =>
+      (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) ||
+      b.total - a.total ||
+      a.title.localeCompare(b.title, locale),
   );
 }
 

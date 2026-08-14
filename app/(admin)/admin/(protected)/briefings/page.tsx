@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getBriefingRanking } from "@/lib/queries/briefings";
-import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
+import { getShareTemplates, getShareProfiles, getLinkedInConnected } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { identityDisplayName } from "@/lib/identities";
 import { formatDate } from "@/lib/format";
@@ -19,6 +19,8 @@ import {
   deleteTalkAudience,
   createTalk,
   deleteTalk,
+  toggleTalkVisibility,
+  reorderTalk,
 } from "./actions";
 
 export const metadata = { title: "Briefings · Zentrale" };
@@ -42,7 +44,11 @@ export default async function BriefingsAdminPage({
   const { tab, von, bis, ok, err } = await searchParams;
   const active = TABS.find((t) => t.id === tab)?.id ?? "alle";
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
+  const [templates, shareProfiles, linkedInConnected] = await Promise.all([
+    getShareTemplates(),
+    getShareProfiles(),
+    getLinkedInConnected(),
+  ]);
 
   let categories: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
   let audienceTags: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
@@ -52,7 +58,7 @@ export default async function BriefingsAdminPage({
     const [cats, auds, talkRows] = await Promise.all([
       db.taxonomy.findMany({ where: { kind: "TALK" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { talkMulti: true } } } }),
       db.taxonomy.findMany({ where: { kind: "AUDIENCE" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { talkAudiences: true } } } }),
-      db.talk.findMany({ orderBy: { createdAt: "desc" }, include: { translations: true, categories: true, audiences: true, identities: { select: { codenameDe: true, codenameEn: true, roleDe: true, roleEn: true } }, _count: { select: { deliveries: true } } } }),
+      db.talk.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }], include: { translations: true, categories: true, audiences: true, identities: { select: { codenameDe: true, codenameEn: true, roleDe: true, roleEn: true } }, _count: { select: { deliveries: true } } } }),
     ]);
     categories = cats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.talkMulti }));
     audienceTags = auds.map((a) => ({ id: a.id, nameDe: a.nameDe, nameEn: a.nameEn, count: a._count.talkAudiences }));
@@ -121,22 +127,39 @@ export default async function BriefingsAdminPage({
             ) : (
               <table style={{ marginTop: 12 }}>
                 <thead>
-                  <tr><th>Titel</th><th>Kategorie</th><th>Zielgruppe</th><th>Level</th><th>Dauer</th><th>Einsätze</th><th>Status</th><th></th></tr>
+                  <tr><th style={{ width: 60 }}>Reihenf.</th><th>Titel</th><th>Kategorie</th><th>Zielgruppe</th><th>Einsätze</th><th>Auf Website</th><th></th></tr>
                 </thead>
                 <tbody>
-                  {talks.map((t) => (
+                  {talks.map((t, i) => (
                     <tr key={t.id}>
-                      <td><b>{t.title}</b></td>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        <form action={reorderTalk} style={{ display: "inline" }}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name="dir" value="up" />
+                          <button className="btn ghost sm" type="submit" aria-label="Nach oben" disabled={i === 0}>↑</button>
+                        </form>{" "}
+                        <form action={reorderTalk} style={{ display: "inline" }}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name="dir" value="down" />
+                          <button className="btn ghost sm" type="submit" aria-label="Nach unten" disabled={i === talks.length - 1}>↓</button>
+                        </form>
+                      </td>
+                      <td><b>{t.title}</b>{t.level || t.durationMin ? <div className="meta">{[t.level ? `Level ${t.level}` : null, t.durationMin ? `${t.durationMin} min` : null].filter(Boolean).join(" · ")}</div> : null}</td>
                       <td className="meta">{t.category}</td>
                       <td className="meta">{t.audience}</td>
-                      <td className="meta">{t.level ?? "—"}</td>
-                      <td className="meta">{t.durationMin ? `${t.durationMin} min` : "—"}</td>
                       <td>{t.deliveries}</td>
-                      <td><span className={`st ${t.active ? "live" : ""}`}>{t.active ? "Aktiv" : "Inaktiv"}</span></td>
+                      <td>
+                        <form action={toggleTalkVisibility} style={{ display: "inline" }}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <button className="btn ghost sm" type="submit" title="Sichtbarkeit auf der Website umschalten">
+                            {t.active ? "Sichtbar ✓" : "Verborgen"}
+                          </button>
+                        </form>
+                      </td>
                       <td style={{ whiteSpace: "nowrap" }}>
                         {t.share ? (
                           <>
-                            <SharePanel title={t.title} textDe={t.share.textDe} textEn={t.share.textEn} profiles={shareProfiles} />{" "}
+                            <SharePanel title={t.title} textDe={t.share.textDe} textEn={t.share.textEn} profiles={shareProfiles} linkedInConnected={linkedInConnected} />{" "}
                           </>
                         ) : null}
                         <Link className="btn ghost sm" href={`/admin/briefings/bearbeiten?id=${t.id}`}>Bearbeiten</Link>{" "}

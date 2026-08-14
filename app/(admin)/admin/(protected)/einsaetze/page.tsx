@@ -6,7 +6,7 @@ import ConfirmButton from "@/components/admin/ConfirmButton";
 import Flash from "@/components/admin/Flash";
 import SharePanel from "@/components/admin/SharePanel";
 import { identityDisplayName } from "@/lib/identities";
-import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
+import { getShareTemplates, getShareProfiles, getLinkedInConnected } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { deleteMission } from "./actions";
 
@@ -26,7 +26,11 @@ export default async function EinsaetzeAdminPage({
 }) {
   const { ok, err } = await searchParams;
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
+  const [templates, shareProfiles, linkedInConnected] = await Promise.all([
+    getShareTemplates(),
+    getShareProfiles(),
+    getLinkedInConnected(),
+  ]);
 
   let rows: Awaited<ReturnType<typeof load>> = [];
   let dbError = false;
@@ -82,7 +86,7 @@ export default async function EinsaetzeAdminPage({
                   <td style={{ whiteSpace: "nowrap" }}>
                     {m.share ? (
                       <>
-                        <SharePanel title={m.eventName} textDe={m.share.textDe} textEn={m.share.textEn} profiles={shareProfiles} />{" "}
+                        <SharePanel title={m.eventName} textDe={m.share.textDe} textEn={m.share.textEn} profiles={shareProfiles} linkedInConnected={linkedInConnected} />{" "}
                       </>
                     ) : null}
                     <Link className="btn ghost sm" href={`/admin/einsaetze/bearbeiten?id=${m.id}`}>Bearbeiten</Link>{" "}

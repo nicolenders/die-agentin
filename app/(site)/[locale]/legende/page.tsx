@@ -10,6 +10,7 @@ import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
 import SocialLinks from "@/components/SocialLinks";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
+import styles from "./legende.module.scss";
 
 export const dynamic = "force-dynamic";
 
@@ -62,23 +63,43 @@ export default async function LegendePage({
   const portraitSrc = legend.portrait?.url ?? brandAsset("portrait.jpg");
   const portraitAlt = legend.portrait?.alt ?? (isDe ? "Porträt von Nicole Enders" : "Portrait of Nicole Enders");
 
+  const whyAgent = isDe
+    ? [
+        "Agent, Agentin — das Wort trägt zwei Bedeutungen, und ich beanspruche beide. Da ist die Agentin im klassischen Sinn: die, die im Hintergrund arbeitet, Informationen ordnet, Fäden verbindet und dafür sorgt, dass am Ende etwas trägt. Und da ist der Agent im technischen Sinn: die Software, die im Auftrag handelt — Agentic AI, Copilot Studio, Microsoft Foundry. Ich baue solche Agents. Beides ist dieselbe Haltung.",
+        "Enders ist mein Name — und zugleich ein Versprechen: keine losen Enden. Was ich anfange, wird zu Ende gebracht; was ich baue, hält im Alltag.",
+        "Daraus folgt die Arbeitsweise: nicht die Demo interessiert mich, sondern die Frage dahinter. Was muss vorhanden sein, damit die Technik trägt — Struktur, Berechtigungen, Governance, Akzeptanz? Ein Copilot ist nur so gut wie die Informationsarchitektur, auf der er sitzt.",
+      ]
+    : [
+        "Agent — the word carries two meanings, and I claim both. There is the agent in the classic sense: the one who works in the background, orders information, connects the threads and makes sure something holds in the end. And there is the agent in the technical sense: software that acts on your behalf — agentic AI, Copilot Studio, Microsoft Foundry. I build those agents. Both are the same stance.",
+        "Enders is my name — and at the same time a promise: no loose ends. What I start gets finished; what I build holds up in daily work.",
+        "From that follows the way I work: I am less interested in the demo than in the question behind it. What has to be in place for the technology to hold — structure, permissions, governance, acceptance? A Copilot is only as good as the information architecture it sits on.",
+      ];
+
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <div className="hero-grid">
-        <div>
+      {/* Reihe 1: Kopf — links Name/Lead/Kanäle und darunter die Mission (bündig
+          mit dem Porträt), rechts das Porträt. */}
+      <div className={styles.heroRow}>
+        <div className={styles.heroLeft}>
           <p className="eyebrow">{legend.eyebrow}</p>
           <h2>{legend.name}</h2>
           <p className="lead">{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
-          {Object.keys(social).length > 0 ? (
-            <div style={{ marginTop: 28 }}>
+          {Object.keys(social).length > 0 || contact.email ? (
+            <div style={{ marginTop: 24 }}>
               <p className="eyebrow" style={{ marginBottom: 12 }}>
                 {isDe ? "Folgen & vernetzen" : "Follow & connect"}
               </p>
-              <SocialLinks social={social} className="social-icons" />
+              <SocialLinks social={social} email={contact.email || undefined} className="social-icons" />
             </div>
           ) : null}
+          <div className={`card bracket ${styles.missionBox}`} style={{ padding: 26 }}>
+            <p className="eyebrow">{legend.missionEyebrow}</p>
+            <p style={{ fontSize: 18, fontFamily: "var(--display)", fontWeight: 300, lineHeight: 1.5, margin: 0 }}>
+              {renderInlineFieldContent(parseRichValue(legend.missionText))}
+            </p>
+          </div>
         </div>
-        <div className="hero-visual">
+        <div className={styles.heroRight}>
           <BrandImage
             src={portraitSrc}
             alt={portraitAlt}
@@ -90,67 +111,55 @@ export default async function LegendePage({
         </div>
       </div>
 
-      <div className="card bracket" style={{ margin: "30px 0", padding: 30 }}>
-        <p className="eyebrow">{legend.missionEyebrow}</p>
-        <p style={{ fontSize: 20, fontFamily: "var(--display)", fontWeight: 300, lineHeight: 1.5, margin: 0 }}>
-          {renderInlineFieldContent(parseRichValue(legend.missionText))}
-        </p>
+      {/* Reihe 2: Warum Agentin (links) und Codebuch (rechts). */}
+      <div className={styles.twoCol}>
+        <div>
+          <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Warum Agentin" : "Why „agent“"}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {whyAgent.map((p, i) => (
+              <p key={i} style={{ fontSize: 15 }}>{p}</p>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Codebuch" : "Codebook"}</p>
+          <table>
+            <tbody>
+              {codebook.map((c) => (
+                <tr key={c.term}>
+                  <td style={{ width: "26%", fontFamily: "var(--mono)", color: "var(--violet-text)" }}>{c.term}</td>
+                  <td className="meta">{c.gloss}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {legend.pillars.length > 0 ? (
-        <div className="grid g3">
-          {legend.pillars.map((p) => (
-            <div className="card bracket" key={p.title}>
-              <p className="eyebrow">{p.title}</p>
-              <p style={{ fontSize: "14.5px" }}>{p.text}</p>
+      {/* Reihe 3: Identitäten (links) und die Säulen (rechts, klein, untereinander). */}
+      {identities.length > 0 || legend.pillars.length > 0 ? (
+        <div className={styles.identitiesRow}>
+          <div>
+            <p className="eyebrow" style={{ marginTop: 0 }}>{dict.identity.title}</p>
+            <p className="meta">
+              {isDe
+                ? "Eine Identität kommt als Umschlag — mit Ausweis, Geld und Unterlagen. Offen als meine eigene ausgewiesen, keine Verschleierung."
+                : "An identity arrives as an envelope — with an ID, money and papers. Openly declared as my own, no concealment."}
+            </p>
+            {identities.length > 0 ? <IdentityCompactGrid identities={identities} locale={locale} /> : null}
+          </div>
+          {legend.pillars.length > 0 ? (
+            <div className={styles.pillarStack}>
+              {legend.pillars.map((p) => (
+                <div className={`card bracket ${styles.pillarSmall}`} key={p.title}>
+                  <p className="eyebrow" style={{ margin: 0 }}>{p.title}</p>
+                  <p style={{ fontSize: 13, margin: "4px 0 0" }}>{p.text}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          ) : null}
         </div>
       ) : null}
-
-      {/* Warum Agentin — die Doppeldeutigkeit ausführlich. ENTWURF, von Nicole zu prüfen (12.3). */}
-      <p className="eyebrow" style={{ marginTop: 44 }}>{isDe ? "Warum Agentin" : "Why „agent“"}</p>
-      <div style={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: 12 }}>
-        {(isDe
-          ? [
-              "Agent, Agentin — das Wort trägt zwei Bedeutungen, und ich beanspruche beide. Da ist die Agentin im klassischen Sinn: die, die im Hintergrund arbeitet, Informationen ordnet, Fäden verbindet und dafür sorgt, dass am Ende etwas trägt. Und da ist der Agent im technischen Sinn: die Software, die im Auftrag handelt — Agentic AI, Copilot Studio, Microsoft Foundry. Ich baue solche Agents. Beides ist dieselbe Haltung.",
-              "Enders ist mein Name — und zugleich ein Versprechen: keine losen Enden. Was ich anfange, wird zu Ende gebracht; was ich baue, hält im Alltag.",
-              "Daraus folgt die Arbeitsweise: nicht die Demo interessiert mich, sondern die Frage dahinter. Was muss vorhanden sein, damit die Technik trägt — Struktur, Berechtigungen, Governance, Akzeptanz? Ein Copilot ist nur so gut wie die Informationsarchitektur, auf der er sitzt.",
-            ]
-          : [
-              "Agent — the word carries two meanings, and I claim both. There is the agent in the classic sense: the one who works in the background, orders information, connects the threads and makes sure something holds in the end. And there is the agent in the technical sense: software that acts on your behalf — agentic AI, Copilot Studio, Microsoft Foundry. I build those agents. Both are the same stance.",
-              "Enders is my name — and at the same time a promise: no loose ends. What I start gets finished; what I build holds up in daily work.",
-              "From that follows the way I work: I am less interested in the demo than in the question behind it. What has to be in place for the technology to hold — structure, permissions, governance, acceptance? A Copilot is only as good as the information architecture it sits on.",
-            ]
-        ).map((p, i) => (
-          <p key={i} style={{ fontSize: 15 }}>{p}</p>
-        ))}
-      </div>
-
-      {identities.length > 0 ? (
-        <>
-          <p className="eyebrow" style={{ marginTop: 44 }}>{dict.identity.title}</p>
-          <p className="meta" style={{ maxWidth: 640 }}>
-            {isDe
-              ? "Eine Identität kommt als Umschlag — mit Ausweis, Geld und Unterlagen. Offen als meine eigene ausgewiesen, keine Verschleierung."
-              : "An identity arrives as an envelope — with an ID, money and papers. Openly declared as my own, no concealment."}
-          </p>
-          <IdentityCompactGrid identities={identities} locale={locale} />
-        </>
-      ) : null}
-
-      {/* Codebuch — Glossar der Sektionsnamen (12.3). */}
-      <p className="eyebrow" style={{ marginTop: 44 }}>{isDe ? "Codebuch" : "Codebook"}</p>
-      <table style={{ maxWidth: 720 }}>
-        <tbody>
-          {codebook.map((c) => (
-            <tr key={c.term}>
-              <td style={{ width: "26%", fontFamily: "var(--mono)", color: "var(--violet-text)" }}>{c.term}</td>
-              <td className="meta">{c.gloss}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
 
       {toolNames.length > 0 ? (
         <>
@@ -170,36 +179,6 @@ export default async function LegendePage({
         </>
       ) : null}
 
-      {(() => {
-        // Toter CTA behoben (Phase 1.2c): kein `href="#"` mehr. Der Button zeigt
-        // auf die gepflegte Kontakt-URL, sonst auf das hinterlegte
-        // LinkedIn-Profil. Ist keins von beidem gesetzt, wird der Button
-        // ausgeblendet statt ins Leere zu verlinken. Vollständige Zwei-Kanal-
-        // Lösung (LinkedIn + E-Mail) folgt in Phase 7.
-        // Zwei gleichwertige Kontaktwege (Phase 7.2): LinkedIn primär, E-Mail
-        // sekundär. Fällt die E-Mail weg, wird ihr Button ausgeblendet.
-        const linkedinUrl =
-          legend.contactUrl && legend.contactUrl !== "#" ? legend.contactUrl : social.linkedin || "";
-        return (
-          <div className="card bracket" style={{ marginTop: 44, padding: 30 }}>
-            <p className="eyebrow">{legend.contactEyebrow}</p>
-            <h3>{legend.contactHeading}</h3>
-            <p style={{ fontSize: 15 }}>{renderInlineFieldContent(parseRichValue(legend.contactText))}</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6 }}>
-              {linkedinUrl ? (
-                <a className="btn" href={linkedinUrl} target="_blank" rel="noopener noreferrer">
-                  {legend.contactButton}
-                </a>
-              ) : null}
-              {contact.email ? (
-                <a className="btn ghost" href={`mailto:${contact.email}`}>
-                  {isDe ? "E-Mail schreiben" : "Send an email"}
-                </a>
-              ) : null}
-            </div>
-          </div>
-        );
-      })()}
     </section>
   );
 }

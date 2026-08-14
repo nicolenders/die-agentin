@@ -39,13 +39,15 @@ const ICONS: Record<string, ReactNode> = {
  */
 export default function SocialLinks({
   social,
+  email,
   className,
 }: {
   social: Record<string, string>;
+  email?: string;
   className?: string;
 }) {
   const links = SOCIAL_PLATFORMS.filter((p) => social[p.key]);
-  if (links.length === 0) return null;
+  if (links.length === 0 && !email) return null;
   return (
     <div className={className}>
       {links.map((p) => (
@@ -66,6 +68,13 @@ export default function SocialLinks({
           )}
         </a>
       ))}
+      {email ? (
+        <a href={`mailto:${email}`} aria-label="E-Mail" title="E-Mail">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+            {ICONS.email}
+          </svg>
+        </a>
+      ) : null}
     </div>
   );
 }

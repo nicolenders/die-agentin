@@ -1,0 +1,57 @@
+// Layout der Legende-Seite (Über mich). Zwei-Spalten-Reihen; die Mission sitzt
+// links unter den Social-Kanälen und schließt unten bündig mit dem Porträt ab.
+
+.heroRow {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 40px;
+  align-items: stretch;
+}
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.heroRight {
+  min-width: 0;
+}
+// Mission: nach unten geschoben, damit sie bündig mit dem Porträt endet.
+.missionBox {
+  margin-top: auto;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  margin-top: 48px;
+  align-items: start;
+}
+
+.identitiesRow {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 36px;
+  margin-top: 48px;
+  align-items: start;
+}
+.pillarStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pillarSmall {
+  padding: 12px 15px;
+}
+
+@media (max-width: 900px) {
+  .heroRow,
+  .twoCol,
+  .identitiesRow {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .missionBox {
+    margin-top: 18px;
+  }
+}

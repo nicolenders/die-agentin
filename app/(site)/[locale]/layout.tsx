@@ -9,6 +9,7 @@ import { siteOrigin } from "@/lib/site";
 import SiteHeader, { type HeaderNavItem } from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 import JsonLd from "@/components/JsonLd";
+import PageviewTracker from "@/components/analytics/PageviewTracker";
 import { getPersonInput } from "@/lib/queries/person";
 import { personNode, webSiteNode, graph } from "@/lib/seo/jsonld";
 
@@ -77,6 +78,7 @@ export default async function LocaleLayout({
     <html lang={typedLocale} className={fontVariables}>
       <body>
         <JsonLd json={siteJsonLd} />
+        <PageviewTracker />
         <a className="skip-link" href="#main-content">
           {dict.nav.skipToContent}
         </a>

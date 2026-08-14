@@ -1,4 +1,5 @@
 import { getAnalyticsSummary, type Bucket } from "@/lib/queries/analytics";
+import VisitorMap from "@/components/analytics/VisitorMap";
 
 export const metadata = { title: "Auswertung · Zentrale" };
 export const dynamic = "force-dynamic";
@@ -237,6 +238,15 @@ export default async function StatistikPage({
               <div className="card bracket" style={{ marginBottom: 16 }}>
                 <p className="eyebrow" style={{ marginTop: 0 }}>Aufrufe pro Tag</p>
                 <DayChart data={summary.byDay} />
+              </div>
+
+              <div className="card bracket" style={{ marginBottom: 16 }}>
+                <p className="eyebrow" style={{ marginTop: 0 }}>Besucher nach Land (Weltkarte)</p>
+                <VisitorMap
+                  data={summary.byCountry}
+                  emptyLabel="Keine verortbaren Länder im Zeitraum."
+                  legendLabel="Dunkler = mehr Aufrufe"
+                />
               </div>
 
               <div className="grid g2" style={{ alignItems: "start" }}>

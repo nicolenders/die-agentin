@@ -9,7 +9,7 @@ import { getMissions } from "@/lib/queries/missions";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { getBriefingRanking } from "@/lib/queries/briefings";
-import AssetImage from "@/components/media/AssetImage";
+import { IdentityCardCompact } from "@/components/identities/IdentityCard";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 import { formatDate } from "@/lib/format";
@@ -113,24 +113,22 @@ export default async function HQPage({
 
       {identities.length > 0 ? (
         <>
-          <p className="eyebrow" style={{ marginTop: 52 }}>{isDe ? "Die Identitäten" : "The identities"}</p>
-          <div className="grid g4" style={{ marginTop: 14, alignItems: "stretch" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginTop: 52 }}>
+            <p className="eyebrow" style={{ margin: 0 }}>{isDe ? "Die Identitäten" : "The identities"}</p>
+            <Link className="meta" href={`/${locale}/identitaeten`} style={{ marginLeft: "auto" }}>
+              {isDe ? "Alle ansehen" : "See all"} →
+            </Link>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
+              gap: 12,
+              marginTop: 14,
+            }}
+          >
             {identities.map((i) => (
-              <Link
-                key={i.id}
-                href={`/${locale}/identitaeten/${i.slug}`}
-                className="card bracket"
-                style={{ display: "flex", flexDirection: "column", borderLeft: `3px solid ${i.color}` }}
-              >
-                {i.envelopeUrl ? (
-                  <AssetImage src={i.envelopeUrl} alt={i.envelopeAlt} imgStyle={{ width: "100%", borderRadius: 4, aspectRatio: "4 / 5", objectFit: "cover" }} style={{ marginBottom: 10 }} />
-                ) : (
-                  <div aria-hidden style={{ aspectRatio: "4 / 5", borderRadius: 4, marginBottom: 10, background: i.color, opacity: 0.22 }} />
-                )}
-                <p className="meta" style={{ margin: 0, fontFamily: "var(--mono)" }}>{i.registryCode ?? ""}</p>
-                <h3 style={{ marginTop: 4, fontSize: 16 }}>{i.name}</h3>
-                <p className="meta" style={{ margin: "2px 0 0" }}>{i.role}</p>
-              </Link>
+              <IdentityCardCompact key={i.id} identity={i} locale={locale} />
             ))}
           </div>
         </>

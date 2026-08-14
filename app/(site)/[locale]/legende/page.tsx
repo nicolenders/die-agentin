@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
-import Link from "next/link";
 import { getLegend } from "@/lib/queries/legend";
 import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
 import { getPublishedIdentities, getIdentityToolNames } from "@/lib/queries/identities";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
-import AssetImage from "@/components/media/AssetImage";
+import { IdentityCardCompact } from "@/components/identities/IdentityCard";
 import SocialLinks from "@/components/SocialLinks";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
@@ -136,18 +135,16 @@ export default async function LegendePage({
               ? "Eine Identität kommt als Umschlag — mit Ausweis, Geld und Unterlagen. Offen als meine eigene ausgewiesen, keine Verschleierung."
               : "An identity arrives as an envelope — with an ID, money and papers. Openly declared as my own, no concealment."}
           </p>
-          <div className="grid g4" style={{ marginTop: 14, alignItems: "stretch" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
+              gap: 12,
+              marginTop: 14,
+            }}
+          >
             {identities.map((i) => (
-              <Link key={i.id} href={`/${locale}/identitaeten/${i.slug}`} className="card bracket" style={{ display: "flex", flexDirection: "column", borderLeft: `3px solid ${i.color}` }}>
-                {i.envelopeUrl ? (
-                  <AssetImage src={i.envelopeUrl} alt={i.envelopeAlt} imgStyle={{ width: "100%", borderRadius: 4, aspectRatio: "4 / 5", objectFit: "cover" }} style={{ marginBottom: 10 }} />
-                ) : (
-                  <div aria-hidden style={{ aspectRatio: "4 / 5", borderRadius: 4, marginBottom: 10, background: i.color, opacity: 0.22 }} />
-                )}
-                <p className="meta" style={{ margin: 0, fontFamily: "var(--mono)" }}>{i.registryCode ?? ""}</p>
-                <h3 style={{ marginTop: 4, fontSize: 16 }}>{i.name}</h3>
-                <p className="meta" style={{ margin: "2px 0 0" }}>{i.role}</p>
-              </Link>
+              <IdentityCardCompact key={i.id} identity={i} locale={locale} />
             ))}
           </div>
         </>

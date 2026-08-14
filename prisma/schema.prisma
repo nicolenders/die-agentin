@@ -261,8 +261,26 @@ model Publication {
 
   translations PublicationTranslation[]
   identities   Identity[] @relation("IdentityPublications")
+  sales        PublicationSales[]
 
   @@index([year])
+}
+
+// Verkaufszahlen je Buch, halbjährlich gepflegt (z. B. Periode „2024-H1"). Die
+// öffentlichen Summen ergeben sich aus allen Perioden: gedruckt = Σ(printed +
+// bundle), PDF = Σ(pdf + bundle). Bundle zählt für beide.
+model PublicationSales {
+  id            String   @id @default(cuid())
+  publicationId String
+  period        String // Halbjahr, z. B. „2024-H1"
+  printedCount  Int      @default(0)
+  pdfCount      Int      @default(0)
+  bundleCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, period])
 }
 
 model PublicationTranslation {
@@ -460,6 +478,7 @@ model Identity {
   publications   Publication[]   @relation("IdentityPublications")
   certifications Certification[] @relation("IdentityCertifications")
   dispatches     Dispatch[]      @relation("IdentityDispatches")
+  focusTopics    FocusTopic[]    @relation("IdentityFocusTopics")
 
   @@index([published, sortOrder])
 }
@@ -682,6 +701,10 @@ model FocusTopic {
   active    Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+
+  // Optionale Zuordnung zu Identitäten: „Womit ich mich gerade beschäftige" je
+  // Identität. Ohne Zuordnung bleibt ein Thema global (Radar/Ausbildung).
+  identities Identity[] @relation("IdentityFocusTopics")
 
   @@index([active, sortOrder])
 }

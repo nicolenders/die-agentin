@@ -108,6 +108,50 @@ export async function updatePublication(formData: FormData): Promise<void> {
   redirect(`${LIST}?ok=updated`);
 }
 
+// ------------------------------------------------------- Verkaufszahlen (Bücher)
+
+function intField(formData: FormData, key: string): number {
+  const n = Number(formData.get(key) ?? 0);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+}
+
+/** Legt eine Halbjahres-Zeile an oder aktualisiert sie (per Periode eindeutig). */
+export async function savePublicationSales(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const publicationId = str(formData, "publicationId");
+  const period = str(formData, "period");
+  const edit = `${LIST}/bearbeiten?pub=${publicationId}`;
+  if (!publicationId) redirect(`${LIST}?err=not-found`);
+  if (!period) redirect(`${edit}&err=missing-fields`);
+  const printedCount = intField(formData, "printedCount");
+  const pdfCount = intField(formData, "pdfCount");
+  const bundleCount = intField(formData, "bundleCount");
+  try {
+    await db.publicationSales.upsert({
+      where: { publicationId_period: { publicationId, period } },
+      create: { publicationId, period, printedCount, pdfCount, bundleCount },
+      update: { printedCount, pdfCount, bundleCount },
+    });
+  } catch {
+    redirect(`${edit}&err=failed`);
+  }
+  invalidatePublications();
+  redirect(`${edit}&ok=sales`);
+}
+
+export async function deletePublicationSales(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const publicationId = str(formData, "publicationId");
+  try {
+    await db.publicationSales.delete({ where: { id } });
+  } catch {
+    // bereits entfernt → ignorieren
+  }
+  invalidatePublications();
+  redirect(`${LIST}/bearbeiten?pub=${publicationId}&ok=sales-deleted`);
+}
+
 export async function deletePublication(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");

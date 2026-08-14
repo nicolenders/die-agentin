@@ -4,11 +4,8 @@ import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getIdentityBySlug } from "@/lib/queries/identities";
-import { getFocusTopics } from "@/lib/queries/records";
 import { formatDate } from "@/lib/format";
 import ContentArticle from "@/components/content/ContentArticle";
-import PublicationSections from "@/components/records/PublicationSections";
-import CertificationSections from "@/components/records/CertificationSections";
 import IdentityCoverageTabs from "@/components/identities/IdentityCoverageTabs";
 import styles from "./identityDetail.module.scss";
 
@@ -48,7 +45,6 @@ export default async function IdentityDetailPage({
   const dict = await getDictionary(locale);
   const i = await getIdentityBySlug(locale, slug);
   if (!i) notFound();
-  const focus = await getFocusTopics(locale);
 
   const hasCoverage = i.missions.length + i.briefings.length + i.dispatches.length > 0;
   const hasEnvelopeBlock = i.focus.length > 0 || i.tools.length > 0 || Boolean(i.envelopeUrl);
@@ -204,20 +200,21 @@ export default async function IdentityDetailPage({
         </div>
       ) : null}
 
-      {/* Publikationen dieser Identität — zweispaltig mit Cover. Gleiche
-          Abschnitts-Typo wie Fokus/Einsätze, damit die Seite aus einem Guss wirkt. */}
-      {i.publications.length > 0 ? (
+      {/* Womit ich mich gerade beschäftige — je Identität gepflegte Radar-Themen.
+          Bewusst statt Publikationen/Ausbildung (die es als eigene Seiten gibt). */}
+      {i.focusTopics.length > 0 ? (
         <div style={{ marginTop: 48 }}>
-          <p className="eyebrow">{dict.nav.publikationen}</p>
-          <PublicationSections items={i.publications} locale={locale} compact />
-        </div>
-      ) : null}
-
-      {/* Ausbildung, Auszeichnungen & aktuelle Themen. */}
-      {i.certifications.length > 0 || focus.length > 0 ? (
-        <div style={{ marginTop: 48 }}>
-          <p className="eyebrow">{dict.nav.ausbildung}</p>
-          <CertificationSections certs={i.certifications} focus={focus} locale={locale} />
+          <p className="eyebrow">
+            {isDe ? "Womit ich mich gerade beschäftige" : "What I'm working on right now"}
+          </p>
+          <div className="grid g2" style={{ marginTop: 12, alignItems: "start" }}>
+            {i.focusTopics.map((f) => (
+              <div key={f.title} className="card bracket">
+                <b style={{ fontSize: "15px" }}>{f.title}</b>
+                {f.note ? <p className="meta" style={{ margin: "6px 0 0" }}>{f.note}</p> : null}
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
     </section>

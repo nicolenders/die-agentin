@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import Flash from "@/components/admin/Flash";
 import AssetPickerField from "@/components/admin/AssetPickerField";
-import { updatePublication } from "../actions";
+import { updatePublication, savePublicationSales, deletePublicationSales } from "../actions";
 
 export const metadata = { title: "Bearbeiten · Publikationen · Zentrale" };
 
@@ -26,7 +26,11 @@ export default async function PublicationEditPage({
 
   const row = await db.publication.findUnique({
     where: { id: pub },
-    include: { translations: { where: { locale: "de" } }, coverAsset: true },
+    include: {
+      translations: { where: { locale: "de" } },
+      coverAsset: true,
+      sales: { orderBy: { period: "desc" } },
+    },
   });
   if (!row) {
     return <section>{back}<p className="st">Publikation nicht gefunden.</p></section>;
@@ -72,6 +76,85 @@ export default async function PublicationEditPage({
           <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Änderungen speichern</button>
         </form>
       </div>
+
+      {row.type === "BOOK" ? (
+        <div className="card bracket" style={{ marginTop: 16, maxWidth: 620 }}>
+          <p className="eyebrow" style={{ marginTop: 0 }}>Verkaufszahlen (halbjährlich)</p>
+          <p className="meta" style={{ marginTop: 0 }}>
+            Je Halbjahr eintragen, wie viele Exemplare als gedruckte Version, als PDF und als
+            Bundle (PDF + gedruckt) verkauft wurden. Öffentlich erscheinen die Summen:
+            gedruckt = gedruckt + Bundle, PDF = PDF + Bundle.
+          </p>
+
+          {(() => {
+            const printed = row.sales.reduce((s, x) => s + x.printedCount + x.bundleCount, 0);
+            const pdf = row.sales.reduce((s, x) => s + x.pdfCount + x.bundleCount, 0);
+            return row.sales.length > 0 ? (
+              <p className="meta" style={{ marginTop: 0 }}>
+                Aktuelle Summen: <b>{printed.toLocaleString("de-DE")}</b> gedruckt ·{" "}
+                <b>{pdf.toLocaleString("de-DE")}</b> als PDF
+              </p>
+            ) : null;
+          })()}
+
+          {row.sales.length > 0 ? (
+            <table style={{ marginTop: 8 }}>
+              <thead>
+                <tr>
+                  <th>Periode</th>
+                  <th>Gedruckt</th>
+                  <th>PDF</th>
+                  <th>Bundle</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {row.sales.map((s) => (
+                  <tr key={s.id}>
+                    <td>{s.period}</td>
+                    <td>{s.printedCount}</td>
+                    <td>{s.pdfCount}</td>
+                    <td>{s.bundleCount}</td>
+                    <td>
+                      <form action={deletePublicationSales}>
+                        <input type="hidden" name="id" value={s.id} />
+                        <input type="hidden" name="publicationId" value={row.id} />
+                        <button className="btn ghost sm" type="submit">Entfernen</button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
+
+          <form action={savePublicationSales} style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
+            <input type="hidden" name="publicationId" value={row.id} />
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <label className="f" style={{ margin: 0 }}>
+                Periode
+                <input className="f" name="period" placeholder="2024-H1" required style={{ maxWidth: 120 }} />
+              </label>
+              <label className="f" style={{ margin: 0 }}>
+                Gedruckt
+                <input className="f" name="printedCount" type="number" min={0} defaultValue={0} style={{ maxWidth: 100 }} />
+              </label>
+              <label className="f" style={{ margin: 0 }}>
+                PDF
+                <input className="f" name="pdfCount" type="number" min={0} defaultValue={0} style={{ maxWidth: 100 }} />
+              </label>
+              <label className="f" style={{ margin: 0 }}>
+                Bundle
+                <input className="f" name="bundleCount" type="number" min={0} defaultValue={0} style={{ maxWidth: 100 }} />
+              </label>
+              <button className="btn solid sm" type="submit">Speichern</button>
+            </div>
+            <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
+              Eine bereits vorhandene Periode wird überschrieben.
+            </p>
+          </form>
+        </div>
+      ) : null}
     </section>
   );
 }

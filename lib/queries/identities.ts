@@ -90,6 +90,7 @@ export interface IdentityEditData {
   talkIds: string[];
   publicationIds: string[];
   certificationIds: string[];
+  focusTopicIds: string[];
   attributes: {
     id: string;
     labelDe: string;
@@ -113,6 +114,7 @@ export async function getIdentityForEdit(id: string): Promise<IdentityEditData |
       talks: { select: { id: true } },
       publications: { select: { id: true } },
       certifications: { select: { id: true } },
+      focusTopics: { select: { id: true } },
       attributes: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -154,6 +156,7 @@ export async function getIdentityForEdit(id: string): Promise<IdentityEditData |
     talkIds: r.talks.map((t) => t.id),
     publicationIds: r.publications.map((p) => p.id),
     certificationIds: r.certifications.map((c) => c.id),
+    focusTopicIds: r.focusTopics.map((f) => f.id),
     attributes: r.attributes.map((a) => ({
       id: a.id,
       labelDe: a.labelDe,
@@ -173,13 +176,15 @@ export async function getLinkOptions(): Promise<{
   talks: { id: string; name: string }[];
   publications: { id: string; name: string }[];
   certifications: { id: string; name: string }[];
+  focusTopics: { id: string; name: string }[];
 }> {
-  const [tools, missions, talks, publications, certifications] = await Promise.all([
+  const [tools, missions, talks, publications, certifications, focusTopics] = await Promise.all([
     db.tool.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
     db.mission.findMany({ orderBy: { startDate: "desc" }, select: { id: true, eventName: true } }),
     db.talk.findMany({ include: { translations: { where: { locale: "de" }, select: { title: true } } } }),
     db.publication.findMany({ include: { translations: { where: { locale: "de" }, select: { title: true } } } }),
     db.certification.findMany({ orderBy: { acquiredOn: "desc" }, select: { id: true, name: true } }),
+    db.focusTopic.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }], select: { id: true, titleDe: true } }),
   ]);
   return {
     tools: tools.map((t) => ({ id: t.id, name: t.name })),
@@ -187,6 +192,7 @@ export async function getLinkOptions(): Promise<{
     talks: talks.map((t) => ({ id: t.id, name: t.translations[0]?.title ?? t.id })),
     publications: publications.map((p) => ({ id: p.id, name: p.translations[0]?.title ?? p.id })),
     certifications: certifications.map((c) => ({ id: c.id, name: c.name })),
+    focusTopics: focusTopics.map((f) => ({ id: f.id, name: f.titleDe })),
   };
 }
 
@@ -315,6 +321,8 @@ export interface IdentityDetail extends IdentityCard {
   dispatches: { slug: string; title: string; format: string }[];
   missions: { slug: string | null; eventName: string; city: string; date: Date }[];
   briefings: { title: string }[];
+  // „Womit ich mich gerade beschäftige" — je Identität gepflegte Radar-Themen.
+  focusTopics: { title: string; note: string | null }[];
   // Volle Datensätze, damit die Detailseite dieselben Layouts wie die
   // eigenständigen Seiten (Publikationen, Ausbildung) rendern kann.
   publications: PublicationItem[];
@@ -334,6 +342,7 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       talks: { include: { translations: true } },
       publications: { include: { translations: true, coverAsset: true } },
       certifications: { include: { logo: true } },
+      focusTopics: { where: { active: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }] },
     },
   });
   if (!r) return null;
@@ -367,6 +376,10 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
         return { slug: t?.slug ?? null, eventName: m.eventName, city: m.city, date: m.startDate };
       }),
     briefings: r.talks.map((t) => ({ title: trans(t.translations)?.title ?? "" })).filter((b) => b.title),
+    focusTopics: r.focusTopics.map((f) => ({
+      title: locale === "en" && f.titleEn ? f.titleEn : f.titleDe,
+      note: f.note,
+    })),
     publications: r.publications
       .map((p): PublicationItem => {
         const t = trans(p.translations);

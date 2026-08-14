@@ -20,7 +20,7 @@ const EMPTY: IdentityEditData = {
   focusDe: [], focusEn: [], languages: [], color: "#8B5CF6", iconKey: "", isPrimary: false, published: false,
   metaTitleDe: "", metaTitleEn: "", metaDescriptionDe: "", metaDescriptionEn: "",
   portraitAssetId: null, portraitUrl: null, envelopeAssetId: null, envelopeUrl: null, ogAssetId: null, ogUrl: null,
-  toolIds: [], missionIds: [], talkIds: [], publicationIds: [], certificationIds: [], attributes: [],
+  toolIds: [], missionIds: [], talkIds: [], publicationIds: [], certificationIds: [], focusTopicIds: [], attributes: [],
 };
 
 function labelPair(labelDe: string) {
@@ -186,6 +186,11 @@ export default async function IdentityEditPage({
       <div>
         <label className="f">Zertifizierungen</label>
         <CategoryMultiSelect options={options.certifications} name="certificationIds" defaultSelected={data.certificationIds} emptyHint="Keine Zertifizierungen vorhanden." />
+      </div>
+      <div>
+        <label className="f">Aktuelle Themen (Radar)</label>
+        <CategoryMultiSelect options={options.focusTopics} name="focusTopicIds" defaultSelected={data.focusTopicIds} emptyHint="Noch keine Themen unter „Aufklärung (Radar)“ angelegt." />
+        <p className="meta" style={{ marginTop: 6 }}>„Womit ich mich gerade beschäftige" — erscheint auf der Detailseite dieser Identität. Themen werden unter „Aufklärung (Radar)“ gepflegt.</p>
       </div>
       <p className="meta">Depeschen werden ab Phase 3 verknüpfbar.</p>
     </div>

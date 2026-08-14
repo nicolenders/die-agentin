@@ -27,7 +27,12 @@ set -u
 PRISMA="node node_modules/prisma/build/index.js"
 STUCK_MIGRATION="20260809140000_records_kind_focus"
 attempt=1
-max=12
+# Geduldiger als zuvor: die serverlose Azure-SQL braucht nach einer Ruhephase
+# teils >60 s zum Aufwachen. Zu wenige Versuche → migrate deploy gibt auf, neue
+# Spalten fehlen und Abfragen brechen (z. B. Bearbeiten der Identitäten). 20×8 s
+# ≈ 2,5 min decken den Kaltstart zuverlässig ab.
+max=20
+sleep_seconds=8
 
 deploy_once() {
   # Normalfall: einfach anwenden.
@@ -55,9 +60,9 @@ while [ "$attempt" -le "$max" ]; do
     echo "WARN: 'prisma migrate deploy' failed after $attempt attempts — starting server anyway."
     break
   fi
-  echo "migrate deploy failed (attempt $attempt/$max) — database may be waking; retrying in 6s"
+  echo "migrate deploy failed (attempt $attempt/$max) — database may be waking; retrying in ${sleep_seconds}s"
   attempt=$((attempt + 1))
-  sleep 6
+  sleep "$sleep_seconds"
 done
 
 exec node server.js

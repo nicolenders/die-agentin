@@ -1,6 +1,26 @@
 // Kompakte Identitätskarte (Startseite, Legende) und Feature-Karte
 // (Identitäten-Übersicht, Banner + überlagertes Porträt wie ein Social-Profil).
 
+// Raster der kompakten Karten: höchstens drei pro Zeile; eine unvollständige
+// letzte Zeile (z. B. die restlichen zwei) wird mittig ausgerichtet.
+.compactGrid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+.compactGrid > * {
+  flex: 1 1 calc(33.333% - 10px);
+  min-width: 240px;
+  max-width: calc(33.333% - 10px);
+}
+@media (max-width: 760px) {
+  .compactGrid > * {
+    max-width: 100%;
+  }
+}
+
 .compact {
   display: flex;
   align-items: center;
@@ -81,20 +101,50 @@
 .featureAvatar,
 .featureAvatarFallback {
   position: absolute;
-  left: 14px;
-  bottom: -24px;
-  width: 56px;
-  height: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -26px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--bg, #0b0518);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
 }
 .featureBody {
-  padding: 32px 15px 16px;
+  padding: 36px 16px 18px;
+  text-align: center;
 }
-.tagline {
-  font-size: 13px;
-  margin: 8px 0 0;
-  opacity: 0.85;
+// Deckname: zwei Zeilen reservieren und den Namen unten anlegen, damit die
+// folgenden Texte bei allen Karten auf derselben Höhe beginnen.
+.featureName {
+  font-size: 17px;
+  line-height: 1.25;
+  margin: 0;
+  min-height: 2.5em;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+// Rolle = Thema/Inhalt: als Etikett gesetzt (Mono, Versalien) — klar vom Zitat
+// unterschieden. Zwei Zeilen reservieren, damit das Zitat überall gleich ansetzt.
+.featureRole {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  opacity: 0.82;
+  margin: 10px 0 0;
+  min-height: 3em;
+}
+// Zitat der Identität in ihrer Rolle: kursiv, mit Anführungszeichen, eigener Ton.
+.featureTagline {
+  font-size: 13.5px;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--violet-text);
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
 }

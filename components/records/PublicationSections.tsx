@@ -22,11 +22,36 @@ function typeLabel(t: string, isDe: boolean): string {
 export default function PublicationSections({
   items,
   locale,
+  compact = false,
 }: {
   items: PublicationItem[];
   locale: Locale;
+  compact?: boolean;
 }) {
   const isDe = locale === "de";
+
+  // Kompakte Darstellung (z. B. auf der Identitäts-Detailseite): dichte Liste
+  // ohne große Cover — platzsparend.
+  if (compact) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+        {items.map((p) => {
+          const link = p.repoUrl ?? p.url;
+          return (
+            <div key={p.id} style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+              <span className="tag">{typeLabel(p.type, isDe)}</span>
+              <b style={{ fontSize: "14.5px" }}>{p.title}</b>
+              <span className="meta">{[p.year, p.role, p.publisher].filter(Boolean).join(" · ")}</span>
+              {link ? (
+                <a className="meta" href={link} target="_blank" rel="noopener noreferrer" aria-label={isDe ? "Öffnen" : "Open"}>↗</a>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   const books = items.filter((p) => p.type === "BOOK");
   const courses = items.filter((p) => p.type === "COURSE");
   const repos = items.filter((p) => p.type === "REPOSITORY");

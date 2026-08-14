@@ -36,7 +36,7 @@ export default async function BriefingsPage({
   const usedSlugs = new Set(list.flatMap((i) => i.identitySlugs));
   const filterIdentities = identities
     .filter((i) => usedSlugs.has(i.slug))
-    .map((i) => ({ slug: i.slug, name: i.name, color: i.color }));
+    .map((i) => ({ slug: i.slug, name: i.name, color: i.color, portraitUrl: i.portraitUrl }));
 
   const items: ExplorerItem[] = list.map((i) => ({
     id: i.id,

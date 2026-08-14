@@ -21,6 +21,7 @@ export interface ExplorerIdentity {
   slug: string;
   name: string;
   color: string;
+  portraitUrl: string | null;
 }
 
 // Filterbare Briefing-Liste: Freitextsuche + anklickbare Mehrfach-Kategorie-
@@ -85,18 +86,25 @@ export default function BriefingExplorer({
       ) : null}
 
       {identities.length > 0 ? (
-        <div className="year-filter" role="group" aria-label={isDe ? "Nach Identität filtern" : "Filter by identity"} style={{ marginBottom: 8 }}>
-          <button className="chip" aria-pressed={selectedIds.length === 0} onClick={() => setSelectedIds([])}>
-            {isDe ? "Alle Identitäten" : "All identities"}
+        <div className="filter-row" role="group" aria-label={isDe ? "Nach Identität filtern" : "Filter by identity"} style={{ marginBottom: 8 }}>
+          <button type="button" className="id-chip text-only" aria-pressed={selectedIds.length === 0} onClick={() => setSelectedIds([])}>
+            {isDe ? "Alle" : "All"}
           </button>
           {identities.map((i) => (
             <button
               key={i.slug}
-              className="chip"
+              type="button"
+              className="id-chip"
               aria-pressed={selectedIds.includes(i.slug)}
               onClick={() => toggleId(i.slug)}
-              style={selectedIds.includes(i.slug) ? { borderColor: i.color } : undefined}
+              title={i.name}
             >
+              {i.portraitUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="id-ava" src={i.portraitUrl} alt="" loading="lazy" />
+              ) : (
+                <span className="id-dot" aria-hidden style={{ background: i.color }} />
+              )}
               {i.name}
             </button>
           ))}

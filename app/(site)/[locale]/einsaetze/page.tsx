@@ -89,55 +89,59 @@ export default async function EinsaetzePage({
           ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Die vollständige Liste steht als Tabelle unter der Karte."
           : "Every pin is a mission: an event, a briefing, a city. The full list is in the table below the map."}
       </p>
-      <p style={{ marginTop: 6 }}>
-        <Link className="btn ghost sm" href={`/${locale}/briefings`}>
-          {locale === "de" ? "Was ich mitbringe: Briefings" : "What I bring: briefings"} →
-        </Link>
-      </p>
-
-      <div className="year-filter" role="group" aria-label={isDe ? "Jahr wählen" : "Choose year"} style={{ marginTop: 22 }}>
-        <Link className="chip" aria-current={selection === "aktuell" ? "true" : undefined} href={yearHref("aktuell")}>
+      {/* Kompakte Filterzeile: Jahr, Identitäten (mit Porträt-Miniatur) und die
+          Kennzahl in einem Block — spart Höhe, damit die Karte im Vordergrund bleibt. */}
+      <div className="filter-row" role="group" aria-label={isDe ? "Jahr wählen" : "Choose year"} style={{ marginTop: 16 }}>
+        <Link className="chip sm" aria-current={selection === "aktuell" ? "true" : undefined} href={yearHref("aktuell")}>
           {isDe ? "Aktuell & geplant" : "Current & planned"}
         </Link>
         {years.map((y) => (
-          <Link key={y} className="chip" aria-current={selection === y ? "true" : undefined} href={yearHref(String(y))}>
+          <Link key={y} className="chip sm" aria-current={selection === y ? "true" : undefined} href={yearHref(String(y))}>
             {y}
           </Link>
         ))}
-        <Link className="chip" aria-current={selection === "alle" ? "true" : undefined} href={yearHref("alle")}>
+        <Link className="chip sm" aria-current={selection === "alle" ? "true" : undefined} href={yearHref("alle")}>
           {isDe ? "Alle Jahre" : "All years"}
+        </Link>
+        <Link className="btn ghost sm" href={`/${locale}/briefings`} style={{ marginLeft: "auto" }}>
+          {locale === "de" ? "Briefings" : "Briefings"} →
         </Link>
       </div>
 
       {identities.length > 0 ? (
-        <div className="year-filter" role="group" aria-label={isDe ? "Nach Identität filtern" : "Filter by identity"} style={{ marginTop: 10 }}>
-          <Link className="chip" aria-current={selectedIdentities.length === 0 ? "true" : undefined} href={buildHref(jahrStr, [])}>
-            {isDe ? "Alle Identitäten" : "All identities"}
+        <div className="filter-row" role="group" aria-label={isDe ? "Nach Identität filtern" : "Filter by identity"} style={{ marginTop: 8 }}>
+          <Link className="id-chip text-only" aria-current={selectedIdentities.length === 0 ? "true" : undefined} href={buildHref(jahrStr, [])}>
+            {isDe ? "Alle" : "All"}
           </Link>
           {identities.map((i) => {
             const on = selectedIdentities.includes(i.slug);
             return (
               <Link
                 key={i.id}
-                className="chip"
+                className="id-chip"
                 aria-current={on ? "true" : undefined}
                 href={buildHref(jahrStr, toggleCsv(selectedIdentities, i.slug))}
-                style={on ? { borderColor: i.color } : undefined}
+                title={i.name}
               >
+                {i.portraitUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="id-ava" src={i.portraitUrl} alt="" loading="lazy" />
+                ) : (
+                  <span className="id-dot" aria-hidden style={{ background: i.color }} />
+                )}
                 {i.name}
               </Link>
             );
           })}
+          <span className="meta" style={{ marginLeft: "auto" }}>
+            {isDe
+              ? `${missions.length}/${allMissions.length} Einsätze`
+              : `${missions.length}/${allMissions.length} missions`}
+          </span>
         </div>
       ) : null}
 
-      <p className="meta" style={{ marginTop: 8 }}>
-        {isDe
-          ? `${missions.length} von ${allMissions.length} Einsätzen angezeigt (Kennzahlen zählen alle).`
-          : `Showing ${missions.length} of ${allMissions.length} missions (metrics count all).`}
-      </p>
-
-      <div style={{ marginTop: 26 }}>
+      <div style={{ marginTop: 14 }}>
         {mapMissions.length > 0 ? (
           <WorldMap
             missions={mapMissions}

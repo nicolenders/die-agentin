@@ -9,7 +9,7 @@ import { getMissions } from "@/lib/queries/missions";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { getBriefingRanking } from "@/lib/queries/briefings";
-import { IdentityCardCompact } from "@/components/identities/IdentityCard";
+import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 import { formatDate } from "@/lib/format";
@@ -119,18 +119,7 @@ export default async function HQPage({
               {isDe ? "Alle ansehen" : "See all"} →
             </Link>
           </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
-              gap: 12,
-              marginTop: 14,
-            }}
-          >
-            {identities.map((i) => (
-              <IdentityCardCompact key={i.id} identity={i} locale={locale} />
-            ))}
-          </div>
+          <IdentityCompactGrid identities={identities} locale={locale} />
         </>
       ) : null}
 

@@ -86,40 +86,9 @@ export default async function HQPage({
         </div>
       </section>
 
-      {/* Kennzahlen — prominent direkt unter dem Hero, mit Überschrift und zentriert.
-          Jede Kachel (außer „Länder", das keine eigene Seite hat) führt auf ihre
-          Übersicht. */}
-      <section style={{ marginTop: 46 }}>
-        <p className="eyebrow" style={{ textAlign: "center" }}>
-          {isDe ? "Die Agentin in Zahlen" : "By the numbers"}
-        </p>
-        <div className={styles.counter}>
-          {[
-            { n: stats.missions, sg: t.sgMissions, pl: t.countMissions, href: `/${locale}/einsaetze` },
-            { n: stats.countries, sg: t.sgCountries, pl: t.countCountries, href: null },
-            { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities, href: `/${locale}/identitaeten` },
-            { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings, href: `/${locale}/briefings` },
-            { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications, href: `/${locale}/ausbildung` },
-            { n: stats.books, sg: t.sgBooks, pl: t.countBooks, href: `/${locale}/publikationen` },
-            { n: stats.mvpAwards, sg: t.countMvp, pl: t.countMvp, href: `/${locale}/ausbildung` },
-          ].map((c) =>
-            c.href ? (
-              <Link key={c.pl} href={c.href}>
-                <b>{c.n}</b>
-                <span>{c.n === 1 ? c.sg : c.pl}</span>
-              </Link>
-            ) : (
-              <div key={c.pl}>
-                <b>{c.n}</b>
-                <span>{c.n === 1 ? c.sg : c.pl}</span>
-              </div>
-            ),
-          )}
-        </div>
-      </section>
-
-      {/* Die Agentin — die Doppeldeutigkeit, explizit ausgesprochen. ENTWURF, von Nicole zu prüfen (Phase 12.2). */}
-      <div className="card bracket" style={{ marginTop: 52, padding: 30 }}>
+      {/* Die Agentin — die Doppeldeutigkeit plus die Kennzahlen in einer Box.
+          Jede Kachel (außer „Länder", das keine eigene Seite hat) führt auf ihre Übersicht. */}
+      <div className="card bracket" style={{ marginTop: 46, padding: 30 }}>
         <p className="eyebrow">{isDe ? "Die Agentin" : "The agent"}</p>
         <p style={{ fontSize: 18, fontFamily: "var(--display)", fontWeight: 300, lineHeight: 1.55, margin: 0 }}>
           {isDe
@@ -131,6 +100,33 @@ export default async function HQPage({
             {isDe ? "Die ganze Legende" : "The full legend"} →
           </Link>
         </p>
+
+        <div style={{ borderTop: "1px solid var(--line-soft)", marginTop: 26, paddingTop: 22 }}>
+          <p className="eyebrow">{isDe ? "In Zahlen" : "By the numbers"}</p>
+          <div className={styles.counter}>
+            {[
+              { n: stats.missions, sg: t.sgMissions, pl: t.countMissions, href: `/${locale}/einsaetze` },
+              { n: stats.countries, sg: t.sgCountries, pl: t.countCountries, href: null },
+              { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities, href: `/${locale}/identitaeten` },
+              { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings, href: `/${locale}/briefings` },
+              { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications, href: `/${locale}/ausbildung` },
+              { n: stats.books, sg: t.sgBooks, pl: t.countBooks, href: `/${locale}/publikationen` },
+              { n: stats.mvpAwards, sg: t.countMvp, pl: t.countMvp, href: `/${locale}/ausbildung` },
+            ].map((c) =>
+              c.href ? (
+                <Link key={c.pl} href={c.href}>
+                  <b>{c.n}</b>
+                  <span>{c.n === 1 ? c.sg : c.pl}</span>
+                </Link>
+              ) : (
+                <div key={c.pl}>
+                  <b>{c.n}</b>
+                  <span>{c.n === 1 ? c.sg : c.pl}</span>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
       </div>
 
       {identities.length > 0 ? (
@@ -145,34 +141,7 @@ export default async function HQPage({
         </>
       ) : null}
 
-      <p className="eyebrow" style={{ marginTop: 52 }}>
-        {t.recent}
-      </p>
-      {recentDispatches.length > 0 ? (
-        <div className={styles.cardGrid}>
-          {recentDispatches.map((d) => (
-            <Link
-              key={d.id}
-              className="card bracket"
-              href={`/${locale}/depeschen/${d.slug}`}
-              style={{ display: "block" }}
-            >
-              <span className="tag" style={d.identities[0] ? { borderColor: d.identities[0].color } : undefined}>
-                {dict.dispatch.formats[d.format]}
-              </span>
-              <h3 style={{ marginTop: 12 }}>{d.title}</h3>
-              {d.summary ? <p style={{ fontSize: "14.5px" }}>{d.summary}</p> : null}
-              <p className="meta">
-                {d.publishedAt ? formatDate(d.publishedAt, locale) : ""}
-                {d.fallback ? " · DE" : ""}
-              </p>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <p className="muted">{dict.dispatch.empty}</p>
-      )}
-
+      {/* Nächster Einsatz & meistgefragtes Briefing — jetzt oberhalb der Depeschen. */}
       <div className="grid g2" style={{ marginTop: 52 }}>
         <article className="card bracket">
           <p className="eyebrow">{t.nextMission}</p>
@@ -222,6 +191,35 @@ export default async function HQPage({
           </Link>
         </article>
       </div>
+
+      {/* Zuletzt eingegangen — nur zeigen, wenn es Depeschen gibt. */}
+      {recentDispatches.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 52 }}>
+            {t.recent}
+          </p>
+          <div className={styles.cardGrid}>
+            {recentDispatches.map((d) => (
+              <Link
+                key={d.id}
+                className="card bracket"
+                href={`/${locale}/depeschen/${d.slug}`}
+                style={{ display: "block" }}
+              >
+                <span className="tag" style={d.identities[0] ? { borderColor: d.identities[0].color } : undefined}>
+                  {dict.dispatch.formats[d.format]}
+                </span>
+                <h3 style={{ marginTop: 12 }}>{d.title}</h3>
+                {d.summary ? <p style={{ fontSize: "14.5px" }}>{d.summary}</p> : null}
+                <p className="meta">
+                  {d.publishedAt ? formatDate(d.publishedAt, locale) : ""}
+                  {d.fallback ? " · DE" : ""}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </>
+      ) : null}
     </>
   );
 }

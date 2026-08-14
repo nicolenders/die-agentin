@@ -520,7 +520,9 @@ p {
 .lead {
   font-size: 18px;
   color: var(--muted);
-  max-width: 62ch;
+  // Der einleitende Text darf die volle Inhaltsbreite nutzen (begrenzt durch
+  // .wrap); wo er in einer Spalte steht (Hero), begrenzt ihn ohnehin die Spalte.
+  max-width: none;
 }
 .mono {
   font-family: var(--mono);

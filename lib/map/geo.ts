@@ -12,7 +12,7 @@ import topoCountries from "world-atlas/countries-110m.json";
 const landFeature = feature(topoData as any, (topoData as any).objects.land) as any;
 const countryFeatures = (
   feature(topoCountries as any, (topoCountries as any).objects.countries) as any
-).features as { id?: string | number }[];
+).features as Array<{ id?: string | number; properties?: { name?: string } }>;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export interface GeoResult {
@@ -92,4 +92,37 @@ export function project(
   lat: number,
 ): [number, number] {
   return projection([lon, lat]) ?? [0, 0];
+}
+
+export interface CountryPath {
+  id: string; // numerische ISO-ID, 3-stellig (z. B. „276")
+  name: string; // englischer Ländername (world-atlas)
+  path: string; // SVG-Pfad in der Projektion
+  centroid: [number, number]; // Pixel-Schwerpunkt (für Beschriftung)
+}
+
+/**
+ * Alle Länder-Polygone der Weltkarte als SVG-Pfade (für Choropleth-Karten, z. B.
+ * die Besucher-Herkunft). Ganze Welt, Natural-Earth-Projektion — identisch zur
+ * Einsatz-Karte, keine zusätzlichen Abhängigkeiten.
+ */
+export function countryPaths(width: number, height: number): CountryPath[] {
+  const projection = geoNaturalEarth1().fitExtent(
+    [
+      [6, 6],
+      [width - 6, height - 6],
+    ],
+    { type: "Sphere" as const },
+  );
+  const path = geoPath(projection);
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  return countryFeatures
+    .map((f) => ({
+      id: String(f.id),
+      name: String(f.properties?.name ?? ""),
+      path: path(f as any) ?? "",
+      centroid: (path.centroid(f as any) as [number, number]) ?? [0, 0],
+    }))
+    .filter((p) => p.path && p.id !== "undefined");
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }

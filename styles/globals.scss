@@ -227,6 +227,104 @@ h1 {
   margin-top: auto; // an den unteren Rand der Karte schieben → Buttons bündig
   align-self: flex-start; // Button behält seine natürliche Breite
 }
+// Einsätze: Karte mit Kennzahl oben rechts, ein Filterblock zwischen Karte und Tabelle.
+.map-wrap {
+  position: relative;
+  margin-top: 14px;
+}
+.map-count {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--violet-text);
+  background: rgba(9, 4, 20, 0.72);
+  border: 1px solid var(--line-soft);
+  backdrop-filter: blur(4px);
+}
+.einsatz-filter {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.filter-years {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+// Briefing-Akkordeon: eine Zeile je Briefing, per Klick aufklappbar.
+.acc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.acc-item {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(18, 10, 36, 0.5), rgba(11, 5, 24, 0.5));
+}
+.acc-item.open {
+  border-color: var(--violet-bright);
+}
+.acc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.acc-head:hover {
+  background: rgba(139, 92, 246, 0.06);
+}
+.acc-chevron {
+  font-family: var(--mono);
+  color: var(--violet-bright);
+  font-size: 15px;
+  width: 14px;
+  flex-shrink: 0;
+}
+.acc-title {
+  font-size: 15px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+.acc-tags {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.acc-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.acc-body {
+  padding: 4px 16px 16px 42px;
+}
+@media (max-width: 640px) {
+  .acc-tags {
+    display: none; // auf schmalen Screens Platz sparen
+  }
+  .acc-body {
+    padding-left: 16px;
+  }
+}
+
 // Verkaufszahlen am Buch: zwei kleine Kennzahl-Pillen (gedruckt / PDF).
 .pub-sales {
   display: flex;

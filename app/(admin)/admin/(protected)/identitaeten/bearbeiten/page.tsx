@@ -190,7 +190,7 @@ export default async function IdentityEditPage({
       <div>
         <label className="f">Aktuelle Themen (Radar)</label>
         <CategoryMultiSelect options={options.focusTopics} name="focusTopicIds" defaultSelected={data.focusTopicIds} emptyHint="Noch keine Themen unter „Aufklärung (Radar)“ angelegt." />
-        <p className="meta" style={{ marginTop: 6 }}>„Womit ich mich gerade beschäftige" — erscheint auf der Detailseite dieser Identität. Themen werden unter „Aufklärung (Radar)“ gepflegt.</p>
+        <p className="meta" style={{ marginTop: 6 }}>Womit ich mich gerade beschäftige — erscheint auf der Detailseite dieser Identität. Themen werden unter „Aufklärung (Radar)“ gepflegt.</p>
       </div>
       <p className="meta">Depeschen werden ab Phase 3 verknüpfbar.</p>
     </div>

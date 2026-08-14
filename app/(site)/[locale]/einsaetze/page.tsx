@@ -62,19 +62,17 @@ export default async function EinsaetzePage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{isDe ? "Einsätze vor Ort" : "Missions on site"}</p>
-      <h2>{isDe ? "Wo ich war. Wo ich hinfahre." : "Where I've been. Where I'm headed."}</h2>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <Link className="btn ghost sm" href={`/${locale}/briefings`}>
+          {isDe ? "Briefings" : "Briefings"} →
+        </Link>
+      </div>
+      <h1 className="eyebrow">{isDe ? "Einsätze vor Ort" : "Missions on site"}</h1>
       <p className="lead">
         {isDe
           ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Suche und Filter wirken auf Karte und Liste gleichermaßen; die vollständige Liste steht als Tabelle unter der Karte."
           : "Every pin is a mission: an event, a briefing, a city. Search and filters apply to both map and list; the full list is in the table below the map."}
       </p>
-
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
-        <Link className="btn ghost sm" href={`/${locale}/briefings`}>
-          {isDe ? "Briefings" : "Briefings"} →
-        </Link>
-      </div>
 
       <MissionExplorer
         locale={locale}
@@ -85,7 +83,8 @@ export default async function EinsaetzePage({
           yearLabel: isDe ? "Jahr" : "Year",
           yearCurrent: isDe ? "Aktuell & geplant" : "Current & planned",
           yearAll: isDe ? "Alle Jahre" : "All years",
-          onlineToggle: isDe ? "Online-Events zeigen" : "Show online events",
+          moreYears: isDe ? "weitere Jahre" : "more years",
+          onlineToggle: isDe ? "Online-Events" : "Online events",
           all: isDe ? "Alle" : "All",
           reset: isDe ? "Zurücksetzen" : "Reset",
           missionsWord: isDe ? "Einsätze" : "missions",

@@ -55,8 +55,7 @@ export default async function BriefingsPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{isDe ? "Briefings · Vortragsrepertoire" : "Briefings · talk repertoire"}</p>
-      <h2>{isDe ? "Was ich mitbringe" : "What I bring"}</h2>
+      <h1 className="eyebrow">{isDe ? "Briefings · Vortragsrepertoire" : "Briefings · talk repertoire"}</h1>
       <p className="lead">
         {isDe
           ? "Alle Vorträge — suchbar und nach Kategorien filterbar, sortiert nach Häufigkeit."

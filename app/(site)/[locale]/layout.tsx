@@ -42,6 +42,15 @@ export async function generateMetadata({
         en: "/en",
         "x-default": "/de",
       },
+      // RSS-Autodiscovery: Feed-Reader und Browser finden den Feed automatisch.
+      types: {
+        "application/rss+xml": [
+          {
+            url: locale === "en" ? "/feed.en.xml" : "/feed.xml",
+            title: `${dict.brand.name} — ${dict.dispatch.namePlural}`,
+          },
+        ],
+      },
     },
     openGraph: {
       siteName: "nicolenders.com",

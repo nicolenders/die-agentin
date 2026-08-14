@@ -204,10 +204,11 @@ export default async function IdentityDetailPage({
         </div>
       ) : null}
 
-      {/* Publikationen dieser Identität — zweispaltig mit Cover. */}
+      {/* Publikationen dieser Identität — zweispaltig mit Cover. Gleiche
+          Abschnitts-Typo wie Fokus/Einsätze, damit die Seite aus einem Guss wirkt. */}
       {i.publications.length > 0 ? (
         <div style={{ marginTop: 48 }}>
-          <h2>{dict.nav.publikationen}</h2>
+          <p className="eyebrow">{dict.nav.publikationen}</p>
           <PublicationSections items={i.publications} locale={locale} compact />
         </div>
       ) : null}
@@ -215,7 +216,7 @@ export default async function IdentityDetailPage({
       {/* Ausbildung, Auszeichnungen & aktuelle Themen. */}
       {i.certifications.length > 0 || focus.length > 0 ? (
         <div style={{ marginTop: 48 }}>
-          <h2>{dict.nav.ausbildung}</h2>
+          <p className="eyebrow">{dict.nav.ausbildung}</p>
           <CertificationSections certs={i.certifications} focus={focus} locale={locale} />
         </div>
       ) : null}

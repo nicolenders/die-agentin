@@ -5,9 +5,10 @@ import { getDictionary } from "@/lib/i18n";
 import { getMissions } from "@/lib/queries/missions";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { formatDate } from "@/lib/format";
-import { availableMissionYears, parseYearSelection, matchesYear } from "@/lib/missions";
-import { parseCsvParam, toggleCsv } from "@/lib/filters";
-import WorldMap, { type MapMission } from "@/components/map/WorldMap";
+import MissionExplorer, {
+  type ExplorerMission,
+  type ExplorerIdentity,
+} from "@/components/missions/MissionExplorer";
 
 export const dynamic = "force-dynamic";
 
@@ -20,56 +21,26 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function EinsaetzePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ jahr?: string; identitaet?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const { jahr, identitaet } = await searchParams;
+  const isDe = locale === "de";
   const [allMissions, identities] = await Promise.all([
     getMissions(locale),
     getPublishedIdentities(locale),
   ]);
 
-  // Server-seitiger Jahresfilter (Phase 8.4). Standard: aktuelles Jahr + geplant.
-  // Die Auswahl steht in der URL; die Kennzahlen unten beziehen sich auf ALLE.
-  const selection = parseYearSelection(jahr);
-  const currentYear = new Date().getUTCFullYear();
-  const years = availableMissionYears(allMissions.map((m) => m.startDate.getUTCFullYear()));
-
-  // Identitätsfilter (Mehrfachauswahl): ein Einsatz passt, wenn er mindestens
-  // einer der ausgewählten Identitäten zugeordnet ist.
-  const selectedIdentities = parseCsvParam(identitaet).filter((slug) =>
-    identities.some((i) => i.slug === slug),
-  );
-  const missions = allMissions.filter(
-    (m) =>
-      matchesYear(m.startDate.getUTCFullYear(), m.future, selection, currentYear) &&
-      (selectedIdentities.length === 0 ||
-        m.identitySlugs.some((s) => selectedIdentities.includes(s))),
-  );
-
-  const isDe = locale === "de";
-  const jahrStr = selection === "aktuell" ? "aktuell" : selection === "alle" ? "alle" : String(selection);
-  const buildHref = (jahrSel: string, ids: string[]): string => {
-    const p = new URLSearchParams();
-    if (jahrSel && jahrSel !== "aktuell") p.set("jahr", jahrSel);
-    if (ids.length) p.set("identitaet", ids.join(","));
-    const q = p.toString();
-    return `/${locale}/einsaetze${q ? `?${q}` : ""}`;
-  };
-  const yearHref = (sel: string) => buildHref(sel, selectedIdentities);
-
-  const mapMissions: MapMission[] = missions.map((m) => ({
+  const explorerMissions: ExplorerMission[] = allMissions.map((m) => ({
     id: m.id,
     slug: m.slug,
     eventName: m.eventName,
-    city: `${m.city}, ${m.countryCode}`,
+    city: m.city,
     countryCode: m.countryCode,
     lat: m.lat,
     lon: m.lon,
+    isOnline: m.isOnline,
     year: m.startDate.getUTCFullYear(),
     future: m.future,
     dateLabel: formatDate(m.startDate, locale),
@@ -78,132 +49,65 @@ export default async function EinsaetzePage({
     bannerUrl: m.bannerUrl,
     bannerAlt: m.bannerAlt,
     bannerAi: m.bannerAi,
+    identitySlugs: m.identitySlugs,
+  }));
+
+  const explorerIdentities: ExplorerIdentity[] = identities.map((i) => ({
+    id: i.id,
+    slug: i.slug,
+    name: i.name,
+    color: i.color,
+    portraitUrl: i.portraitUrl,
   }));
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{locale === "de" ? "Einsätze vor Ort" : "Missions on site"}</p>
-      <h2>{locale === "de" ? "Wo ich war. Wo ich hinfahre." : "Where I've been. Where I'm headed."}</h2>
+      <p className="eyebrow">{isDe ? "Einsätze vor Ort" : "Missions on site"}</p>
+      <h2>{isDe ? "Wo ich war. Wo ich hinfahre." : "Where I've been. Where I'm headed."}</h2>
       <p className="lead">
-        {locale === "de"
-          ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Die vollständige Liste steht als Tabelle unter der Karte."
-          : "Every pin is a mission: an event, a briefing, a city. The full list is in the table below the map."}
+        {isDe
+          ? "Jeder Pin ist ein Einsatz: eine Veranstaltung, ein Briefing, eine Stadt. Suche und Filter wirken auf Karte und Liste gleichermaßen; die vollständige Liste steht als Tabelle unter der Karte."
+          : "Every pin is a mission: an event, a briefing, a city. Search and filters apply to both map and list; the full list is in the table below the map."}
       </p>
-      {/* Kompakte Filterzeile: Jahr, Identitäten (mit Porträt-Miniatur) und die
-          Kennzahl in einem Block — spart Höhe, damit die Karte im Vordergrund bleibt. */}
-      <div className="filter-row" role="group" aria-label={isDe ? "Jahr wählen" : "Choose year"} style={{ marginTop: 16 }}>
-        <Link className="chip sm" aria-current={selection === "aktuell" ? "true" : undefined} href={yearHref("aktuell")}>
-          {isDe ? "Aktuell & geplant" : "Current & planned"}
-        </Link>
-        {years.map((y) => (
-          <Link key={y} className="chip sm" aria-current={selection === y ? "true" : undefined} href={yearHref(String(y))}>
-            {y}
-          </Link>
-        ))}
-        <Link className="chip sm" aria-current={selection === "alle" ? "true" : undefined} href={yearHref("alle")}>
-          {isDe ? "Alle Jahre" : "All years"}
-        </Link>
-        <Link className="btn ghost sm" href={`/${locale}/briefings`} style={{ marginLeft: "auto" }}>
-          {locale === "de" ? "Briefings" : "Briefings"} →
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+        <Link className="btn ghost sm" href={`/${locale}/briefings`}>
+          {isDe ? "Briefings" : "Briefings"} →
         </Link>
       </div>
 
-      {identities.length > 0 ? (
-        <div className="filter-row" role="group" aria-label={isDe ? "Nach Identität filtern" : "Filter by identity"} style={{ marginTop: 8 }}>
-          <Link className="id-chip text-only" aria-current={selectedIdentities.length === 0 ? "true" : undefined} href={buildHref(jahrStr, [])}>
-            {isDe ? "Alle" : "All"}
-          </Link>
-          {identities.map((i) => {
-            const on = selectedIdentities.includes(i.slug);
-            return (
-              <Link
-                key={i.id}
-                className="id-chip"
-                aria-current={on ? "true" : undefined}
-                href={buildHref(jahrStr, toggleCsv(selectedIdentities, i.slug))}
-                title={i.name}
-              >
-                {i.portraitUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className="id-ava" src={i.portraitUrl} alt="" loading="lazy" />
-                ) : (
-                  <span className="id-dot" aria-hidden style={{ background: i.color }} />
-                )}
-                {i.name}
-              </Link>
-            );
-          })}
-          <span className="meta" style={{ marginLeft: "auto" }}>
-            {isDe
-              ? `${missions.length}/${allMissions.length} Einsätze`
-              : `${missions.length}/${allMissions.length} missions`}
-          </span>
-        </div>
-      ) : null}
-
-      <div style={{ marginTop: 14 }}>
-        {mapMissions.length > 0 ? (
-          <WorldMap
-            missions={mapMissions}
-            locale={locale}
-            labels={{
-              all: locale === "de" ? "Alle" : "All",
-              done: locale === "de" ? "Abgeschlossener Einsatz" : "Completed mission",
-              planned: locale === "de" ? "Geplant" : "Planned",
-              size: locale === "de" ? "Punktgröße = Anzahl" : "Dot size = count",
-              open: locale === "de" ? "Veranstaltungswebsite" : "Event website",
-              view: locale === "de" ? "Ansicht wählen" : "Choose view",
-            }}
-          />
-        ) : (
-          <div className="card bracket">
-            <p className="muted">
-              {locale === "de" ? "Noch keine Einsätze erfasst." : "No missions recorded yet."}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Barrierefreie Tabellenalternative — immer sichtbar (SPEC §11). */}
-      <p className="eyebrow" style={{ marginTop: 44 }}>
-        {locale === "de" ? "Einsatzliste" : "Mission list"}
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>{locale === "de" ? "Datum" : "Date"}</th>
-            <th>{locale === "de" ? "Veranstaltung" : "Event"}</th>
-            <th>{locale === "de" ? "Ort" : "Location"}</th>
-            <th>{locale === "de" ? "Status" : "Status"}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {missions.map((m) => (
-            <tr key={m.id}>
-              <td className="meta">{formatDate(m.startDate, locale)}</td>
-              <td>
-                {m.published && m.slug ? (
-                  <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link>
-                ) : (
-                  m.eventName
-                )}
-              </td>
-              <td>
-                {m.city}, {m.countryCode}
-              </td>
-              <td>
-                {m.future
-                  ? locale === "de"
-                    ? "Geplant"
-                    : "Planned"
-                  : locale === "de"
-                    ? "Abgeschlossen"
-                    : "Completed"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <MissionExplorer
+        locale={locale}
+        missions={explorerMissions}
+        identities={explorerIdentities}
+        labels={{
+          search: isDe ? "Suchen (Veranstaltung, Ort, Land) …" : "Search (event, city, country) …",
+          yearLabel: isDe ? "Jahr" : "Year",
+          yearCurrent: isDe ? "Aktuell & geplant" : "Current & planned",
+          yearAll: isDe ? "Alle Jahre" : "All years",
+          onlineToggle: isDe ? "Online-Events zeigen" : "Show online events",
+          all: isDe ? "Alle" : "All",
+          reset: isDe ? "Zurücksetzen" : "Reset",
+          missionsWord: isDe ? "Einsätze" : "missions",
+          listTitle: isDe ? "Einsatzliste" : "Mission list",
+          colDate: isDe ? "Datum" : "Date",
+          colEvent: isDe ? "Veranstaltung" : "Event",
+          colLocation: isDe ? "Ort" : "Location",
+          colStatus: isDe ? "Status" : "Status",
+          statusPlanned: isDe ? "Geplant" : "Planned",
+          statusDone: isDe ? "Abgeschlossen" : "Completed",
+          onlineLocation: isDe ? "Online" : "Online",
+          empty: isDe ? "Keine Einsätze für diese Auswahl." : "No missions for this selection.",
+          map: {
+            all: isDe ? "Alle" : "All",
+            done: isDe ? "Abgeschlossener Einsatz" : "Completed mission",
+            planned: isDe ? "Geplant" : "Planned",
+            size: isDe ? "Punktgröße = Anzahl" : "Dot size = count",
+            open: isDe ? "Veranstaltungswebsite" : "Event website",
+            view: isDe ? "Ansicht wählen" : "Choose view",
+          },
+        }}
+      />
     </section>
   );
 }

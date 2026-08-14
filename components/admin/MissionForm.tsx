@@ -25,6 +25,7 @@ export interface MissionFormInitial {
   countryCode: string;
   lat: number;
   lon: number;
+  isOnline: boolean;
   startDate: string;
   endDate: string;
   status: string;
@@ -85,6 +86,7 @@ export default function MissionForm({
   const [eventName, setEventName] = useState(initial.eventName);
   const [city, setCity] = useState(initial.city);
   const [countryCode, setCountryCode] = useState(initial.countryCode);
+  const [isOnline, setIsOnline] = useState(initial.isOnline);
   const [startDate, setStartDate] = useState(initial.startDate);
   const [endDate, setEndDate] = useState(initial.endDate);
   const [status, setStatus] = useState(initial.status || "PLANNED");
@@ -172,6 +174,7 @@ export default function MissionForm({
       countryCode,
       lat,
       lon,
+      isOnline,
       startDate,
       endDate: endDate || null,
       status,
@@ -306,6 +309,10 @@ export default function MissionForm({
           <input className="f" value={city} onChange={(e) => setCity(e.target.value)} />
           <label className="f">Ländercode (2 Buchstaben)</label>
           <input className="f" value={countryCode} maxLength={2} onChange={(e) => setCountryCode(e.target.value)} />
+          <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, margin: "6px 0" }}>
+            <input type="checkbox" checked={isOnline} onChange={(e) => setIsOnline(e.target.checked)} style={{ width: "auto" }} />
+            Online-/Remote-Event (ohne festen Ort — erscheint nicht auf der Karte)
+          </label>
           <label className="f">Datum (Beginn)</label>
           <input className="f" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           <label className="f">Enddatum (optional, bei mehrtägigen Einsätzen)</label>

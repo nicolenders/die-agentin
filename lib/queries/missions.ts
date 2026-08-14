@@ -14,6 +14,7 @@ export interface MissionListItem {
   countryCode: string;
   lat: number;
   lon: number;
+  isOnline: boolean;
   startDate: Date;
   status: MissionStatus;
   future: boolean;
@@ -41,6 +42,7 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       countryCode: m.countryCode,
       lat: m.lat,
       lon: m.lon,
+      isOnline: m.isOnline,
       startDate: m.startDate,
       status: m.status as MissionStatus,
       future: m.startDate.getTime() > nowMs,

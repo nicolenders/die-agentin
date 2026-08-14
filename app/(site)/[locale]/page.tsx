@@ -151,24 +151,27 @@ export default async function HQPage({
         <p className="muted">{dict.dispatch.empty}</p>
       )}
 
+      {/* Kennzahlen sind Einstiegspunkte: jede Kachel führt auf die passende
+          Übersicht — so erreicht man Auszeichnungen, Publikationen und
+          Zertifizierungen auch unabhängig von einer Identität. */}
       <div className={styles.counter}>
         {[
-          { n: stats.missions, sg: t.sgMissions, pl: t.countMissions },
-          { n: stats.countries, sg: t.sgCountries, pl: t.countCountries },
-          { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities },
-          { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings },
-          { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications },
-          { n: stats.books, sg: t.sgBooks, pl: t.countBooks },
+          { n: stats.missions, sg: t.sgMissions, pl: t.countMissions, href: `/${locale}/einsaetze` },
+          { n: stats.countries, sg: t.sgCountries, pl: t.countCountries, href: `/${locale}/einsaetze` },
+          { n: stats.identities, sg: t.sgIdentities, pl: t.countIdentities, href: `/${locale}/identitaeten` },
+          { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings, href: `/${locale}/briefings` },
+          { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications, href: `/${locale}/ausbildung` },
+          { n: stats.books, sg: t.sgBooks, pl: t.countBooks, href: `/${locale}/publikationen` },
         ].map((c) => (
-          <div key={c.pl}>
+          <Link key={c.pl} href={c.href}>
             <b>{c.n}</b>
             <span>{c.n === 1 ? c.sg : c.pl}</span>
-          </div>
+          </Link>
         ))}
-        <div>
+        <Link href={`/${locale}/ausbildung`}>
           <b>{stats.mvpAwards}×</b>
           <span>{t.countMvp}</span>
-        </div>
+        </Link>
       </div>
 
       <div className="grid g2" style={{ marginTop: 20 }}>

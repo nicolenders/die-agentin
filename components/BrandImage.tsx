@@ -9,6 +9,7 @@ export default function BrandImage({
   ratio = "4 / 3",
   className = "",
   ai = false,
+  fill = false,
 }: {
   src: string | null;
   alt: string;
@@ -17,11 +18,16 @@ export default function BrandImage({
   ratio?: string;
   className?: string;
   ai?: boolean;
+  // `fill`: das Bild füllt die volle Höhe seines (dann höhenbestimmenden) Eltern-
+  // elements statt ein eigenes Seitenverhältnis vorzugeben — für Layouts, in denen
+  // das Bild bündig mit einer Nachbarspalte abschließen soll. Das Bild bleibt
+  // unverzerrt (object-fit: cover).
+  fill?: boolean;
 }) {
   return (
     <figure
-      className={`brand-image bracket ${className}`}
-      style={{ aspectRatio: ratio, position: "relative" }}
+      className={`brand-image bracket ${fill ? "brand-image--fill" : ""} ${className}`}
+      style={fill ? { position: "relative" } : { aspectRatio: ratio, position: "relative" }}
     >
       {src ? (
         <>

@@ -101,6 +101,7 @@ export default async function LegendePage({
             sub={legend.name}
             ratio="4 / 5"
             ai={legend.portrait?.ai ?? false}
+            fill
           />
         </div>
         <div className={styles.heroLeft}>

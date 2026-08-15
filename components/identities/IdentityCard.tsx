@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { IdentityCard as IdentityCardData } from "@/lib/queries/identities";
-import AiBadge from "@/components/media/AiBadge";
 import styles from "./IdentityCard.module.scss";
 
 // Zwei Darstellungen derselben Identitätskarte:
@@ -8,10 +7,20 @@ import styles from "./IdentityCard.module.scss";
 //  - feature: Übersichtskarte mit Umschlag als Banner und überlagertem Porträt
 //    (wie ein Social-Media-Profil).
 // Dekorative Karten-Thumbnails: schlichtes <img> vom Same-Origin-/media-Proxy
-// (keine Lightbox in einer klickbaren Karte).
+// (keine Lightbox in einer klickbaren Karte). KI-generierte Bilder bekommen hier
+// KEIN sichtbares Badge — der Hinweis steht nur im Alt-Text (bewusste Entscheidung
+// für HQ, Identitäten-Übersicht und Legende).
 
 function href(locale: string, slug: string) {
   return `/${locale}/identitaeten/${slug}`;
+}
+
+// Hängt bei KI-generierten Bildern den Hinweis an den Alt-Text an, statt ihn
+// sichtbar einzublenden.
+function altWithAi(alt: string, ai: boolean, locale: string): string {
+  if (!ai) return alt;
+  const note = locale === "en" ? "AI-generated" : "KI-generiert";
+  return alt ? `${alt} (${note})` : note;
 }
 
 export function IdentityCardCompact({
@@ -24,11 +33,13 @@ export function IdentityCardCompact({
   return (
     <Link href={href(locale, i.slug)} className={styles.compact} style={{ borderLeftColor: i.color }}>
       {i.portraitUrl ? (
-        <span className={styles.avatarWrap}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={i.portraitUrl} alt={i.portraitAlt} className={styles.avatar} loading="lazy" />
-          {i.portraitAi ? <AiBadge compact /> : null}
-        </span>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={i.portraitUrl}
+          alt={altWithAi(i.portraitAlt, i.portraitAi, locale)}
+          className={styles.avatar}
+          loading="lazy"
+        />
       ) : (
         <span aria-hidden className={styles.avatarFallback} style={{ background: i.color, opacity: 0.35 }} />
       )}
@@ -73,20 +84,24 @@ export function IdentityCardFeature({
     <Link href={href(locale, i.slug)} className={styles.feature} style={{ borderTopColor: i.color }}>
       <span className={styles.bannerWrap}>
         {i.envelopeUrl ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={i.envelopeUrl} alt={i.envelopeAlt} className={styles.banner} loading="lazy" />
-            {i.envelopeAi ? <AiBadge /> : null}
-          </>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={i.envelopeUrl}
+            alt={altWithAi(i.envelopeAlt, i.envelopeAi, locale)}
+            className={styles.banner}
+            loading="lazy"
+          />
         ) : (
           <span aria-hidden className={styles.bannerFallback} style={{ background: i.color, opacity: 0.22 }} />
         )}
         {i.portraitUrl ? (
-          <span className={styles.featureAvatarFrame}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={i.portraitUrl} alt={i.portraitAlt} className={styles.featureAvatar} loading="lazy" />
-            {i.portraitAi ? <AiBadge compact /> : null}
-          </span>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={i.portraitUrl}
+            alt={altWithAi(i.portraitAlt, i.portraitAi, locale)}
+            className={styles.featureAvatar}
+            loading="lazy"
+          />
         ) : (
           <span aria-hidden className={styles.featureAvatarFallback} style={{ background: i.color }} />
         )}

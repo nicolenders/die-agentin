@@ -111,20 +111,25 @@ export default async function HQPage({
               { n: stats.briefings, sg: t.sgBriefings, pl: t.countBriefings, href: `/${locale}/briefings` },
               { n: stats.certifications, sg: t.sgCertifications, pl: t.countCertifications, href: `/${locale}/ausbildung` },
               { n: stats.books, sg: t.sgBooks, pl: t.countBooks, href: `/${locale}/publikationen` },
+              // Verkaufte Exemplare gesamt — nur zeigen, wenn Zahlen gepflegt sind.
+              ...(stats.copiesSold > 0
+                ? [{ n: stats.copiesSold, sg: t.sgCopiesSold, pl: t.countCopiesSold, href: `/${locale}/publikationen` }]
+                : []),
               { n: stats.mvpAwards, sg: t.countMvp, pl: t.countMvp, href: `/${locale}/ausbildung#mvp` },
-            ].map((c) =>
-              c.href ? (
+            ].map((c) => {
+              const value = c.n.toLocaleString(locale === "en" ? "en" : "de-DE");
+              return c.href ? (
                 <Link key={c.pl} href={c.href}>
-                  <b>{c.n}</b>
+                  <b>{value}</b>
                   <span>{c.n === 1 ? c.sg : c.pl}</span>
                 </Link>
               ) : (
                 <div key={c.pl}>
-                  <b>{c.n}</b>
+                  <b>{value}</b>
                   <span>{c.n === 1 ? c.sg : c.pl}</span>
                 </div>
-              ),
-            )}
+              );
+            })}
           </div>
         </div>
       </div>

@@ -60,6 +60,7 @@ const de = {
     countCertifications: "Zertifizierungen",
     countBooks: "Bücher",
     countIdentities: "Identitäten",
+    countCopiesSold: "verkaufte Exemplare",
     // Singularformen für die Kennzahlen (Phase 10.4: „1 Einsätze" vermeiden).
     sgMissions: "Einsatz",
     sgCountries: "Land",
@@ -67,6 +68,7 @@ const de = {
     sgCertifications: "Zertifizierung",
     sgBooks: "Buch",
     sgIdentities: "Identität",
+    sgCopiesSold: "verkauftes Exemplar",
     mostRequested: "Meistgefragtes Briefing",
     openMissionFile: "Einsatzakte öffnen",
     allBriefings: "Alle Briefings",

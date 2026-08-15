@@ -110,9 +110,11 @@ export async function updatePublication(formData: FormData): Promise<void> {
 
 // ------------------------------------------------------- Verkaufszahlen (Bücher)
 
+// Ganzzahl inkl. negativer Werte: Retouren (zurückgegebene Exemplare) werden am
+// Ende einer Laufzeit als negative Zahl erfasst und mindern die Summe.
 function intField(formData: FormData, key: string): number {
   const n = Number(formData.get(key) ?? 0);
-  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+  return Number.isFinite(n) ? Math.trunc(n) : 0;
 }
 
 /** Legt eine Halbjahres-Zeile an oder aktualisiert sie (per Periode eindeutig). */

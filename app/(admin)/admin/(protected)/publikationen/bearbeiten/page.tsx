@@ -83,7 +83,8 @@ export default async function PublicationEditPage({
           <p className="meta" style={{ marginTop: 0 }}>
             Je Halbjahr eintragen, wie viele Exemplare als gedruckte Version, als PDF und als
             Bundle (PDF + gedruckt) verkauft wurden. Öffentlich erscheinen die Summen:
-            gedruckt = gedruckt + Bundle, PDF = PDF + Bundle.
+            gedruckt = gedruckt + Bundle, PDF = PDF + Bundle. Retouren (zurückgegebene
+            Exemplare) als negative Zahl eintragen — sie mindern die Summe.
           </p>
 
           {(() => {
@@ -137,15 +138,15 @@ export default async function PublicationEditPage({
               </label>
               <label className="f" style={{ margin: 0 }}>
                 Gedruckt
-                <input className="f" name="printedCount" type="number" min={0} defaultValue={0} style={{ maxWidth: 100 }} />
+                <input className="f" name="printedCount" type="number" step={1} defaultValue={0} style={{ maxWidth: 100 }} />
               </label>
               <label className="f" style={{ margin: 0 }}>
                 PDF
-                <input className="f" name="pdfCount" type="number" min={0} defaultValue={0} style={{ maxWidth: 100 }} />
+                <input className="f" name="pdfCount" type="number" step={1} defaultValue={0} style={{ maxWidth: 100 }} />
               </label>
               <label className="f" style={{ margin: 0 }}>
                 Bundle
-                <input className="f" name="bundleCount" type="number" min={0} defaultValue={0} style={{ maxWidth: 100 }} />
+                <input className="f" name="bundleCount" type="number" step={1} defaultValue={0} style={{ maxWidth: 100 }} />
               </label>
               <button className="btn solid sm" type="submit">Speichern</button>
             </div>

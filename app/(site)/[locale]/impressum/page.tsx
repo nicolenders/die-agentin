@@ -53,12 +53,18 @@ export default async function ImpressumPage({ params }: { params: Promise<{ loca
             <b>{NAME}</b>
             <br />
             {contact.postalAddress
-              ? contact.postalAddress.split("\n").map((line, i) => (
-                  <span key={i}>
-                    {line}
-                    <br />
-                  </span>
-                ))
+              ? // Erste Zeile weglassen, wenn sie nur den bereits fett gesetzten
+                // Namen wiederholt (das Anschrift-Feld lädt dazu ein) — sonst stünde
+                // „Nicole Enders" zweimal untereinander.
+                contact.postalAddress
+                  .split("\n")
+                  .filter((line, i) => !(i === 0 && line.trim().toLowerCase() === NAME.toLowerCase()))
+                  .map((line, i) => (
+                    <span key={i}>
+                      {line}
+                      <br />
+                    </span>
+                  ))
               : <span className="meta">{isDe ? "[Anschrift folgt]" : "[address pending]"}</span>}
           </p>
         </address>

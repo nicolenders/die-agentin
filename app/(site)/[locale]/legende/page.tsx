@@ -104,7 +104,7 @@ export default async function LegendePage({
           />
         </div>
         <div className={styles.heroLeft}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14 }}>
+          <div className={styles.nameRow}>
             <div style={{ minWidth: 0 }}>
               <p className="eyebrow">{legend.eyebrow}</p>
               <h2 style={{ marginBottom: legend.employer ? 8 : undefined }}>{legend.name}</h2>

@@ -16,6 +16,16 @@ import styles from "./legende.module.scss";
 
 export const dynamic = "force-dynamic";
 
+// Dezentes Gebäude-Icon für den Arbeitgeber-Chip.
+function EmployerIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2.5 14V3.2L8 1.4v12.6M8 5.2l5.5 1.8V14" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M4.6 5.2h1.3M4.6 7.6h1.3M4.6 10h1.3M10.2 9h1.2M10.2 11.4h1.2M1.4 14h13.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
@@ -97,18 +107,27 @@ export default async function LegendePage({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14 }}>
             <div style={{ minWidth: 0 }}>
               <p className="eyebrow">{legend.eyebrow}</p>
-              <h2 style={{ marginBottom: legend.employer ? 4 : undefined }}>{legend.name}</h2>
+              <h2 style={{ marginBottom: legend.employer ? 8 : undefined }}>{legend.name}</h2>
               {legend.employer ? (
-                <p className="meta" style={{ marginTop: 0, marginBottom: 0 }}>
-                  {isDe ? "Aktuell bei " : "Currently at "}
-                  {legend.employer.url ? (
-                    <a href={legend.employer.url} target="_blank" rel="noopener noreferrer">
-                      {legend.employer.name} ↗
-                    </a>
-                  ) : (
-                    legend.employer.name
-                  )}
-                </p>
+                legend.employer.url ? (
+                  <a
+                    className={styles.employer}
+                    href={legend.employer.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <EmployerIcon />
+                    <span className={styles.employerLabel}>{isDe ? "Aktuell bei" : "Currently at"}</span>
+                    <span className={styles.employerName}>{legend.employer.name}</span>
+                    <span aria-hidden className={styles.employerArrow}>↗</span>
+                  </a>
+                ) : (
+                  <span className={styles.employer}>
+                    <EmployerIcon />
+                    <span className={styles.employerLabel}>{isDe ? "Aktuell bei" : "Currently at"}</span>
+                    <span className={styles.employerName}>{legend.employer.name}</span>
+                  </span>
+                )
               ) : null}
             </div>
             <a

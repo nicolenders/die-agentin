@@ -14,6 +14,52 @@
   flex-direction: column;
   min-width: 0;
 }
+
+// Aktueller Arbeitgeber: dezenter Chip mit Icon direkt unter dem Namen.
+.employer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.06);
+  line-height: 1.2;
+  text-decoration: none;
+  color: inherit;
+  max-width: 100%;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+a.employer:hover {
+  border-color: var(--violet-bright, #8b5cf6);
+  background: rgba(139, 92, 246, 0.12);
+}
+.employer svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+  color: var(--violet-text);
+}
+.employerLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.employerName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--violet-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.employerArrow {
+  font-size: 12px;
+  opacity: 0.6;
+  color: var(--violet-text);
+}
 .heroRight {
   min-width: 0;
 }

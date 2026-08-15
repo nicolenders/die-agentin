@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getBios, getContactInfo, getSocialLinks } from "@/lib/queries/settings";
 import { getHomeStats } from "@/lib/queries/home";
 import { getPublishedIdentities } from "@/lib/queries/identities";
+import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
 import CopyButton from "@/components/CopyButton";
 
 export const dynamic = "force-dynamic";
@@ -94,12 +94,8 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
       {identities.length > 0 ? (
         <>
           <p className="eyebrow" style={{ marginTop: 40 }}>{isDe ? "Fachgebiete / Identitäten" : "Areas / identities"}</p>
-          <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 8 }}>
-            {identities.map((i) => (
-              <Link key={i.id} href={`/${locale}/identitaeten/${i.slug}`} style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", color: "var(--violet-text)", border: `1px solid ${i.color}`, padding: "7px 12px", borderRadius: "var(--r)" }}>
-                {i.name}
-              </Link>
-            ))}
+          <div style={{ marginTop: 12 }}>
+            <IdentityCompactGrid identities={identities} locale={locale} />
           </div>
         </>
       ) : null}

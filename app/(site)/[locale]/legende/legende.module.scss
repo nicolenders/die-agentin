@@ -14,15 +14,24 @@
   flex-direction: column;
   min-width: 0;
 }
+// Name/Arbeitgeber links, „CV abrufen" rechts. Auf schmalen Schirmen stapeln,
+// damit der Arbeitgeber-Chip die volle Breite bekommt und nicht abschneidet.
+.nameRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
 
 // Aktueller Arbeitgeber: dezenter Chip mit Icon direkt unter dem Namen.
 .employer {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   padding: 5px 12px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 14px;
   background: rgba(139, 92, 246, 0.06);
   line-height: 1.2;
   text-decoration: none;
@@ -51,9 +60,8 @@ a.employer:hover {
   font-weight: 600;
   color: var(--violet-text);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  // Nicht abschneiden: lange Namen dürfen umbrechen statt „…" zu zeigen.
+  overflow-wrap: anywhere;
 }
 .employerArrow {
   font-size: 12px;
@@ -101,5 +109,12 @@ a.employer:hover {
   }
   .missionBox {
     margin-top: 18px;
+  }
+}
+@media (max-width: 560px) {
+  // „CV abrufen" unter den Namen/Arbeitgeber stellen — voller Platz für den Chip.
+  .nameRow {
+    flex-direction: column;
+    gap: 12px;
   }
 }

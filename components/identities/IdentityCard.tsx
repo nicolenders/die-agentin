@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { IdentityCard as IdentityCardData } from "@/lib/queries/identities";
+import AiBadge from "@/components/media/AiBadge";
 import styles from "./IdentityCard.module.scss";
 
 // Zwei Darstellungen derselben Identitätskarte:
@@ -23,8 +24,11 @@ export function IdentityCardCompact({
   return (
     <Link href={href(locale, i.slug)} className={styles.compact} style={{ borderLeftColor: i.color }}>
       {i.portraitUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={i.portraitUrl} alt={i.portraitAlt} className={styles.avatar} loading="lazy" />
+        <span className={styles.avatarWrap}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={i.portraitUrl} alt={i.portraitAlt} className={styles.avatar} loading="lazy" />
+          {i.portraitAi ? <AiBadge compact /> : null}
+        </span>
       ) : (
         <span aria-hidden className={styles.avatarFallback} style={{ background: i.color, opacity: 0.35 }} />
       )}
@@ -69,14 +73,20 @@ export function IdentityCardFeature({
     <Link href={href(locale, i.slug)} className={styles.feature} style={{ borderTopColor: i.color }}>
       <span className={styles.bannerWrap}>
         {i.envelopeUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={i.envelopeUrl} alt={i.envelopeAlt} className={styles.banner} loading="lazy" />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={i.envelopeUrl} alt={i.envelopeAlt} className={styles.banner} loading="lazy" />
+            {i.envelopeAi ? <AiBadge /> : null}
+          </>
         ) : (
           <span aria-hidden className={styles.bannerFallback} style={{ background: i.color, opacity: 0.22 }} />
         )}
         {i.portraitUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={i.portraitUrl} alt={i.portraitAlt} className={styles.featureAvatar} loading="lazy" />
+          <span className={styles.featureAvatarFrame}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={i.portraitUrl} alt={i.portraitAlt} className={styles.featureAvatar} loading="lazy" />
+            {i.portraitAi ? <AiBadge compact /> : null}
+          </span>
         ) : (
           <span aria-hidden className={styles.featureAvatarFallback} style={{ background: i.color }} />
         )}

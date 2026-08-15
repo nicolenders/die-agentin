@@ -209,8 +209,10 @@ export interface IdentityCard {
   isPrimary: boolean;
   portraitUrl: string | null;
   portraitAlt: string;
+  portraitAi: boolean;
   envelopeUrl: string | null;
   envelopeAlt: string;
+  envelopeAi: boolean;
   // Aktiver Zeitraum aus dem ältesten/neuesten verknüpften Einsatz, z. B. „2016–2020".
   activePeriod: string | null;
 }
@@ -242,8 +244,8 @@ function toCard(
     color: string;
     registryCode: string | null;
     isPrimary: boolean;
-    portrait: { blobPath: string; altDe: string; altEn: string | null; decorative: boolean } | null;
-    envelope: { blobPath: string; altDe: string; altEn: string | null; decorative: boolean } | null;
+    portrait: { blobPath: string; altDe: string; altEn: string | null; decorative: boolean; source: string } | null;
+    envelope: { blobPath: string; altDe: string; altEn: string | null; decorative: boolean; source: string } | null;
     missions?: { startDate: Date }[];
   },
   locale: Locale,
@@ -262,8 +264,10 @@ function toCard(
     isPrimary: r.isPrimary,
     portraitUrl: r.portrait ? assetUrl(r.portrait.blobPath) : null,
     portraitAlt: alt(r.portrait, name),
+    portraitAi: r.portrait?.source === "AI",
     envelopeUrl: r.envelope ? assetUrl(r.envelope.blobPath) : null,
     envelopeAlt: alt(r.envelope, name),
+    envelopeAi: r.envelope?.source === "AI",
     activePeriod: missionPeriod(r.missions),
   };
 }

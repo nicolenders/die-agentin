@@ -24,6 +24,16 @@
 .imagePage {
   padding: 0;
   display: flex;
+  position: relative;
+}
+// Rahmen um das Bild, damit der KI-Hinweis unten rechts am Bild klebt (nicht am
+// evtl. höheren Spalten-Container).
+.imageFrame {
+  position: relative;
+  display: block;
+  width: 100%;
+  align-self: flex-start;
+  line-height: 0;
 }
 .imagePage img {
   width: 100%;

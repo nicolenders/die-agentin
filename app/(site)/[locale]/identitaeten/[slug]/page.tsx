@@ -7,6 +7,7 @@ import { getIdentityBySlug } from "@/lib/queries/identities";
 import { formatDate } from "@/lib/format";
 import ContentArticle from "@/components/content/ContentArticle";
 import IdentityCoverageTabs from "@/components/identities/IdentityCoverageTabs";
+import AiBadge from "@/components/media/AiBadge";
 import styles from "./identityDetail.module.scss";
 
 export const dynamic = "force-dynamic";
@@ -111,11 +112,17 @@ export default async function IdentityDetailPage({
         </div>
         <div className={styles.imagePage}>
           {i.portraitUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={i.portraitUrl} alt={i.portraitAlt} />
+            <span className={styles.imageFrame}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={i.portraitUrl} alt={i.portraitAlt} />
+              {i.portraitAi ? <AiBadge /> : null}
+            </span>
           ) : i.envelopeUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={i.envelopeUrl} alt={i.envelopeAlt} />
+            <span className={styles.imageFrame}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={i.envelopeUrl} alt={i.envelopeAlt} />
+              {i.envelopeAi ? <AiBadge /> : null}
+            </span>
           ) : (
             <div style={{ position: "absolute", inset: 0, background: i.color, opacity: 0.25 }} />
           )}
@@ -139,8 +146,11 @@ export default async function IdentityDetailPage({
       {i.envelopeUrl ? (
         <div className={styles.spread} style={{ marginTop: 20 }}>
           <div className={`${styles.imagePage} ${styles.spine}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={i.envelopeUrl} alt={i.envelopeAlt} />
+            <span className={styles.imageFrame}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={i.envelopeUrl} alt={i.envelopeAlt} />
+              {i.envelopeAi ? <AiBadge /> : null}
+            </span>
           </div>
           <div className={styles.page}>
             {focusChips ? (

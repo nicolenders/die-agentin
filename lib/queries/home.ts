@@ -112,21 +112,35 @@ export interface HomeStats {
   mvpAwards: number; // Anzahl der MVP-Auszeichnungen aus „Ausbildung"
   certifications: number; // Anzahl der Zertifizierungen (kind=CERTIFICATION)
   identities: number; // veröffentlichte Identitäten (Phase 10.4)
+  // Verkaufte Exemplare gesamt über alle Bücher: die öffentlich gezeigten Summen
+  // „gedruckt" (gedruckt + Bundle) plus „PDF" (PDF + Bundle) — Bundles zählen also
+  // in beiden Formaten, so wie sie auf den Buch-Karten ausgewiesen sind.
+  copiesSold: number;
 }
 
 // MVP-Auszeichnungen werden unter „Ausbildung" (Zertifizierungen) als Reihe bzw.
 // Kategorie „MVP" gepflegt. Der Zähler summiert alle solchen Einträge — je ein
 // Eintrag pro Jahr ergibt so automatisch die Zahl (statt einer festen 7).
 async function loadHomeStats(): Promise<HomeStats> {
-  const [missions, countryGroups, briefings, books, mvpAwards, certifications, identities] = await Promise.all([
-    db.mission.count(),
-    db.mission.groupBy({ by: ["countryCode"] }),
-    db.talk.count({ where: { active: true } }),
-    db.publication.count({ where: { type: "BOOK" } }),
-    db.certification.count({ where: { kind: "MVP" } }),
-    db.certification.count({ where: { kind: "CERTIFICATION" } }),
-    db.identity.count({ where: { published: true } }),
-  ]);
+  const [missions, countryGroups, briefings, books, mvpAwards, certifications, identities, salesAgg] =
+    await Promise.all([
+      db.mission.count(),
+      db.mission.groupBy({ by: ["countryCode"] }),
+      db.talk.count({ where: { active: true } }),
+      db.publication.count({ where: { type: "BOOK" } }),
+      db.certification.count({ where: { kind: "MVP" } }),
+      db.certification.count({ where: { kind: "CERTIFICATION" } }),
+      db.identity.count({ where: { published: true } }),
+      db.publicationSales.aggregate({
+        _sum: { printedCount: true, pdfCount: true, bundleCount: true },
+      }),
+    ]);
+  // „gedruckt" = printedCount + bundleCount, „PDF" = pdfCount + bundleCount → Summe
+  // beider = printedCount + pdfCount + 2×bundleCount.
+  const copiesSold =
+    (salesAgg._sum.printedCount ?? 0) +
+    (salesAgg._sum.pdfCount ?? 0) +
+    2 * (salesAgg._sum.bundleCount ?? 0);
   return {
     missions,
     countries: countryGroups.length,
@@ -135,6 +149,7 @@ async function loadHomeStats(): Promise<HomeStats> {
     mvpAwards,
     certifications,
     identities,
+    copiesSold,
   };
 }
 
@@ -154,6 +169,6 @@ export async function getHomeStats(): Promise<HomeStats> {
   try {
     return await run();
   } catch {
-    return { missions: 0, countries: 0, briefings: 0, books: 0, mvpAwards: 0, certifications: 0, identities: 0 };
+    return { missions: 0, countries: 0, briefings: 0, books: 0, mvpAwards: 0, certifications: 0, identities: 0, copiesSold: 0 };
   }
 }

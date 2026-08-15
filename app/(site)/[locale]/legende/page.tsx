@@ -94,21 +94,34 @@ export default async function LegendePage({
           />
         </div>
         <div className={styles.heroLeft}>
-          <p className="eyebrow">{legend.eyebrow}</p>
-          <h2 style={{ marginBottom: legend.employer ? 4 : undefined }}>{legend.name}</h2>
-          {legend.employer ? (
-            <p className="meta" style={{ marginTop: 0, marginBottom: 14 }}>
-              {isDe ? "Aktuell bei " : "Currently at "}
-              {legend.employer.url ? (
-                <a href={legend.employer.url} target="_blank" rel="noopener noreferrer">
-                  {legend.employer.name} ↗
-                </a>
-              ) : (
-                legend.employer.name
-              )}
-            </p>
-          ) : null}
-          <p className="lead">{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <p className="eyebrow">{legend.eyebrow}</p>
+              <h2 style={{ marginBottom: legend.employer ? 4 : undefined }}>{legend.name}</h2>
+              {legend.employer ? (
+                <p className="meta" style={{ marginTop: 0, marginBottom: 0 }}>
+                  {isDe ? "Aktuell bei " : "Currently at "}
+                  {legend.employer.url ? (
+                    <a href={legend.employer.url} target="_blank" rel="noopener noreferrer">
+                      {legend.employer.name} ↗
+                    </a>
+                  ) : (
+                    legend.employer.name
+                  )}
+                </p>
+              ) : null}
+            </div>
+            <a
+              className="btn ghost sm"
+              href={`/${locale}/cv`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ flexShrink: 0, marginTop: 4 }}
+            >
+              {isDe ? "CV abrufen" : "Get CV"} ↗
+            </a>
+          </div>
+          <p className="lead" style={{ marginTop: 16 }}>{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
           {Object.keys(social).length > 0 || contact.email ? (
             <div style={{ marginTop: 24 }}>
               <p className="eyebrow" style={{ marginBottom: 12 }}>

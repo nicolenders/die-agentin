@@ -23,6 +23,7 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/depeschen", label: "Depeschen", icon: "≡" },
   { href: "/admin/publikationen", label: "Publikationen", icon: "★" },
   { href: "/admin/ausbildung", label: "Ausbildung & Auszeichnungen", icon: "✦" },
+  { href: "/admin/lebenslauf", label: "Lebenslauf", icon: "⊞" },
   { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "⌖" },
   { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },
 

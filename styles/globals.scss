@@ -328,30 +328,27 @@ h1 {
   }
 }
 
-// Verkaufszahlen am Buch: zwei kleine Kennzahl-Pillen (gedruckt / PDF).
+// Verkaufszahlen am Buch: gedruckt + PDF kompakt in einer Zeile, je mit Icon.
+// Schriftgröße höchstens wie die ISBN-Metazeile (13px), damit sie wenig Platz braucht.
 .pub-sales {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 2px;
+  align-items: center;
+  gap: 16px;
+  margin: 6px 0 2px;
 }
 .pub-sale {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: 999px;
   font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.pub-sale b {
-  font-family: var(--display);
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
   color: var(--violet-text);
+}
+.pub-sale svg {
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 @media (max-width: 1100px) {
   .pub-grid {

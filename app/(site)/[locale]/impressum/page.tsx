@@ -28,6 +28,11 @@ export default async function ImpressumPage({ params }: { params: Promise<{ loca
   return (
     <section style={{ padding: "44px 0 90px", maxWidth: 760 }}>
       <h1 style={{ fontSize: "clamp(28px,4vw,44px)" }}>{isDe ? "Impressum" : "Imprint"}</h1>
+      {doc ? (
+        <p className="meta">
+          {isDe ? "Zuletzt aktualisiert" : "Last updated"} {formatDate(doc.updatedAt, locale)}
+        </p>
+      ) : null}
 
       {incomplete ? (
         <div className="card bracket" style={{ marginTop: 16, borderColor: "var(--warn)" }}>
@@ -39,48 +44,45 @@ export default async function ImpressumPage({ params }: { params: Promise<{ loca
         </div>
       ) : null}
 
-      <h2 style={{ marginTop: 28 }}>{isDe ? "Angaben gemäß § 5 DDG" : "Information pursuant to § 5 DDG"}</h2>
-      <address style={{ fontStyle: "normal" }}>
-        <p style={{ margin: "6px 0" }}>
-          <b>{NAME}</b>
-          <br />
-          {contact.postalAddress
-            ? contact.postalAddress.split("\n").map((line, i) => (
-                <span key={i}>
-                  {line}
-                  <br />
-                </span>
-              ))
-            : <span className="meta">{isDe ? "[Anschrift folgt]" : "[address pending]"}</span>}
-        </p>
-      </address>
-
-      <h2 style={{ marginTop: 24 }}>{isDe ? "Kontakt" : "Contact"}</h2>
-      <p className="meta">
-        {contact.email ? (
-          <>
-            {isDe ? "E-Mail" : "Email"}: <a href={`mailto:${contact.email}`}>{contact.email}</a>
+      {/* Gleiche Prosa-Typografie wie die Datenschutzerklärung (content-body). Die
+          Pflichtangaben stehen als saubere Abschnitte, gefolgt vom pflegbaren Text. */}
+      <div className="content-body">
+        <h2>{isDe ? "Angaben gemäß § 5 DDG" : "Information pursuant to § 5 DDG"}</h2>
+        <address style={{ fontStyle: "normal" }}>
+          <p>
+            <b>{NAME}</b>
             <br />
-          </>
-        ) : null}
-        {social.linkedin ? (
-          <>
-            LinkedIn:{" "}
-            <a href={social.linkedin} target="_blank" rel="noopener noreferrer">
-              {social.linkedin}
-            </a>
-          </>
-        ) : null}
-      </p>
-
-      {doc ? (
-        <div style={{ marginTop: 28 }}>
-          <RichText value={doc.body} locale={locale} />
-          <p className="meta" style={{ marginTop: 16 }}>
-            {isDe ? "Zuletzt aktualisiert" : "Last updated"} {formatDate(doc.updatedAt, locale)}
+            {contact.postalAddress
+              ? contact.postalAddress.split("\n").map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    <br />
+                  </span>
+                ))
+              : <span className="meta">{isDe ? "[Anschrift folgt]" : "[address pending]"}</span>}
           </p>
-        </div>
-      ) : null}
+        </address>
+
+        <h2>{isDe ? "Kontakt" : "Contact"}</h2>
+        <p>
+          {contact.email ? (
+            <>
+              {isDe ? "E-Mail" : "Email"}: <a href={`mailto:${contact.email}`}>{contact.email}</a>
+              <br />
+            </>
+          ) : null}
+          {social.linkedin ? (
+            <>
+              LinkedIn:{" "}
+              <a href={social.linkedin} target="_blank" rel="noopener noreferrer">
+                {social.linkedin}
+              </a>
+            </>
+          ) : null}
+        </p>
+      </div>
+
+      {doc ? <RichText value={doc.body} locale={locale} /> : null}
     </section>
   );
 }

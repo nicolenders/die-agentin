@@ -156,8 +156,8 @@ export default function PublicationSections({
                     {b.salesPrinted != null ? (
                       <span
                         className="pub-sale"
-                        title={isDe ? "gedruckt verkauft" : "printed copies sold"}
-                        aria-label={`${b.salesPrinted.toLocaleString("de-DE")} ${isDe ? "gedruckt verkauft" : "printed copies sold"}`}
+                        title={isDe ? "verkaufte gedruckte Exemplare" : "printed copies sold"}
+                        aria-label={`${b.salesPrinted.toLocaleString("de-DE")} ${isDe ? "verkaufte gedruckte Exemplare" : "printed copies sold"}`}
                       >
                         <PrintedIcon />
                         {b.salesPrinted.toLocaleString("de-DE")}
@@ -166,8 +166,8 @@ export default function PublicationSections({
                     {b.salesPdf != null ? (
                       <span
                         className="pub-sale"
-                        title={isDe ? "als PDF verkauft" : "PDF copies sold"}
-                        aria-label={`${b.salesPdf.toLocaleString("de-DE")} ${isDe ? "als PDF verkauft" : "PDF copies sold"}`}
+                        title={isDe ? "verkaufte Exemplare als PDF" : "copies sold as PDF"}
+                        aria-label={`${b.salesPdf.toLocaleString("de-DE")} ${isDe ? "verkaufte Exemplare als PDF" : "copies sold as PDF"}`}
                       >
                         <PdfIcon />
                         {b.salesPdf.toLocaleString("de-DE")}

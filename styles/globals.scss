@@ -225,6 +225,7 @@ h1 {
 }
 .pub-meta {
   font-size: 13px;
+  margin-bottom: 4px; // Verkaufszahlen direkt an die Metazeile anschließen
 }
 .pub-link {
   margin-top: auto; // an den unteren Rand der Karte schieben → Buttons bündig
@@ -335,7 +336,10 @@ h1 {
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
-  margin: 6px 0 2px;
+  // Gehört zu den Metainfos oben (kleiner Abstand nach oben); zum Button hin ein
+  // klarer Abstand — plus .pub-link (margin-top:auto), das den Button in hohen
+  // Karten ganz nach unten schiebt.
+  margin: 2px 0 14px;
 }
 .pub-sale {
   display: inline-flex;

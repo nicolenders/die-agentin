@@ -115,16 +115,15 @@ export default async function LegendePage({
                     href={legend.employer.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    title={isDe ? "Aktueller Arbeitgeber" : "Current employer"}
                   >
                     <EmployerIcon />
-                    <span className={styles.employerLabel}>{isDe ? "Aktuell bei" : "Currently at"}</span>
                     <span className={styles.employerName}>{legend.employer.name}</span>
                     <span aria-hidden className={styles.employerArrow}>↗</span>
                   </a>
                 ) : (
-                  <span className={styles.employer}>
+                  <span className={styles.employer} title={isDe ? "Aktueller Arbeitgeber" : "Current employer"}>
                     <EmployerIcon />
-                    <span className={styles.employerLabel}>{isDe ? "Aktuell bei" : "Currently at"}</span>
                     <span className={styles.employerName}>{legend.employer.name}</span>
                   </span>
                 )
@@ -142,7 +141,10 @@ export default async function LegendePage({
           </div>
           <p className="lead" style={{ marginTop: 16 }}>{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
           {Object.keys(social).length > 0 || contact.email ? (
-            <div style={{ marginTop: 24 }}>
+            // marginBottom sichert den Abstand zur Mission auch dann, wenn der Inhalt
+            // (mit Arbeitgeber-Chip) höher ist als das Porträt und margin-top:auto
+            // der Mission auf 0 fällt — sonst kleben Social-Icons und Mission aneinander.
+            <div style={{ marginTop: 24, marginBottom: 32 }}>
               <p className="eyebrow" style={{ marginBottom: 12 }}>
                 {isDe ? "Folgen & vernetzen" : "Follow & connect"}
               </p>

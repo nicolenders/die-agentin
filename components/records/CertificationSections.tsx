@@ -106,7 +106,6 @@ export default function CertificationSections({
         <div
           key={sec.key}
           id={sec.key === "MVP" ? "mvp" : undefined}
-          style={sec.key === "MVP" ? { scrollMarginTop: 96 } : undefined}
         >
           <p className="eyebrow" style={{ marginTop: 32 }}>{sec.label}</p>
           <div className="cert-grid">

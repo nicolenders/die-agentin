@@ -11,6 +11,9 @@
 }
 html {
   scroll-behavior: smooth;
+  // Klebender Header ist 66px hoch: Ankersprünge (#hash) landen sonst dahinter.
+  // Padding hält die Zielüberschrift frei sichtbar unter dem Header.
+  scroll-padding-top: 82px;
 }
 @media (prefers-reduced-motion: reduce) {
   html {

@@ -7,6 +7,36 @@ import BrandImage from "@/components/BrandImage";
 // eigenständigen Seite ausgelagert, damit Identitäts-Detailseite und Lebenslauf
 // dieselbe Darstellung nutzen.
 
+// Kleine Inline-Icons für die Verkaufszahlen (gedruckt / PDF). Bewusst dezent,
+// currentColor, damit sie neben der Zahl in einer Zeile stehen.
+function PrintedIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M4 2.2h6.2l1.8 1.8v9.8H4V2.2Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M6 6.2h4M6 8.6h4M6 11h2.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PdfIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M4 1.8h5l3 3v9.4H4V1.8Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M9 1.8V5h3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function typeLabel(t: string, isDe: boolean): string {
   const de: Record<string, string> = {
     BOOK: "Buch", ARTICLE: "Fachartikel", WHITEPAPER: "Whitepaper", COURSE: "Kurs",
@@ -122,20 +152,28 @@ export default function PublicationSections({
                   {[b.role, b.publisher, b.isbn ? `ISBN ${b.isbn}` : null].filter(Boolean).join(" · ")}
                 </p>
                 {b.salesPrinted != null || b.salesPdf != null ? (
-                  <div className="pub-sales" aria-label={isDe ? "Verkaufte Exemplare" : "Copies sold"}>
+                  <p className="pub-sales">
                     {b.salesPrinted != null ? (
-                      <span className="pub-sale">
-                        <b>{b.salesPrinted.toLocaleString("de-DE")}</b>
-                        {isDe ? "gedruckt" : "printed"}
+                      <span
+                        className="pub-sale"
+                        title={isDe ? "gedruckt verkauft" : "printed copies sold"}
+                        aria-label={`${b.salesPrinted.toLocaleString("de-DE")} ${isDe ? "gedruckt verkauft" : "printed copies sold"}`}
+                      >
+                        <PrintedIcon />
+                        {b.salesPrinted.toLocaleString("de-DE")}
                       </span>
                     ) : null}
                     {b.salesPdf != null ? (
-                      <span className="pub-sale">
-                        <b>{b.salesPdf.toLocaleString("de-DE")}</b>
-                        {isDe ? "als PDF" : "as PDF"}
+                      <span
+                        className="pub-sale"
+                        title={isDe ? "als PDF verkauft" : "PDF copies sold"}
+                        aria-label={`${b.salesPdf.toLocaleString("de-DE")} ${isDe ? "als PDF verkauft" : "PDF copies sold"}`}
+                      >
+                        <PdfIcon />
+                        {b.salesPdf.toLocaleString("de-DE")}
                       </span>
                     ) : null}
-                  </div>
+                  </p>
                 ) : null}
                 {b.url ? (
                   <a className="btn ghost sm pub-link" href={b.url} target="_blank" rel="noopener noreferrer">

@@ -1284,6 +1284,12 @@ svg.map {
   height: 100%;
   object-fit: cover;
 }
+// Füllvariante: das Bild nimmt die volle Höhe seines Elternelements ein (statt ein
+// eigenes Seitenverhältnis vorzugeben) und schließt so bündig mit einer
+// Nachbarspalte ab. Bild bleibt unverzerrt (object-fit: cover oben).
+.brand-image--fill {
+  height: 100%;
+}
 .brand-ph {
   position: relative;
   width: 100%;

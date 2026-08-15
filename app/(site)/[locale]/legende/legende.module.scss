@@ -3,11 +3,16 @@
 
 .heroRow {
   display: grid;
-  // Porträt links bewusst schmaler (~2/3 der früheren Größe), damit rechts
-  // weniger Leerraum zwischen den Social-Kanälen und der Mission entsteht.
-  grid-template-columns: 0.63fr 1.37fr;
+  // Porträt breiter als früher (0.63/1.37) und über die Füllvariante genauso hoch
+  // wie die Inhaltsspalte — es schließt unten bündig mit der Mission ab. Feste
+  // Spaltenanteile, damit sich Bild-/Textbreite nicht gegenseitig aufschaukeln;
+  // der Inhalt verliert dafür etwas Breite, die Gesamtbreite bleibt gleich.
+  grid-template-columns: 0.82fr 1.18fr;
   gap: 40px;
   align-items: stretch;
+}
+.heroRight {
+  min-width: 0;
 }
 .heroLeft {
   display: flex;
@@ -102,6 +107,12 @@ a.employer:hover {
   }
   .missionBox {
     margin-top: 18px;
+  }
+  // Einspaltig: Porträt wieder normal über die volle Spaltenbreite mit eigenem
+  // Seitenverhältnis (nicht an einer Nachbarhöhe ausgerichtet).
+  .heroRight :global(.brand-image) {
+    height: auto;
+    aspect-ratio: 4 / 5;
   }
 }
 @media (max-width: 560px) {

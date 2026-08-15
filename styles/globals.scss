@@ -11,6 +11,9 @@
 }
 html {
   scroll-behavior: smooth;
+  // Klebender Header ist 66px hoch: Ankersprünge (#hash) landen sonst dahinter.
+  // Padding hält die Zielüberschrift frei sichtbar unter dem Header.
+  scroll-padding-top: 82px;
 }
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -408,6 +411,17 @@ h1 {
   pointer-events: none;
   line-height: 1.2;
   backdrop-filter: blur(2px);
+  max-width: calc(100% - 8px);
+}
+// Kompaktvariante für kleine Thumbnails (Avatare): nur „KI", damit der Hinweis
+// das Bild nicht überdeckt. Der volle Text bleibt in aria-label/title.
+.ai-badge.compact {
+  right: 3px;
+  bottom: 3px;
+  font-size: 8px;
+  padding: 1px 4px;
+  letter-spacing: 0.06em;
+  border-radius: 3px;
 }
 .lightbox {
   position: fixed;

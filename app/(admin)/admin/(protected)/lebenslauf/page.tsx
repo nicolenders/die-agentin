@@ -117,7 +117,7 @@ export default async function ResumeAdminPage({
       {SECTIONS.map((sec) => {
         const items = entries.filter((e) => e.section === sec.key);
         return (
-          <div key={sec.key} id={sec.key} style={{ marginTop: 28, scrollMarginTop: 90 }}>
+          <div key={sec.key} id={sec.key} style={{ marginTop: 28 }}>
             <p className="eyebrow">{sec.label}</p>
             {sec.hint ? <p className="meta" style={{ marginTop: 0 }}>{sec.hint}</p> : null}
 

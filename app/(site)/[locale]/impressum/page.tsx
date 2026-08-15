@@ -73,16 +73,6 @@ export default async function ImpressumPage({ params }: { params: Promise<{ loca
         ) : null}
       </p>
 
-      <h2 style={{ marginTop: 24 }}>
-        {isDe ? "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV" : "Responsible for content (§ 18 (2) MStV)"}
-      </h2>
-      <address style={{ fontStyle: "normal" }}>
-        <p style={{ margin: "6px 0" }} className="meta">
-          {NAME}
-          {contact.postalAddress ? `, ${contact.postalAddress.replace(/\n/g, ", ")}` : ""}
-        </p>
-      </address>
-
       {doc ? (
         <div style={{ marginTop: 28 }}>
           <RichText value={doc.body} locale={locale} />

@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
-import { getContactInfo } from "@/lib/queries/settings";
+import { getContactInfo, getBios } from "@/lib/queries/settings";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import InfoPopover from "@/components/admin/InfoPopover";
-import { saveLegalDoc, saveContactInfo } from "./actions";
+import { saveLegalDoc, saveContactInfo, saveBios } from "./actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
 
@@ -66,6 +66,7 @@ export default async function EinstellungenPage({
   const find = (key: string, locale: string) => docs.find((d) => d.docKey === key && d.locale === locale);
 
   const contact = await getContactInfo();
+  const [biosDe, biosEn] = await Promise.all([getBios("de"), getBios("en")]);
 
   return (
     <section>
@@ -93,6 +94,39 @@ export default async function EinstellungenPage({
           <textarea className="f" name="postalAddress" rows={4} defaultValue={contact.postalAddress} placeholder={"Vorname Nachname\nStraße Hausnr.\nPLZ Ort"} />
           <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Kontaktangaben speichern</button>
         </form>
+      </div>
+
+      <p className="eyebrow" style={{ marginTop: 28 }}>Speaker-Kit-Bios</p>
+      <p className="meta">
+        Drei Längen je Sprache für die Akte / das Speaker-Kit (Kurz ~50, Mittel ~150, Lang ~400 Wörter).
+        Solange ein Feld leer ist, zeigt die öffentliche Seite dafür einen Platzhalter. Absätze mit einer
+        Leerzeile trennen.
+      </p>
+      <div className="card bracket" style={{ marginBottom: 16 }}>
+        <div className="grid g2">
+          {LOCALES.map(({ code, label }) => {
+            const bios = code === "en" ? biosEn : biosDe;
+            const filled = Boolean(bios.short.trim() || bios.medium.trim() || bios.long.trim());
+            return (
+              <form action={saveBios} key={code}>
+                <input type="hidden" name="locale" value={code} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <label className="f" style={{ margin: 0 }}>{label}</label>
+                  <span className={`st ${filled ? "live" : "draft"}`}>{filled ? "Gepflegt" : "Fehlt"}</span>
+                </div>
+                <label className="f">Kurz (ca. 50 Wörter)</label>
+                <textarea className="f" name="short" rows={3} defaultValue={bios.short} />
+                <label className="f">Mittel (ca. 150 Wörter)</label>
+                <textarea className="f" name="medium" rows={5} defaultValue={bios.medium} />
+                <label className="f">Lang (ca. 400 Wörter)</label>
+                <textarea className="f" name="long" rows={9} defaultValue={bios.long} />
+                <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>
+                  Bios speichern ({label})
+                </button>
+              </form>
+            );
+          })}
+        </div>
       </div>
 
       <p className="eyebrow" style={{ marginTop: 28 }}>Rechtliche Seiten</p>

@@ -62,3 +62,25 @@ export async function saveContactInfo(formData: FormData): Promise<void> {
   if (failed) redirect("/admin/einstellungen?err=failed");
   redirect("/admin/einstellungen?ok=contact");
 }
+
+// Speaker-Kit-Bios (Anhang A): drei Längen je Sprache, als SiteSettings gepflegt
+// (Schlüssel bio.<länge>.<locale>). Die „Akte" liest sie aus. Rollenprüfung zuerst.
+export async function saveBios(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const locale = String(formData.get("locale") ?? "de") === "en" ? "en" : "de";
+  let failed = false;
+  try {
+    for (const length of ["short", "medium", "long"] as const) {
+      const key = `bio.${length}.${locale}`;
+      const value = String(formData.get(length) ?? "").trim();
+      await db.siteSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+    }
+    invalidateTags([SITE_SETTINGS_TAG]);
+    revalidatePath("/de");
+    revalidatePath("/en");
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect("/admin/einstellungen?err=failed");
+  redirect("/admin/einstellungen?ok=bios");
+}

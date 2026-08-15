@@ -6,6 +6,7 @@ const MESSAGES: Record<string, string> = {
   saved: "Gespeichert.",
   social: "Social-Media-Profile gespeichert.",
   contact: "Kontaktangaben gespeichert.",
+  bios: "Bios gespeichert.",
   created: "Angelegt.",
   updated: "Aktualisiert.",
   deleted: "Gelöscht.",

@@ -45,6 +45,8 @@ export async function saveLegend(formData: FormData): Promise<void> {
     contactText: serializeRichValue(str(formData, "contactText")),
     contactButton: str(formData, "contactButton"),
     contactUrl: str(formData, "contactUrl"),
+    employerName: str(formData, "employerName") || null,
+    employerUrl: str(formData, "employerUrl") || null,
     portraitAssetId: str(formData, "portraitAssetId") || null,
   };
 

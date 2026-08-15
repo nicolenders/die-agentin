@@ -47,7 +47,8 @@ export default async function IdentityDetailPage({
   if (!i) notFound();
 
   const hasCoverage = i.missions.length + i.briefings.length + i.dispatches.length > 0;
-  const hasEnvelopeBlock = i.focus.length > 0 || i.tools.length > 0 || Boolean(i.envelopeUrl);
+  const hasEnvelopeBlock =
+    i.focus.length > 0 || i.tools.length > 0 || i.focusTopics.length > 0 || Boolean(i.envelopeUrl);
 
   const focusChips =
     i.focus.length > 0 ? (
@@ -61,7 +62,20 @@ export default async function IdentityDetailPage({
     i.tools.length > 0 ? (
       <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
         {i.tools.map((t) => (
-          <span key={t} style={chipStyle}>{t}</span>
+          <Link key={t.slug} href={`/${locale}/einsaetze?werkzeug=${t.slug}`} style={{ ...chipStyle, textDecoration: "none" }}>
+            {t.name}
+          </Link>
+        ))}
+      </div>
+    ) : null;
+  // Aktuelle Themen (Radar) dieser Identität — in ihrer Farbe.
+  const topicChips =
+    i.focusTopics.length > 0 ? (
+      <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+        {i.focusTopics.map((t) => (
+          <span key={t.title} title={t.note ?? undefined} style={{ ...chipStyle, borderColor: i.color, color: i.color }}>
+            {t.title}
+          </span>
         ))}
       </div>
     ) : null;
@@ -141,7 +155,15 @@ export default async function IdentityDetailPage({
                 {toolChips}
               </>
             ) : null}
-            {!focusChips && !toolChips ? (
+            {topicChips ? (
+              <>
+                <p className="eyebrow" style={{ marginTop: focusChips || toolChips ? 24 : 0 }}>
+                  {isDe ? "Aktuelle Themen" : "Current topics"}
+                </p>
+                {topicChips}
+              </>
+            ) : null}
+            {!focusChips && !toolChips && !topicChips ? (
               <p className="muted" style={{ margin: 0 }}>{isDe ? "Noch kein Fokus hinterlegt." : "No focus set yet."}</p>
             ) : null}
           </div>
@@ -158,6 +180,14 @@ export default async function IdentityDetailPage({
             <>
               <p className="eyebrow" style={{ marginTop: focusChips ? 24 : 0 }}>{isDe ? "Werkzeuge" : "Tools"}</p>
               {toolChips}
+            </>
+          ) : null}
+          {topicChips ? (
+            <>
+              <p className="eyebrow" style={{ marginTop: focusChips || toolChips ? 24 : 0 }}>
+                {isDe ? "Aktuelle Themen" : "Current topics"}
+              </p>
+              {topicChips}
             </>
           ) : null}
         </div>
@@ -196,24 +226,6 @@ export default async function IdentityDetailPage({
                 empty: isDe ? "Kein Treffer." : "No matches.",
               }}
             />
-          </div>
-        </div>
-      ) : null}
-
-      {/* Womit ich mich gerade beschäftige — je Identität gepflegte Radar-Themen.
-          Bewusst statt Publikationen/Ausbildung (die es als eigene Seiten gibt). */}
-      {i.focusTopics.length > 0 ? (
-        <div style={{ marginTop: 48 }}>
-          <p className="eyebrow">
-            {isDe ? "Womit ich mich gerade beschäftige" : "What I'm working on right now"}
-          </p>
-          <div className="grid g2" style={{ marginTop: 12, alignItems: "start" }}>
-            {i.focusTopics.map((f) => (
-              <div key={f.title} className="card bracket">
-                <b style={{ fontSize: "15px" }}>{f.title}</b>
-                {f.note ? <p className="meta" style={{ margin: "6px 0 0" }}>{f.note}</p> : null}
-              </div>
-            ))}
           </div>
         </div>
       ) : null}

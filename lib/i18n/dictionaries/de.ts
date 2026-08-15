@@ -56,7 +56,7 @@ const de = {
     countMissions: "Einsätze",
     countCountries: "Länder",
     countBriefings: "Briefings",
-    countMvp: "MVP Award",
+    countMvp: "MVP Awards",
     countCertifications: "Zertifizierungen",
     countBooks: "Bücher",
     countIdentities: "Identitäten",

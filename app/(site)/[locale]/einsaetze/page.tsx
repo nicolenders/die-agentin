@@ -50,6 +50,7 @@ export default async function EinsaetzePage({
     bannerAlt: m.bannerAlt,
     bannerAi: m.bannerAi,
     identitySlugs: m.identitySlugs,
+    tools: m.tools,
   }));
 
   const explorerIdentities: ExplorerIdentity[] = identities.map((i) => ({
@@ -83,6 +84,8 @@ export default async function EinsaetzePage({
           yearAll: isDe ? "Alle Jahre" : "All years",
           moreYears: isDe ? "weitere Jahre" : "more years",
           onlineToggle: isDe ? "Online-Events" : "Online events",
+          toolLabel: isDe ? "Werkzeug" : "Tool",
+          toolClear: isDe ? "Werkzeug-Filter entfernen" : "Clear tool filter",
           all: isDe ? "Alle" : "All",
           reset: isDe ? "Zurücksetzen" : "Reset",
           missionsWord: isDe ? "Einsätze" : "missions",

@@ -77,6 +77,7 @@ export interface SaveMissionInput {
   de: MissionTextInput;
   en?: MissionTextInput | null;
   photoAssetIds: string[];
+  toolIds?: string[];
   material?: MissionMaterialInput;
   intent: "draft" | "publish";
 }
@@ -138,6 +139,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         contentStatus,
         eventUrl: input.eventUrl || null,
         bannerAssetId: input.bannerAssetId || null,
+        tools: { connect: (input.toolIds ?? []).map((id) => ({ id })) },
         ...materialData(input.material),
       },
       update: {
@@ -153,6 +155,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         contentStatus,
         eventUrl: input.eventUrl || null,
         bannerAssetId: input.bannerAssetId || null,
+        tools: { set: (input.toolIds ?? []).map((id) => ({ id })) },
         ...materialData(input.material),
       },
     });

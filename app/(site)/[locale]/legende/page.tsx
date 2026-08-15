@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
+import Link from "next/link";
 import { getLegend } from "@/lib/queries/legend";
 import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
-import { getPublishedIdentities, getIdentityToolNames } from "@/lib/queries/identities";
+import { getPublishedIdentities, getIdentityTools } from "@/lib/queries/identities";
+import { getRadarTopics } from "@/lib/queries/records";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
 import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
@@ -33,12 +35,13 @@ export default async function LegendePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const [legend, social, contact, identities, toolNames, dict] = await Promise.all([
+  const [legend, social, contact, identities, tools, radar, dict] = await Promise.all([
     getLegend(locale),
     getSocialLinks(),
     getContactInfo(),
     getPublishedIdentities(locale),
-    getIdentityToolNames(),
+    getIdentityTools(),
+    getRadarTopics(locale),
     getDictionary(locale),
   ]);
 
@@ -91,9 +94,34 @@ export default async function LegendePage({
           />
         </div>
         <div className={styles.heroLeft}>
-          <p className="eyebrow">{legend.eyebrow}</p>
-          <h2>{legend.name}</h2>
-          <p className="lead">{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <p className="eyebrow">{legend.eyebrow}</p>
+              <h2 style={{ marginBottom: legend.employer ? 4 : undefined }}>{legend.name}</h2>
+              {legend.employer ? (
+                <p className="meta" style={{ marginTop: 0, marginBottom: 0 }}>
+                  {isDe ? "Aktuell bei " : "Currently at "}
+                  {legend.employer.url ? (
+                    <a href={legend.employer.url} target="_blank" rel="noopener noreferrer">
+                      {legend.employer.name} ↗
+                    </a>
+                  ) : (
+                    legend.employer.name
+                  )}
+                </p>
+              ) : null}
+            </div>
+            <a
+              className="btn ghost sm"
+              href={`/${locale}/cv`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ flexShrink: 0, marginTop: 4 }}
+            >
+              {isDe ? "CV abrufen" : "Get CV"} ↗
+            </a>
+          </div>
+          <p className="lead" style={{ marginTop: 16 }}>{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
           {Object.keys(social).length > 0 || contact.email ? (
             <div style={{ marginTop: 24 }}>
               <p className="eyebrow" style={{ marginBottom: 12 }}>
@@ -161,18 +189,44 @@ export default async function LegendePage({
         </div>
       ) : null}
 
-      {toolNames.length > 0 ? (
+      {tools.length > 0 ? (
         <>
           <p className="eyebrow" style={{ marginTop: 44 }}>{isDe ? "Werkzeuge" : "Tools"}</p>
           <p className="meta" style={{ marginTop: 0 }}>
             {isDe
-              ? "Die Summe der Werkzeuge über alle Identitäten hinweg."
-              : "The combined toolset across all identities."}
+              ? "Die Summe der Werkzeuge über alle Identitäten hinweg. Zum Filtern der Einsätze anklicken."
+              : "The combined toolset across all identities. Click to filter the missions."}
           </p>
           <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-            {toolNames.map((t) => (
-              <span key={t} style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".2em", color: "var(--violet-text)", border: "1px solid var(--line)", padding: "6px 12px", borderRadius: "var(--r)" }}>
-                {t}
+            {tools.map((t) => (
+              <Link
+                key={t.slug}
+                href={`/${locale}/einsaetze?werkzeug=${t.slug}`}
+                style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".2em", color: "var(--violet-text)", border: "1px solid var(--line)", padding: "6px 12px", borderRadius: "var(--r)", textDecoration: "none" }}
+              >
+                {t.name}
+              </Link>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {radar.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 32 }}>{isDe ? "Aktuelle Themen" : "Current topics"}</p>
+          <p className="meta" style={{ marginTop: 0 }}>
+            {isDe
+              ? "Womit ich mich gerade beschäftige. Farbe = zugeordnete Identität."
+              : "What I'm working on right now. Colour = linked identity."}
+          </p>
+          <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+            {radar.map((r) => (
+              <span
+                key={r.id}
+                title={r.note ?? undefined}
+                style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".14em", color: r.color ?? "var(--violet-text)", border: `1px solid ${r.color ?? "var(--line)"}`, padding: "6px 12px", borderRadius: "var(--r)" }}
+              >
+                {r.title}
               </span>
             ))}
           </div>

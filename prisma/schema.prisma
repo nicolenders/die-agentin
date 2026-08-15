@@ -156,6 +156,7 @@ model Mission {
   deliveries   TalkDelivery[]
   posts        Post[]
   identities   Identity[] @relation("IdentityMissions")
+  tools        Tool[]     @relation("MissionTools")
 
   @@index([startDate])
   @@index([contentStatus])
@@ -208,6 +209,7 @@ model Talk {
   categories   Taxonomy[]     @relation("TalkCategories")
   audiences    Taxonomy[]     @relation("TalkAudiences")
   identities   Identity[]     @relation("IdentityTalks")
+  tools        Tool[]         @relation("TalkTools")
 
   @@index([categoryId])
   @@index([sortOrder])
@@ -511,6 +513,8 @@ model Tool {
   sortOrder   Int         @default(0)
 
   identities Identity[] @relation("IdentityTools")
+  talks      Talk[]     @relation("TalkTools")
+  missions   Mission[]  @relation("MissionTools")
 
   @@index([sortOrder])
 }
@@ -532,6 +536,9 @@ model LegendContent {
   contactText     String  @db.NVarChar(Max)
   contactButton   String
   contactUrl      String  @db.NVarChar(2048)
+  // Aktueller Arbeitgeber (im oberen Legende-Bereich anklickbar dargestellt).
+  employerName    String?
+  employerUrl     String? @db.NVarChar(2048)
   portraitAssetId String?
   portrait        MediaAsset? @relation("LegendPortrait", fields: [portraitAssetId], references: [id])
   updatedAt       DateTime @updatedAt
@@ -740,4 +747,33 @@ model Pageview {
   @@index([country])
   @@index([section])
   @@index([day, visitorHash])
+}
+
+// ---------------------------------------------------------------------------
+// Klassischer Lebenslauf (Bewerbungs-CV): Kopf/Zusammenfassung als Singleton,
+// die Listen (Werdegang, Ausbildung, Projekte, Fähigkeiten) als Einträge mit
+// Rubrik. Im Adminbereich pflegbar, öffentlich als druckbarer CV abrufbar.
+// ---------------------------------------------------------------------------
+model ResumeProfile {
+  id         String   @id @default("default")
+  headline   String   @default("") // z. B. „Solution Architect · Microsoft 365 & Azure"
+  summary    String   @default("") @db.NVarChar(Max) // Kurzprofil (mehrzeilig)
+  location   String   @default("")
+  updatedAt  DateTime @updatedAt
+}
+
+model ResumeEntry {
+  id          String   @id @default(cuid())
+  section     String // CAREER | EDUCATION | PROJECT | SKILL
+  title       String
+  subtitle    String? // Arbeitgeber / Institution / Kunde / Skill-Kategorie
+  location    String?
+  periodFrom  String? // Freitext, z. B. „03/2018"
+  periodTo    String? // Freitext, z. B. „heute"
+  description String?  @db.NVarChar(Max) // mehrzeilig; bei SKILL: Liste je Zeile
+  tags        String?  @db.NVarChar(Max) // JSON string[] (z. B. Technologien)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([section, sortOrder])
 }

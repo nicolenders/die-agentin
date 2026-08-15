@@ -41,6 +41,8 @@ export default async function LegendeAdminPage({
     contactText: row?.contactText ?? defaults.contactText,
     contactButton: row?.contactButton ?? defaults.contactButton,
     contactUrl: row?.contactUrl ?? defaults.contactUrl,
+    employerName: row?.employerName ?? "",
+    employerUrl: row?.employerUrl ?? "",
     portraitAssetId: row?.portraitAssetId ?? null,
   };
   const pillars: LegendPillar[] = row ? safeParse(row.pillarsJson, defaults.pillars) : defaults.pillars;
@@ -78,6 +80,10 @@ export default async function LegendeAdminPage({
           <input className="f" name="name" defaultValue={val.name} required />
           <label className="f">Lead (Einleitungssatz)</label>
           <RichTextField name="lead" defaultValue={val.lead} ariaLabel="Lead" />
+          <label className="f">Aktueller Arbeitgeber (Name, optional)</label>
+          <input className="f" name="employerName" defaultValue={val.employerName} placeholder="z. B. conet Deutschland GmbH" />
+          <label className="f">Arbeitgeber-Website (optional)</label>
+          <input className="f" name="employerUrl" defaultValue={val.employerUrl} placeholder="https://…" />
         </div>
 
         <div className="card bracket" style={{ marginTop: 16 }}>

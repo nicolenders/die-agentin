@@ -25,12 +25,18 @@ export interface MissionListItem {
   bannerAlt: string;
   bannerAi: boolean;
   identitySlugs: string[]; // verknüpfte Identitäten (für den Identitätsfilter)
+  tools: { slug: string; name: string }[]; // verknüpfte Werkzeuge (Filter + Label)
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
   const missions = await db.mission.findMany({
     orderBy: { startDate: "desc" },
-    include: { translations: true, banner: true, identities: { select: { slug: true } } },
+    include: {
+      translations: true,
+      banner: true,
+      identities: { select: { slug: true } },
+      tools: { select: { slug: true, name: true }, orderBy: { sortOrder: "asc" } },
+    },
   });
   return missions.map((m) => {
     const picked = pickTranslation(m.translations, locale);
@@ -49,6 +55,7 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       eventUrl: m.eventUrl,
       published: m.contentStatus === "PUBLISHED",
       identitySlugs: m.identities.map((i) => i.slug),
+      tools: m.tools.map((t) => ({ slug: t.slug, name: t.name })),
       bannerAi: m.banner?.source === "AI",
       bannerUrl: m.banner ? assetUrl(m.banner.blobPath) : null,
       bannerAlt:

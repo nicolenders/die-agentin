@@ -142,6 +142,7 @@ export async function createTalk(formData: FormData): Promise<void> {
   const enAbstract = serializeRichValue(str(formData, "enAbstract"));
   const categoryIds = ids(formData, "categoryIds");
   const audienceIds = ids(formData, "audienceIds");
+  const toolIds = ids(formData, "toolIds");
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");
   const durationMin = durationRaw ? Number(durationRaw) : null;
@@ -154,6 +155,7 @@ export async function createTalk(formData: FormData): Promise<void> {
         categoryId: categoryIds[0]!,
         categories: { connect: categoryIds.map((id) => ({ id })) },
         audiences: { connect: audienceIds.map((id) => ({ id })) },
+        tools: { connect: toolIds.map((id) => ({ id })) },
         level,
         durationMin: durationMin !== null && Number.isFinite(durationMin) ? durationMin : null,
         translations: {
@@ -185,6 +187,7 @@ export async function updateTalk(formData: FormData): Promise<void> {
   const deAbstract = serializeRichValue(str(formData, "deAbstract"));
   const enAbstract = serializeRichValue(str(formData, "enAbstract"));
   const audienceIds = ids(formData, "audienceIds");
+  const toolIds = ids(formData, "toolIds");
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");
   const durationMin = durationRaw ? Number(durationRaw) : null;
@@ -198,6 +201,7 @@ export async function updateTalk(formData: FormData): Promise<void> {
         categoryId: categoryIds[0]!,
         categories: { set: categoryIds.map((id) => ({ id })) },
         audiences: { set: audienceIds.map((id) => ({ id })) },
+        tools: { set: toolIds.map((id) => ({ id })) },
         level,
         durationMin: durationMin !== null && Number.isFinite(durationMin) ? durationMin : null,
         active,

@@ -9,36 +9,36 @@ export interface AdminNavItem {
   section?: string;
 }
 
-// Fünf Gruppen: die Einsatzzentrale (Dashboard), das laufende Geschäft unter
-// „Neuigkeiten", alles weitere Redaktionelle unter „Inhalte", die überblickenden
-// Werkzeuge unter „Planung & Reichweite" und die technischen Grundlagen unter
-// „System".
+// Vier Gruppen, sortiert nach Pflegehäufigkeit: das laufende Geschäft unter
+// „Neuigkeiten" ganz oben, die selten geänderten Seiten darunter, dann alles
+// über Nicole selbst, zuletzt die Technik. „Kanäle" ist kein eigener Punkt mehr,
+// sondern ein Register in den Einstellungen — dort wird ohnehin nur gelegentlich
+// etwas nachgetragen.
 export const adminNav: AdminNavItem[] = [
   { href: "/admin", label: "Einsatzzentrale", icon: "◈" },
 
-  // Neuigkeiten — was laufend gepflegt wird und deshalb ganz oben steht.
-  { href: "/admin/einsaetze", label: "Einsätze", icon: "◎", section: "Neuigkeiten" },
+  // Neuigkeiten — was laufend gepflegt wird. Der Redaktionsplan steht vorn: er
+  // ist der Einstieg in die Woche, nicht das Nachschlagewerk.
+  { href: "/admin/redaktionsplan", label: "Redaktionsplan", icon: "▦", section: "Neuigkeiten" },
+  { href: "/admin/einsaetze", label: "Einsätze", icon: "◎" },
   { href: "/admin/briefings", label: "Briefings", icon: "▶" },
   { href: "/admin/depeschen", label: "Depeschen", icon: "≡" },
+  { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "⌖" },
 
-  // Inhalte — alles, was redaktionell gepflegt und veröffentlicht wird.
-  { href: "/admin/startseite", label: "Startseite", icon: "⌂", section: "Inhalte" },
-  { href: "/admin/identitaeten", label: "Identitäten", icon: "⬡" },
+  // Statische Seiten — Inhalte, die selten wechseln.
+  { href: "/admin/startseite", label: "Startseite", icon: "⌂", section: "Statische Seiten" },
+  { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },
+
+  // Über mich — Werdegang, Werke, Auszeichnungen, Rollen.
+  { href: "/admin/identitaeten", label: "Identitäten", icon: "⬡", section: "Über mich" },
   { href: "/admin/publikationen", label: "Publikationen", icon: "★" },
   { href: "/admin/ausbildung", label: "Ausbildung & Auszeichnungen", icon: "✦" },
   { href: "/admin/lebenslauf", label: "Lebenslauf", icon: "⊞" },
-  { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "⌖" },
-  { href: "/admin/legende", label: "Legende (Über mich)", icon: "◆" },
 
-  // Planung & Reichweite — Überblick über Geplantes, Reichweite und Archiv.
-  { href: "/admin/redaktionsplan", label: "Redaktionsplan", icon: "▦", section: "Planung & Reichweite" },
+  // System — technische Grundlagen und Auswertungen.
+  { href: "/admin/medien", label: "Medien", icon: "▣", section: "System" },
   { href: "/admin/statistik", label: "Auswertung", icon: "▤" },
   { href: "/admin/archiv", label: "Archiv", icon: "⊟" },
-
-  // System — technische Grundlagen. „Kanäle" bündelt die Social-Media-Verbindungen
-  // und den LinkedIn-OAuth-Rücksprung.
-  { href: "/admin/kanaele", label: "Kanäle", icon: "⤳", section: "System" },
-  { href: "/admin/medien", label: "Medien", icon: "▣" },
   { href: "/admin/struktur", label: "Stammdaten", icon: "⧉" },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: "⚙" },
 ];

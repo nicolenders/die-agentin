@@ -12,6 +12,7 @@ import { showToast } from "@/lib/admin/toast";
 export const FLASH_MESSAGES: Record<string, string> = {
   saved: "Gespeichert.",
   social: "Social-Media-Profile gespeichert.",
+  templates: "Teilen-Vorlagen gespeichert.",
   contact: "Kontaktangaben gespeichert.",
   bios: "Bios gespeichert.",
   created: "Angelegt.",

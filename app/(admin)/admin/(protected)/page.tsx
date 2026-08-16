@@ -75,9 +75,9 @@ export default async function DashboardPage() {
           <b>Auswertung</b>
           <div className="meta">Seitenaufrufe und Besucher nach Zeitraum und Land</div>
         </Link>
-        <Link className="card bracket" href="/admin/kanaele" style={{ color: "inherit" }}>
+        <Link className="card bracket" href="/admin/einstellungen?tab=kanaele" style={{ color: "inherit" }}>
           <b>Kanäle</b>
-          <div className="meta">Social-Media-Verbindungen und Vorlagen</div>
+          <div className="meta">Social-Media-Profile und Teilen-Vorlagen</div>
         </Link>
       </div>
 

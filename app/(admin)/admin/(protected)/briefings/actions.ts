@@ -192,6 +192,10 @@ export async function updateTalk(formData: FormData): Promise<void> {
   const durationRaw = str(formData, "durationMin");
   const durationMin = durationRaw ? Number(durationRaw) : null;
   const active = formData.get("active") != null;
+  // Archiv: leeres Feld = nicht archiviert. Als UTC-Mitternacht speichern —
+  // verglichen wird gegen das Startdatum eines Einsatzes, das genauso liegt.
+  const archivedRaw = str(formData, "archivedAt");
+  const archivedAt = archivedRaw ? new Date(`${archivedRaw}T00:00:00Z`) : null;
 
   let failed = false;
   try {
@@ -205,6 +209,7 @@ export async function updateTalk(formData: FormData): Promise<void> {
         level,
         durationMin: durationMin !== null && Number.isFinite(durationMin) ? durationMin : null,
         active,
+        archivedAt: archivedAt && !Number.isNaN(archivedAt.getTime()) ? archivedAt : null,
         translations: {
           upsert: {
             where: { talkId_locale: { talkId: id, locale: "de" } },
@@ -302,6 +307,40 @@ export async function toggleTalkVisibility(formData: FormData): Promise<void> {
   if (failed) redirect(`${LIST}?err=failed`);
   invalidate();
   redirect(`${LIST}?ok=toggled`);
+}
+
+/**
+ * Briefing archivieren bzw. zurückholen. Archiviert wird mit dem heutigen Tag:
+ * ab dann taucht es bei neuen Einsätzen nicht mehr auf, während ältere Einsätze
+ * ihre Zuordnung behalten. Ein genaues Datum lässt sich in der Maske nachtragen.
+ */
+export async function toggleTalkArchive(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!id) redirect(`${LIST}?err=not-found`);
+  let failed = false;
+  let archived = false;
+  try {
+    const current = await db.talk.findUnique({ where: { id }, select: { archivedAt: true } });
+    if (current) {
+      archived = current.archivedAt === null;
+      await db.talk.update({
+        where: { id },
+        // Auf UTC-Mitternacht normalisieren, damit der Vergleich mit dem
+        // Startdatum eines Einsatzes tagesgenau bleibt.
+        data: { archivedAt: archived ? startOfUtcDay(new Date()) : null },
+      });
+    }
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=failed`);
+  invalidate();
+  redirect(`${LIST}?tab=alle&ok=${archived ? "archived" : "unarchived"}`);
+}
+
+function startOfUtcDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
 // Reihenfolge eines Briefings auf der öffentlichen Seite um eine Position ändern.

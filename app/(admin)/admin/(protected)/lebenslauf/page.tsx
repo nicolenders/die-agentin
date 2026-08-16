@@ -89,6 +89,43 @@ export default async function ResumeAdminPage({
         abrufen“) und druckbar als A4.
       </p>
 
+      {/* Export: öffnet einen druckfertigen A4-Auszug in einem neuen Tab
+          (Browser → Drucken → Als PDF speichern). Auswahl nach Datenart und
+          Zeitraum; per GET direkt an die /cv-Seite. Steht hier statt in der
+          Einsatzzentrale — beim Lebenslauf sucht man ihn. */}
+      <div className="card bracket" style={{ marginTop: 16, maxWidth: 720 }}>
+        <p className="eyebrow" style={{ marginTop: 0 }}>Exportieren</p>
+        <p className="meta" style={{ marginTop: 0 }}>
+          Erzeugt einen druckfertigen Lebenslauf im A4-Format (zum Ausdrucken oder als
+          PDF für eine Bewerbung). Öffnet in einem neuen Tab.
+        </p>
+        <form action="/de/cv" method="get" target="_blank">
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label className="f" style={{ margin: 0 }}>
+              Datenart
+              <select className="f" name="art" defaultValue="alle">
+                <option value="alle">Alles</option>
+                <option value="publikationen">Nur Publikationen</option>
+                <option value="ausbildung">Nur Ausbildung &amp; Auszeichnungen</option>
+              </select>
+            </label>
+            <label className="f" style={{ margin: 0 }}>
+              Von Jahr
+              <input className="f" name="von" type="number" placeholder="z. B. 2018" style={{ maxWidth: 130 }} />
+            </label>
+            <label className="f" style={{ margin: 0 }}>
+              Bis Jahr
+              <input className="f" name="bis" type="number" placeholder="z. B. 2026" style={{ maxWidth: 130 }} />
+            </label>
+            <button className="btn solid sm" type="submit">Lebenslauf öffnen</button>
+          </div>
+        </form>
+        <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
+          Leere Jahresfelder = kein Zeitfilter. Englische Fassung:{" "}
+          <a href="/en/cv" target="_blank" rel="noopener noreferrer">/en/cv</a>.
+        </p>
+      </div>
+
       {entries.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 16, borderColor: "var(--signal)" }}>
           <p className="eyebrow" style={{ marginTop: 0, color: "var(--signal)" }}>Startpunkt</p>

@@ -9,6 +9,7 @@ import RichTextField from "@/components/admin/editor/RichTextField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { assetUrl } from "@/lib/media/url";
 import { showToast } from "@/lib/admin/toast";
+import { isSelectableForMission, selectableTalks } from "@/lib/briefings/archive";
 import {
   saveMission,
   type SaveMissionInput,
@@ -83,7 +84,8 @@ export default function MissionForm({
   initial: MissionFormInitial;
   existingPins: { lat: number; lon: number }[];
   // `languages`: Sprachen, in denen das Briefing vorliegt (Titel vorhanden).
-  talks: { id: string; name: string; toolIds: string[]; languages: string[] }[];
+  // `archivedAt`: ISO-Tag, ab dem es nicht mehr gehalten wird (null = aktiv).
+  talks: { id: string; name: string; toolIds: string[]; languages: string[]; archivedAt: string | null }[];
   categories?: { id: string; name: string }[];
   allTools?: { id: string; name: string }[];
   isEdit?: boolean;
@@ -139,16 +141,27 @@ export default function MissionForm({
 
   const [cx, cy] = project(projection, lon, lat);
 
-  // Nur Briefings anbieten, die es in der gewählten Vortragssprache gibt. Ein
-  // Briefing ohne englischen Titel taucht bei „Englisch" also nicht auf.
+  // Zwei Filter auf die Briefing-Auswahl:
+  //  1. Sprache — nur, was es in der gewählten Vortragssprache gibt.
+  //  2. Archiv — was zum Einsatzdatum schon abgelegt war, ist nicht mehr wählbar.
+  // Ein bereits gewähltes Briefing bleibt in beiden Fällen sichtbar, damit eine
+  // bestehende Zuordnung beim Öffnen einer alten Akte nicht verschwindet.
   const talksForLanguage = talkList.filter((t) => t.languages.includes(language));
-  // Ein bereits gewähltes Briefing bleibt sichtbar, auch wenn es nicht zur
-  // Sprache passt (Altdaten dürfen nicht stillschweigend verschwinden).
   const selectedTalk = talkList.find((t) => t.id === talkId);
-  const talkOptions =
+  const talkOptionList = selectableTalks(
+    // Ein bereits gewähltes Briefing, das die Sprache ausschließt, kommt hier
+    // dazu — die Archivregel bekommt es dann ebenfalls durchgereicht.
     selectedTalk && !talksForLanguage.some((t) => t.id === selectedTalk.id)
       ? [selectedTalk, ...talksForLanguage]
-      : talksForLanguage;
+      : talksForLanguage,
+    startDate || null,
+    talkId || null,
+  );
+  // Wie viele Briefings die Archivregel gerade ausblendet — als Hinweis, damit
+  // ein „wo ist mein Briefing?" nicht in einer stummen Liste endet.
+  const hiddenByArchive = talksForLanguage.filter(
+    (t) => t.id !== talkId && !isSelectableForMission(t, startDate || null),
+  ).length;
 
   /** Online umschalten: Ort in die Antarktis setzen bzw. Eingaben freigeben. */
   function toggleOnline(next: boolean) {
@@ -246,7 +259,9 @@ export default function MissionForm({
     if (res.ok) {
       // Zurück zur Liste — mit sichtbarer Rückmeldung. Verhindert zugleich das
       // versehentliche Doppelt-Anlegen bei erneutem Klick auf „Speichern".
-      router.push(`/admin/einsaetze?ok=${intent === "publish" ? "published" : "saved"}`);
+      router.push(
+        `/admin/einsaetze?ok=${intent === "publish" ? "published" : intent === "archive" ? "archived" : "saved"}`,
+      );
       return;
     }
     setSaving(false);
@@ -274,7 +289,10 @@ export default function MissionForm({
     }
     // Neues Briefing in die Auswahl übernehmen und direkt selektieren. Die
     // Schnellanlage kennt nur einen deutschen Titel — deshalb Sprache „de".
-    setTalkList((prev) => [{ id: res.id!, name: res.name ?? newTalkTitle, toolIds: [], languages: ["de"] }, ...prev]);
+    setTalkList((prev) => [
+      { id: res.id!, name: res.name ?? newTalkTitle, toolIds: [], languages: ["de"], archivedAt: null },
+      ...prev,
+    ]);
     setTalkId(res.id);
     setToolIds([]);
     setShowNewTalk(false);
@@ -394,14 +412,21 @@ export default function MissionForm({
             }}
           >
             <option value="">— keins —</option>
-            {talkOptions.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+            {talkOptionList.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+                {t.archivedAt ? " (Archiv)" : ""}
+              </option>
             ))}
           </select>
           <p className="meta" style={{ marginTop: 4 }}>
-            Zeigt nur Briefings, die es auf {language === "de" ? "Deutsch" : "Englisch"} gibt.
+            Zeigt nur Briefings, die es auf {language === "de" ? "Deutsch" : "Englisch"} gibt und die
+            zum Einsatzdatum noch gehalten wurden.
             {talksForLanguage.length === 0 && talkList.length > 0
               ? " Für diese Sprache ist noch keines hinterlegt — Titel im Briefing ergänzen."
+              : ""}
+            {hiddenByArchive > 0
+              ? ` ${hiddenByArchive} archivierte${hiddenByArchive === 1 ? "s" : ""} ausgeblendet — mit einem früheren Datum tauchen sie wieder auf.`
               : ""}
           </p>
 
@@ -657,9 +682,16 @@ export default function MissionForm({
         <p className="meta">Rückblick-Text (Recap) wird im nächsten Schritt ergänzt.</p>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+      <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
         <button className="btn ghost" disabled={saving} onClick={() => handleSave("draft")}>Als Entwurf speichern</button>
         <button className="btn solid" disabled={saving} onClick={() => handleSave("publish")}>Einsatzakte veröffentlichen</button>
+        {isEdit ? (
+          // Archivieren statt löschen: der Einsatz bleibt in der Historie und in
+          // der Auswertung, verschwindet aber aus der laufenden Arbeit.
+          <button className="btn ghost" disabled={saving} onClick={() => handleSave("archive")} style={{ marginLeft: "auto" }}>
+            Ins Archiv legen
+          </button>
+        ) : null}
       </div>
       {saveStatus ? <p className="meta" style={{ marginTop: 10 }}>{saveStatus}</p> : null}
 

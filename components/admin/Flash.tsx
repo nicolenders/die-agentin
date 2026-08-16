@@ -21,6 +21,8 @@ export const FLASH_MESSAGES: Record<string, string> = {
   reordered: "Reihenfolge aktualisiert.",
   published: "Veröffentlicht.",
   toggled: "Sichtbarkeit geändert.",
+  archived: "Ins Archiv gelegt. Bei neuen Einsätzen ab heute nicht mehr wählbar.",
+  unarchived: "Aus dem Archiv geholt.",
   uploaded: "Hochgeladen.",
   "has-links": "Identität hat verknüpfte Einträge — erst umhängen oder zurückziehen statt löschen.",
   "cannot-publish": "Nicht veröffentlichbar: Rolle (DE) und gültige Akzentfarbe sind Pflicht.",

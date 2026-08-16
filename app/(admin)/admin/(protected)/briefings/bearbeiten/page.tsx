@@ -129,10 +129,25 @@ export default async function BriefingEditPage({
             </span>
           </div>
           {isEdit ? (
-            <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
-              <input type="checkbox" name="active" defaultChecked={talk?.active ?? true} style={{ width: "auto" }} />
-              Aktiv (im öffentlichen Katalog sichtbar)
-            </label>
+            <>
+              <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+                <input type="checkbox" name="active" defaultChecked={talk?.active ?? true} style={{ width: "auto" }} />
+                Aktiv (im öffentlichen Katalog sichtbar)
+              </label>
+              <label className="f" style={{ marginTop: 12 }}>Archiviert ab (leer = nicht archiviert)</label>
+              <input
+                className="f"
+                type="date"
+                name="archivedAt"
+                defaultValue={talk?.archivedAt ? talk.archivedAt.toISOString().slice(0, 10) : ""}
+                style={{ maxWidth: 200 }}
+              />
+              <p className="meta" style={{ marginTop: 4 }}>
+                Ab diesem Tag verschwindet das Briefing aus dem öffentlichen Katalog und aus der
+                Auswahl bei neuen Einsätzen. Einsätze <b>vor</b> diesem Tag behalten die Zuordnung
+                und können sie auch nachträglich noch bekommen.
+              </p>
+            </>
           ) : null}
           <button className="btn solid sm" type="submit" style={{ marginTop: 16 }}>
             {isEdit ? "Änderungen speichern" : "Briefing anlegen"}

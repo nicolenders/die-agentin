@@ -205,6 +205,11 @@ model Talk {
   level       String? // "100" | "200" | "300" | "400"
   durationMin Int?
   active      Boolean  @default(true) // öffentlich sichtbar (auf der Website angezeigt)
+  // Archiviert ab diesem Tag: das Briefing wird öffentlich nicht mehr gezeigt
+  // und ist bei NEUEN Einsätzen ab diesem Datum nicht mehr wählbar. Ältere
+  // Einsätze behalten ihre Zuordnung und können sie auch nachträglich noch
+  // bekommen — gehalten wurde der Vortrag ja damals (SPEC: Historie bleibt wahr).
+  archivedAt  DateTime?
   sortOrder   Int      @default(0) // manuelle Reihenfolge auf der öffentlichen Seite
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

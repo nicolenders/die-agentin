@@ -14,10 +14,10 @@ import {
 import { SHARE_TYPES, shareTemplateKey } from "@/lib/share";
 import type { Locale } from "@/lib/i18n/config";
 
-// Aktionen der Seite „Kanäle": Social-Media-Profile und die Teilen-Vorlagen.
-// Rollenprüfung als erste Zeile.
+// Aktionen des Registers „Kanäle" in den Einstellungen: Social-Media-Profile
+// und die Teilen-Vorlagen. Rollenprüfung als erste Zeile.
 
-const PAGE = "/admin/kanaele";
+const PAGE = "/admin/einstellungen?tab=kanaele";
 
 export async function saveSocialLinks(formData: FormData): Promise<void> {
   await requireAdmin();
@@ -38,8 +38,8 @@ export async function saveSocialLinks(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${PAGE}?err=failed`);
-  redirect(`${PAGE}?ok=social`);
+  if (failed) redirect(`${PAGE}&err=failed`);
+  redirect(`${PAGE}&ok=social`);
 }
 
 export async function saveShareTemplates(formData: FormData): Promise<void> {
@@ -57,6 +57,6 @@ export async function saveShareTemplates(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${PAGE}?err=failed`);
-  redirect(`${PAGE}?ok=templates`);
+  if (failed) redirect(`${PAGE}&err=failed`);
+  redirect(`${PAGE}&ok=templates`);
 }

@@ -211,6 +211,8 @@ export default async function IdentityDetailPage({
                 eventName: m.eventName,
                 city: m.city,
                 dateLabel: formatDate(m.date, locale),
+                linkable: m.linkable,
+                briefing: m.briefing,
               }))}
               briefings={i.briefings.map((b) => ({ title: b.title }))}
               dispatches={i.dispatches.map((d) => ({
@@ -225,6 +227,7 @@ export default async function IdentityDetailPage({
                 search: isDe ? "Suchen …" : "Search …",
                 date: isDe ? "Datum" : "Date",
                 event: isDe ? "Veranstaltung" : "Event",
+                briefing: isDe ? "Briefing" : "Briefing",
                 location: isDe ? "Ort" : "Location",
                 title: isDe ? "Titel" : "Title",
                 format: isDe ? "Format" : "Format",

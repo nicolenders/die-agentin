@@ -8,6 +8,10 @@ export interface CoverageMission {
   eventName: string;
   city: string;
   dateLabel: string;
+  /** Nur mit freigegebener Einsatzakte wird der Name verlinkt. */
+  linkable: boolean;
+  /** Dort gehaltenes Briefing — führt in den Briefing-Katalog. */
+  briefing: { id: string; title: string } | null;
 }
 export interface CoverageBriefing {
   title: string;
@@ -38,6 +42,7 @@ export default function IdentityCoverageTabs({
     search: string;
     date: string;
     event: string;
+    briefing: string;
     location: string;
     title: string;
     format: string;
@@ -54,7 +59,10 @@ export default function IdentityCoverageTabs({
   const needle = q.trim().toLowerCase();
 
   const fMissions = useMemo(
-    () => missions.filter((m) => !needle || `${m.eventName} ${m.city}`.toLowerCase().includes(needle)),
+    () =>
+      missions.filter(
+        (m) => !needle || `${m.eventName} ${m.city} ${m.briefing?.title ?? ""}`.toLowerCase().includes(needle),
+      ),
     [missions, needle],
   );
   const fBriefings = useMemo(
@@ -101,6 +109,7 @@ export default function IdentityCoverageTabs({
                 <tr>
                   <th>{labels.date}</th>
                   <th>{labels.event}</th>
+                  <th>{labels.briefing}</th>
                   <th>{labels.location}</th>
                 </tr>
               </thead>
@@ -108,7 +117,22 @@ export default function IdentityCoverageTabs({
                 {fMissions.map((m, idx) => (
                   <tr key={`${m.eventName}-${idx}`}>
                     <td className="meta">{m.dateLabel}</td>
-                    <td>{m.slug ? <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link> : m.eventName}</td>
+                    <td>
+                      {m.linkable && m.slug ? (
+                        <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link>
+                      ) : (
+                        m.eventName
+                      )}
+                    </td>
+                    <td>
+                      {m.briefing ? (
+                        <Link href={`/${locale}/briefings?briefing=${m.briefing.id}#briefing-${m.briefing.id}`}>
+                          {m.briefing.title}
+                        </Link>
+                      ) : (
+                        <span className="meta">—</span>
+                      )}
+                    </td>
                     <td className="meta">{m.city}</td>
                   </tr>
                 ))}

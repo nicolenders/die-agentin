@@ -1,10 +1,18 @@
 import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
-import { getContactInfo, getBios } from "@/lib/queries/settings";
+import {
+  SOCIAL_PLATFORMS,
+  getContactInfo,
+  getBios,
+  getSocialLinks,
+  getShareTemplates,
+} from "@/lib/queries/settings";
+import { SHARE_TYPES, SHARE_TYPE_LABEL, shareTemplateKey } from "@/lib/share";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import InfoPopover from "@/components/admin/InfoPopover";
 import { saveLegalDoc, saveContactInfo, saveBios } from "./actions";
+import { saveSocialLinks, saveShareTemplates } from "./channel-actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
 
@@ -53,6 +61,7 @@ const LOCALES = [
 // (?tab=…), damit er Reload und die Rückkehr nach dem Speichern übersteht.
 const TABS = [
   { id: "kontakt", label: "Kontakt" },
+  { id: "kanaele", label: "Kanäle" },
   { id: "bios", label: "Speaker-Kit-Bios" },
   { id: "recht", label: "Rechtliche Seiten" },
 ] as const;
@@ -75,7 +84,12 @@ export default async function EinstellungenPage({
   const find = (key: string, locale: string) => docs.find((d) => d.docKey === key && d.locale === locale);
 
   const contact = await getContactInfo();
-  const [biosDe, biosEn] = await Promise.all([getBios("de"), getBios("en")]);
+  const [biosDe, biosEn, social, templates] = await Promise.all([
+    getBios("de"),
+    getBios("en"),
+    getSocialLinks(),
+    getShareTemplates(),
+  ]);
 
   return (
     <section>
@@ -119,6 +133,67 @@ export default async function EinstellungenPage({
           <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Kontaktangaben speichern</button>
         </form>
       </div>
+      ) : null}
+
+      {active === "kanaele" ? (
+      <>
+      <p className="muted" style={{ marginTop: 20 }}>
+        Deine Social-Media-Profile und die Vorlagetexte fürs Teilen. Alle Kanäle laufen gleich:
+        im Eintrag auf „Teilen“ klicken, Text kopieren und dein Profil öffnen.
+      </p>
+
+      <p className="eyebrow" style={{ marginTop: 20 }}>Social-Media-Profile</p>
+      <p className="meta">
+        Erscheinen als anklickbare Icons im Footer und auf der Legende. Leeres Feld = Link ausgeblendet.
+        Ohne vollständige Adresse wird <code>https://</code> ergänzt. GitHub und YouTube werden beim Teilen
+        nicht angeboten.
+      </p>
+      <form action={saveSocialLinks} className="card bracket">
+        <div className="grid g2">
+          {SOCIAL_PLATFORMS.map((p) => (
+            <div key={p.key}>
+              <label className="f" htmlFor={`social-${p.key}`}>{p.label}</label>
+              <input
+                id={`social-${p.key}`}
+                className="f"
+                name={p.key}
+                type="url"
+                inputMode="url"
+                defaultValue={social[p.key] ?? ""}
+                placeholder={p.placeholder}
+              />
+            </div>
+          ))}
+        </div>
+        <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Profile speichern</button>
+      </form>
+
+      <p className="eyebrow" style={{ marginTop: 28 }}>Teilen-Vorlagen</p>
+      <p className="meta">
+        Ein wiedererkennbarer Text je Typ, auf Deutsch und Englisch. Platzhalter:{" "}
+        <code>{"{title}"}</code>, <code>{"{url}"}</code>, <code>{"{identities}"}</code>,{" "}
+        <code>{"{city}"}</code> (Einsatz), <code>{"{date}"}</code> (Einsatz). Sind keine Identitäten
+        verknüpft, wird <code>{"{identities}"}</code> zu „die Agentin“ / „the Agent“.
+      </p>
+      <form action={saveShareTemplates}>
+        {SHARE_TYPES.map((type) => (
+          <div className="card bracket" key={type} style={{ marginBottom: 14 }}>
+            <p className="eyebrow" style={{ margin: 0 }}>{SHARE_TYPE_LABEL[type]}</p>
+            <div className="grid g2" style={{ marginTop: 10 }}>
+              <div>
+                <label className="f" htmlFor={`${type}-de`}>Deutsch</label>
+                <textarea id={`${type}-de`} className="f" name={shareTemplateKey(type, "de")} rows={4} defaultValue={templates[type].de} />
+              </div>
+              <div>
+                <label className="f" htmlFor={`${type}-en`}>Englisch</label>
+                <textarea id={`${type}-en`} className="f" name={shareTemplateKey(type, "en")} rows={4} defaultValue={templates[type].en} />
+              </div>
+            </div>
+          </div>
+        ))}
+        <button className="btn solid sm" type="submit">Vorlagen speichern</button>
+      </form>
+      </>
       ) : null}
 
       {active === "bios" ? (

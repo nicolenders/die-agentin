@@ -323,7 +323,16 @@ export interface IdentityDetail extends IdentityCard {
   tools: { name: string; slug: string }[];
   attributes: { label: string; value: string }[];
   dispatches: { slug: string; title: string; format: string }[];
-  missions: { slug: string | null; eventName: string; city: string; date: Date }[];
+  missions: {
+    slug: string | null;
+    eventName: string;
+    city: string;
+    date: Date;
+    /** Nur mit freigegebener Einsatzakte wird verlinkt. */
+    linkable: boolean;
+    /** Dort gehaltenes Briefing (verlinkt auf den Briefing-Katalog). */
+    briefing: { id: string; title: string } | null;
+  }[];
   briefings: { title: string }[];
   // „Womit ich mich gerade beschäftige" — je Identität gepflegte Radar-Themen.
   // `dispatchCount` entscheidet, ob das Thema öffentlich anklickbar ist.
@@ -343,7 +352,12 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       tools: { orderBy: { sortOrder: "asc" } },
       attributes: { where: { displayPublic: true }, orderBy: { sortOrder: "asc" } },
       dispatches: { include: { translations: true } },
-      missions: { include: { translations: true } },
+      missions: {
+        include: {
+          translations: true,
+          deliveries: { take: 1, orderBy: { heldOn: "desc" }, include: { talk: { include: { translations: true } } } },
+        },
+      },
       talks: { include: { translations: true } },
       publications: { include: { translations: true, coverAsset: true } },
       certifications: { include: { logo: true } },
@@ -386,7 +400,16 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       .filter((m) => m.contentStatus === "PUBLISHED")
       .map((m) => {
         const t = trans(m.translations);
-        return { slug: t?.slug ?? null, eventName: m.eventName, city: m.city, date: m.startDate };
+        const delivery = m.deliveries[0];
+        const talkTitle = delivery ? trans(delivery.talk.translations)?.title ?? null : null;
+        return {
+          slug: t?.slug ?? null,
+          eventName: m.eventName,
+          city: m.isOnline ? "Online" : m.city,
+          date: m.startDate,
+          linkable: m.caseFilePublic && Boolean(t?.slug),
+          briefing: delivery && talkTitle ? { id: delivery.talkId, title: talkTitle } : null,
+        };
       }),
     briefings: r.talks.map((t) => ({ title: trans(t.translations)?.title ?? "" })).filter((b) => b.title),
     focusTopics: r.focusTopics.map((f) => ({

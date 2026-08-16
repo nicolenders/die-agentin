@@ -20,13 +20,22 @@ export interface MapMission {
   lon: number;
   year: number;
   future: boolean;
+  isOnline: boolean;
   dateLabel: string;
   eventUrl: string | null;
   published: boolean;
+  caseFilePublic: boolean;
   bannerUrl: string | null;
   bannerAlt: string;
   bannerAi: boolean;
+  identities: { slug: string; name: string; color: string }[];
+  briefing: { id: string; title: string; language: string } | null;
 }
+
+const LANGUAGE_LABEL: Record<string, { de: string; en: string }> = {
+  de: { de: "Deutsch", en: "German" },
+  en: { de: "Englisch", en: "English" },
+};
 
 // Weltkarte (SPEC §11). Interaktiv, aber Beiwerk: die vollständige Tabelle unter
 // der Karte ist immer sichtbar (in der Seite, nicht hier). Pins sind
@@ -38,7 +47,19 @@ export default function WorldMap({
 }: {
   missions: MapMission[];
   locale: Locale;
-  labels: { done: string; planned: string; size: string; open: string; all: string; view: string };
+  labels: {
+    done: string;
+    planned: string;
+    size: string;
+    open: string;
+    all: string;
+    view: string;
+    briefing: string;
+    identity: string;
+    language: string;
+    openFile: string;
+    online: string;
+  };
 }) {
   const [viewId, setViewId] = useState("welt");
   const [selected, setSelected] = useState<MapMission | null>(null);
@@ -125,11 +146,14 @@ export default function WorldMap({
         {selected
           ? (() => {
               const [x, y] = project(projection, selected.lon, selected.lat);
+              const language = selected.briefing
+                ? LANGUAGE_LABEL[selected.briefing.language]?.[locale] ?? selected.briefing.language.toUpperCase()
+                : null;
               return (
                 <div
                   className="popup"
                   style={{
-                    left: `min(max(${(x / W) * 100}% - 132px, 8px), calc(100% - 272px))`,
+                    left: `min(max(${(x / W) * 100}% - 150px, 8px), calc(100% - 308px))`,
                     top: `max(${(y / H) * 100}% - 150px, 8px)`,
                   }}
                 >
@@ -141,27 +165,57 @@ export default function WorldMap({
                       src={selected.bannerUrl}
                       alt={selected.bannerAlt}
                       ai={selected.bannerAi}
-                      style={{ display: "block", margin: "0 0 8px" }}
+                      style={{ display: "block", margin: "0 0 10px" }}
                       imgStyle={{ width: "100%", borderRadius: 4, display: "block" }}
                     />
                   ) : null}
-                  <p className="meta" style={{ margin: 0 }}>
-                    {selected.dateLabel} · {selected.city}
-                    {selected.future ? ` · ${labels.planned.toUpperCase()}` : ""}
+
+                  <p className="popup-kicker">
+                    <span>{selected.dateLabel}</span>
+                    <span aria-hidden>·</span>
+                    <span>{selected.isOnline ? labels.online : selected.city}</span>
+                    {selected.future ? <span className="popup-flag">{labels.planned}</span> : null}
                   </p>
                   <h4>{selected.eventName}</h4>
-                  {selected.eventUrl ? (
-                    <p className="meta" style={{ margin: "0 0 10px" }}>
-                      <a href={selected.eventUrl} target="_blank" rel="noopener noreferrer">
+
+                  {selected.briefing ? (
+                    <div className="popup-row">
+                      <span className="popup-label">{labels.briefing}</span>
+                      <span className="popup-value">
+                        <Link href={`/${locale}/briefings?briefing=${selected.briefing.id}#briefing-${selected.briefing.id}`}>
+                          {selected.briefing.title}
+                        </Link>
+                        {language ? <span className="popup-chip">{language}</span> : null}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {selected.identities.length > 0 ? (
+                    <div className="popup-row">
+                      <span className="popup-label">{labels.identity}</span>
+                      <span className="popup-value popup-identities">
+                        {selected.identities.map((i) => (
+                          <Link key={i.slug} className="popup-identity" href={`/${locale}/identitaeten/${i.slug}`}>
+                            <span aria-hidden className="popup-dot" style={{ background: i.color }} />
+                            {i.name}
+                          </Link>
+                        ))}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  <div className="popup-actions">
+                    {selected.published && selected.caseFilePublic && selected.slug ? (
+                      <Link className="btn solid sm" href={`/${locale}/einsaetze/${selected.slug}`}>
+                        {labels.openFile}
+                      </Link>
+                    ) : null}
+                    {selected.eventUrl ? (
+                      <a className="btn ghost sm" href={selected.eventUrl} target="_blank" rel="noopener noreferrer">
                         {labels.open} ↗
                       </a>
-                    </p>
-                  ) : null}
-                  {selected.published && selected.slug ? (
-                    <Link className="btn" href={`/${locale}/einsaetze/${selected.slug}`} style={{ width: "100%", justifyContent: "center", padding: "9px 14px" }}>
-                      {locale === "de" ? "Einsatzakte öffnen" : "Open mission file"}
-                    </Link>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               );
             })()

@@ -9,18 +9,21 @@ export interface AdminNavItem {
   section?: string;
 }
 
-// Vier Gruppen: die Einsatzzentrale (Dashboard), alles Redaktionelle unter
-// „Inhalte", die überblickenden Werkzeuge unter „Planung & Reichweite" und die
-// technischen Grundlagen unter „System".
+// Fünf Gruppen: die Einsatzzentrale (Dashboard), das laufende Geschäft unter
+// „Neuigkeiten", alles weitere Redaktionelle unter „Inhalte", die überblickenden
+// Werkzeuge unter „Planung & Reichweite" und die technischen Grundlagen unter
+// „System".
 export const adminNav: AdminNavItem[] = [
   { href: "/admin", label: "Einsatzzentrale", icon: "◈" },
+
+  // Neuigkeiten — was laufend gepflegt wird und deshalb ganz oben steht.
+  { href: "/admin/einsaetze", label: "Einsätze", icon: "◎", section: "Neuigkeiten" },
+  { href: "/admin/briefings", label: "Briefings", icon: "▶" },
+  { href: "/admin/depeschen", label: "Depeschen", icon: "≡" },
 
   // Inhalte — alles, was redaktionell gepflegt und veröffentlicht wird.
   { href: "/admin/startseite", label: "Startseite", icon: "⌂", section: "Inhalte" },
   { href: "/admin/identitaeten", label: "Identitäten", icon: "⬡" },
-  { href: "/admin/einsaetze", label: "Einsätze", icon: "◎" },
-  { href: "/admin/briefings", label: "Briefings", icon: "▶" },
-  { href: "/admin/depeschen", label: "Depeschen", icon: "≡" },
   { href: "/admin/publikationen", label: "Publikationen", icon: "★" },
   { href: "/admin/ausbildung", label: "Ausbildung & Auszeichnungen", icon: "✦" },
   { href: "/admin/lebenslauf", label: "Lebenslauf", icon: "⊞" },

@@ -21,11 +21,14 @@ export interface ExplorerMission {
   dateLabel: string;
   eventUrl: string | null;
   published: boolean;
+  caseFilePublic: boolean;
   bannerUrl: string | null;
   bannerAlt: string;
   bannerAi: boolean;
   identitySlugs: string[];
+  identities: { slug: string; name: string; color: string }[];
   tools: { slug: string; name: string }[];
+  briefing: { id: string; title: string; language: string } | null;
 }
 
 export interface ExplorerIdentity {
@@ -51,13 +54,26 @@ export interface ExplorerLabels {
   listTitle: string;
   colDate: string;
   colEvent: string;
+  colBriefing: string;
   colLocation: string;
   colStatus: string;
   statusPlanned: string;
   statusDone: string;
   onlineLocation: string;
   empty: string;
-  map: { all: string; done: string; planned: string; size: string; open: string; view: string };
+  map: {
+    all: string;
+    done: string;
+    planned: string;
+    size: string;
+    open: string;
+    view: string;
+    briefing: string;
+    identity: string;
+    language: string;
+    openFile: string;
+    online: string;
+  };
 }
 
 interface FilterState {
@@ -156,9 +172,6 @@ export default function MissionExplorer({
     () => [...new Set(missions.map((m) => m.year))].sort((a, b) => b - a),
     [missions],
   );
-  // Den Online-Filter nur anbieten, wenn es überhaupt Online-Einsätze gibt —
-  // sonst wirkt er (zu Recht) folgenlos und verwirrt nur.
-  const hasOnline = useMemo(() => missions.some((m) => m.isOnline), [missions]);
   const currentYear = new Date().getUTCFullYear();
   const selection: YearSelection = parseYearSelection(state.year);
   const needle = state.q.trim().toLowerCase();
@@ -186,25 +199,29 @@ export default function MissionExplorer({
     return state.werkzeug;
   }, [missions, state.werkzeug]);
 
-  const mapMissions: MapMission[] = filtered
-    .filter((m) => !m.isOnline)
-    .map((m) => ({
-      id: m.id,
-      slug: m.slug,
-      eventName: m.eventName,
-      city: `${m.city}, ${m.countryCode}`,
-      countryCode: m.countryCode,
-      lat: m.lat,
-      lon: m.lon,
-      year: m.year,
-      future: m.future,
-      dateLabel: m.dateLabel,
-      eventUrl: m.eventUrl,
-      published: m.published,
-      bannerUrl: m.bannerUrl,
-      bannerAlt: m.bannerAlt,
-      bannerAi: m.bannerAi,
-    }));
+  // Online-Einsätze sind mit auf der Karte (sie sitzen in der Antarktis) —
+  // ausgeblendet werden sie nur über den Online-Filter.
+  const mapMissions: MapMission[] = filtered.map((m) => ({
+    id: m.id,
+    slug: m.slug,
+    eventName: m.eventName,
+    city: m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`,
+    countryCode: m.countryCode,
+    lat: m.lat,
+    lon: m.lon,
+    year: m.year,
+    future: m.future,
+    isOnline: m.isOnline,
+    dateLabel: m.dateLabel,
+    eventUrl: m.eventUrl,
+    published: m.published,
+    caseFilePublic: m.caseFilePublic,
+    bannerUrl: m.bannerUrl,
+    bannerAlt: m.bannerAlt,
+    bannerAi: m.bannerAi,
+    identities: m.identities,
+    briefing: m.briefing,
+  }));
 
   const isDefault =
     state.q === "" && state.year === "alle" && state.ids.length === 0 && state.showOnline && state.werkzeug === "";
@@ -252,16 +269,14 @@ export default function MissionExplorer({
               )
               : null}
         </span>
-        {hasOnline ? (
-          <button
-            type="button"
-            className="chip sm"
-            aria-pressed={state.showOnline}
-            onClick={() => set({ showOnline: !state.showOnline })}
-          >
-            {labels.onlineToggle}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="chip sm"
+          aria-pressed={state.showOnline}
+          onClick={() => set({ showOnline: !state.showOnline })}
+        >
+          {labels.onlineToggle}
+        </button>
         {state.werkzeug ? (
           <button
             type="button"
@@ -350,6 +365,7 @@ export default function MissionExplorer({
             <tr>
               <th>{labels.colDate}</th>
               <th>{labels.colEvent}</th>
+              <th>{labels.colBriefing}</th>
               <th>{labels.colLocation}</th>
               <th>{labels.colStatus}</th>
             </tr>
@@ -359,10 +375,19 @@ export default function MissionExplorer({
               <tr key={m.id}>
                 <td className="meta">{m.dateLabel}</td>
                 <td>
-                  {m.published && m.slug ? (
+                  {m.published && m.caseFilePublic && m.slug ? (
                     <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link>
                   ) : (
                     m.eventName
+                  )}
+                </td>
+                <td>
+                  {m.briefing ? (
+                    <Link href={`/${locale}/briefings?briefing=${m.briefing.id}#briefing-${m.briefing.id}`}>
+                      {m.briefing.title}
+                    </Link>
+                  ) : (
+                    <span className="meta">—</span>
                   )}
                 </td>
                 <td>{m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`}</td>

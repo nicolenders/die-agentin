@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { runScheduledPublish } from "@/lib/publish/publish";
-import { processChannelTasks } from "@/lib/channels/process";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,12 +27,10 @@ export async function POST(request: Request) {
   }
   try {
     const result = await runScheduledPublish();
-    // Nach dem Veröffentlichen: Kanal-Aufgaben abarbeiten (LinkedIn auto).
-    const channels = await processChannelTasks();
     return NextResponse.json({
       ok: true,
       published: result.published,
-      channels,
+      publishedDispatches: result.publishedDispatches,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Job fehlgeschlagen.";

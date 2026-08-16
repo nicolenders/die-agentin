@@ -32,6 +32,53 @@ export async function updateAsset(formData: FormData): Promise<void> {
   redirect(`${LIST}?ok=updated`);
 }
 
+/** Beschreibung einer Präsentation ändern (Dateiname bleibt, wie er ist). */
+export async function updateDocument(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  if (!id) redirect(`${LIST}?tab=praesentationen&err=not-found`);
+
+  let failed = false;
+  try {
+    await db.mediaDocument.update({ where: { id }, data: { title: title || null } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?tab=praesentationen&err=failed`);
+  redirect(`${LIST}?tab=praesentationen&ok=updated`);
+}
+
+/**
+ * Löscht den Eintrag einer Präsentation. Hängt die Datei noch an einem Einsatz,
+ * wird abgelehnt — sonst zeigte der öffentliche Download ins Leere.
+ */
+export async function deleteDocument(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect(`${LIST}?tab=praesentationen&err=not-found`);
+
+  let outcome: "deleted" | "not-found" | "document-in-use" | "failed" = "failed";
+  try {
+    const doc = await db.mediaDocument.findUnique({ where: { id }, select: { blobPath: true } });
+    if (!doc) {
+      outcome = "not-found";
+    } else if ((await db.mission.count({ where: { slidesFilePath: doc.blobPath } })) > 0) {
+      outcome = "document-in-use";
+    } else {
+      await db.mediaDocument.delete({ where: { id } });
+      outcome = "deleted";
+    }
+  } catch {
+    outcome = "failed";
+  }
+  redirect(
+    outcome === "deleted"
+      ? `${LIST}?tab=praesentationen&ok=deleted`
+      : `${LIST}?tab=praesentationen&err=${outcome}`,
+  );
+}
+
 export async function deleteAsset(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");

@@ -79,27 +79,38 @@ export default async function BriefingEditPage({
         </button>
       </MaskBar>
 
-      <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
-        <form action={isEdit ? updateTalk : createTalk} id="talk-form">
-          {talk ? <input type="hidden" name="id" value={talk.id} /> : null}
+      {/* Zwei Spalten: links Titel und Inhalt, rechts die Einordnung. Spart
+          die halbe Seitenlänge gegenüber einem einspaltigen Endlosformular. */}
+      <form action={isEdit ? updateTalk : createTalk} id="talk-form" className="form-2col" style={{ marginTop: 16 }}>
+        {talk ? <input type="hidden" name="id" value={talk.id} /> : null}
+
+        <div className="card bracket">
+          <p className="eyebrow" style={{ marginTop: 0 }}>Titel und Inhalt</p>
           <label className="f">Titel (DE)</label>
           <input className="f" name="deTitle" defaultValue={de?.title ?? ""} required />
           <label className="f">Titel (EN)</label>
           <input className="f" name="enTitle" defaultValue={en?.title ?? ""} />
-          <label className="f">Vortragsinhalt (DE)</label>
+          <p className="meta" style={{ marginTop: 4 }}>
+            Nur Briefings mit englischem Titel erscheinen bei einem Einsatz mit Vortragssprache Englisch.
+          </p>
+          <label className="f" style={{ marginTop: 12 }}>Vortragsinhalt (DE)</label>
           <RichTextField name="deAbstract" defaultValue={de?.abstract ?? ""} ariaLabel="Vortragsinhalt DE" />
           <label className="f" style={{ marginTop: 12 }}>Vortragsinhalt (EN)</label>
           <RichTextField name="enAbstract" defaultValue={en?.abstract ?? ""} ariaLabel="Vortragsinhalt EN" />
+        </div>
+
+        <div className="card bracket">
+          <p className="eyebrow" style={{ marginTop: 0 }}>Einordnung</p>
           <label className="f">Kategorien (Mehrfachauswahl)</label>
           <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={talk?.categories.map((c) => c.id) ?? []} />
-          <label className="f">Zielgruppe (Mehrfachauswahl)</label>
+          <label className="f" style={{ marginTop: 12 }}>Zielgruppe (Mehrfachauswahl)</label>
           <CategoryMultiSelect
             name="audienceIds"
             options={audiences.map((a) => ({ id: a.id, name: a.nameDe }))}
             defaultSelected={talk?.audiences.map((a) => a.id) ?? []}
             emptyHint="Erst eine Zielgruppe anlegen (Übersicht → Zielgruppen)."
           />
-          <label className="f">Werkzeuge (Mehrfachauswahl)</label>
+          <label className="f" style={{ marginTop: 12 }}>Werkzeuge (Mehrfachauswahl)</label>
           <CategoryMultiSelect
             name="toolIds"
             options={tools.map((t) => ({ id: t.id, name: t.name }))}
@@ -107,21 +118,27 @@ export default async function BriefingEditPage({
             emptyHint="Werkzeuge werden bei den Identitäten gepflegt."
           />
           <p className="meta" style={{ marginTop: 4 }}>Werden bei einem Einsatz mit diesem Briefing automatisch übernommen (dort anpassbar).</p>
-          <label className="f">Level</label>
-          <input className="f" name="level" defaultValue={talk?.level ?? ""} placeholder="300" />
-          <label className="f">Dauer (Minuten)</label>
-          <input className="f" name="durationMin" type="number" defaultValue={talk?.durationMin ?? undefined} placeholder="45" />
+          <div style={{ display: "flex", gap: 12 }}>
+            <span style={{ flex: 1 }}>
+              <label className="f">Level</label>
+              <input className="f" name="level" defaultValue={talk?.level ?? ""} placeholder="300" />
+            </span>
+            <span style={{ flex: 1 }}>
+              <label className="f">Dauer (Minuten)</label>
+              <input className="f" name="durationMin" type="number" defaultValue={talk?.durationMin ?? undefined} placeholder="45" />
+            </span>
+          </div>
           {isEdit ? (
-            <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-              <input type="checkbox" name="active" defaultChecked={talk?.active ?? true} />
+            <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+              <input type="checkbox" name="active" defaultChecked={talk?.active ?? true} style={{ width: "auto" }} />
               Aktiv (im öffentlichen Katalog sichtbar)
             </label>
           ) : null}
           <button className="btn solid sm" type="submit" style={{ marginTop: 16 }}>
             {isEdit ? "Änderungen speichern" : "Briefing anlegen"}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
 
       {isEdit ? (
         <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>

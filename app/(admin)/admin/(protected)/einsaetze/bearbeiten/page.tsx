@@ -28,7 +28,7 @@ export default async function EinsatzBearbeitenPage({
   const { id } = await searchParams;
 
   let existingPins: { lat: number; lon: number }[] = [];
-  let talks: { id: string; name: string; toolIds: string[] }[] = [];
+  let talks: { id: string; name: string; toolIds: string[]; languages: string[] }[] = [];
   let categories: { id: string; name: string }[] = [];
   let allTools: { id: string; name: string }[] = [];
   let initial: MissionFormInitial = {
@@ -38,6 +38,7 @@ export default async function EinsatzBearbeitenPage({
     lat: 48.21,
     lon: 16.37,
     isOnline: false,
+    caseFilePublic: false,
     startDate: "",
     endDate: "",
     status: "PLANNED",
@@ -55,12 +56,18 @@ export default async function EinsatzBearbeitenPage({
   try {
     const [missions, talkRows, catRows, toolRows] = await Promise.all([
       db.mission.findMany({ select: { lat: true, lon: true } }),
-      db.talk.findMany({ include: { translations: { where: { locale: "de" } }, tools: { select: { id: true } } } }),
+      db.talk.findMany({ include: { translations: true, tools: { select: { id: true } } } }),
       db.taxonomy.findMany({ where: { kind: "TALK" }, orderBy: { sortOrder: "asc" }, select: { id: true, nameDe: true } }),
       db.tool.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
     ]);
     existingPins = missions;
-    talks = talkRows.map((t) => ({ id: t.id, name: t.translations[0]?.title ?? t.id, toolIds: t.tools.map((x) => x.id) }));
+    talks = talkRows.map((t) => ({
+      id: t.id,
+      name: t.translations.find((x) => x.locale === "de")?.title ?? t.translations[0]?.title ?? t.id,
+      toolIds: t.tools.map((x) => x.id),
+      // Ein Briefing „gibt es" in einer Sprache, sobald dort ein Titel steht.
+      languages: t.translations.filter((x) => x.title.trim().length > 0).map((x) => x.locale),
+    }));
     categories = catRows.map((c) => ({ id: c.id, name: c.nameDe }));
     allTools = toolRows.map((t) => ({ id: t.id, name: t.name }));
 
@@ -87,6 +94,7 @@ export default async function EinsatzBearbeitenPage({
           lat: mission.lat,
           lon: mission.lon,
           isOnline: mission.isOnline,
+          caseFilePublic: mission.caseFilePublic,
           startDate: mission.startDate.toISOString().slice(0, 10),
           endDate: mission.endDate ? mission.endDate.toISOString().slice(0, 10) : "",
           status: mission.status,

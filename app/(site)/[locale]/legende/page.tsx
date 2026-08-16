@@ -6,6 +6,7 @@ import { getLegend } from "@/lib/queries/legend";
 import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
 import { getPublishedIdentities, getIdentityTools } from "@/lib/queries/identities";
 import { getRadarTopics } from "@/lib/queries/records";
+import RadarTopics from "@/components/records/RadarTopics";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
 import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
@@ -238,20 +239,10 @@ export default async function LegendePage({
           <p className="eyebrow" style={{ marginTop: 32 }}>{isDe ? "Aktuelle Themen" : "Current topics"}</p>
           <p className="meta" style={{ marginTop: 0 }}>
             {isDe
-              ? "Womit ich mich gerade beschäftige. Farbe = zugeordnete Identität."
-              : "What I'm working on right now. Colour = linked identity."}
+              ? "Womit ich mich gerade beschäftige. Farbe = zugeordnete Identität. Gibt es Depeschen zum Thema, führt der Punkt dorthin."
+              : "What I'm working on right now. Colour = linked identity. Where dispatches exist, the topic links to them."}
           </p>
-          <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-            {radar.map((r) => (
-              <span
-                key={r.id}
-                title={r.note ?? undefined}
-                style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".14em", color: r.color ?? "var(--violet-text)", border: `1px solid ${r.color ?? "var(--line)"}`, padding: "6px 12px", borderRadius: "var(--r)" }}
-              >
-                {r.title}
-              </span>
-            ))}
-          </div>
+          <RadarTopics topics={radar} locale={locale} />
         </>
       ) : null}
 

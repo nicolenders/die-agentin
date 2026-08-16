@@ -13,16 +13,22 @@ import {
 } from "@/lib/queries/settings";
 import { serializeRichValue } from "@/lib/content/rich";
 
+/** Zurück auf das Register, aus dem gespeichert wurde — nicht auf das erste. */
+function tabPath(tab: string): string {
+  return `/admin/einstellungen?tab=${tab}`;
+}
+
 // Pflege der Rechtstexte (SPEC §12). Nur Struktur/Felder — der Inhalt kommt von
 // Nicole. Erste Zeile: Rollenprüfung.
 export async function saveLegalDoc(formData: FormData): Promise<void> {
   await requireAdmin();
+  const back = tabPath("recht");
   const docKey = String(formData.get("docKey") ?? "");
   const locale = String(formData.get("locale") ?? "de") === "en" ? "en" : "de";
   const title = String(formData.get("title") ?? "").trim();
   const body = serializeRichValue(String(formData.get("body") ?? ""));
   if (!(LEGAL_KEYS as readonly string[]).includes(docKey) || !title) {
-    redirect("/admin/einstellungen?err=missing-fields");
+    redirect(`${back}&err=missing-fields`);
   }
 
   let failed = false;
@@ -35,14 +41,15 @@ export async function saveLegalDoc(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect("/admin/einstellungen?err=failed");
-  redirect("/admin/einstellungen?ok=saved");
+  if (failed) redirect(`${back}&err=failed`);
+  redirect(`${back}&ok=saved`);
 }
 
 // Kontaktangaben (Phase 7.1): E-Mail + ladungsfähige Anschrift. Werden auch vom
 // Impressum gelesen. Rollenprüfung zuerst.
 export async function saveContactInfo(formData: FormData): Promise<void> {
   await requireAdmin();
+  const back = tabPath("kontakt");
   const email = String(formData.get("contactEmail") ?? "").trim();
   const postalAddress = String(formData.get("postalAddress") ?? "").trim();
   let failed = false;
@@ -59,14 +66,15 @@ export async function saveContactInfo(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect("/admin/einstellungen?err=failed");
-  redirect("/admin/einstellungen?ok=contact");
+  if (failed) redirect(`${back}&err=failed`);
+  redirect(`${back}&ok=contact`);
 }
 
 // Speaker-Kit-Bios (Anhang A): drei Längen je Sprache, als SiteSettings gepflegt
 // (Schlüssel bio.<länge>.<locale>). Die „Akte" liest sie aus. Rollenprüfung zuerst.
 export async function saveBios(formData: FormData): Promise<void> {
   await requireAdmin();
+  const back = tabPath("bios");
   const locale = String(formData.get("locale") ?? "de") === "en" ? "en" : "de";
   let failed = false;
   try {
@@ -81,6 +89,6 @@ export async function saveBios(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect("/admin/einstellungen?err=failed");
-  redirect("/admin/einstellungen?ok=bios");
+  if (failed) redirect(`${back}&err=failed`);
+  redirect(`${back}&ok=bios`);
 }

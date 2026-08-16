@@ -31,6 +31,51 @@ export async function resolveAssets(ids: string[], locale: Locale): Promise<Asse
   }
 }
 
+// --------------------------------------------------------- Präsentationen
+
+export interface MediaDocumentItem {
+  id: string;
+  url: string;
+  fileName: string;
+  title: string | null;
+  bytes: number;
+  createdAt: Date;
+  usages: MediaUsage[]; // Einsätze, die genau diese Datei als Folien führen
+}
+
+/**
+ * Hochgeladene Präsentationen (PDF) samt Verwendungsnachweis. Der Bezug zum
+ * Einsatz läuft über den Ablagepfad — dieselbe Datei kann an mehreren Einsätzen
+ * hängen, ohne dass ein Fremdschlüssel nötig wäre.
+ */
+export async function getMediaDocuments(): Promise<MediaDocumentItem[]> {
+  const [docs, missions] = await Promise.all([
+    db.mediaDocument.findMany({ orderBy: { createdAt: "desc" }, take: 500 }),
+    db.mission.findMany({
+      where: { slidesFilePath: { not: null } },
+      select: { eventName: true, slidesFilePath: true },
+    }),
+  ]);
+
+  const byPath = new Map<string, MediaUsage[]>();
+  for (const m of missions) {
+    if (!m.slidesFilePath) continue;
+    const list = byPath.get(m.slidesFilePath) ?? [];
+    list.push({ type: "Einsatz", label: m.eventName });
+    byPath.set(m.slidesFilePath, list);
+  }
+
+  return docs.map((d) => ({
+    id: d.id,
+    url: assetUrl(d.blobPath),
+    fileName: d.fileName,
+    title: d.title,
+    bytes: d.bytes,
+    createdAt: d.createdAt,
+    usages: byPath.get(d.blobPath) ?? [],
+  }));
+}
+
 // --------------------------------------------------------------- Bibliothek
 
 export interface MediaUsage {

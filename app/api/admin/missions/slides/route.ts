@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { getSessionUser } from "@/lib/auth/guard";
+import { db } from "@/lib/db";
 import { storeFile } from "@/lib/media/storage";
 import { assetUrl } from "@/lib/media/url";
 import { rateLimit } from "@/lib/rate-limit";
@@ -82,8 +83,26 @@ export async function POST(request: Request) {
   const originalName =
     file instanceof File ? safeName(file.name) : safeName("folien.pdf");
 
+  const title = (form.get("title") as string | null)?.trim() || null;
+
   try {
     const stored = await storeFile(`${id}.pdf`, buffer, "application/pdf");
+    // Zusätzlich in der Dokumentenliste vermerken, damit die Medienverwaltung
+    // („Präsentationen") die Datei kennt. Scheitert das, ist die Datei trotzdem
+    // hochgeladen — der Einsatz soll deswegen nicht ins Leere laufen.
+    try {
+      await db.mediaDocument.create({
+        data: {
+          blobPath: stored.path,
+          fileName: originalName,
+          title,
+          mime: "application/pdf",
+          bytes: buffer.byteLength,
+        },
+      });
+    } catch (error) {
+      console.error("[slides] Dokumenteintrag konnte nicht angelegt werden:", error);
+    }
     return NextResponse.json({
       path: stored.path,
       name: originalName,

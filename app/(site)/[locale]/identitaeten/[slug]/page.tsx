@@ -7,6 +7,7 @@ import { getIdentityBySlug } from "@/lib/queries/identities";
 import { formatDate } from "@/lib/format";
 import ContentArticle from "@/components/content/ContentArticle";
 import IdentityCoverageTabs from "@/components/identities/IdentityCoverageTabs";
+import RadarTopics from "@/components/records/RadarTopics";
 import AiBadge from "@/components/media/AiBadge";
 import styles from "./identityDetail.module.scss";
 
@@ -69,16 +70,11 @@ export default async function IdentityDetailPage({
         ))}
       </div>
     ) : null;
-  // Aktuelle Themen (Radar) dieser Identität — in ihrer Farbe.
+  // Aktuelle Themen (Radar) dieser Identität — in ihrer Farbe. Themen mit
+  // Depeschen führen auf die darauf gefilterte Depeschenliste.
   const topicChips =
     i.focusTopics.length > 0 ? (
-      <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-        {i.focusTopics.map((t) => (
-          <span key={t.title} title={t.note ?? undefined} style={{ ...chipStyle, borderColor: i.color, color: i.color }}>
-            {t.title}
-          </span>
-        ))}
-      </div>
+      <RadarTopics topics={i.focusTopics.map((t) => ({ ...t, color: i.color }))} locale={locale} />
     ) : null;
 
   return (
@@ -99,15 +95,14 @@ export default async function IdentityDetailPage({
       {/* Akte, aufgeschlagen: links der Text, rechts das Porträt. */}
       <div className={styles.spread} style={{ marginTop: 18 }}>
         <div className={`${styles.page} ${styles.spine}`}>
-          <p className="lead" style={{ marginTop: 0 }}>{i.role}{i.since ? ` · ${i.since}` : ""}</p>
+          {/* Keine Jahreszahl, keine Sprachliste: beides sagt über eine
+              Identität nichts aus, was die Rolle nicht besser sagt. */}
+          <p className="lead" style={{ marginTop: 0 }}>{i.role}</p>
           {i.tagline ? <p style={{ fontSize: 15, opacity: 0.9 }}>{i.tagline}</p> : null}
           {i.descriptionJson ? (
             <div style={{ marginTop: 16 }}>
               <ContentArticle bodyJson={i.descriptionJson} context="post" locale={locale} contentLocale={locale} />
             </div>
-          ) : null}
-          {i.languages.length > 0 ? (
-            <p className="meta" style={{ marginTop: 14 }}>{dict.identity.languagesLabel}: {i.languages.join(", ")}</p>
           ) : null}
         </div>
         <div className={styles.imagePage}>

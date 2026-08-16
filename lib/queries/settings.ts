@@ -141,19 +141,6 @@ export interface ShareProfile {
   url: string;
 }
 
-/** true, wenn LinkedIn verbunden und das Zugriffstoken (noch) gültig ist. */
-export async function getLinkedInConnected(): Promise<boolean> {
-  try {
-    const a = await db.channelAccount.findUnique({
-      where: { platform: "LINKEDIN" },
-      select: { connected: true, tokenRef: true, expiresAt: true },
-    });
-    return Boolean(a?.connected && a.tokenRef && (!a.expiresAt || a.expiresAt > new Date()));
-  } catch {
-    return false;
-  }
-}
-
 // Teilbare Profile mit Anzeige-Metadaten (Label, Icon-Kürzel) für das Teilen-
 // Popup. GitHub/YouTube und leere Profile sind bereits ausgenommen.
 export async function getShareProfiles(): Promise<ShareProfile[]> {

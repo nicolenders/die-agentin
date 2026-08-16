@@ -326,7 +326,8 @@ export interface IdentityDetail extends IdentityCard {
   missions: { slug: string | null; eventName: string; city: string; date: Date }[];
   briefings: { title: string }[];
   // „Womit ich mich gerade beschäftige" — je Identität gepflegte Radar-Themen.
-  focusTopics: { title: string; note: string | null }[];
+  // `dispatchCount` entscheidet, ob das Thema öffentlich anklickbar ist.
+  focusTopics: { id: string; title: string; note: string | null; dispatchCount: number }[];
   // Volle Datensätze, damit die Detailseite dieselben Layouts wie die
   // eigenständigen Seiten (Publikationen, Ausbildung) rendern kann.
   publications: PublicationItem[];
@@ -346,7 +347,15 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       talks: { include: { translations: true } },
       publications: { include: { translations: true, coverAsset: true } },
       certifications: { include: { logo: true } },
-      focusTopics: { where: { active: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }] },
+      focusTopics: {
+        where: { active: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+        include: {
+          _count: {
+            select: { dispatches: { where: { status: "PUBLISHED", translations: { some: { state: "REVIEWED" } } } } },
+          },
+        },
+      },
     },
   });
   if (!r) return null;
@@ -381,8 +390,10 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       }),
     briefings: r.talks.map((t) => ({ title: trans(t.translations)?.title ?? "" })).filter((b) => b.title),
     focusTopics: r.focusTopics.map((f) => ({
+      id: f.id,
       title: locale === "en" && f.titleEn ? f.titleEn : f.titleDe,
       note: f.note,
+      dispatchCount: f._count.dispatches,
     })),
     publications: r.publications
       .map((p): PublicationItem => {

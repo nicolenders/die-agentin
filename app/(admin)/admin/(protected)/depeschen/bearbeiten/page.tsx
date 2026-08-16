@@ -21,13 +21,20 @@ export default async function DispatchEditPage({
 }) {
   const { id, ok, err } = await searchParams;
 
-  const [identities, topics, dispatch] = await Promise.all([
+  const [identities, topics, focusTopics, dispatch] = await Promise.all([
     db.identity.findMany({ orderBy: { sortOrder: "asc" } }),
     db.taxonomy.findMany({ where: { kind: "DOSSIER" }, orderBy: { sortOrder: "asc" } }),
+    db.focusTopic.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }], select: { id: true, titleDe: true } }),
     id
       ? db.dispatch.findUnique({
           where: { id },
-          include: { translations: true, identities: { select: { id: true } }, topics: { select: { id: true } }, heroAsset: true },
+          include: {
+            translations: true,
+            identities: { select: { id: true } },
+            topics: { select: { id: true } },
+            focusTopics: { select: { id: true } },
+            heroAsset: true,
+          },
         })
       : Promise.resolve(null),
   ]);
@@ -38,6 +45,7 @@ export default async function DispatchEditPage({
   const en = dispatch?.translations.find((t) => t.locale === "en");
   const identityOpts = identities.map((i) => ({ id: i.id, name: identityDisplayName(i, "de") }));
   const topicOpts = topics.map((t) => ({ id: t.id, name: t.nameDe }));
+  const focusOpts = focusTopics.map((t) => ({ id: t.id, name: t.titleDe }));
   const action = isNew ? createDispatch : updateDispatch;
 
   const stammdaten = (
@@ -67,6 +75,18 @@ export default async function DispatchEditPage({
       <div>
         <label className="f">Fachgebiete (Topics)</label>
         <CategoryMultiSelect options={topicOpts} name="topicIds" defaultSelected={dispatch?.topics.map((t) => t.id) ?? []} emptyHint="Keine Fachgebiete." />
+      </div>
+      <div>
+        <label className="f">Radar-Themen (Aufklärung)</label>
+        <CategoryMultiSelect
+          options={focusOpts}
+          name="focusTopicIds"
+          defaultSelected={dispatch?.focusTopics.map((t) => t.id) ?? []}
+          emptyHint="Noch keine Themen unter „Aufklärung (Radar)“ angelegt."
+        />
+        <p className="meta" style={{ marginTop: 6 }}>
+          Öffentlich wird der Radar-Punkt dadurch anklickbar und filtert die Depeschenliste auf dieses Thema.
+        </p>
       </div>
       <div className="grid g3" style={{ gap: 14, alignItems: "start" }}>
         <label className="f">Quelle-URL (kuratierter Fund)

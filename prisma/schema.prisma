@@ -121,9 +121,14 @@ model Mission {
   countryCode   String    @db.Char(2)
   lat           Float
   lon           Float
-  // Online-/Remote-Veranstaltung ohne festen Ort. Wird auf der Karte nicht
-  // geplottet und kann in der Einsatzliste aus-/eingeblendet werden.
+  // Online-/Remote-Veranstaltung ohne festen Ort. Wird auf der Karte in der
+  // Antarktis geplottet (dort findet nichts statt — der Ort ist erkennbar
+  // symbolisch) und kann in der Einsatzliste aus-/eingeblendet werden.
   isOnline      Boolean   @default(false)
+  // Steuert, ob die öffentliche Einsatzakte (Detailseite) verlinkt wird. Ohne
+  // diese Freigabe erscheint weder im Karten-Popup noch in der Liste ein Link —
+  // so führt kein Button auf eine Seite, die noch keinen Inhalt hat. Default aus.
+  caseFilePublic Boolean  @default(false)
   startDate     DateTime
   endDate       DateTime?
   status        String    @default("PLANNED") // MissionStatus
@@ -610,6 +615,9 @@ model Dispatch {
   topics       Taxonomy[]    @relation("DispatchTopics")
   tags         Tag[]         @relation("DispatchTags")
   tasks        ChannelTask[]
+  // Radar-Themen (Aufklärung), zu denen diese Depesche gehört. Öffentlich sind
+  // die Radar-Punkte anklickbar und filtern die Depeschenliste darauf.
+  focusTopics  FocusTopic[]  @relation("DispatchFocusTopics")
 
   @@index([status, publishAt])
   @@index([format])
@@ -712,8 +720,30 @@ model FocusTopic {
   // Optionale Zuordnung zu Identitäten: „Womit ich mich gerade beschäftige" je
   // Identität. Ohne Zuordnung bleibt ein Thema global (Radar/Ausbildung).
   identities Identity[] @relation("IdentityFocusTopics")
+  // Depeschen zu diesem Thema. Erst wenn mindestens eine veröffentlichte
+  // Depesche verknüpft ist, wird der Radar-Punkt öffentlich anklickbar.
+  dispatches Dispatch[] @relation("DispatchFocusTopics")
 
   @@index([active, sortOrder])
+}
+
+// ---------------------------------------------------------------------------
+// Dokumente (PDF) in der Medienverwaltung — z. B. Vortragsfolien zu einem
+// Einsatz. Bewusst getrennt von MediaAsset: Bilder haben Varianten, Alt-Texte
+// und Bildherkunft, ein PDF nicht. Der Bezug zum Einsatz läuft weiterhin über
+// Mission.slidesFilePath (der Pfad ist der gemeinsame Schlüssel), damit
+// bestehende Einsätze unverändert weiterfunktionieren.
+// ---------------------------------------------------------------------------
+model MediaDocument {
+  id        String   @id @default(cuid())
+  blobPath  String // Pfad in der Medienablage, wie Mission.slidesFilePath
+  fileName  String // Originalname für den Download-Link
+  title     String? // optionale Beschreibung („Folien Copilot-Keynote")
+  mime      String   @default("application/pdf")
+  bytes     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model HomeContent {

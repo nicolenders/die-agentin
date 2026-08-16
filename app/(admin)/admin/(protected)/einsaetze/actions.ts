@@ -67,6 +67,7 @@ export interface SaveMissionInput {
   lat: number;
   lon: number;
   isOnline?: boolean;
+  caseFilePublic?: boolean;
   startDate: string; // YYYY-MM-DD
   endDate?: string | null; // YYYY-MM-DD, optional
   status: string; // MissionStatus
@@ -133,6 +134,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         lat: input.lat,
         lon: input.lon,
         isOnline: input.isOnline ?? false,
+        caseFilePublic: input.caseFilePublic ?? false,
         startDate,
         endDate,
         status,
@@ -149,6 +151,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         lat: input.lat,
         lon: input.lon,
         isOnline: input.isOnline ?? false,
+        caseFilePublic: input.caseFilePublic ?? false,
         startDate,
         endDate,
         status,

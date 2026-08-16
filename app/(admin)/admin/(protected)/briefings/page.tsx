@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getBriefingRanking } from "@/lib/queries/briefings";
-import { getShareTemplates, getShareProfiles, getLinkedInConnected } from "@/lib/queries/settings";
+import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { identityDisplayName } from "@/lib/identities";
 import { formatDate } from "@/lib/format";
@@ -39,20 +39,29 @@ const TABS = [
 export default async function BriefingsAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; von?: string; bis?: string; ok?: string; err?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    von?: string;
+    bis?: string;
+    ok?: string;
+    err?: string;
+    q?: string;
+    kategorie?: string;
+    sichtbar?: string;
+  }>;
 }) {
-  const { tab, von, bis, ok, err } = await searchParams;
+  const { tab, von, bis, ok, err, q, kategorie, sichtbar } = await searchParams;
   const active = TABS.find((t) => t.id === tab)?.id ?? "alle";
+  const term = (q ?? "").trim().toLowerCase();
+  const categoryFilter = (kategorie ?? "").trim();
+  const visibilityFilter = sichtbar === "ja" || sichtbar === "nein" ? sichtbar : "";
+  const isFiltered = term !== "" || categoryFilter !== "" || visibilityFilter !== "";
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  const [templates, shareProfiles, linkedInConnected] = await Promise.all([
-    getShareTemplates(),
-    getShareProfiles(),
-    getLinkedInConnected(),
-  ]);
+  const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
 
   let categories: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
   let audienceTags: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
-  let talks: { id: string; title: string; category: string; audience: string; level: string | null; durationMin: number | null; deliveries: number; active: boolean; share: { textDe: string; textEn: string } | null }[] = [];
+  let talks: { id: string; title: string; categoryIds: string[]; category: string; audience: string; level: string | null; durationMin: number | null; deliveries: number; active: boolean; share: { textDe: string; textEn: string } | null }[] = [];
   let dbError = false;
   try {
     const [cats, auds, talkRows] = await Promise.all([
@@ -79,6 +88,7 @@ export default async function BriefingsAdminPage({
       return {
         id: t.id,
         title,
+        categoryIds: t.categories.map((c) => c.id),
         category: t.categories.map((c) => c.nameDe).join(", ") || "—",
         audience: t.audiences.map((a) => a.nameDe).join(", ") || "—",
         level: t.level,
@@ -91,6 +101,16 @@ export default async function BriefingsAdminPage({
   } catch {
     dbError = true;
   }
+
+  // Filter wirken nur auf die Anzeige; die Reihenfolge-Pfeile beziehen sich
+  // weiter auf die vollständige Liste (sonst würde Sortieren im Filter irren).
+  const visibleTalks = talks.filter((t) => {
+    if (term && !t.title.toLowerCase().includes(term)) return false;
+    if (categoryFilter && !t.categoryIds.includes(categoryFilter)) return false;
+    if (visibilityFilter === "ja" && !t.active) return false;
+    if (visibilityFilter === "nein" && t.active) return false;
+    return true;
+  });
 
   const ranking =
     active === "auswertung"
@@ -122,15 +142,48 @@ export default async function BriefingsAdminPage({
               <p className="eyebrow" style={{ margin: 0 }}>Alle Briefings</p>
               <Link className="btn solid sm" href="/admin/briefings/bearbeiten" style={{ marginLeft: "auto" }}>+ Neues Briefing</Link>
             </div>
-            {talks.length === 0 ? (
-              <p className="muted" style={{ marginTop: 12 }}>Noch keine Briefings im Repertoire.</p>
+
+            <form method="get" className="list-filter" role="search">
+              <input type="hidden" name="tab" value="alle" />
+              <label className="f">
+                Suche
+                <input className="f" type="search" name="q" defaultValue={q ?? ""} placeholder="Titel …" style={{ minWidth: 220 }} />
+              </label>
+              <label className="f">
+                Kategorie
+                <select className="f" name="kategorie" defaultValue={categoryFilter} style={{ minWidth: 170 }}>
+                  <option value="">Alle</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.nameDe}</option>)}
+                </select>
+              </label>
+              <label className="f">
+                Auf Website
+                <select className="f" name="sichtbar" defaultValue={visibilityFilter} style={{ minWidth: 140 }}>
+                  <option value="">Alle</option>
+                  <option value="ja">Sichtbar</option>
+                  <option value="nein">Verborgen</option>
+                </select>
+              </label>
+              <button className="btn solid sm" type="submit">Filtern</button>
+              {isFiltered ? <Link className="btn ghost sm" href="/admin/briefings?tab=alle">Zurücksetzen</Link> : null}
+              <span className="meta">{visibleTalks.length} von {talks.length}</span>
+            </form>
+
+            {visibleTalks.length === 0 ? (
+              <p className="muted" style={{ marginTop: 12 }}>
+                {talks.length === 0
+                  ? "Noch keine Briefings im Repertoire."
+                  : "Kein Briefing passt zu dieser Auswahl. Filter lockern oder zurücksetzen."}
+              </p>
             ) : (
               <table style={{ marginTop: 12 }}>
                 <thead>
                   <tr><th style={{ width: 60 }}>Reihenf.</th><th>Titel</th><th>Kategorie</th><th>Zielgruppe</th><th>Einsätze</th><th>Auf Website</th><th></th></tr>
                 </thead>
                 <tbody>
-                  {talks.map((t, i) => (
+                  {visibleTalks.map((t) => {
+                    const i = talks.findIndex((x) => x.id === t.id);
+                    return (
                     <tr key={t.id}>
                       <td style={{ whiteSpace: "nowrap" }}>
                         <form action={reorderTalk} style={{ display: "inline" }}>
@@ -159,7 +212,7 @@ export default async function BriefingsAdminPage({
                       <td style={{ whiteSpace: "nowrap" }}>
                         {t.share ? (
                           <>
-                            <SharePanel title={t.title} textDe={t.share.textDe} textEn={t.share.textEn} profiles={shareProfiles} linkedInConnected={linkedInConnected} />{" "}
+                            <SharePanel title={t.title} textDe={t.share.textDe} textEn={t.share.textEn} profiles={shareProfiles} />{" "}
                           </>
                         ) : null}
                         <Link className="btn ghost sm" href={`/admin/briefings/bearbeiten?id=${t.id}`}>Bearbeiten</Link>{" "}
@@ -169,7 +222,8 @@ export default async function BriefingsAdminPage({
                         </form>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}

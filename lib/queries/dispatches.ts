@@ -25,6 +25,8 @@ export interface DispatchCard {
   reviewedAt: Date | null;
   identities: IdentityRef[];
   topics: string[];
+  /** Radar-Themen (Aufklärung) — Grundlage des „Thema"-Filters. */
+  focusTopicIds: string[];
   fallback: boolean;
   contentLocale: Locale;
 }
@@ -50,6 +52,7 @@ async function loadDispatches(locale: Locale, nowMs: number): Promise<DispatchCa
       translations: true,
       identities: { orderBy: { sortOrder: "asc" } },
       topics: { orderBy: { sortOrder: "asc" } },
+      focusTopics: { select: { id: true } },
     },
   });
   const cards: DispatchCard[] = [];
@@ -68,6 +71,7 @@ async function loadDispatches(locale: Locale, nowMs: number): Promise<DispatchCa
       reviewedAt: d.reviewedAt,
       identities: mapIdentities(d.identities, locale),
       topics: d.topics.map((t) => (locale === "en" ? t.nameEn : t.nameDe)),
+      focusTopicIds: d.focusTopics.map((t) => t.id),
       fallback: picked.fallback,
       contentLocale: picked.contentLocale,
     });

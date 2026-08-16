@@ -1,5 +1,6 @@
 import Link from "next/link";
 import styles from "./SiteFooter.module.scss";
+import BrandMark from "@/components/BrandMark";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n";
 import { getSocialLinks } from "@/lib/queries/settings";
@@ -22,9 +23,7 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
       <div className={`wrap ${styles.grid}`}>
         <div>
           <div className={styles.brand}>
-            <span className={styles.sigil} aria-hidden="true" title="Nicole Enders is Online">
-              NEO
-            </span>
+            <BrandMark size={38} className={styles.sigil} />
             <span className={styles.brandText}>
               <b>{dict.brand.name}</b>
               <span>{dict.brand.domain}</span>

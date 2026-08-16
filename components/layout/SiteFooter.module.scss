@@ -37,16 +37,9 @@
   gap: 11px;
   margin-bottom: 12px;
 }
+// Bildmarke statt Buchstabenkreis (siehe SiteHeader.module.scss).
 .sigil {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--violet);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--violet-bright);
+  flex-shrink: 0;
 }
 .brandText b {
   font-family: var(--display);

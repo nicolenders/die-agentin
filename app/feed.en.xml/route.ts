@@ -25,6 +25,8 @@ export async function GET() {
     feedUrl: `${SITE}/feed.en.xml`,
     locale: "en",
     items,
+    // Bildmarke im Feed — Reader zeigen sie neben dem Titel.
+    imageUrl: `${SITE}/brand/icon-tile-192.png`,
   });
   return new Response(xml, {
     headers: {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BrandMark from "@/components/BrandMark";
 import { adminNav } from "@/lib/admin-nav";
 
 // Seitliche Navigation der Redaktion. Client-Komponente wegen der Ableitung des
@@ -18,9 +19,7 @@ export default function AdminSidebar() {
   return (
     <aside className="aside">
       <div className="brand">
-        <span className="sigil" aria-hidden="true">
-          N.E
-        </span>
+        <BrandMark size={36} className="sigil" />
         <span>
           <b>DIE AGENTIN</b>
           <small>ZENTRALE</small>

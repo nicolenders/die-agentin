@@ -1,5 +1,24 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { ImageResponse } from "next/og";
 import { isLocale } from "@/lib/i18n/config";
+
+export const runtime = "nodejs";
+
+/**
+ * Bildmarke als Data-URI einbetten. `next/og` kann keine relativen Pfade laden;
+ * die Datei wird deshalb gelesen und inline gesetzt. Fehlt sie (oder liegt sie
+ * im Standalone-Build nicht vor), fällt das Bild auf den gezeichneten Kreis
+ * zurück — das Sharing-Bild soll nie ganz ausfallen.
+ */
+async function loadMark(): Promise<string | null> {
+  try {
+    const file = await readFile(path.join(process.cwd(), "public", "brand", "mark-128.png"));
+    return `data:image/png;base64,${file.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
 
 // Dynamisches Social-Sharing-Bild (OpenGraph/Twitter) im Marken-Look. Erscheint
 // automatisch, wenn ein Link auf LinkedIn/X/Slack geteilt wird — wichtig, weil
@@ -17,6 +36,7 @@ export default async function OpengraphImage({
 }) {
   const { locale } = await params;
   const isDe = !isLocale(locale) || locale === "de";
+  const mark = await loadMark();
   const tagline = isDe
     ? "Microsoft AI & Modern Work. Keine losen Enden."
     : "Microsoft AI & Modern Work. No loose ends.";
@@ -44,23 +64,27 @@ export default async function OpengraphImage({
         <div style={{ position: "absolute", bottom: 40, right: 40, width: 34, height: 34, borderBottom: "2px solid #A855F7", borderRight: "2px solid #A855F7" }} />
 
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div
-            style={{
-              width: 66,
-              height: 66,
-              borderRadius: 999,
-              border: "2px solid #8B5CF6",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#C4A2FC",
-              fontSize: 22,
-              fontFamily: "monospace",
-              letterSpacing: 2,
-            }}
-          >
-            N.E
-          </div>
+          {mark ? (
+            <img src={mark} alt="" width={78} height={78} />
+          ) : (
+            <div
+              style={{
+                width: 66,
+                height: 66,
+                borderRadius: 999,
+                border: "2px solid #8B5CF6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#C4A2FC",
+                fontSize: 22,
+                fontFamily: "monospace",
+                letterSpacing: 2,
+              }}
+            >
+              N.E
+            </div>
+          )}
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 6 }}>DIE AGENTIN</div>
             <div style={{ fontSize: 15, color: "#A093C0", fontFamily: "monospace", letterSpacing: 4 }}>

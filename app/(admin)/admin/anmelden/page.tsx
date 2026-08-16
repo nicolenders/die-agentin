@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/guard";
+import BrandMark from "@/components/BrandMark";
 import { signInAction, signOutAction } from "../actions";
 
 export const metadata = { title: "Anmelden · Zentrale" };
@@ -14,9 +15,7 @@ export default async function SignInPage() {
     <div className="signinShell">
       <div className="card bracket signinCard">
         <div className="brand" style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          <span className="sigil" aria-hidden="true">
-            N.E
-          </span>
+          <BrandMark size={40} className="sigil" />
           <span>
             <b style={{ fontFamily: "var(--display)", letterSpacing: ".13em" }}>
               DIE AGENTIN

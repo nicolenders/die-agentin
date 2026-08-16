@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./SiteHeader.module.scss";
+import BrandMark from "@/components/BrandMark";
 import { locales, type Locale } from "@/lib/i18n/config";
 
 export interface HeaderNavItem {
@@ -44,9 +45,7 @@ export default function SiteHeader({
     <header className={styles.top}>
       <div className={`wrap ${styles.topbar}`}>
         <Link className={styles.brand} href={`/${locale}`} aria-label={brand.name}>
-          <span className={styles.sigil} aria-hidden="true" title="Nicole Enders is Online">
-            NEO
-          </span>
+          <BrandMark size={40} className={styles.sigil} />
           <span className={styles.brandText}>
             <b>{brand.name}</b>
             <span>{brand.domain}</span>

@@ -18,6 +18,8 @@ export interface FeedInput {
   feedUrl: string;
   locale: Locale;
   items: FeedItem[];
+  /** Bildmarke des Feeds — Reader zeigen sie neben dem Titel (optional). */
+  imageUrl?: string;
 }
 
 export function escapeXml(input: string): string {
@@ -51,7 +53,16 @@ export function buildRssFeed(input: FeedInput): string {
     <link>${escapeXml(input.siteUrl)}</link>
     <description>${escapeXml(input.description)}</description>
     <language>${input.locale}</language>
-    <atom:link href="${escapeXml(input.feedUrl)}" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(input.feedUrl)}" rel="self" type="application/rss+xml" />${
+      input.imageUrl
+        ? `
+    <image>
+      <url>${escapeXml(input.imageUrl)}</url>
+      <title>${escapeXml(input.title)}</title>
+      <link>${escapeXml(input.siteUrl)}</link>
+    </image>`
+        : ""
+    }
 ${items}
   </channel>
 </rss>`;

@@ -29,4 +29,21 @@ describe("feed", () => {
     expect(xml).toContain("<guid isPermaLink=\"false\">post-1</guid>");
     expect(xml).toContain("28 Jul 2026");
   });
+
+  it("nimmt die Bildmarke auf, wenn eine angegeben ist", () => {
+    const base = {
+      title: "Depeschen",
+      description: "Feed",
+      siteUrl: "https://nicolenders.com/de",
+      feedUrl: "https://nicolenders.com/feed.xml",
+      locale: "de" as const,
+      items: [],
+    };
+    const withImage = buildRssFeed({ ...base, imageUrl: "https://nicolenders.com/brand/icon-tile-192.png" });
+    expect(withImage).toContain("<image>");
+    expect(withImage).toContain("<url>https://nicolenders.com/brand/icon-tile-192.png</url>");
+
+    // Ohne Angabe bleibt der Feed unverändert — kein leeres <image>-Element.
+    expect(buildRssFeed(base)).not.toContain("<image>");
+  });
 });

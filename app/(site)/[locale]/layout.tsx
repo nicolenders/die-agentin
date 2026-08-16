@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import "@/styles/globals.scss";
+import { brandIcons, brandViewport } from "@/lib/brand";
 import { isLocale, locales, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { mainNav } from "@/lib/nav";
@@ -17,6 +18,8 @@ import { personNode, webSiteNode, graph } from "@/lib/seo/jsonld";
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
+
+export const viewport: Viewport = brandViewport;
 
 export async function generateMetadata({
   params,
@@ -58,6 +61,7 @@ export async function generateMetadata({
       locale: locale === "de" ? "de_DE" : "en_US",
       type: "website",
     },
+    icons: brandIcons,
     robots: { index: true, follow: true },
   };
 }

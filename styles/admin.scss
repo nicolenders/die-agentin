@@ -43,17 +43,10 @@
   gap: 11px;
   margin-bottom: 8px;
 }
-.aside .sigil {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--violet);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--violet-bright);
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.3) inset;
+// Bildmarke statt Buchstabenkreis — die Grafik bringt ihren Schein selbst mit.
+.aside .sigil,
+.signinCard .sigil {
+  flex-shrink: 0;
 }
 .aside .brand b {
   font-family: var(--display);

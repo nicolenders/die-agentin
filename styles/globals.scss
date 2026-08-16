@@ -149,6 +149,12 @@ h1 {
   font-size: 13px;
   padding: 8px 12px;
   cursor: pointer;
+  // Als Link gerenderte Register (URL-gestützte Tabs) sollen wie Register
+  // aussehen, nicht wie Fließtext-Links.
+  text-decoration: none;
+}
+.tab:hover {
+  color: var(--text);
 }
 .tab.active {
   color: var(--text);
@@ -1195,20 +1201,144 @@ svg.map {
   stroke-width: 0.8;
   vector-effect: non-scaling-stroke;
 }
+// Radar-Themen („Aktuelle Themen"). Mit Depeschen dahinter sind sie Links,
+// ohne bleiben sie stille Etiketten.
+.radar-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.radar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--violet-text);
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  border-radius: var(--r);
+  text-decoration: none;
+}
+a.radar-chip {
+  transition:
+    background 0.12s ease,
+    box-shadow 0.12s ease;
+}
+a.radar-chip:hover,
+a.radar-chip:focus-visible {
+  background: rgba(139, 92, 246, 0.14);
+  box-shadow: 0 0 0 1px currentcolor inset;
+}
+.radar-count {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  border-radius: 999px;
+  border: 1px solid currentcolor;
+  padding: 1px 6px;
+  opacity: 0.85;
+}
+
 .popup {
   position: absolute;
-  width: 264px;
-  background: rgba(9, 4, 20, 0.97);
+  width: 300px;
+  max-width: calc(100% - 16px);
+  background:
+    linear-gradient(180deg, rgba(139, 92, 246, 0.14), rgba(139, 92, 246, 0) 120px),
+    rgba(9, 4, 20, 0.97);
   border: 1px solid var(--violet);
   border-radius: var(--r);
-  padding: 15px;
+  padding: 16px 16px 14px;
   font-size: 13px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65);
   z-index: 5;
 }
 .popup h4 {
-  margin: 6px 0;
-  font-size: 15px;
+  margin: 4px 0 10px;
+  font-size: 16.5px;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+// Kopfzeile: Datum · Ort, optional die Marke „geplant".
+.popup-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding-right: 18px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.popup-flag {
+  color: var(--signal);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 3px;
+  padding: 2px 6px;
+  letter-spacing: 0.12em;
+}
+// Beschriftete Zeilen (Briefing, Identität) — Label schmal, Wert füllt den Rest.
+.popup-row {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line-soft);
+  align-items: baseline;
+}
+.popup-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.popup-value {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.popup-chip {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--violet-text, var(--muted));
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
+.popup-identities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.popup-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.popup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.popup-actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
 }
 .popup .close {
   position: absolute;
@@ -1219,6 +1349,9 @@ svg.map {
   color: var(--muted);
   cursor: pointer;
   font-size: 16px;
+}
+.popup .close:hover {
+  color: var(--text);
 }
 .map-legend {
   display: flex;

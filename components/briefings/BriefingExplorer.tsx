@@ -1,6 +1,17 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+
+/** Ein Einsatz, bei dem das Briefing gehalten wurde (bereits aufbereitet). */
+export interface ExplorerMissionRow {
+  id: string;
+  href: string | null; // null = keine öffentliche Einsatzakte
+  eventName: string;
+  location: string;
+  dateLabel: string;
+  languageLabel: string;
+}
 
 export interface ExplorerItem {
   id: string;
@@ -14,6 +25,7 @@ export interface ExplorerItem {
   deCount: number;
   enCount: number;
   total: number;
+  missions: ExplorerMissionRow[];
   abstractNode: ReactNode; // serverseitig gerenderter Rich-Text
 }
 
@@ -55,6 +67,17 @@ export default function BriefingExplorer({
       else next.add(id);
       return next;
     });
+
+  // Direktlink aus der Einsatzliste („?briefing=<id>"): passendes Briefing
+  // aufklappen. Der Anker im Link erledigt das Scrollen.
+  /* eslint-disable react-hooks/set-state-in-effect -- Einmaliges Öffnen des per
+     Deep-Link adressierten Briefings. Server und erste Client-Ausgabe rendern
+     alles zugeklappt; erst danach wird die URL gelesen (keine Hydrationsabweichung). */
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("briefing");
+    if (wanted) setOpenIds((prev) => new Set(prev).add(wanted));
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const max = useMemo(() => items.reduce((m, i) => Math.max(m, i.total), 1), [items]);
 
@@ -131,7 +154,7 @@ export default function BriefingExplorer({
           {filtered.map((it) => {
             const open = openIds.has(it.id);
             return (
-              <div key={it.id} className={`acc-item${open ? " open" : ""}`}>
+              <div key={it.id} id={`briefing-${it.id}`} className={`acc-item${open ? " open" : ""}`}>
                 <button
                   type="button"
                   className="acc-head"
@@ -182,6 +205,34 @@ export default function BriefingExplorer({
                       <span className={`lang-badge ${it.deCount > 0 ? "on" : ""}`}>DE {it.deCount > 0 ? `✓ ${it.deCount}×` : "—"}</span>{" "}
                       <span className={`lang-badge ${it.enCount > 0 ? "on" : ""}`}>EN {it.enCount > 0 ? `✓ ${it.enCount}×` : "—"}</span>
                     </p>
+
+                    {it.missions.length > 0 ? (
+                      <>
+                        <p className="eyebrow" style={{ marginTop: 18 }}>
+                          {isDe ? "Gehalten bei" : "Delivered at"}
+                        </p>
+                        <table style={{ marginTop: 8 }}>
+                          <thead>
+                            <tr>
+                              <th>{isDe ? "Datum" : "Date"}</th>
+                              <th>{isDe ? "Veranstaltung" : "Event"}</th>
+                              <th>{isDe ? "Ort" : "Location"}</th>
+                              <th>{isDe ? "Sprache" : "Language"}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {it.missions.map((m) => (
+                              <tr key={m.id}>
+                                <td className="meta">{m.dateLabel}</td>
+                                <td>{m.href ? <Link href={m.href}>{m.eventName}</Link> : m.eventName}</td>
+                                <td>{m.location}</td>
+                                <td className="meta">{m.languageLabel}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

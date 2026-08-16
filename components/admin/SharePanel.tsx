@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { publishToLinkedIn } from "@/app/(admin)/admin/(protected)/kanaele/linkedin-actions";
+import { showToast } from "@/lib/admin/toast";
 
 export interface SharePanelProfile {
   key: string;
@@ -18,36 +18,19 @@ export default function SharePanel({
   textDe,
   textEn,
   profiles,
-  linkedInConnected = false,
 }: {
   title: string;
   textDe: string;
   textEn: string;
   profiles: SharePanelProfile[];
-  linkedInConnected?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [lang, setLang] = useState<"de" | "en">("de");
   const [msg, setMsg] = useState<string | null>(null);
-  const [publishing, setPublishing] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const text = lang === "de" ? textDe : textEn;
-
-  async function publishLinkedIn() {
-    setPublishing(true);
-    setMsg(null);
-    const res = await publishToLinkedIn(text);
-    setPublishing(false);
-    setMsg(
-      res.ok
-        ? lang === "de"
-          ? "Auf LinkedIn veröffentlicht."
-          : "Published to LinkedIn."
-        : res.error ?? (lang === "de" ? "Veröffentlichen fehlgeschlagen." : "Publishing failed."),
-    );
-  }
 
   useEffect(() => {
     if (!open) return;
@@ -65,7 +48,8 @@ export default function SharePanel({
   async function copy() {
     try {
       await navigator.clipboard.writeText(text);
-      setMsg(lang === "de" ? "Text kopiert." : "Text copied.");
+      showToast(lang === "de" ? "Text kopiert." : "Text copied.");
+      setMsg(null);
     } catch {
       setMsg(lang === "de" ? "Kopieren nicht möglich — Text manuell markieren." : "Copy failed — select the text manually.");
     }
@@ -149,13 +133,6 @@ export default function SharePanel({
               <button type="button" className="btn solid sm" onClick={copy}>
                 {lang === "de" ? "Text kopieren" : "Copy text"}
               </button>
-              {linkedInConnected ? (
-                <button type="button" className="btn sm" disabled={publishing} onClick={publishLinkedIn}>
-                  {publishing
-                    ? lang === "de" ? "Veröffentlicht …" : "Publishing …"
-                    : lang === "de" ? "Direkt auf LinkedIn veröffentlichen" : "Publish to LinkedIn now"}
-                </button>
-              ) : null}
             </div>
 
             <p className="meta" style={{ marginTop: 14, marginBottom: 6 }}>

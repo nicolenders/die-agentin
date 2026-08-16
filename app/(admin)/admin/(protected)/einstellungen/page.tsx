@@ -49,12 +49,21 @@ const LOCALES = [
   { code: "en", label: "Englisch" },
 ] as const;
 
+// Register statt einer endlos langen Seite: der aktive Tab steht in der URL
+// (?tab=…), damit er Reload und die Rückkehr nach dem Speichern übersteht.
+const TABS = [
+  { id: "kontakt", label: "Kontakt" },
+  { id: "bios", label: "Speaker-Kit-Bios" },
+  { id: "recht", label: "Rechtliche Seiten" },
+] as const;
+
 export default async function EinstellungenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; err?: string }>;
+  searchParams: Promise<{ ok?: string; err?: string; tab?: string }>;
 }) {
-  const { ok, err } = await searchParams;
+  const { ok, err, tab } = await searchParams;
+  const active = TABS.find((t) => t.id === tab)?.id ?? "kontakt";
 
   let docs: { docKey: string; locale: string; title: string; body: string }[] = [];
   let dbError = false;
@@ -79,6 +88,21 @@ export default async function EinstellungenPage({
       <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 
+      <div className="tab-bar" role="tablist" style={{ marginTop: 16 }}>
+        {TABS.map((t) => (
+          <a
+            key={t.id}
+            role="tab"
+            aria-selected={t.id === active}
+            className={`tab${t.id === active ? " active" : ""}`}
+            href={`/admin/einstellungen?tab=${t.id}`}
+          >
+            {t.label}
+          </a>
+        ))}
+      </div>
+
+      {active === "kontakt" ? (
       <div className="card bracket" style={{ marginTop: 20 }}>
         <p className="eyebrow">Kontaktinformationen</p>
         <p className="meta" style={{ marginTop: 0 }}>
@@ -95,8 +119,11 @@ export default async function EinstellungenPage({
           <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Kontaktangaben speichern</button>
         </form>
       </div>
+      ) : null}
 
-      <p className="eyebrow" style={{ marginTop: 28 }}>Speaker-Kit-Bios</p>
+      {active === "bios" ? (
+      <>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Speaker-Kit-Bios</p>
       <p className="meta">
         Drei Längen je Sprache für die Akte / das Speaker-Kit (Kurz ~50, Mittel ~150, Lang ~400 Wörter).
         Solange ein Feld leer ist, zeigt die öffentliche Seite dafür einen Platzhalter. Absätze mit einer
@@ -128,8 +155,12 @@ export default async function EinstellungenPage({
           })}
         </div>
       </div>
+      </>
+      ) : null}
 
-      <p className="eyebrow" style={{ marginTop: 28 }}>Rechtliche Seiten</p>
+      {active === "recht" ? (
+      <>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Rechtliche Seiten</p>
       <p className="meta">Bereits gespeicherter Text wird angezeigt und kann bearbeitet werden — je Sprache getrennt.</p>
       {LEGAL_KEYS.map((key) => (
         <div className="card bracket" key={key} style={{ marginBottom: 16 }}>
@@ -159,6 +190,8 @@ export default async function EinstellungenPage({
           </div>
         </div>
       ))}
+      </>
+      ) : null}
     </section>
   );
 }

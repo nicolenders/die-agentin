@@ -27,8 +27,9 @@ async function enqueueChannelTasks(postId: string, now: Date): Promise<void> {
         select: { id: true },
       });
       if (existing) continue;
-      // LinkedIn wird automatisch versendet (M7), übrige Kanäle sind Ein-Klick.
-      const state = account.platform === "LINKEDIN" ? "PENDING" : "MANUAL_OPEN";
+      // Alle Kanäle laufen gleich: der fertige Text steht bereit, geteilt wird
+      // von Hand (Text kopieren, Profil öffnen).
+      const state = "MANUAL_OPEN";
       await db.channelTask.create({
         data: {
           postId,
@@ -61,9 +62,8 @@ async function enqueueDispatchTasks(dispatchId: string, now: Date): Promise<void
         select: { id: true },
       });
       if (existing) continue;
-      const state = account.platform === "LINKEDIN" ? "PENDING" : "MANUAL_OPEN";
       await db.channelTask.create({
-        data: { dispatchId, platform: account.platform, state, scheduledAt: now, payload: JSON.stringify({ text, url }) },
+        data: { dispatchId, platform: account.platform, state: "MANUAL_OPEN", scheduledAt: now, payload: JSON.stringify({ text, url }) },
       });
     }
   } catch {

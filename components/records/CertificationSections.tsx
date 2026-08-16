@@ -9,6 +9,7 @@ import {
   CERT_FAMILY_LABEL_EN,
 } from "@/lib/records/kind";
 import AssetImage from "@/components/media/AssetImage";
+import RadarTopics from "@/components/records/RadarTopics";
 
 // Ausbildung/Auszeichnungen-Layout — nach Art (und bei Zertifizierungen nach
 // Microsoft/methodisch) gruppierte Badge-Kacheln, plus optional der Kasten
@@ -79,24 +80,8 @@ export default function CertificationSections({
             </ul>
           ) : null}
           {focus.length > 0 ? (
-            <div className="roles" style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: planned.length > 0 ? 14 : 6 }}>
-              {focus.map((f) => (
-                <span
-                  key={f.id}
-                  title={f.note ?? undefined}
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "11px",
-                    letterSpacing: ".14em",
-                    color: "var(--violet-text)",
-                    border: "1px solid var(--line)",
-                    padding: "7px 13px",
-                    borderRadius: "var(--r)",
-                  }}
-                >
-                  {f.title}
-                </span>
-              ))}
+            <div style={{ marginTop: planned.length > 0 ? 14 : 6 }}>
+              <RadarTopics topics={focus} locale={locale} />
             </div>
           ) : null}
         </div>

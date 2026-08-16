@@ -8,6 +8,7 @@ import MediaPicker, { type MediaItem } from "@/components/admin/editor/MediaPick
 import RichTextField from "@/components/admin/editor/RichTextField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { assetUrl } from "@/lib/media/url";
+import { showToast } from "@/lib/admin/toast";
 import {
   saveMission,
   type SaveMissionInput,
@@ -18,6 +19,11 @@ const W = 1000;
 const H = 500;
 type Loc = "de" | "en";
 
+// Online-Einsätze haben keinen echten Ort. Damit sie trotzdem auf der Karte
+// sichtbar sind, sitzen sie in der Antarktis — dort findet erkennbar keine
+// Konferenz statt, der Punkt ist also als „ohne Ort" lesbar.
+export const ONLINE_LOCATION = { lat: -75, lon: 0, countryCode: "AQ" };
+
 export interface MissionFormInitial {
   missionId?: string;
   eventName: string;
@@ -26,6 +32,7 @@ export interface MissionFormInitial {
   lat: number;
   lon: number;
   isOnline: boolean;
+  caseFilePublic: boolean;
   startDate: string;
   endDate: string;
   status: string;
@@ -75,7 +82,8 @@ export default function MissionForm({
 }: {
   initial: MissionFormInitial;
   existingPins: { lat: number; lon: number }[];
-  talks: { id: string; name: string; toolIds: string[] }[];
+  // `languages`: Sprachen, in denen das Briefing vorliegt (Titel vorhanden).
+  talks: { id: string; name: string; toolIds: string[]; languages: string[] }[];
   categories?: { id: string; name: string }[];
   allTools?: { id: string; name: string }[];
   isEdit?: boolean;
@@ -90,6 +98,7 @@ export default function MissionForm({
   const [city, setCity] = useState(initial.city);
   const [countryCode, setCountryCode] = useState(initial.countryCode);
   const [isOnline, setIsOnline] = useState(initial.isOnline);
+  const [caseFilePublic, setCaseFilePublic] = useState(initial.caseFilePublic);
   const [startDate, setStartDate] = useState(initial.startDate);
   const [endDate, setEndDate] = useState(initial.endDate);
   const [status, setStatus] = useState(initial.status || "PLANNED");
@@ -130,6 +139,27 @@ export default function MissionForm({
 
   const [cx, cy] = project(projection, lon, lat);
 
+  // Nur Briefings anbieten, die es in der gewählten Vortragssprache gibt. Ein
+  // Briefing ohne englischen Titel taucht bei „Englisch" also nicht auf.
+  const talksForLanguage = talkList.filter((t) => t.languages.includes(language));
+  // Ein bereits gewähltes Briefing bleibt sichtbar, auch wenn es nicht zur
+  // Sprache passt (Altdaten dürfen nicht stillschweigend verschwinden).
+  const selectedTalk = talkList.find((t) => t.id === talkId);
+  const talkOptions =
+    selectedTalk && !talksForLanguage.some((t) => t.id === selectedTalk.id)
+      ? [selectedTalk, ...talksForLanguage]
+      : talksForLanguage;
+
+  /** Online umschalten: Ort in die Antarktis setzen bzw. Eingaben freigeben. */
+  function toggleOnline(next: boolean) {
+    setIsOnline(next);
+    if (next) {
+      setLat(ONLINE_LOCATION.lat);
+      setLon(ONLINE_LOCATION.lon);
+      setCountryCode(ONLINE_LOCATION.countryCode);
+    }
+  }
+
   function handleMapClick(e: React.MouseEvent<SVGSVGElement>) {
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -165,6 +195,7 @@ export default function MissionForm({
         return;
       }
       setMat({ slidesFilePath: data.path, slidesFileName: data.name });
+      showToast("Folien hochgeladen.");
     } catch {
       setSlidesError("Upload fehlgeschlagen. Bitte erneut versuchen.");
     } finally {
@@ -179,10 +210,13 @@ export default function MissionForm({
       missionId: initial.missionId,
       eventName,
       city,
-      countryCode,
-      lat,
-      lon,
+      // Online-Einsätze sitzen immer am selben symbolischen Ort (Antarktis) —
+      // egal, was vor dem Umschalten in den Feldern stand.
+      countryCode: isOnline ? ONLINE_LOCATION.countryCode : countryCode,
+      lat: isOnline ? ONLINE_LOCATION.lat : lat,
+      lon: isOnline ? ONLINE_LOCATION.lon : lon,
       isOnline,
+      caseFilePublic,
       startDate,
       endDate: endDate || null,
       status,
@@ -238,8 +272,9 @@ export default function MissionForm({
       setNewTalkError(res.error ?? "Anlegen fehlgeschlagen.");
       return;
     }
-    // Neues Briefing in die Auswahl übernehmen und direkt selektieren.
-    setTalkList((prev) => [{ id: res.id!, name: res.name ?? newTalkTitle, toolIds: [] }, ...prev]);
+    // Neues Briefing in die Auswahl übernehmen und direkt selektieren. Die
+    // Schnellanlage kennt nur einen deutschen Titel — deshalb Sprache „de".
+    setTalkList((prev) => [{ id: res.id!, name: res.name ?? newTalkTitle, toolIds: [], languages: ["de"] }, ...prev]);
     setTalkId(res.id);
     setToolIds([]);
     setShowNewTalk(false);
@@ -257,6 +292,18 @@ export default function MissionForm({
       <p className="muted">Ort auf der Karte anklicken oder Koordinaten eintragen.</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 16, marginTop: 20 }}>
+        {isOnline ? (
+          <div className="card bracket">
+            <p className="eyebrow">Ort</p>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Online-Einsatz — kein fester Ort. Auf der Karte erscheint er in der Antarktis;
+              dort findet sonst nichts statt, der Punkt ist also als „ortlos“ erkennbar.
+            </p>
+            <p className="meta" style={{ marginBottom: 0 }}>
+              Zum Eintragen echter Koordinaten den Haken bei „Online-Event“ entfernen.
+            </p>
+          </div>
+        ) : (
         <div className="map-shell">
           <svg
             ref={svgRef}
@@ -310,31 +357,19 @@ export default function MissionForm({
             </div>
           </div>
         </div>
+        )}
 
         <div className="card bracket">
           <p className="eyebrow">Einsatzdaten</p>
           <label className="f">Veranstaltung</label>
           <input className="f" value={eventName} onChange={(e) => setEventName(e.target.value)} />
-          <label className="f">Stadt</label>
-          <input className="f" value={city} onChange={(e) => setCity(e.target.value)} />
-          <label className="f">Ländercode (2 Buchstaben)</label>
-          <input className="f" value={countryCode} maxLength={2} onChange={(e) => setCountryCode(e.target.value)} />
-          <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, margin: "6px 0" }}>
-            <input type="checkbox" checked={isOnline} onChange={(e) => setIsOnline(e.target.checked)} style={{ width: "auto" }} />
-            Online-/Remote-Event (ohne festen Ort — erscheint nicht auf der Karte)
-          </label>
-          <label className="f">Datum (Beginn)</label>
-          <input className="f" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          <label className="f">Enddatum (optional, bei mehrtägigen Einsätzen)</label>
-          <input className="f" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          <label className="f">Status</label>
-          <select className="f" value={status} onChange={(e) => setStatus(e.target.value)}>
-            {MISSION_STATUSES.map((s) => (
-              <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
-            ))}
-          </select>
           <label className="f">Website der Veranstaltung (optional)</label>
           <input className="f" placeholder="https://…" value={eventUrl} onChange={(e) => setEventUrl(e.target.value)} />
+          <label className="f">Sprache des Vortrags</label>
+          <select className="f" value={language} onChange={(e) => setLanguage(e.target.value)}>
+            <option value="de">Deutsch</option>
+            <option value="en">Englisch</option>
+          </select>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <label className="f" style={{ margin: 0 }}>Gehaltenes Briefing</label>
             <button
@@ -359,10 +394,16 @@ export default function MissionForm({
             }}
           >
             <option value="">— keins —</option>
-            {talkList.map((t) => (
+            {talkOptions.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
+          <p className="meta" style={{ marginTop: 4 }}>
+            Zeigt nur Briefings, die es auf {language === "de" ? "Deutsch" : "Englisch"} gibt.
+            {talksForLanguage.length === 0 && talkList.length > 0
+              ? " Für diese Sprache ist noch keines hinterlegt — Titel im Briefing ergänzen."
+              : ""}
+          </p>
 
           {showNewTalk ? (
             <div className="card bracket" style={{ marginTop: 10, padding: 12 }}>
@@ -403,11 +444,38 @@ export default function MissionForm({
               {newTalkError ? <p className="meta" style={{ marginTop: 8, color: "var(--danger)" }}>{newTalkError}</p> : null}
             </div>
           ) : null}
-          <label className="f">Sprache des Vortrags</label>
-          <select className="f" value={language} onChange={(e) => setLanguage(e.target.value)}>
-            <option value="de">Deutsch</option>
-            <option value="en">Englisch</option>
+
+          <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 6px" }}>
+            <input type="checkbox" checked={isOnline} onChange={(e) => toggleOnline(e.target.checked)} style={{ width: "auto" }} />
+            Online-/Remote-Event (ohne festen Ort — erscheint auf der Karte in der Antarktis)
+          </label>
+          <label className="f">Stadt</label>
+          <input className="f" value={city} onChange={(e) => setCity(e.target.value)} placeholder={isOnline ? "z. B. Online" : ""} />
+          {!isOnline ? (
+            <>
+              <label className="f">Ländercode (2 Buchstaben)</label>
+              <input className="f" value={countryCode} maxLength={2} onChange={(e) => setCountryCode(e.target.value)} />
+            </>
+          ) : null}
+          <label className="f">Datum (Beginn)</label>
+          <input className="f" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <label className="f">Enddatum (optional, bei mehrtägigen Einsätzen)</label>
+          <input className="f" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <label className="f">Status</label>
+          <select className="f" value={status} onChange={(e) => setStatus(e.target.value)}>
+            {MISSION_STATUSES.map((s) => (
+              <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
+            ))}
           </select>
+
+          <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 4px" }}>
+            <input type="checkbox" checked={caseFilePublic} onChange={(e) => setCaseFilePublic(e.target.checked)} style={{ width: "auto" }} />
+            Einsatzakte öffentlich zeigen
+          </label>
+          <p className="meta" style={{ marginTop: 0 }}>
+            Erst mit diesem Haken erscheint der Button „Einsatzakte öffnen“ (Karte und Liste).
+            Ohne ihn bleibt der Einsatz sichtbar, führt aber auf keine leere Detailseite.
+          </p>
 
           <label className="f" style={{ marginTop: 10 }}>Werkzeuge</label>
           <p className="meta" style={{ marginTop: 0 }}>

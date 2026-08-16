@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
+import { getRadarTopics } from "@/lib/queries/records";
 import { formatDate } from "@/lib/format";
 import { DISPATCH_FORMATS, isOneOf, type DispatchFormat } from "@/lib/domain";
 
@@ -21,19 +22,29 @@ export default async function DepeschenPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ format?: string }>;
+  searchParams: Promise<{ format?: string; thema?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const { format } = await searchParams;
+  const { format, thema } = await searchParams;
   const dict = await getDictionary(locale);
+  const isDe = locale === "de";
 
   const activeFormat: DispatchFormat | null = isOneOf(DISPATCH_FORMATS, format) ? format : null;
-  const all = await getPublishedDispatches(locale);
-  const dispatches = activeFormat ? all.filter((d) => d.format === activeFormat) : all;
+  const topicId = (thema ?? "").trim();
+  const [all, radar] = await Promise.all([getPublishedDispatches(locale), getRadarTopics(locale)]);
+  const activeTopic = topicId ? radar.find((r) => r.id === topicId) ?? null : null;
+  const dispatches = all.filter(
+    (d) =>
+      (!activeFormat || d.format === activeFormat) &&
+      (!activeTopic || d.focusTopicIds.includes(activeTopic.id)),
+  );
 
-  const filterHref = (f: DispatchFormat | null) =>
-    f ? `/${locale}/depeschen?format=${f}` : `/${locale}/depeschen`;
+  const topicSuffix = activeTopic ? `thema=${activeTopic.id}` : "";
+  const filterHref = (f: DispatchFormat | null) => {
+    const parts = [f ? `format=${f}` : "", topicSuffix].filter(Boolean);
+    return `/${locale}/depeschen${parts.length ? `?${parts.join("&")}` : ""}`;
+  };
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
@@ -50,6 +61,19 @@ export default async function DepeschenPage({
           </Link>
         ))}
       </div>
+
+      {/* Aus dem Radar heraus verlinkt: sichtbar machen, worauf gefiltert wird. */}
+      {activeTopic ? (
+        <p className="year-filter" style={{ marginTop: 12 }}>
+          <Link
+            className="chip"
+            aria-current="true"
+            href={`/${locale}/depeschen${activeFormat ? `?format=${activeFormat}` : ""}`}
+          >
+            {isDe ? "Thema" : "Topic"}: {activeTopic.title} ✕
+          </Link>
+        </p>
+      ) : null}
 
       {dispatches.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 26 }}>

@@ -81,13 +81,9 @@ export default async function IdentityEditPage({
       <label className="f">Kennung (dekorativ)
         <input className="f" name="registryCode" defaultValue={data.registryCode} placeholder="z. B. ID-04" />
       </label>
-      <label className="f">„seit“ (nur Anzeige, kein „bis“)
-        <input className="f" name="since" defaultValue={data.since} placeholder="z. B. seit 2019" />
-      </label>
-      <div>
-        <label className="f">Sprachen (in dieser Identität)</label>
-        <StringListField name="languages" initial={data.languages} placeholder="z. B. Deutsch" addLabel="Sprache" />
-      </div>
+      {/* „seit" und die Sprachliste sind bewusst nicht mehr pflegbar: beide
+          erschienen öffentlich, sagten aber nichts, was die Rolle nicht besser
+          sagt. Die Spalten bleiben vorerst im Schema (abwärtskompatibel). */}
     </div>
   );
 

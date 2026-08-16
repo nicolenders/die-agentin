@@ -67,6 +67,20 @@ export async function getBriefingCatalog(locale: Locale): Promise<BriefingCatego
   }
 }
 
+/** Ein Einsatz, bei dem dieses Briefing gehalten wurde. */
+export interface BriefingMission {
+  id: string;
+  slug: string | null;
+  eventName: string;
+  city: string;
+  countryCode: string;
+  isOnline: boolean;
+  heldOn: string; // ISO
+  language: string;
+  /** Nur mit freigegebener Einsatzakte wird verlinkt. */
+  linkable: boolean;
+}
+
 export interface BriefingListItem {
   id: string;
   title: string;
@@ -80,6 +94,7 @@ export interface BriefingListItem {
   total: number;
   lastHeld: string | null; // ISO
   identitySlugs: string[]; // verknüpfte Identitäten (für den Identitätsfilter)
+  missions: BriefingMission[]; // wo es gehalten wurde, neueste zuerst
 }
 
 // Jedes aktive Briefing GENAU EINMAL, mit allen Kategorien als Liste, sortiert
@@ -92,7 +107,10 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
       translations: true,
       categories: { select: { nameDe: true, nameEn: true } },
       audiences: { select: { nameDe: true, nameEn: true } },
-      deliveries: { select: { language: true, heldOn: true } },
+      deliveries: {
+        orderBy: { heldOn: "desc" },
+        include: { mission: { include: { translations: true } } },
+      },
       identities: { select: { slug: true } },
     },
   });
@@ -119,6 +137,21 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
       total: t.deliveries.length,
       lastHeld: lastHeld ? lastHeld.toISOString() : null,
       identitySlugs: t.identities.map((i) => i.slug),
+      missions: t.deliveries.map((d) => {
+        const m = d.mission;
+        const slug = pickTranslation(m.translations, locale)?.translation.slug ?? null;
+        return {
+          id: m.id,
+          slug,
+          eventName: m.eventName,
+          city: m.city,
+          countryCode: m.countryCode,
+          isOnline: m.isOnline,
+          heldOn: d.heldOn.toISOString(),
+          language: d.language,
+          linkable: m.contentStatus === "PUBLISHED" && m.caseFilePublic && Boolean(slug),
+        };
+      }),
     };
   });
 

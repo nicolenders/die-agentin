@@ -21,11 +21,17 @@ export interface MissionListItem {
   eventUrl: string | null;
   // Nur veröffentlichte Einsätze haben eine öffentliche Einsatzakte-Detailseite.
   published: boolean;
+  // Freigabe der Einsatzakte: erst damit wird die Detailseite verlinkt.
+  caseFilePublic: boolean;
   bannerUrl: string | null;
   bannerAlt: string;
   bannerAi: boolean;
   identitySlugs: string[]; // verknüpfte Identitäten (für den Identitätsfilter)
+  // Identitäten mit Anzeigename und Farbe — fürs Karten-Popup.
+  identities: { slug: string; name: string; color: string }[];
   tools: { slug: string; name: string }[]; // verknüpfte Werkzeuge (Filter + Label)
+  // Gehaltenes Briefing samt Vortragssprache (Popup, Liste).
+  briefing: { id: string; title: string; language: string } | null;
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
@@ -34,12 +40,21 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
     include: {
       translations: true,
       banner: true,
-      identities: { select: { slug: true } },
+      identities: { orderBy: { sortOrder: "asc" } },
       tools: { select: { slug: true, name: true }, orderBy: { sortOrder: "asc" } },
+      deliveries: {
+        take: 1,
+        orderBy: { heldOn: "desc" },
+        include: { talk: { include: { translations: true } } },
+      },
     },
   });
   return missions.map((m) => {
     const picked = pickTranslation(m.translations, locale);
+    const delivery = m.deliveries[0];
+    const talkTitle = delivery
+      ? pickTranslation(delivery.talk.translations, locale)?.translation.title ?? null
+      : null;
     return {
       id: m.id,
       slug: picked?.translation.slug ?? null,
@@ -54,8 +69,18 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       future: m.startDate.getTime() > nowMs,
       eventUrl: m.eventUrl,
       published: m.contentStatus === "PUBLISHED",
+      caseFilePublic: m.caseFilePublic,
       identitySlugs: m.identities.map((i) => i.slug),
+      identities: m.identities.map((i) => ({
+        slug: i.slug,
+        name: identityDisplayName(i, locale),
+        color: i.color,
+      })),
       tools: m.tools.map((t) => ({ slug: t.slug, name: t.name })),
+      briefing:
+        delivery && talkTitle
+          ? { id: delivery.talkId, title: talkTitle, language: delivery.language }
+          : null,
       bannerAi: m.banner?.source === "AI",
       bannerUrl: m.banner ? assetUrl(m.banner.blobPath) : null,
       bannerAlt:

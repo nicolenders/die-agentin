@@ -311,6 +311,109 @@
   overflow-wrap: anywhere;
 }
 
+// Kurzmeldungen oben rechts („Gespeichert."). Liegen über allem, nehmen keine
+// Klicks entgegen und verschwinden nach drei Sekunden von selbst.
+.toast-stack {
+  position: fixed;
+  top: 14px;
+  right: 18px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: min(360px, calc(100vw - 36px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: 5px;
+  border: 1px solid rgba(74, 222, 128, 0.45);
+  background: rgba(9, 3, 20, 0.96);
+  box-shadow: 0 10px 30px rgba(2, 0, 8, 0.55);
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.4;
+  animation: toast-in 0.16s ease-out;
+}
+.toast .toast-mark {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ok);
+  line-height: 1.55;
+}
+.toast.err {
+  border-color: rgba(248, 113, 113, 0.5);
+}
+.toast.err .toast-mark {
+  color: var(--danger);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+// Kopfleisten-Beiwerk, das bei wenig Platz der Suche weichen darf.
+.topbar-optional {
+  @media (max-width: 1180px) {
+    display: none;
+  }
+}
+
+// Globale Suche in der Kopfleiste.
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-search input {
+  margin: 0;
+  width: 210px;
+  max-width: 34vw;
+  padding: 7px 10px;
+  font-size: 12.5px;
+}
+
+// Filterleiste über den Listen (Suche + Status). Bricht auf schmalen Anzeigen um.
+.list-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+.list-filter .f {
+  margin: 0;
+}
+.list-filter label.f {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+
+// Zweispaltige Erfassungsmaske. Bricht auf schmalen Anzeigen auf eine Spalte um.
+.form-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start;
+  max-width: 1180px;
+}
+
 // Kategorie-Mehrfachauswahl als Chips (statt nativem <select multiple>).
 .chip-select {
   display: flex;

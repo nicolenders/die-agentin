@@ -67,14 +67,15 @@ function commonData(formData: FormData) {
     taglineDe: str(formData, "taglineDe"),
     taglineEn: str(formData, "taglineEn"),
     registryCode: str(formData, "registryCode") || null,
-    since: str(formData, "since") || null,
+    // `since` und `languages` werden nicht mehr gepflegt und deshalb hier auch
+    // nicht geschrieben — vorhandene Werte bleiben unberührt, bis die Spalten
+    // in einer späteren Migration verschwinden.
     descriptionDe: str(formData, "descriptionDe"),
     descriptionEn: str(formData, "descriptionEn"),
     shortBioDe: str(formData, "shortBioDe"),
     shortBioEn: str(formData, "shortBioEn"),
     focusDe: serializeStringList(jsonList(formData, "focusDe")),
     focusEn: serializeStringList(jsonList(formData, "focusEn")),
-    languages: serializeStringList(jsonList(formData, "languages")),
     color: str(formData, "color") || "#8B5CF6",
     iconKey: str(formData, "iconKey") || null,
     isPrimary: bool(formData, "isPrimary"),

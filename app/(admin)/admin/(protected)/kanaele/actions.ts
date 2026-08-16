@@ -3,11 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
-import { deleteSecret } from "@/lib/secrets";
 import { PLATFORMS, isOneOf } from "@/lib/domain";
 
-// Kanal-Aktionen (SPEC §7). Für die Ein-Klick-Kanäle (X, Instagram, Facebook)
-// bedeutet „verbunden" schlicht aktiviert; LinkedIn läuft über OAuth.
+// Kanal-Aktionen (SPEC §7). „Verbunden" heißt für alle Kanäle schlicht
+// aktiviert — geteilt wird überall gleich: Text kopieren, Profil öffnen.
 
 export async function setChannelConnected(formData: FormData): Promise<void> {
   await requireAdmin();
@@ -19,17 +18,6 @@ export async function setChannelConnected(formData: FormData): Promise<void> {
     where: { platform: platformRaw },
     create: { platform: platformRaw, displayName: platformRaw, connected },
     update: { connected },
-  });
-  revalidatePath("/admin/kanaele");
-}
-
-export async function disconnectLinkedIn(): Promise<void> {
-  await requireAdmin();
-  const account = await db.channelAccount.findUnique({ where: { platform: "LINKEDIN" } });
-  if (account?.tokenRef) await deleteSecret(account.tokenRef);
-  await db.channelAccount.update({
-    where: { platform: "LINKEDIN" },
-    data: { connected: false, tokenRef: null, expiresAt: null },
   });
   revalidatePath("/admin/kanaele");
 }

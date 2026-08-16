@@ -1,8 +1,15 @@
+"use client";
+
+import { useEffect } from "react";
+import { showToast } from "@/lib/admin/toast";
+
 // Kurze Erfolgs-/Fehlermeldung nach einer Server-Action. Die Aktionen leiten
 // nach getaner Arbeit mit `?ok=<code>` bzw. `?err=<code>` zurück; diese
-// Komponente übersetzt den Code in verständlichen deutschen Text. So gibt es
-// sichtbares Feedback statt eines still wirkungslosen Knopfs.
-const MESSAGES: Record<string, string> = {
+// Komponente übersetzt den Code in verständlichen deutschen Text.
+//
+// Erfolg erscheint als kurze Einblendung oben rechts (verschwindet nach drei
+// Sekunden), ein Fehler bleibt an Ort und Stelle stehen, bis er behoben ist.
+export const FLASH_MESSAGES: Record<string, string> = {
   saved: "Gespeichert.",
   social: "Social-Media-Profile gespeichert.",
   contact: "Kontaktangaben gespeichert.",
@@ -13,6 +20,7 @@ const MESSAGES: Record<string, string> = {
   reordered: "Reihenfolge aktualisiert.",
   published: "Veröffentlicht.",
   toggled: "Sichtbarkeit geändert.",
+  uploaded: "Hochgeladen.",
   "has-links": "Identität hat verknüpfte Einträge — erst umhängen oder zurückziehen statt löschen.",
   "cannot-publish": "Nicht veröffentlichbar: Rolle (DE) und gültige Akzentfarbe sind Pflicht.",
   "missing-role": "Rolle (DE) ist Pflicht — nichts wurde gespeichert.",
@@ -23,26 +31,31 @@ const MESSAGES: Record<string, string> = {
   "category-in-use": "Kategorie ist noch zugeordnet — erst umhängen oder löschen.",
   "alt-required": "Alt-Text ist Pflicht (außer das Bild ist dekorativ).",
   "asset-in-use": "Bild wird noch verwendet — erst aus Beitrag/Einsatz entfernen.",
+  "document-in-use": "Datei ist noch einem Einsatz zugeordnet — dort erst entfernen.",
   "audience-in-use": "Zielgruppe ist noch zugeordnet — erst umhängen oder Briefings ändern.",
   failed: "Speichern fehlgeschlagen. Bitte erneut versuchen.",
 };
 
 export default function Flash({ ok, err }: { ok?: string; err?: string }) {
-  const code = err ?? ok;
-  if (!code) return null;
-  const isError = Boolean(err);
-  const text = MESSAGES[code] ?? code;
+  const okText = ok ? FLASH_MESSAGES[ok] ?? ok : null;
+
+  useEffect(() => {
+    if (okText) showToast(okText);
+  }, [okText]);
+
+  if (!err) return null;
   return (
     <p
-      role="status"
-      className={`st ${isError ? "" : "live"}`}
+      role="alert"
+      className="st"
       style={{
         display: "inline-block",
         marginTop: 12,
-        ...(isError ? { color: "var(--magenta)", borderColor: "var(--magenta)" } : {}),
+        color: "var(--magenta)",
+        borderColor: "var(--magenta)",
       }}
     >
-      {text}
+      {FLASH_MESSAGES[err] ?? err}
     </p>
   );
 }

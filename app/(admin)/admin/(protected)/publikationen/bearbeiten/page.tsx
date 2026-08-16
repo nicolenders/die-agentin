@@ -43,7 +43,19 @@ export default async function PublicationEditPage({
       {back}
       <h1>Publikation bearbeiten</h1>
       <Flash err={err} />
-      <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>
+      {/* Bei Büchern stehen Stammdaten und Verkaufszahlen nebeneinander — beides
+          gehört beim Nachtragen zusammen und passt so ohne Scrollen auf den Schirm. */}
+      <div
+        className="grid"
+        style={{
+          marginTop: 16,
+          display: "grid",
+          gridTemplateColumns: row.type === "BOOK" ? "minmax(320px, 560px) minmax(320px, 620px)" : "minmax(320px, 560px)",
+          gap: 16,
+          alignItems: "start",
+        }}
+      >
+      <div className="card bracket">
         <form action={updatePublication}>
           <input type="hidden" name="id" value={row.id} />
           <label className="f">Titel (DE)</label>
@@ -78,7 +90,7 @@ export default async function PublicationEditPage({
       </div>
 
       {row.type === "BOOK" ? (
-        <div className="card bracket" style={{ marginTop: 16, maxWidth: 620 }}>
+        <div className="card bracket">
           <p className="eyebrow" style={{ marginTop: 0 }}>Verkaufszahlen (halbjährlich)</p>
           <p className="meta" style={{ marginTop: 0 }}>
             Je Halbjahr eintragen, wie viele Exemplare als gedruckte Version, als PDF und als
@@ -156,6 +168,7 @@ export default async function PublicationEditPage({
           </form>
         </div>
       ) : null}
+      </div>
     </section>
   );
 }

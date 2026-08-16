@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import AssetImage from "@/components/media/AssetImage";
 import { MEDIA_SOURCES, SOURCE_LABEL, toMediaSource, type MediaSource } from "@/lib/media/source";
+import { showToast } from "@/lib/admin/toast";
 
 export interface MediaItem {
   id: string;
@@ -16,8 +17,12 @@ export interface MediaItem {
   source?: string;
 }
 
-// Medienbibliothek als Modal (SPEC M2). Listet Assets, lädt neue hoch (Alt-Text
-// ist Pflicht, außer dekorativ) und gibt die Auswahl an den Editor zurück.
+type Tab = "auswahl" | "hochladen";
+
+// Medienbibliothek als Modal (SPEC M2). Zwei Register: „Bild auswählen" zeigt
+// die vorhandenen Bilder, „Hochladen" bringt ein neues dazu. Nach einem Upload
+// ist das Bild gewählt und der Dialog schließt sich — genau das war ja die
+// Absicht, sonst hätte man nicht hochgeladen.
 export default function MediaPicker({
   onPick,
   onClose,
@@ -29,6 +34,7 @@ export default function MediaPicker({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<Tab>("auswahl");
   const [q, setQ] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"" | MediaSource>("");
 
@@ -60,6 +66,14 @@ export default function MediaPicker({
     };
   }, []);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -80,10 +94,13 @@ export default function MediaPicker({
       }
       if (!res.ok) {
         setError(data.error ?? `Upload fehlgeschlagen (HTTP ${res.status}).`);
-      } else {
-        setItems((prev) => [data, ...prev]);
-        formEl.reset();
+        return;
       }
+      formEl.reset();
+      setItems((prev) => [data, ...prev]);
+      showToast("Bild hochgeladen und ausgewählt.");
+      // Direkt übernehmen und schließen — der Aufrufer schließt den Dialog.
+      onPick(data);
     } catch (err) {
       setError(`Upload fehlgeschlagen: ${err instanceof Error ? err.message : "Netzwerkfehler"}.`);
     } finally {
@@ -129,45 +146,73 @@ export default function MediaPicker({
           </button>
         </div>
 
-        <form onSubmit={handleUpload} style={{ margin: "16px 0", borderBottom: "1px solid var(--line-soft)", paddingBottom: 16 }}>
-          <label className="f" htmlFor="mp-file">
-            Datei (JPEG, PNG, WebP, AVIF · max 20 MB)
-          </label>
-          <input className="f" id="mp-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,image/avif" required />
-          <label className="f" htmlFor="mp-altde">
-            Alt-Text (DE) · Pflicht
-          </label>
-          <input className="f" id="mp-altde" name="altDe" placeholder="Was ist auf dem Bild zu sehen?" />
-          <label className="f" htmlFor="mp-alten">
-            Alt-Text (EN) · optional
-          </label>
-          <input className="f" id="mp-alten" name="altEn" />
-          <label className="f" htmlFor="mp-source">Herkunft</label>
-          <select className="f" id="mp-source" name="source" defaultValue="MINE">
-            {MEDIA_SOURCES.map((s) => (
-              <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
-            ))}
-          </select>
-          <label className="f" htmlFor="mp-credit">
-            Bildnachweis · optional
-          </label>
-          <input className="f" id="mp-credit" name="credit" />
-          <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, fontSize: 13 }}>
-            <input type="checkbox" name="decorative" value="true" /> Dekoratives Bild (kein Alt-Text nötig)
-          </label>
-          <button className="btn solid sm" type="submit" disabled={busy} style={{ marginTop: 12 }}>
-            {busy ? "Lädt hoch …" : "Hochladen"}
+        <div className="tab-bar" role="tablist" style={{ marginTop: 12 }}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "auswahl"}
+            className={`tab${tab === "auswahl" ? " active" : ""}`}
+            onClick={() => setTab("auswahl")}
+          >
+            Bild auswählen
+            <span className="tab-count">{items.length}</span>
           </button>
-        </form>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "hochladen"}
+            className={`tab${tab === "hochladen" ? " active" : ""}`}
+            onClick={() => setTab("hochladen")}
+          >
+            Hochladen
+          </button>
+        </div>
 
         {error ? <p className="media-error">{error}</p> : null}
-        {loading ? (
-          <p className="muted">Wird geladen …</p>
+
+        {tab === "hochladen" ? (
+          <form onSubmit={handleUpload} style={{ marginTop: 16 }}>
+            <p className="meta" style={{ marginTop: 0 }}>
+              Nach dem Hochladen ist das Bild automatisch ausgewählt und der Dialog schließt sich.
+            </p>
+            <label className="f" htmlFor="mp-file">
+              Datei (JPEG, PNG, WebP, AVIF · max 20 MB)
+            </label>
+            <input className="f" id="mp-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,image/avif" required />
+            <label className="f" htmlFor="mp-altde">
+              Alt-Text (DE) · Pflicht
+            </label>
+            <input className="f" id="mp-altde" name="altDe" placeholder="Was ist auf dem Bild zu sehen?" />
+            <label className="f" htmlFor="mp-alten">
+              Alt-Text (EN) · optional
+            </label>
+            <input className="f" id="mp-alten" name="altEn" />
+            <label className="f" htmlFor="mp-source">Herkunft</label>
+            <select className="f" id="mp-source" name="source" defaultValue="MINE">
+              {MEDIA_SOURCES.map((s) => (
+                <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
+              ))}
+            </select>
+            <label className="f" htmlFor="mp-credit">
+              Bildnachweis · optional
+            </label>
+            <input className="f" id="mp-credit" name="credit" />
+            <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, fontSize: 13 }}>
+              <input type="checkbox" name="decorative" value="true" /> Dekoratives Bild (kein Alt-Text nötig)
+            </label>
+            <button className="btn solid sm" type="submit" disabled={busy} style={{ marginTop: 12 }}>
+              {busy ? "Lädt hoch …" : "Hochladen und auswählen"}
+            </button>
+          </form>
+        ) : loading ? (
+          <p className="muted" style={{ marginTop: 16 }}>Wird geladen …</p>
         ) : items.length === 0 ? (
-          <p className="muted">Noch keine Medien.</p>
+          <p className="muted" style={{ marginTop: 16 }}>
+            Noch keine Medien. Im Register „Hochladen“ das erste Bild hinzufügen.
+          </p>
         ) : (
           <>
-            <div className="year-filter" style={{ alignItems: "center", gap: 10 }}>
+            <div className="year-filter" style={{ alignItems: "center", gap: 10, marginTop: 16 }}>
               <input
                 className="f"
                 style={{ maxWidth: 220 }}

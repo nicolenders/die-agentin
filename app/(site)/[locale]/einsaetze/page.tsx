@@ -46,11 +46,14 @@ export default async function EinsaetzePage({
     dateLabel: formatDate(m.startDate, locale),
     eventUrl: m.eventUrl,
     published: m.published,
+    caseFilePublic: m.caseFilePublic,
     bannerUrl: m.bannerUrl,
     bannerAlt: m.bannerAlt,
     bannerAi: m.bannerAi,
     identitySlugs: m.identitySlugs,
+    identities: m.identities,
     tools: m.tools,
+    briefing: m.briefing,
   }));
 
   const explorerIdentities: ExplorerIdentity[] = identities.map((i) => ({
@@ -92,6 +95,7 @@ export default async function EinsaetzePage({
           listTitle: isDe ? "Einsatzliste" : "Mission list",
           colDate: isDe ? "Datum" : "Date",
           colEvent: isDe ? "Veranstaltung" : "Event",
+          colBriefing: isDe ? "Briefing" : "Briefing",
           colLocation: isDe ? "Ort" : "Location",
           colStatus: isDe ? "Status" : "Status",
           statusPlanned: isDe ? "Geplant" : "Planned",
@@ -105,6 +109,11 @@ export default async function EinsaetzePage({
             size: isDe ? "Punktgröße = Anzahl" : "Dot size = count",
             open: isDe ? "Veranstaltungswebsite" : "Event website",
             view: isDe ? "Ansicht wählen" : "Choose view",
+            briefing: isDe ? "Briefing" : "Briefing",
+            identity: isDe ? "Identität" : "Identity",
+            language: isDe ? "Sprache" : "Language",
+            openFile: isDe ? "Einsatzakte öffnen" : "Open mission file",
+            online: isDe ? "Online" : "Online",
           },
         }}
       />

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { showToast } from "@/lib/admin/toast";
 
 // Upload-Feld der Medien-Bibliothek. Der eigentliche Upload läuft über die
 // bestehende API (`/api/admin/media`, prüft Magic Bytes, entfernt Metadaten,
@@ -35,6 +36,7 @@ export default function MediaUpload() {
       } else {
         formEl.reset();
         setOk(true);
+        showToast("Bild hochgeladen.");
         router.refresh();
       }
     } catch (err) {

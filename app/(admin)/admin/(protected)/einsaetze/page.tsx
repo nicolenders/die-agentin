@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatDate } from "@/lib/format";
-import type { ContentStatus } from "@/lib/domain";
+import { CONTENT_STATUSES, isOneOf, type ContentStatus } from "@/lib/domain";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import Flash from "@/components/admin/Flash";
 import SharePanel from "@/components/admin/SharePanel";
 import { identityDisplayName } from "@/lib/identities";
-import { getShareTemplates, getShareProfiles, getLinkedInConnected } from "@/lib/queries/settings";
+import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { deleteMission } from "./actions";
 
@@ -19,26 +19,38 @@ const STATUS: Record<ContentStatus, { label: string; cls: string }> = {
   ARCHIVED: { label: "Archiviert", cls: "" },
 };
 
+interface Filter {
+  q: string;
+  status: ContentStatus | "";
+  ort: "" | "vorort" | "online";
+}
+
 export default async function EinsaetzeAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; err?: string }>;
+  searchParams: Promise<{ ok?: string; err?: string; q?: string; status?: string; ort?: string }>;
 }) {
-  const { ok, err } = await searchParams;
+  const { ok, err, q, status, ort } = await searchParams;
+  const filter: Filter = {
+    q: (q ?? "").trim(),
+    status: isOneOf(CONTENT_STATUSES, status ?? "") ? (status as ContentStatus) : "",
+    ort: ort === "online" || ort === "vorort" ? ort : "",
+  };
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  const [templates, shareProfiles, linkedInConnected] = await Promise.all([
-    getShareTemplates(),
-    getShareProfiles(),
-    getLinkedInConnected(),
-  ]);
+  const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
 
-  let rows: Awaited<ReturnType<typeof load>> = [];
+  let rows: Awaited<ReturnType<typeof load>>["rows"] = [];
+  let total = 0;
   let dbError = false;
   try {
-    rows = await load(base, templates);
+    const loaded = await load(base, templates, filter);
+    rows = loaded.rows;
+    total = loaded.total;
   } catch {
     dbError = true;
   }
+
+  const isFiltered = filter.q !== "" || filter.status !== "" || filter.ort !== "";
 
   return (
     <section>
@@ -51,21 +63,59 @@ export default async function EinsaetzeAdminPage({
       <p className="muted">Vorträge, Konferenzen, Auftritte — mit Ort auf der Karte und Bezug zum Briefing.</p>
       <Flash ok={ok} err={err} />
 
+      <form method="get" className="list-filter" role="search">
+        <label className="f">
+          Suche
+          <input className="f" type="search" name="q" defaultValue={filter.q} placeholder="Veranstaltung, Stadt, Briefing …" style={{ minWidth: 240 }} />
+        </label>
+        <label className="f">
+          Status
+          <select className="f" name="status" defaultValue={filter.status} style={{ minWidth: 150 }}>
+            <option value="">Alle</option>
+            {CONTENT_STATUSES.map((s) => (
+              <option key={s} value={s}>{STATUS[s].label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="f">
+          Ort
+          <select className="f" name="ort" defaultValue={filter.ort} style={{ minWidth: 150 }}>
+            <option value="">Alle</option>
+            <option value="vorort">Vor Ort</option>
+            <option value="online">Online</option>
+          </select>
+        </label>
+        <button className="btn solid sm" type="submit">Filtern</button>
+        {isFiltered ? <Link className="btn ghost sm" href="/admin/einsaetze">Zurücksetzen</Link> : null}
+        {!dbError ? <span className="meta">{rows.length} von {total}</span> : null}
+      </form>
+
       {dbError ? (
         <p className="st sched" style={{ display: "inline-block", marginTop: 16 }}>Datenbank wird geweckt … einen Moment.</p>
       ) : rows.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 18 }}>
-          <p className="eyebrow">Noch keine Einsätze</p>
-          <p className="muted">Trag deinen ersten Auftritt nach — er gehört auf die Karte.</p>
+          {isFiltered ? (
+            <>
+              <p className="eyebrow">Keine Treffer</p>
+              <p className="muted">Für diese Auswahl gibt es keinen Einsatz. Filter lockern oder zurücksetzen.</p>
+            </>
+          ) : (
+            <>
+              <p className="eyebrow">Noch keine Einsätze</p>
+              <p className="muted">Trag deinen ersten Auftritt nach — er gehört auf die Karte.</p>
+            </>
+          )}
         </div>
       ) : (
         <table style={{ marginTop: 18 }}>
           <thead>
             <tr>
               <th>Veranstaltung</th>
+              <th>Briefing</th>
               <th>Ort</th>
               <th>Datum</th>
               <th>Status</th>
+              <th>Akte</th>
               <th>Sprachen</th>
               <th></th>
             </tr>
@@ -76,9 +126,17 @@ export default async function EinsaetzeAdminPage({
               return (
                 <tr key={m.id}>
                   <td><b>{m.eventName}</b></td>
-                  <td className="meta">{m.city}{m.countryCode ? `, ${m.countryCode}` : ""}</td>
+                  <td className="meta">
+                    {m.talk ? (
+                      <Link href={`/admin/briefings/bearbeiten?id=${m.talk.id}`}>{m.talk.title}</Link>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="meta">{m.isOnline ? "Online" : `${m.city}${m.countryCode ? `, ${m.countryCode}` : ""}`}</td>
                   <td className="meta">{formatDate(m.startDate, "de")}</td>
                   <td><span className={`st ${st.cls}`}>{st.label}</span></td>
+                  <td>{m.caseFilePublic ? <span className="st live">Sichtbar</span> : <span className="st">Verborgen</span>}</td>
                   <td>
                     <span className={`lng ${m.hasDe ? "on" : ""}`}>DE</span>{" "}
                     <span className={`lng ${m.hasEn ? "on" : ""}`}>EN</span>
@@ -86,7 +144,7 @@ export default async function EinsaetzeAdminPage({
                   <td style={{ whiteSpace: "nowrap" }}>
                     {m.share ? (
                       <>
-                        <SharePanel title={m.eventName} textDe={m.share.textDe} textEn={m.share.textEn} profiles={shareProfiles} linkedInConnected={linkedInConnected} />{" "}
+                        <SharePanel title={m.eventName} textDe={m.share.textDe} textEn={m.share.textEn} profiles={shareProfiles} />{" "}
                       </>
                     ) : null}
                     <Link className="btn ghost sm" href={`/admin/einsaetze/bearbeiten?id=${m.id}`}>Bearbeiten</Link>{" "}
@@ -105,19 +163,43 @@ export default async function EinsaetzeAdminPage({
   );
 }
 
-async function load(base: string, templates: Awaited<ReturnType<typeof getShareTemplates>>) {
+async function load(
+  base: string,
+  templates: Awaited<ReturnType<typeof getShareTemplates>>,
+  filter: Filter,
+) {
   const missions = await db.mission.findMany({
+    where: {
+      ...(filter.status ? { contentStatus: filter.status } : {}),
+      ...(filter.ort === "online" ? { isOnline: true } : filter.ort === "vorort" ? { isOnline: false } : {}),
+      ...(filter.q
+        ? {
+            OR: [
+              { eventName: { contains: filter.q } },
+              { city: { contains: filter.q } },
+              { deliveries: { some: { talk: { translations: { some: { title: { contains: filter.q } } } } } } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { startDate: "desc" },
     include: {
       translations: { select: { locale: true, slug: true } },
       identities: { select: { codenameDe: true, codenameEn: true, roleDe: true, roleEn: true } },
+      deliveries: {
+        take: 1,
+        orderBy: { heldOn: "desc" },
+        include: { talk: { include: { translations: { where: { locale: "de" } } } } },
+      },
     },
     take: 200,
   });
-  return missions.map((m) => {
+  const total = await db.mission.count();
+  const rows = missions.map((m) => {
     const de = m.translations.find((t) => t.locale === "de");
     const en = m.translations.find((t) => t.locale === "en");
     const names = m.identities.map((i) => identityDisplayName(i, "de"));
+    const delivery = m.deliveries[0];
     // Teilen nur für veröffentlichte Einsätze mit öffentlichem Slug.
     const share =
       m.contentStatus === "PUBLISHED" && de?.slug
@@ -151,11 +233,15 @@ async function load(base: string, templates: Awaited<ReturnType<typeof getShareT
       eventName: m.eventName,
       city: m.city,
       countryCode: m.countryCode,
+      isOnline: m.isOnline,
+      caseFilePublic: m.caseFilePublic,
       startDate: m.startDate,
       contentStatus: m.contentStatus as ContentStatus,
+      talk: delivery ? { id: delivery.talkId, title: delivery.talk.translations[0]?.title ?? "(ohne Titel)" } : null,
       hasDe: m.translations.some((t) => t.locale === "de"),
       hasEn: m.translations.some((t) => t.locale === "en"),
       share,
     };
   });
+  return { rows, total };
 }

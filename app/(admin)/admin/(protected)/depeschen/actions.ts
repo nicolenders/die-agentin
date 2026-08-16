@@ -7,6 +7,7 @@ import { invalidateTags, tags } from "@/lib/cache";
 import { slugify } from "@/lib/slug";
 import { berlinLocalToUtc } from "@/lib/time";
 import { DISPATCH_FORMATS, CONTENT_STATUSES, isOneOf } from "@/lib/domain";
+import { FOCUS_TAG } from "@/lib/queries/records";
 
 const LIST = "/admin/depeschen";
 const EDIT = `${LIST}/bearbeiten`;
@@ -19,7 +20,9 @@ function ids(formData: FormData, key: string): string[] {
 }
 
 function invalidate(): void {
-  invalidateTags([tags.dispatchList("de"), tags.dispatchList("en")]);
+  // Radar-Themen zeigen öffentlich die Anzahl verknüpfter Depeschen — deren
+  // Cache muss beim Speichern einer Depesche mitgehen.
+  invalidateTags([tags.dispatchList("de"), tags.dispatchList("en"), FOCUS_TAG]);
 }
 
 interface Common {
@@ -98,6 +101,7 @@ export async function createDispatch(formData: FormData): Promise<void> {
         publishAt: c.publishedAt,
         identities: { connect: ids(formData, "identityIds").map((id) => ({ id })) },
         topics: { connect: ids(formData, "topicIds").map((id) => ({ id })) },
+        focusTopics: { connect: ids(formData, "focusTopicIds").map((id) => ({ id })) },
         // Admin-verfasste Übersetzungen gelten als geprüft (öffentlich sichtbar).
         translations: { create: trans.map((t) => ({ ...t, state: "REVIEWED" })) },
       },
@@ -127,6 +131,7 @@ export async function updateDispatch(formData: FormData): Promise<void> {
           publishAt: c.publishedAt,
           identities: { set: ids(formData, "identityIds").map((x) => ({ id: x })) },
           topics: { set: ids(formData, "topicIds").map((x) => ({ id: x })) },
+          focusTopics: { set: ids(formData, "focusTopicIds").map((x) => ({ id: x })) },
         },
       }),
       db.dispatchTranslation.deleteMany({ where: { dispatchId: id } }),

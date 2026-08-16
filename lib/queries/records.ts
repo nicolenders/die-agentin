@@ -134,17 +134,25 @@ export interface FocusTopicItem {
   id: string;
   title: string;
   note: string | null;
+  /** Veröffentlichte Depeschen zu diesem Thema — 0 heißt: nicht anklickbar. */
+  dispatchCount: number;
 }
+
+// Nur veröffentlichte, tatsächlich sichtbare Depeschen zählen — ein Radar-Punkt
+// darf nicht auf eine leere Liste führen.
+const PUBLISHED_DISPATCH = { status: "PUBLISHED", translations: { some: { state: "REVIEWED" } } } as const;
 
 async function loadFocusTopics(locale: Locale): Promise<FocusTopicItem[]> {
   const rows = await db.focusTopic.findMany({
     where: { active: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    include: { _count: { select: { dispatches: { where: PUBLISHED_DISPATCH } } } },
   });
   return rows.map((t) => ({
     id: t.id,
     title: locale === "en" && t.titleEn ? t.titleEn : t.titleDe,
     note: t.note,
+    dispatchCount: t._count.dispatches,
   }));
 }
 
@@ -165,19 +173,25 @@ export interface RadarTopicItem {
   title: string;
   note: string | null;
   color: string | null;
+  /** Veröffentlichte Depeschen zu diesem Thema — 0 heißt: nicht anklickbar. */
+  dispatchCount: number;
 }
 
 async function loadRadarTopics(locale: Locale): Promise<RadarTopicItem[]> {
   const rows = await db.focusTopic.findMany({
     where: { active: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    include: { identities: { where: { published: true }, select: { color: true }, orderBy: { sortOrder: "asc" } } },
+    include: {
+      identities: { where: { published: true }, select: { color: true }, orderBy: { sortOrder: "asc" } },
+      _count: { select: { dispatches: { where: PUBLISHED_DISPATCH } } },
+    },
   });
   return rows.map((t) => ({
     id: t.id,
     title: locale === "en" && t.titleEn ? t.titleEn : t.titleDe,
     note: t.note,
     color: t.identities[0]?.color ?? null,
+    dispatchCount: t._count.dispatches,
   }));
 }
 

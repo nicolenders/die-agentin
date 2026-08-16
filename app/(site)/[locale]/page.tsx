@@ -46,7 +46,7 @@ export default async function HQPage({
   const recentDispatches = dispatches.slice(0, 3);
   const topBriefing = ranking[0] ?? null;
   const missionHref = (m: typeof nextMission) =>
-    m?.published && m.slug ? `/${locale}/einsaetze/${m.slug}` : `/${locale}/einsaetze`;
+    m?.published && m.caseFilePublic && m.slug ? `/${locale}/einsaetze/${m.slug}` : `/${locale}/einsaetze`;
 
   return (
     <>

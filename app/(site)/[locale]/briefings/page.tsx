@@ -4,6 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { getBriefingList } from "@/lib/queries/briefings";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { richValueToPlain } from "@/lib/content/rich";
+import { formatDate } from "@/lib/format";
 import RichText from "@/components/content/RichText";
 import BriefingExplorer, { type ExplorerItem } from "@/components/briefings/BriefingExplorer";
 
@@ -50,6 +51,14 @@ export default async function BriefingsPage({
     deCount: i.deCount,
     enCount: i.enCount,
     total: i.total,
+    missions: i.missions.map((m) => ({
+      id: m.id,
+      href: m.linkable && m.slug ? `/${locale}/einsaetze/${m.slug}` : null,
+      eventName: m.eventName,
+      location: m.isOnline ? (isDe ? "Online" : "Online") : `${m.city}, ${m.countryCode}`,
+      dateLabel: formatDate(m.heldOn, locale),
+      languageLabel: m.language === "en" ? (isDe ? "Englisch" : "English") : isDe ? "Deutsch" : "German",
+    })),
     abstractNode: <RichText value={i.abstract} locale={locale} />,
   }));
 

@@ -44,9 +44,14 @@ export default function WorldMap({
   missions,
   locale,
   labels,
+  selectedId = null,
+  onSelect,
 }: {
   missions: MapMission[];
   locale: Locale;
+  /** Von außen gewählter Einsatz (Tabellenzeile, Deep-Link). */
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
   labels: {
     done: string;
     planned: string;
@@ -62,7 +67,8 @@ export default function WorldMap({
   };
 }) {
   const [viewId, setViewId] = useState("welt");
-  const [selected, setSelected] = useState<MapMission | null>(null);
+  const selected = missions.find((m) => m.id === selectedId) ?? null;
+  const select = (id: string | null) => onSelect?.(id);
 
   // Nur Ansichten anbieten, in denen Einsätze liegen (Welt und DACH immer).
   const views = useMemo(() => availableViews(missions), [missions]);
@@ -81,7 +87,7 @@ export default function WorldMap({
 
   function chooseView(id: string) {
     setViewId(id);
-    setSelected(null); // Popup schließen — der Pin liegt evtl. außerhalb der neuen Ansicht.
+    select(null); // Popup schließen — der Pin liegt evtl. außerhalb der neuen Ansicht.
   }
 
   return (
@@ -123,15 +129,16 @@ export default function WorldMap({
               return (
                 <g
                   key={m.id}
-                  className={`pin${m.future ? " future" : ""}`}
+                  className={`pin${m.future ? " future" : ""}${selectedId === m.id ? " on" : ""}`}
                   tabIndex={0}
                   role="button"
                   aria-label={`${m.eventName}, ${m.city}, ${m.dateLabel}`}
-                  onClick={() => setSelected(m)}
+                  aria-pressed={selectedId === m.id}
+                  onClick={() => select(m.id)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      setSelected(m);
+                      select(m.id);
                     }
                   }}
                 >
@@ -157,7 +164,7 @@ export default function WorldMap({
                     top: `max(${(y / H) * 100}% - 150px, 8px)`,
                   }}
                 >
-                  <button className="close" aria-label={locale === "de" ? "Schließen" : "Close"} onClick={() => setSelected(null)}>
+                  <button className="close" aria-label={locale === "de" ? "Schließen" : "Close"} onClick={() => select(null)}>
                     ×
                   </button>
                   {selected.bannerUrl ? (

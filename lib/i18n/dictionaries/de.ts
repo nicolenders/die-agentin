@@ -71,6 +71,7 @@ const de = {
     sgCopiesSold: "verkauftes Exemplar",
     mostRequested: "Meistgefragtes Briefing",
     openMissionFile: "Einsatzakte öffnen",
+    showMissionOnMap: "Auf der Karte zeigen",
     allBriefings: "Alle Briefings",
     noMission: "Zurzeit ist kein Einsatz geplant.",
   },

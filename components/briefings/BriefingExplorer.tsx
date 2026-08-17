@@ -211,22 +211,28 @@ export default function BriefingExplorer({
                         <p className="eyebrow" style={{ marginTop: 18 }}>
                           {isDe ? "Gehalten bei" : "Delivered at"}
                         </p>
-                        <table style={{ marginTop: 8 }}>
-                          <thead>
-                            <tr>
-                              <th>{isDe ? "Datum" : "Date"}</th>
-                              <th>{isDe ? "Veranstaltung" : "Event"}</th>
-                              <th>{isDe ? "Ort" : "Location"}</th>
-                              <th>{isDe ? "Sprache" : "Language"}</th>
+                        {/* Am Telefon genügen Datum, Veranstaltung und Ort — die
+                            Sprache steht als DE/EN-Marke schon über der Tabelle. */}
+                        <table className="stack" role="table" style={{ marginTop: 8 }}>
+                          <thead role="rowgroup">
+                            <tr role="row">
+                              <th scope="col" role="columnheader">{isDe ? "Datum" : "Date"}</th>
+                              <th scope="col" role="columnheader">{isDe ? "Veranstaltung" : "Event"}</th>
+                              <th scope="col" role="columnheader">{isDe ? "Ort" : "Location"}</th>
+                              <th scope="col" role="columnheader" className="hide-sm">{isDe ? "Sprache" : "Language"}</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody role="rowgroup">
                             {it.missions.map((m) => (
-                              <tr key={m.id}>
-                                <td className="meta">{m.dateLabel}</td>
-                                <td>{m.href ? <Link href={m.href}>{m.eventName}</Link> : m.eventName}</td>
-                                <td>{m.location}</td>
-                                <td className="meta">{m.languageLabel}</td>
+                              <tr role="row" key={m.id}>
+                                <td role="cell" className="meta" data-label={isDe ? "Datum" : "Date"}>{m.dateLabel}</td>
+                                <td role="cell" data-label={isDe ? "Veranstaltung" : "Event"} data-primary="">
+                                  {m.href ? <Link href={m.href}>{m.eventName}</Link> : m.eventName}
+                                </td>
+                                <td role="cell" data-label={isDe ? "Ort" : "Location"}>{m.location}</td>
+                                <td role="cell" className="meta hide-sm" data-label={isDe ? "Sprache" : "Language"}>
+                                  {m.languageLabel}
+                                </td>
                               </tr>
                             ))}
                           </tbody>

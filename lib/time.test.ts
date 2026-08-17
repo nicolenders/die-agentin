@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { berlinLocalToUtc, berlinOffsetMinutes, utcToBerlinLocal } from "./time";
+import { berlinDay, berlinLocalToUtc, berlinOffsetMinutes, utcToBerlinLocal } from "./time";
 
 describe("time (Europe/Berlin ↔ UTC)", () => {
   it("berücksichtigt Sommerzeit (+2h im August)", () => {
@@ -28,5 +28,22 @@ describe("time (Europe/Berlin ↔ UTC)", () => {
   it("gibt null bei leerer Eingabe", () => {
     expect(berlinLocalToUtc("")).toBeNull();
     expect(berlinLocalToUtc(undefined)).toBeNull();
+  });
+});
+
+describe("berlinDay", () => {
+  it("liefert den Kalendertag in Berlin, nicht in UTC", () => {
+    // 22:30 UTC im Sommer ist in Berlin bereits der nächste Tag.
+    expect(berlinDay(new Date("2026-08-17T22:30:00Z"))).toBe("2026-08-18");
+    expect(berlinDay(new Date("2026-08-17T21:30:00Z"))).toBe("2026-08-17");
+  });
+
+  it("berücksichtigt die Winterzeit", () => {
+    expect(berlinDay(new Date("2026-01-17T23:30:00Z"))).toBe("2026-01-18");
+    expect(berlinDay(new Date("2026-01-17T22:30:00Z"))).toBe("2026-01-17");
+  });
+
+  it("schreibt sortierbar als YYYY-MM-DD", () => {
+    expect(berlinDay(new Date("2026-03-05T10:00:00Z"))).toBe("2026-03-05");
   });
 });

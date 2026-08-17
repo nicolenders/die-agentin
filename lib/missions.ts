@@ -17,6 +17,18 @@ export function parseYearSelection(raw: string | undefined | null): YearSelectio
   return Number.isInteger(n) && n > 1900 && n < 3000 ? n : "aktuell";
 }
 
+/**
+ * Steht ein Einsatz noch an? Verglichen wird der Kalendertag, nicht der
+ * Zeitpunkt: Was heute stattfindet, ist noch nicht vorbei. Beide Angaben als
+ * `YYYY-MM-DD` — in dieser Schreibweise ist der Textvergleich der Datumsvergleich.
+ *
+ * Genutzt für die Smartphone-Ansicht der Einsätze, die ohne Filter auskommt und
+ * deshalb nur zeigt, was noch bevorsteht.
+ */
+export function isUpcoming(startDay: string, today: string): boolean {
+  return startDay >= today;
+}
+
 /** Gehört ein Einsatz in die aktuelle Auswahl? */
 export function matchesYear(
   missionYear: number,

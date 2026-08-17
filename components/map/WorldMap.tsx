@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { computeGeo, project } from "@/lib/map/geo";
 import { availableViews, inBounds } from "@/lib/map/views";
@@ -69,6 +69,25 @@ export default function WorldMap({
   const [viewId, setViewId] = useState("welt");
   const selected = missions.find((m) => m.id === selectedId) ?? null;
   const select = (id: string | null) => onSelect?.(id);
+
+  // Das Popup ist am Telefon bildschirmfüllend (siehe Stylesheet). Solange es
+  // offen ist, bleibt die Seite darunter stehen — sonst scrollt beim Wischen im
+  // Popup unbemerkt die Seite weiter, und nach dem Schließen ist man woanders.
+  // Escape schließt es, wie es sich für einen Dialog gehört.
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onSelect?.(null);
+    };
+    document.addEventListener("keydown", onKey);
+    const phone = window.matchMedia("(max-width: 640px)").matches;
+    const previous = document.body.style.overflow;
+    if (phone) document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      if (phone) document.body.style.overflow = previous;
+    };
+  }, [selected, onSelect]);
 
   // Nur Ansichten anbieten, in denen Einsätze liegen (Welt und DACH immer).
   const views = useMemo(() => availableViews(missions), [missions]);
@@ -154,7 +173,7 @@ export default function WorldMap({
           ? (() => {
               const language = talkLanguageLabel(selected.language, locale);
               return (
-                <div className="popup" role="dialog" aria-label={selected.eventName}>
+                <div className="popup" role="dialog" aria-modal="true" aria-label={selected.eventName}>
                   <button className="close" aria-label={locale === "de" ? "Schließen" : "Close"} onClick={() => select(null)}>
                     ×
                   </button>

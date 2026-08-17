@@ -104,27 +104,27 @@ export default function IdentityCoverageTabs({
       <div style={{ marginTop: 12 }}>
         {tab === "einsaetze" ? (
           fMissions.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>{labels.date}</th>
-                  <th>{labels.event}</th>
-                  <th>{labels.briefing}</th>
-                  <th>{labels.location}</th>
+            <table className="stack" role="table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th scope="col" role="columnheader">{labels.date}</th>
+                  <th scope="col" role="columnheader">{labels.event}</th>
+                  <th scope="col" role="columnheader">{labels.briefing}</th>
+                  <th scope="col" role="columnheader">{labels.location}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup">
                 {fMissions.map((m, idx) => (
-                  <tr key={`${m.eventName}-${idx}`}>
-                    <td className="meta">{m.dateLabel}</td>
-                    <td>
+                  <tr role="row" key={`${m.eventName}-${idx}`}>
+                    <td role="cell" className="meta" data-label={labels.date}>{m.dateLabel}</td>
+                    <td role="cell" data-label={labels.event} data-primary="">
                       {m.linkable && m.slug ? (
                         <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link>
                       ) : (
                         m.eventName
                       )}
                     </td>
-                    <td>
+                    <td role="cell" data-label={labels.briefing}>
                       {m.briefing ? (
                         <Link href={`/${locale}/briefings?briefing=${m.briefing.id}#briefing-${m.briefing.id}`}>
                           {m.briefing.title}
@@ -133,7 +133,7 @@ export default function IdentityCoverageTabs({
                         <span className="meta">—</span>
                       )}
                     </td>
-                    <td className="meta">{m.city}</td>
+                    <td role="cell" className="meta" data-label={labels.location}>{m.city}</td>
                   </tr>
                 ))}
               </tbody>
@@ -161,18 +161,20 @@ export default function IdentityCoverageTabs({
             <p className="muted">{labels.empty}</p>
           )
         ) : fDispatches.length > 0 ? (
-          <table>
-            <thead>
-              <tr>
-                <th>{labels.title}</th>
-                <th>{labels.format}</th>
+          <table className="stack" role="table">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">{labels.title}</th>
+                <th scope="col" role="columnheader">{labels.format}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {fDispatches.map((d) => (
-                <tr key={d.slug}>
-                  <td><Link href={`/${locale}/depeschen/${d.slug}`}>{d.title}</Link></td>
-                  <td className="meta">{d.format}</td>
+                <tr role="row" key={d.slug}>
+                  <td role="cell" data-label={labels.title} data-primary="">
+                    <Link href={`/${locale}/depeschen/${d.slug}`}>{d.title}</Link>
+                  </td>
+                  <td role="cell" className="meta" data-label={labels.format}>{d.format}</td>
                 </tr>
               ))}
             </tbody>

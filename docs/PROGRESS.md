@@ -321,6 +321,18 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 
 ## Nachträge (nach den 14 Phasen)
 
+**Öffentliche Seite am Telefon** (ADR `docs/decisions/0014-tabellen-am-telefon.md`)
+- Tabellenzeile wird unter 640 px zur Karte (`table.stack` + `data-label`),
+  inklusive expliziter ARIA-Rollen, weil `display: block` die Tabellenrolle
+  nimmt. Betrifft Einsatzliste, Identitätsseite, Briefing-Einsätze und die
+  weiteren Veröffentlichungen.
+- Einsätze am Telefon: nur ab heute (`isUpcoming` + `berlinDay`, beides
+  unit-getestet), Filterband entfällt, Hinweiszeile statt stillem Kürzen.
+  Server rendert weiterhin alles → SEO unverändert.
+- Einsatz-Popup am Telefon bildschirmfüllend, mit Escape, Daumen-Schließfläche
+  und stehender Seite darunter.
+- Briefing-Tabelle „Gehalten bei": Sprachspalte nur am großen Bildschirm.
+
 **Foliensvorlagen für Einsätze** (ADR `docs/decisions/0013-foliensvorlagen.md`)
 - Je eine PowerPoint-Vorlage DE und EN, gepflegt unter **Medien → Vorlagen**
   (`/admin/medien?tab=vorlagen`). Ablage als `SiteSetting`

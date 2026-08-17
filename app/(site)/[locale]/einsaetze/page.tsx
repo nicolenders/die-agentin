@@ -43,6 +43,7 @@ export default async function EinsaetzePage({
     isOnline: m.isOnline,
     year: m.startDate.getUTCFullYear(),
     future: m.future,
+    startDay: m.startDate.toISOString().slice(0, 10),
     dateLabel: formatDate(m.startDate, locale),
     eventUrl: m.eventUrl,
     published: m.published,
@@ -105,6 +106,12 @@ export default async function EinsaetzePage({
           statusDone: isDe ? "Abgeschlossen" : "Completed",
           onlineLocation: isDe ? "Online" : "Online",
           empty: isDe ? "Keine Einsätze für diese Auswahl." : "No missions for this selection.",
+          phoneNote: isDe
+            ? "Anstehende Einsätze — heute und später."
+            : "Upcoming missions — today and later.",
+          phoneEmpty: isDe
+            ? "Zurzeit steht kein Einsatz an. Am größeren Bildschirm sind auch die vergangenen zu sehen."
+            : "No missions coming up. The past ones are visible on a larger screen.",
           map: {
             all: isDe ? "Alle" : "All",
             done: isDe ? "Abgeschlossener Einsatz" : "Completed mission",

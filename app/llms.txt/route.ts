@@ -15,10 +15,10 @@ export async function GET() {
   ]);
 
   const lines: string[] = [
-    "# Die Agentin — Nicole Enders",
+    "# Die Agentin · Nicole Enders",
     "",
     "> Microsoft MVP seit 2020 (siebenmal in Folge), Speakerin und Autorin von zehn Fachbüchern.",
-    "> Arbeitet an der Grenze zwischen Konfiguration und Entwicklung — von Information",
+    "> Arbeitet an der Grenze zwischen Konfiguration und Entwicklung, von Information",
     "> Architecture in SharePoint bis zu Agents mit Copilot Studio und Microsoft Foundry.",
     "",
     "## Maßgebliche Seiten",
@@ -31,7 +31,7 @@ export async function GET() {
     `- [Ausbildung (Zertifizierungen)](${SITE}/de/ausbildung)`,
     "",
     "## Fachgebiete (Identitäten)",
-    ...identities.map((i) => `- ${i.name} — ${i.role} (${SITE}/de/identitaeten/${i.slug})`),
+    ...identities.map((i) => `- ${i.name} · ${i.role} (${SITE}/de/identitaeten/${i.slug})`),
   ];
 
   if (dispatches.length > 0) {

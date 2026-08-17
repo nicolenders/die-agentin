@@ -71,7 +71,7 @@ export default function PptxUploadSlot({
       setError(result.error);
       return;
     }
-    showToast(`${title}: hinterlegt — ${formatMb(result.bytes)}.`);
+    showToast(`${title}: hinterlegt, ${formatMb(result.bytes)}.`);
     router.refresh();
   }
 

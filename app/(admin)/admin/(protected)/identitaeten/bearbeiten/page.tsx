@@ -46,11 +46,11 @@ export default async function IdentityEditPage({
   // Nicht-blockierende Warnungen (Phase 2.6) — im Formular anzeigen.
   const warnings: string[] = [];
   if (!isNew) {
-    if (!data.codenameDe.trim()) warnings.push("Deckname (DE) fehlt — Anzeige fällt auf die Rolle zurück.");
+    if (!data.codenameDe.trim()) warnings.push("Deckname (DE) fehlt: Anzeige fällt auf die Rolle zurück.");
     if (!data.roleEn.trim()) warnings.push("Rolle (EN) fehlt.");
     if (!data.envelopeAssetId) warnings.push("Umschlag-Motiv fehlt (für Identitätsseite und OG-Image).");
     const linked = data.missionIds.length + data.talkIds.length + data.publicationIds.length + data.certificationIds.length;
-    if (linked === 0) warnings.push("Noch keine Einträge verknüpft — die Identität belegt nichts.");
+    if (linked === 0) warnings.push("Noch keine Einträge verknüpft: die Identität belegt nichts.");
   }
 
   const action = isNew ? createIdentity : updateIdentity;
@@ -90,7 +90,7 @@ export default async function IdentityEditPage({
   const beschreibung = (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        <label className="f">Beschreibung (DE) — mehrere Absätze</label>
+        <label className="f">Beschreibung (DE), mehrere Absätze</label>
         <RichTextField name="descriptionDe" defaultValue={data.descriptionDe} ariaLabel="Beschreibung DE" />
       </div>
       <div>
@@ -98,7 +98,7 @@ export default async function IdentityEditPage({
         <RichTextField name="descriptionEn" defaultValue={data.descriptionEn} ariaLabel="Beschreibung EN" />
       </div>
       <div className="grid g2" style={{ gap: 14 }}>
-        <label className="f">Kurzbio (DE) — 2–3 Sätze, für Speaker-Kit/OG
+        <label className="f">Kurzbio (DE), 2–3 Sätze, für Speaker-Kit/OG
           <textarea className="f" name="shortBioDe" defaultValue={data.shortBioDe} rows={3} />
         </label>
         <label className="f">Kurzbio (EN)
@@ -157,7 +157,7 @@ export default async function IdentityEditPage({
 
   const merkmale = (
     <div>
-      <p className="meta">Freie Merkmale (Phase 2.2) — was heute nicht ins Schema passt, landet hier statt in einer Migration.</p>
+      <p className="meta">Freie Merkmale (Phase 2.2): was heute nicht ins Schema passt, landet hier statt in einer Migration.</p>
       <IdentityAttributesField
         name="attributes"
         initial={data.attributes.map((a) => ({ labelDe: a.labelDe, labelEn: a.labelEn, valueDe: a.valueDe, valueEn: a.valueEn, displayPublic: a.displayPublic }))}
@@ -186,7 +186,7 @@ export default async function IdentityEditPage({
       <div>
         <label className="f">Aktuelle Themen (Radar)</label>
         <CategoryMultiSelect options={options.focusTopics} name="focusTopicIds" defaultSelected={data.focusTopicIds} emptyHint="Noch keine Themen unter „Aufklärung (Radar)“ angelegt." />
-        <p className="meta" style={{ marginTop: 6 }}>Womit ich mich gerade beschäftige — erscheint auf der Detailseite dieser Identität. Themen werden unter „Aufklärung (Radar)“ gepflegt.</p>
+        <p className="meta" style={{ marginTop: 6 }}>Womit ich mich gerade beschäftige, erscheint auf der Detailseite dieser Identität. Themen werden unter „Aufklärung (Radar)“ gepflegt.</p>
       </div>
       <p className="meta">Depeschen werden ab Phase 3 verknüpfbar.</p>
     </div>

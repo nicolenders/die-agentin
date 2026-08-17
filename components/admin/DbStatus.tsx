@@ -72,7 +72,7 @@ export default function DbStatus() {
             <p className="eyebrow" style={{ marginTop: 0 }}>Datenbank wird geweckt</p>
             <p style={{ margin: "8px 0 4px" }}>
               Die Datenbank war im Ruhezustand und fährt gerade hoch. Bearbeiten und Anlegen sind
-              gesperrt, bis die Verbindung steht — das dauert meist nur wenige Sekunden.
+              gesperrt, bis die Verbindung steht. Das dauert meist nur wenige Sekunden.
             </p>
             <p className="meta" style={{ margin: 0 }}>Verbindung wird automatisch geprüft …</p>
           </div>

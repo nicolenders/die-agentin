@@ -25,7 +25,7 @@ export default async function AufklaerungAdminPage({
     <section>
       <h1>Aufklärung</h1>
       <p className="muted">
-        Themen auf dem Radar — was ich gerade beobachte, einarbeite und als Nächstes in Briefings
+        Themen auf dem Radar: was ich gerade beobachte, einarbeite und als Nächstes in Briefings
         einfließen lasse. Muss nicht zu einer Zertifizierung führen. Erscheint öffentlich unter
         Ausbildung.
       </p>

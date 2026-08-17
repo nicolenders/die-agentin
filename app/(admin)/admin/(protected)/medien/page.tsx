@@ -124,7 +124,7 @@ export default async function MedienPage({
           docs.length === 0 ? (
             <div className="card bracket">
               <p className="muted" style={{ margin: 0 }}>
-                Noch keine Präsentationen. PDFs lädst du im Register „Hochladen“ hoch — oder
+                Noch keine Präsentationen. PDFs lädst du im Register „Hochladen“ hoch oder
                 direkt beim Einsatz unter „Folien als PDF“.
               </p>
             </div>
@@ -199,7 +199,7 @@ export default async function MedienPage({
         {active === "vorlagen" ? (
           <>
             <p className="muted" style={{ marginTop: 0 }}>
-              Foliensvorlagen: je eine PowerPoint-Datei auf Deutsch und auf Englisch — der
+              Foliensvorlagen: je eine PowerPoint-Datei auf Deutsch und auf Englisch, der
               leere Rahmen im Corporate Design. Beim Bearbeiten eines <b>Briefings</b> steht sie
               zum Anfangen bereit; die fertigen Folien liegen dann am Briefing, und ein Einsatz
               bietet sie in seiner Vortragssprache zum Download an.

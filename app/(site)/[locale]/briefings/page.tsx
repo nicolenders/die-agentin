@@ -73,8 +73,8 @@ export default async function BriefingsPage({
       <h1 className="eyebrow">{isDe ? "Briefings · Vortragsrepertoire" : "Briefings · talk repertoire"}</h1>
       <p className="lead">
         {isDe
-          ? "Alle Vorträge — suchbar und nach Kategorien filterbar, sortiert nach Häufigkeit."
-          : "All talks — searchable and filterable by category, sorted by frequency."}
+          ? "Alle Vorträge, suchbar und nach Kategorien filterbar, sortiert nach Häufigkeit."
+          : "All talks, searchable and filterable by category, sorted by frequency."}
       </p>
 
       {items.length === 0 ? (

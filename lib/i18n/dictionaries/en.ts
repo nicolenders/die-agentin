@@ -99,7 +99,7 @@ const en: Dictionary = {
     namePlural: "Dispatches",
     eyebrow: "Dispatches · from the field",
     title: "Work on the identities",
-    lead: "Between missions: notes, analysis and reference pieces. Every dispatch belongs to an identity — it is the work of embodying it credibly.",
+    lead: "Between missions: notes, analysis and reference pieces. Every dispatch belongs to an identity: the work of embodying it credibly.",
     filterByFormat: "Filter by format",
     updatedLabel: "Updated",
     empty: "As soon as a dispatch comes in, it shows up here.",

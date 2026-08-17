@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   }
   if (!decorative && altDe.length === 0) {
     return NextResponse.json(
-      { error: "Alt-Text (DE) ist Pflicht — oder das Bild als dekorativ markieren." },
+      { error: "Alt-Text (DE) ist Pflicht, oder das Bild als dekorativ markieren." },
       { status: 400 },
     );
   }

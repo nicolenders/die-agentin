@@ -48,8 +48,8 @@ export async function getPersonInput(locale: Locale): Promise<PersonInput> {
     jobTitle: locale === "de" ? "Microsoft MVP · Speakerin & Autorin" : "Microsoft MVP · Speaker & Author",
     description:
       locale === "de"
-        ? "Microsoft MVP seit 2020, siebenmal in Folge. Arbeitet an der Grenze zwischen Konfiguration und Entwicklung — von Information Architecture bis zu Agents."
-        : "Microsoft MVP since 2020, seven years running. Works on the line between configuration and code — from information architecture to agents.",
+        ? "Microsoft MVP seit 2020, siebenmal in Folge. Arbeitet an der Grenze zwischen Konfiguration und Entwicklung, von Information Architecture bis zu Agents."
+        : "Microsoft MVP since 2020, seven years running. Works on the line between configuration and code, from information architecture to agents.",
     sameAs,
     knowsAbout: [...knowsAbout],
     awards,

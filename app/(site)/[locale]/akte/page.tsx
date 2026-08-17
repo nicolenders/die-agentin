@@ -64,7 +64,7 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
           <li>{isDe ? `${identities.length} Identitäten (Fachgebiete).` : `${identities.length} identities (areas).`}</li>
         </ul>
         <p className="meta" style={{ marginTop: 8 }}>
-          {isDe ? "Zahlen aus dem laufenden Bestand — sie veralten nicht mit der Bio." : "Numbers pulled live — they don't go stale with the bio."}
+          {isDe ? "Zahlen aus dem laufenden Bestand. Sie veralten nicht mit der Bio." : "Numbers pulled live. They don't go stale with the bio."}
         </p>
       </div>
 

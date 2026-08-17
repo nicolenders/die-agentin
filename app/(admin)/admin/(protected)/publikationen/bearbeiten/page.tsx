@@ -96,7 +96,7 @@ export default async function PublicationEditPage({
             Je Halbjahr eintragen, wie viele Exemplare als gedruckte Version, als PDF und als
             Bundle (PDF + gedruckt) verkauft wurden. Öffentlich erscheinen die Summen:
             gedruckt = gedruckt + Bundle, PDF = PDF + Bundle. Retouren (zurückgegebene
-            Exemplare) als negative Zahl eintragen — sie mindern die Summe.
+            Exemplare) als negative Zahl eintragen. Sie mindern die Summe.
           </p>
 
           {(() => {

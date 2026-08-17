@@ -64,19 +64,19 @@ export default async function LegendePage({
   // Codebuch (12.3): übersetzt die Sektionsnamen — Story-Element und Usability-Fix.
   const codebook: { term: string; gloss: string }[] = isDe
     ? [
-        { term: "HQ", gloss: "Hauptquartier — die Startseite, das Lagebild." },
+        { term: "HQ", gloss: "Hauptquartier: die Startseite, das Lagebild." },
         { term: "Einsätze", gloss: "Auftritte vor Ort, auf der Weltkarte." },
-        { term: "Identitäten", gloss: "Decknamen — die Rollen, unter denen ich auftrete." },
+        { term: "Identitäten", gloss: "Decknamen: die Rollen, unter denen ich auftrete." },
         { term: dict.dispatch.namePlural, gloss: "Meldungen aus dem Feld: Arbeit an einer Identität." },
-        { term: "Legende", gloss: "Deckgeschichte und Kartenlegende zugleich — diese Seite." },
+        { term: "Legende", gloss: "Deckgeschichte und Kartenlegende zugleich, also diese Seite." },
         { term: "Briefings", gloss: "Was ich zu einem Einsatz mitbringe: die Vorträge." },
       ]
     : [
-        { term: "HQ", gloss: "Headquarters — the home page, the situation board." },
+        { term: "HQ", gloss: "Headquarters: the home page, the situation board." },
         { term: "Missions", gloss: "On-site appearances, on the world map." },
-        { term: "Identities", gloss: "Cover names — the roles I appear under." },
+        { term: "Identities", gloss: "Cover names: the roles I appear under." },
         { term: dict.dispatch.namePlural, gloss: "Reports from the field: work on an identity." },
-        { term: "Legend", gloss: "Cover story and map legend at once — this page." },
+        { term: "Legend", gloss: "Cover story and map legend at once, which is this page." },
         { term: "Briefings", gloss: "What I bring to a mission: the talks." },
       ];
   const portraitSrc = legend.portrait?.url ?? brandAsset("portrait.jpg");
@@ -84,14 +84,14 @@ export default async function LegendePage({
 
   const whyAgent = isDe
     ? [
-        "Agent, Agentin — das Wort trägt zwei Bedeutungen, und ich beanspruche beide. Da ist die Agentin im klassischen Sinn: die, die im Hintergrund arbeitet, Informationen ordnet, Fäden verbindet und dafür sorgt, dass am Ende etwas trägt. Und da ist der Agent im technischen Sinn: die Software, die im Auftrag handelt — Agentic AI, Copilot Studio, Microsoft Foundry. Ich baue solche Agents. Beides ist dieselbe Haltung.",
-        "Enders ist mein Name — und zugleich ein Versprechen: keine losen Enden. Was ich anfange, wird zu Ende gebracht; was ich baue, hält im Alltag.",
-        "Daraus folgt die Arbeitsweise: nicht die Demo interessiert mich, sondern die Frage dahinter. Was muss vorhanden sein, damit die Technik trägt — Struktur, Berechtigungen, Governance, Akzeptanz? Ein Copilot ist nur so gut wie die Informationsarchitektur, auf der er sitzt.",
+        "Agent, Agentin: Das Wort trägt zwei Bedeutungen, und ich beanspruche beide. Da ist die Agentin im klassischen Sinn: die, die im Hintergrund arbeitet, Informationen ordnet, Fäden verbindet und dafür sorgt, dass am Ende etwas trägt. Und da ist der Agent im technischen Sinn: die Software, die im Auftrag handelt, also Agentic AI, Copilot Studio, Microsoft Foundry. Ich baue solche Agents. Beides ist dieselbe Haltung.",
+        "Enders ist mein Name und zugleich ein Versprechen: keine losen Enden. Was ich anfange, wird zu Ende gebracht; was ich baue, hält im Alltag.",
+        "Daraus folgt die Arbeitsweise: nicht die Demo interessiert mich, sondern die Frage dahinter. Was muss vorhanden sein, damit die Technik trägt? Struktur, Berechtigungen, Governance, Akzeptanz. Ein Copilot ist nur so gut wie die Informationsarchitektur, auf der er sitzt.",
       ]
     : [
-        "Agent — the word carries two meanings, and I claim both. There is the agent in the classic sense: the one who works in the background, orders information, connects the threads and makes sure something holds in the end. And there is the agent in the technical sense: software that acts on your behalf — agentic AI, Copilot Studio, Microsoft Foundry. I build those agents. Both are the same stance.",
-        "Enders is my name — and at the same time a promise: no loose ends. What I start gets finished; what I build holds up in daily work.",
-        "From that follows the way I work: I am less interested in the demo than in the question behind it. What has to be in place for the technology to hold — structure, permissions, governance, acceptance? A Copilot is only as good as the information architecture it sits on.",
+        "Agent: the word carries two meanings, and I claim both. There is the agent in the classic sense: the one who works in the background, orders information, connects the threads and makes sure something holds in the end. And there is the agent in the technical sense: software that acts on your behalf, meaning agentic AI, Copilot Studio, Microsoft Foundry. I build those agents. Both are the same stance.",
+        "Enders is my name and at the same time a promise: no loose ends. What I start gets finished; what I build holds up in daily work.",
+        "From that follows the way I work: I am less interested in the demo than in the question behind it. What has to be in place for the technology to hold? Structure, permissions, governance, acceptance. A Copilot is only as good as the information architecture it sits on.",
       ];
 
   return (
@@ -199,8 +199,8 @@ export default async function LegendePage({
             <p className="eyebrow" style={{ marginTop: 0 }}>{dict.identity.title}</p>
             <p className="meta">
               {isDe
-                ? "Eine Identität kommt als Umschlag — mit Ausweis, Geld und Unterlagen. Offen als meine eigene ausgewiesen, keine Verschleierung."
-                : "An identity arrives as an envelope — with an ID, money and papers. Openly declared as my own, no concealment."}
+                ? "Eine Identität kommt als Umschlag: mit Ausweis, Geld und Unterlagen. Offen als meine eigene ausgewiesen, keine Verschleierung."
+                : "An identity arrives as an envelope: with an ID, money and papers. Openly declared as my own, no concealment."}
             </p>
             {identities.length > 0 ? <IdentityCompactGrid identities={identities} locale={locale} columns={2} /> : null}
           </div>

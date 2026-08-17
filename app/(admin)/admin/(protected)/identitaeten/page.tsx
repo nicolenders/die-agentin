@@ -27,7 +27,7 @@ export default async function IdentitaetenAdminPage({
     <section>
       <h1>Identitäten</h1>
       <p className="muted">
-        Nicoles Decknamen — parallel und dauerhaft aktiv, keine Chronologie. Jede Identität ist ein Objekt mit Inhalt
+        Nicoles Decknamen, parallel und dauerhaft aktiv, keine Chronologie. Jede Identität ist ein Objekt mit Inhalt
         („Umschlag“), kein Etikett. Reihenfolge ist manuell.
       </p>
       <Flash ok={ok} err={err} />
@@ -41,7 +41,7 @@ export default async function IdentitaetenAdminPage({
 
       {rows.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 16 }}>
-          <p className="muted" style={{ margin: 0 }}>Noch keine Identität angelegt. Leg die erste an — sie trägt später die ganze Startseite.</p>
+          <p className="muted" style={{ margin: 0 }}>Noch keine Identität angelegt. Leg die erste an. Sie trägt später die ganze Startseite.</p>
         </div>
       ) : (
         <table style={{ marginTop: 16 }}>

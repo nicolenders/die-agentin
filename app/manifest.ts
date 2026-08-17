@@ -7,7 +7,7 @@ export const dynamic = "force-static";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Die Agentin — nicolenders.com",
+    name: "Die Agentin · nicolenders.com",
     short_name: "Die Agentin",
     description: "Microsoft AI & Modern Work. Keine losen Enden.",
     start_url: "/de",

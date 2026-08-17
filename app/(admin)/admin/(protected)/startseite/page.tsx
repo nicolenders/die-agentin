@@ -83,7 +83,7 @@ export default async function StartseiteAdminPage({
               initialUrl={raw?.heroAsset ? assetUrl(raw.heroAsset.blobPath) : null}
               aspectRatio="4 / 5"
               width={150}
-              emptyHint="Kein Bild gewählt — es wird das Standard-Markenbild gezeigt."
+              emptyHint="Kein Bild gewählt. Es wird das Standard-Markenbild gezeigt."
             />
 
             <button className="btn solid sm" type="submit" style={{ marginTop: 16 }}>

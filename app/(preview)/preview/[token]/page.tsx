@@ -43,7 +43,7 @@ export default async function PreviewPage({
           marginBottom: 24,
         }}
       >
-        ◉ VORSCHAU — nicht veröffentlicht · Status {post.status}
+        ◉ VORSCHAU: nicht veröffentlicht · Status {post.status}
       </div>
 
       <article className="article">

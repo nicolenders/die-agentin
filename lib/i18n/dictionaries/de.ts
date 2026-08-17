@@ -113,7 +113,7 @@ const de = {
     namePlural: "Depeschen",
     eyebrow: "Depeschen · aus dem Feld",
     title: "Arbeit an den Identitäten",
-    lead: "Zwischen den Einsätzen: Meldungen, Einordnungen und Nachschlagewerke. Jede Depesche gehört zu einer Identität — sie ist die Arbeit daran, sie glaubhaft zu verkörpern.",
+    lead: "Zwischen den Einsätzen: Meldungen, Einordnungen und Nachschlagewerke. Jede Depesche gehört zu einer Identität: die Arbeit daran, sie glaubhaft zu verkörpern.",
     filterByFormat: "Nach Format filtern",
     updatedLabel: "Aktualisiert",
     empty: "Sobald eine Depesche eingeht, erscheint sie hier.",

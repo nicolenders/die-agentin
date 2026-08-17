@@ -171,7 +171,7 @@ export default async function BriefingEditPage({
         <p className="eyebrow">Folien zu diesem Briefing</p>
         <p className="meta" style={{ marginTop: -6 }}>
           Je Sprache eine PowerPoint. Bei einem Einsatz wird der Foliensatz in der dort
-          gewählten Vortragssprache zum Download angeboten — gepflegt wird er also einmal
+          gewählten Vortragssprache zum Download angeboten. Gepflegt wird er also einmal
           hier, nicht bei jedem Einsatz neu.
         </p>
         <TalkSlidesManager
@@ -192,7 +192,7 @@ export default async function BriefingEditPage({
           <p className="eyebrow" style={{ margin: 0 }}>Verwandte Briefings</p>
           <p className="meta" style={{ marginTop: 6 }}>Gleiches Thema (gemeinsame Kategorie), nach Überschneidung sortiert.</p>
           {related.length === 0 ? (
-            <p className="muted" style={{ margin: 0 }}>Noch keine verwandten Briefings — ein anderes Briefing mit gleicher Kategorie erscheint hier.</p>
+            <p className="muted" style={{ margin: 0 }}>Noch keine verwandten Briefings. Ein anderes Briefing mit gleicher Kategorie erscheint hier.</p>
           ) : (
             <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
               {related.map((r) => (

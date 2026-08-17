@@ -33,8 +33,8 @@ export default async function AusbildungPage({
       <h1 className="eyebrow">{isDe ? "Ausbildung · Zertifizierungen" : "Credentials · certifications"}</h1>
       <p className="lead">
         {isDe
-          ? "Zertifizierungen, MVP-Auszeichnungen, Schulungen und aktuelle Themen — getrennt nach Bereichen."
-          : "Certifications, MVP awards, trainings and current topics — grouped by area."}
+          ? "Zertifizierungen, MVP-Auszeichnungen, Schulungen und aktuelle Themen, getrennt nach Bereichen."
+          : "Certifications, MVP awards, trainings and current topics, grouped by area."}
       </p>
 
       <CertificationSections certs={certs} focus={focus} locale={locale} />

@@ -265,7 +265,7 @@ export default async function BriefingsAdminPage({
               <label className="f">Kategorien (Mehrfachauswahl)</label>
               <CategoryMultiSelect name="categoryIds" options={categories.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Erst eine Kategorie anlegen (Tab „Kategorien“)." />
               <label className="f">Zielgruppe (Mehrfachauswahl)</label>
-              <CategoryMultiSelect name="audienceIds" options={audienceTags.map((a) => ({ id: a.id, name: a.nameDe }))} emptyHint="Optional — erst eine Zielgruppe anlegen (Tab „Zielgruppen“)." />
+              <CategoryMultiSelect name="audienceIds" options={audienceTags.map((a) => ({ id: a.id, name: a.nameDe }))} emptyHint="Optional: erst eine Zielgruppe anlegen (Tab „Zielgruppen“)." />
               <label className="f">Level</label>
               <input className="f" name="level" placeholder="300" />
               <label className="f">Dauer (Minuten)</label>
@@ -311,7 +311,7 @@ export default async function BriefingsAdminPage({
         {active === "zielgruppen" ? (
           <div className="card bracket">
             <p className="eyebrow">Zielgruppen</p>
-            <p className="meta" style={{ marginTop: 0 }}>Wiederverwendbare Tags — einmal anlegen, an beliebig vielen Briefings nutzen.</p>
+            <p className="meta" style={{ marginTop: 0 }}>Wiederverwendbare Tags: einmal anlegen, an beliebig vielen Briefings nutzen.</p>
             <table>
               <tbody>
                 {audienceTags.map((a) => (

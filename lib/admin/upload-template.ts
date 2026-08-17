@@ -9,7 +9,8 @@ import { SLIDE_TEMPLATE_PART_BYTES } from "@/lib/slide-templates";
 // MB ist jeder Fehlschlag klein, sichtbar und wiederholbar; am Ende prüft der
 // Server die zusammengesetzte Datei, bevor sie als Vorlage gilt.
 
-const ENDPOINT = "/api/admin/missions/slide-template";
+const TEMPLATE_ENDPOINT = "/api/admin/missions/slide-template";
+const TALK_ENDPOINT = "/api/admin/briefings/slides";
 const ATTEMPTS = 3;
 
 export type UploadResult =
@@ -31,13 +32,17 @@ async function readJson(response: Response): Promise<{ error?: string; [key: str
 }
 
 /**
- * Lädt `file` hoch und meldet nach jedem Teil den Fortschritt. Ein Teil wird bis
- * zu dreimal versucht — ein Aussetzer im WLAN kostet dann Sekunden statt des
- * ganzen Uploads.
+ * Lädt `file` in Teilstücken hoch und meldet nach jedem Teil den Fortschritt.
+ * Ein Teil wird bis zu dreimal versucht — ein Aussetzer im WLAN kostet dann
+ * Sekunden statt des ganzen Uploads.
+ *
+ * `endpoint` entscheidet, wo die Datei landet: bei den Vorlagen oder an einem
+ * Briefing. Der Weg dorthin ist derselbe.
  */
-export async function uploadSlideTemplate(
+async function uploadInParts(
   file: File,
-  locale: string,
+  endpoint: string,
+  commitParams: Record<string, string>,
   onProgress?: (done: number, total: number) => void,
 ): Promise<UploadResult> {
   const uploadId = crypto.randomUUID();
@@ -59,7 +64,7 @@ export async function uploadSlideTemplate(
     let stored = false;
     for (let attempt = 1; attempt <= ATTEMPTS && !stored; attempt += 1) {
       try {
-        const response = await fetch(`${ENDPOINT}?${query}`, { method: "POST", body: slice });
+        const response = await fetch(`${endpoint}?${query}`, { method: "POST", body: slice });
         if (response.ok) {
           stored = true;
           break;
@@ -80,15 +85,15 @@ export async function uploadSlideTemplate(
   }
 
   const query = new URLSearchParams({
+    ...commitParams,
     phase: "commit",
     upload: uploadId,
-    locale,
     name: file.name,
     parts: String(total),
     size: String(file.size),
   });
   try {
-    const response = await fetch(`${ENDPOINT}?${query}`, { method: "POST" });
+    const response = await fetch(`${endpoint}?${query}`, { method: "POST" });
     const data = await readJson(response);
     if (!response.ok) {
       return { ok: false, error: data.error ?? `Upload fehlgeschlagen (HTTP ${response.status}).` };
@@ -105,4 +110,23 @@ export async function uploadSlideTemplate(
       error: `Abschluss fehlgeschlagen: ${error instanceof Error ? error.message : "Netzwerkfehler"}.`,
     };
   }
+}
+
+/** Foliensvorlage (Medien → Vorlagen) einer Sprache. */
+export function uploadSlideTemplate(
+  file: File,
+  locale: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<UploadResult> {
+  return uploadInParts(file, TEMPLATE_ENDPOINT, { locale }, onProgress);
+}
+
+/** Foliensatz eines Briefings in einer Sprache. */
+export function uploadTalkSlides(
+  file: File,
+  talkId: string,
+  locale: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<UploadResult> {
+  return uploadInParts(file, TALK_ENDPOINT, { locale, talk: talkId }, onProgress);
 }

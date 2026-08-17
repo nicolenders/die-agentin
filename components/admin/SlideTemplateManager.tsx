@@ -1,26 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { showToast } from "@/lib/admin/toast";
 import ConfirmButton from "@/components/admin/ConfirmButton";
-import {
-  MAX_SLIDE_TEMPLATE_BYTES,
-  MAX_SLIDE_TEMPLATE_MB,
-  SLIDE_TEMPLATE_ACCEPT,
-  SLIDE_TEMPLATE_PART_BYTES,
-  SLIDE_TEMPLATE_TOO_LARGE,
-  formatMb,
-  slideTemplateUrl,
-  type SlideTemplate,
-  type SlideTemplateSet,
-} from "@/lib/slide-templates";
+import PptxUploadSlot from "@/components/admin/PptxUploadSlot";
 import { uploadSlideTemplate } from "@/lib/admin/upload-template";
+import { slideTemplateUrl, type SlideTemplateSet } from "@/lib/slide-templates";
 import type { Locale } from "@/lib/i18n/config";
 
-// Foliensvorlagen: je eine PowerPoint-Datei auf Deutsch und auf Englisch. Sie
-// gelten für alle Einsätze — im Einsatzformular wird die Vorlage in der
-// gewählten Vortragssprache zum Download angeboten.
+// Foliensvorlagen: je eine PowerPoint-Datei auf Deutsch und auf Englisch — der
+// leere Rahmen im Corporate Design. Die fertigen Folien eines Vortrags liegen
+// nicht hier, sondern am Briefing; dort wird die Vorlage zum Download angeboten.
 
 const LABEL: Record<Locale, string> = { de: "Deutsch", en: "Englisch" };
 
@@ -34,118 +22,33 @@ export default function SlideTemplateManager({
 }) {
   return (
     <div className="form-2col">
-      {(["de", "en"] as Locale[]).map((locale) => (
-        <SlideTemplateCard
-          key={locale}
-          locale={locale}
-          template={templates[locale]}
-          onRemove={onRemove}
-        />
-      ))}
-    </div>
-  );
-}
-
-function SlideTemplateCard({
-  locale,
-  template,
-  onRemove,
-}: {
-  locale: Locale;
-  template: SlideTemplate | null;
-  onRemove: (formData: FormData) => void;
-}) {
-  const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-
-  async function upload(file: File) {
-    setError(null);
-    if (file.size > MAX_SLIDE_TEMPLATE_BYTES) {
-      // Vor dem Hochladen absagen: bei 40-MB-Dateien wäre die Alternative,
-      // minutenlang zu übertragen und dann eine Absage zu bekommen.
-      setError(`${SLIDE_TEMPLATE_TOO_LARGE} (${formatMb(file.size)})`);
-      return;
-    }
-    setBusy(true);
-    setProgress({ done: 0, total: Math.ceil(file.size / SLIDE_TEMPLATE_PART_BYTES) });
-    const result = await uploadSlideTemplate(file, locale, (done, total) =>
-      setProgress({ done, total }),
-    );
-    setBusy(false);
-    setProgress(null);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    showToast(`Vorlage (${LABEL[locale]}) hinterlegt — ${formatMb(result.bytes)}.`);
-    router.refresh();
-  }
-
-  return (
-    <div className="card bracket">
-      <p className="eyebrow">Vorlage {LABEL[locale]}</p>
-      {template ? (
-        <>
-          <p className="meta" style={{ marginTop: 0 }}>
-            Hinterlegt und im Einsatzformular verlinkt.
-          </p>
-          <p style={{ margin: "8px 0" }}>
-            <a className="btn ghost sm" href={slideTemplateUrl(template)} download={template.fileName}>
-              ⬇ {template.fileName}
-            </a>{" "}
-            {/* Die Größe steht sichtbar dabei: stimmt sie mit der Datei auf dem
-                Rechner überein, ist die Vorlage vollständig angekommen. */}
-            <span className="meta">{formatMb(template.bytes)}</span>
-          </p>
-        </>
-      ) : (
-        <p className="meta" style={{ marginTop: 0 }}>
-          Noch keine Vorlage. Ohne sie weist das Einsatzformular für diese Sprache darauf hin.
-        </p>
-      )}
-
-      <input
-        ref={inputRef}
-        id={`tpl-${locale}`}
-        type="file"
-        accept={SLIDE_TEMPLATE_ACCEPT}
-        style={{ display: "none" }}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void upload(f);
-          e.target.value = "";
-        }}
-      />
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className="btn ghost sm" disabled={busy} onClick={() => inputRef.current?.click()}>
-          {busy
-            ? progress
-              ? `Lädt hoch … Teil ${progress.done} von ${progress.total}`
-              : "Lädt hoch …"
-            : template
-              ? "Ersetzen"
-              : "PowerPoint hochladen"}
-        </button>
-        {template ? (
-          <form action={onRemove} style={{ display: "inline" }}>
-            <input type="hidden" name="locale" value={locale} />
-            <ConfirmButton
-              confirmText={`Vorlage (${LABEL[locale]}) entfernen? Im Einsatzformular steht dann keine ${LABEL[locale]}-Vorlage mehr bereit.`}
-            >
-              Entfernen
-            </ConfirmButton>
-          </form>
-        ) : null}
-      </div>
-      <p className="meta" style={{ marginTop: 8 }}>
-        .pptx oder .potx, max. {MAX_SLIDE_TEMPLATE_MB} MB. Große Dateien gehen in Teilstücken
-        hoch — der Fortschritt steht auf der Schaltfläche. Am Ende wird die abgelegte Datei
-        geprüft; unvollständig Angekommenes wird abgelehnt statt stillschweigend gespeichert.
-      </p>
-      {error ? <p className="media-error">{error}</p> : null}
+      {(["de", "en"] as Locale[]).map((locale) => {
+        const template = templates[locale];
+        return (
+          <PptxUploadSlot
+            key={locale}
+            title={`Vorlage ${LABEL[locale]}`}
+            file={
+              template
+                ? { fileName: template.fileName, bytes: template.bytes, url: slideTemplateUrl(template) }
+                : null
+            }
+            description="Hinterlegt und im Briefing zum Download verlinkt."
+            emptyHint={`Noch keine Vorlage. Ohne sie weist das Briefing für ${LABEL[locale]} darauf hin.`}
+            upload={(file, onProgress) => uploadSlideTemplate(file, locale, onProgress)}
+            removeAction={
+              <form action={onRemove} style={{ display: "inline" }}>
+                <input type="hidden" name="locale" value={locale} />
+                <ConfirmButton
+                  confirmText={`Vorlage (${LABEL[locale]}) entfernen? Im Briefing steht dann keine ${LABEL[locale]}-Vorlage mehr bereit.`}
+                >
+                  Entfernen
+                </ConfirmButton>
+              </form>
+            }
+          />
+        );
+      })}
     </div>
   );
 }

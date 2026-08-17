@@ -88,7 +88,7 @@ model Dossier {
   posts        Post[]
   // Mehrfachauswahl (SPEC-Erweiterung): mehrere Kategorien je Dossier.
   // `categoryId` bleibt als „primäre" Kategorie erhalten (Abwärtskompatibilität).
-  categories Taxonomy[] @relation("DossierCategories")
+  categories   Taxonomy[]           @relation("DossierCategories")
 
   @@index([status, publishAt])
 }
@@ -115,39 +115,39 @@ model DossierTranslation {
 // ---------------------------------------------------------------------------
 
 model Mission {
-  id            String    @id @default(cuid())
-  eventName     String
-  city          String
-  countryCode   String    @db.Char(2)
-  lat           Float
-  lon           Float
+  id              String      @id @default(cuid())
+  eventName       String
+  city            String
+  countryCode     String      @db.Char(2)
+  lat             Float
+  lon             Float
   // Online-/Remote-Veranstaltung ohne festen Ort. Wird auf der Karte in der
   // Antarktis geplottet (dort findet nichts statt — der Ort ist erkennbar
   // symbolisch) und kann in der Einsatzliste aus-/eingeblendet werden.
-  isOnline      Boolean   @default(false)
+  isOnline        Boolean     @default(false)
   // Steuert, ob die öffentliche Einsatzakte (Detailseite) verlinkt wird. Ohne
   // diese Freigabe erscheint weder im Karten-Popup noch in der Liste ein Link —
   // so führt kein Button auf eine Seite, die noch keinen Inhalt hat. Default aus.
-  caseFilePublic Boolean  @default(false)
-  startDate     DateTime
-  endDate       DateTime?
-  status        String    @default("PLANNED") // MissionStatus
-  eventUrl      String?   @db.NVarChar(2048)
-  contentStatus String    @default("DRAFT") // ContentStatus
+  caseFilePublic  Boolean     @default(false)
+  startDate       DateTime
+  endDate         DateTime?
+  status          String      @default("PLANNED") // MissionStatus
+  eventUrl        String?     @db.NVarChar(2048)
+  contentStatus   String      @default("DRAFT") // ContentStatus
   // Belegmaterial (Phase 9.1) — alle optional, Altdaten dürfen nicht brechen.
-  slidesUrl       String? @db.NVarChar(2048)
+  slidesUrl       String?     @db.NVarChar(2048)
   slidesPlatform  String?
   // Hochgeladene Foliendatei (PDF). Pfad in der Medienablage + Originalname für
   // den Download-Link. Getrennt von MediaAsset, damit die Bild-Mediathek sauber
   // bleibt. Öffentlich als Download angeboten (Phase: Einsätze-Umbau).
-  slidesFilePath  String? @db.NVarChar(2048)
+  slidesFilePath  String?     @db.NVarChar(2048)
   slidesFileName  String?
-  recordingUrl    String? @db.NVarChar(2048) // YouTube o. Ä., datenschutzfreundlich eingebettet
-  recapDe         String? @db.NVarChar(Max) // TipTap JSON
-  recapEn         String? @db.NVarChar(Max)
+  recordingUrl    String?     @db.NVarChar(2048) // YouTube o. Ä., datenschutzfreundlich eingebettet
+  recapDe         String?     @db.NVarChar(Max) // TipTap JSON
+  recapEn         String?     @db.NVarChar(Max)
   feedbackScore   Float?
   feedbackSource  String?
-  coSpeakers      String? @db.NVarChar(Max) // JSON [{ name, url }]
+  coSpeakers      String?     @db.NVarChar(Max) // JSON [{ name, url }]
   sessionType     String? // SessionType: KEYNOTE | SESSION | WORKSHOP | PANEL
   // Sprache, in der der Vortrag gehalten wurde — als Locale-Kürzel („de"/„en"),
   // gesetzt aus der EINEN Sprachauswahl der Erfassungsmaske. Frühere Freitexte
@@ -158,17 +158,17 @@ model Mission {
   // auf einer Konferenz 45 und im Webinar 30 Minuten.
   durationMin     Int?
   attendeeCount   Int?
-  bannerAssetId String?
-  banner        MediaAsset? @relation("MissionBanner", fields: [bannerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  bannerAssetId   String?
+  banner          MediaAsset? @relation("MissionBanner", fields: [bannerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   translations MissionTranslation[]
   photos       MissionPhoto[]
   deliveries   TalkDelivery[]
   posts        Post[]
-  identities   Identity[] @relation("IdentityMissions")
-  tools        Tool[]     @relation("MissionTools")
+  identities   Identity[]           @relation("IdentityMissions")
+  tools        Tool[]               @relation("MissionTools")
 
   @@index([startDate])
   @@index([contentStatus])
@@ -190,10 +190,10 @@ model MissionTranslation {
 }
 
 model MissionPhoto {
-  id        String  @id @default(cuid())
+  id        String @id @default(cuid())
   missionId String
   assetId   String
-  sortOrder Int     @default(0)
+  sortOrder Int    @default(0)
 
   mission Mission    @relation(fields: [missionId], references: [id], onDelete: Cascade)
   asset   MediaAsset @relation(fields: [assetId], references: [id])
@@ -206,30 +206,51 @@ model MissionPhoto {
 // ---------------------------------------------------------------------------
 
 model Talk {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   categoryId  String
-  category    Taxonomy @relation("TalkCategory", fields: [categoryId], references: [id])
+  category    Taxonomy  @relation("TalkCategory", fields: [categoryId], references: [id])
   level       String? // "100" | "200" | "300" | "400"
   durationMin Int?
-  active      Boolean  @default(true) // öffentlich sichtbar (auf der Website angezeigt)
+  active      Boolean   @default(true) // öffentlich sichtbar (auf der Website angezeigt)
   // Archiviert ab diesem Tag: das Briefing wird öffentlich nicht mehr gezeigt
   // und ist bei NEUEN Einsätzen ab diesem Datum nicht mehr wählbar. Ältere
   // Einsätze behalten ihre Zuordnung und können sie auch nachträglich noch
   // bekommen — gehalten wurde der Vortrag ja damals (SPEC: Historie bleibt wahr).
   archivedAt  DateTime?
-  sortOrder   Int      @default(0) // manuelle Reihenfolge auf der öffentlichen Seite
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sortOrder   Int       @default(0) // manuelle Reihenfolge auf der öffentlichen Seite
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   translations TalkTranslation[]
   deliveries   TalkDelivery[]
-  categories   Taxonomy[]     @relation("TalkCategories")
-  audiences    Taxonomy[]     @relation("TalkAudiences")
-  identities   Identity[]     @relation("IdentityTalks")
-  tools        Tool[]         @relation("TalkTools")
+  slideDecks   TalkSlideDeck[]
+  categories   Taxonomy[]        @relation("TalkCategories")
+  audiences    Taxonomy[]        @relation("TalkAudiences")
+  identities   Identity[]        @relation("IdentityTalks")
+  tools        Tool[]            @relation("TalkTools")
 
   @@index([categoryId])
   @@index([sortOrder])
+}
+
+// Foliensatz eines Briefings, je Sprache eine Datei (PowerPoint). Bewusst
+// getrennt von den Vorlagen in den Einstellungen: Die Vorlage ist der leere
+// Rahmen im Corporate Design, hier liegen die fertigen Folien dieses Vortrags.
+// Beim Einsatz wird der Foliensatz in der dort gewählten Vortragssprache zum
+// Download angeboten — die Zuordnung läuft also über das Briefing, nicht über
+// den einzelnen Einsatz.
+model TalkSlideDeck {
+  id        String   @id @default(cuid())
+  talkId    String
+  locale    String // „de" | „en"
+  blobPath  String   @db.NVarChar(2048) // Pfad in der Medienablage
+  fileName  String // Originalname für den Download
+  bytes     Int      @default(0) // Größe, sichtbar zur Vollständigkeitsprüfung
+  updatedAt DateTime @updatedAt
+
+  talk Talk @relation(fields: [talkId], references: [id], onDelete: Cascade)
+
+  @@unique([talkId, locale])
 }
 
 model TalkTranslation {
@@ -263,23 +284,23 @@ model TalkDelivery {
 // ---------------------------------------------------------------------------
 
 model Publication {
-  id          String   @id @default(cuid())
-  type        String // PublicationType: BOOK | COURSE | REPOSITORY | ARTICLE | PODCAST | INTERVIEW | WHITEPAPER
-  year        Int
-  isbn        String?
-  publisher   String?
+  id           String      @id @default(cuid())
+  type         String // PublicationType: BOOK | COURSE | REPOSITORY | ARTICLE | PODCAST | INTERVIEW | WHITEPAPER
+  year         Int
+  isbn         String?
+  publisher    String?
   // Nur bei type = REPOSITORY (Phase 6.2):
-  repoUrl     String?  @db.NVarChar(2048)
-  language    String? // Programmiersprache, optional
+  repoUrl      String?     @db.NVarChar(2048)
+  language     String? // Programmiersprache, optional
   coverAssetId String?
-  coverAsset  MediaAsset? @relation("PublicationCover", fields: [coverAssetId], references: [id])
-  url         String?  @db.NVarChar(2048)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  coverAsset   MediaAsset? @relation("PublicationCover", fields: [coverAssetId], references: [id])
+  url          String?     @db.NVarChar(2048)
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   translations PublicationTranslation[]
-  identities   Identity[] @relation("IdentityPublications")
+  identities   Identity[]               @relation("IdentityPublications")
   sales        PublicationSales[]
 
   @@index([year])
@@ -320,26 +341,26 @@ model PublicationTranslation {
 // ---------------------------------------------------------------------------
 
 model Certification {
-  id         String    @id @default(cuid())
-  name       String
+  id          String      @id @default(cuid())
+  name        String
   // Art des Eintrags: CERTIFICATION | MVP | TRAINING (besuchte Schulung/Training)
   // | AWARD (andere Auszeichnung). Steuert die Bereiche im Admin und öffentlich.
-  kind       String    @default("CERTIFICATION")
+  kind        String      @default("CERTIFICATION")
   // Nur für kind=CERTIFICATION relevant: MICROSOFT | METHODICAL — teilt die
   // Zertifizierungen öffentlich in zwei Bereiche.
-  family     String    @default("MICROSOFT")
-  shortCode  String? // Kürzel, z. B. AI-102
+  family      String      @default("MICROSOFT")
+  shortCode   String? // Kürzel, z. B. AI-102
   // Status (Phase 5.3): PLANNED (in Ausbildung) | ACHIEVED | EXPIRED.
-  status     String    @default("ACHIEVED")
-  plannedFor String? // optionales Ziel, Datum oder Freitext („Q4 2026")
-  categoryId String?
-  category   Taxonomy? @relation("CertificationCategory", fields: [categoryId], references: [id])
-  acquiredOn DateTime
-  validUntil DateTime?
-  proofUrl   String?   @db.NVarChar(2048)
-  series     String? // Reihe für Mehrfachauszeichnungen (z. B. „MVP")
-  sortOrder  Int       @default(0)
-  createdAt  DateTime  @default(now())
+  status      String      @default("ACHIEVED")
+  plannedFor  String? // optionales Ziel, Datum oder Freitext („Q4 2026")
+  categoryId  String?
+  category    Taxonomy?   @relation("CertificationCategory", fields: [categoryId], references: [id])
+  acquiredOn  DateTime
+  validUntil  DateTime?
+  proofUrl    String?     @db.NVarChar(2048)
+  series      String? // Reihe für Mehrfachauszeichnungen (z. B. „MVP")
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
   logoAssetId String?
   logo        MediaAsset? @relation("CertificationLogo", fields: [logoAssetId], references: [id])
 
@@ -366,11 +387,11 @@ model Taxonomy {
   talks          Talk[]          @relation("TalkCategory")
   certifications Certification[] @relation("CertificationCategory")
   // Mehrfachauswahl-Gegenseiten (Join-Tabellen).
-  dossierMulti  Dossier[]       @relation("DossierCategories")
-  talkMulti     Talk[]          @relation("TalkCategories")
-  certMulti     Certification[] @relation("CertificationCategories")
-  talkAudiences Talk[]          @relation("TalkAudiences")
-  dispatchTopics Dispatch[]     @relation("DispatchTopics")
+  dossierMulti   Dossier[]       @relation("DossierCategories")
+  talkMulti      Talk[]          @relation("TalkCategories")
+  certMulti      Certification[] @relation("CertificationCategories")
+  talkAudiences  Talk[]          @relation("TalkAudiences")
+  dispatchTopics Dispatch[]      @relation("DispatchTopics")
 
   @@unique([kind, slug])
   @@index([kind, sortOrder])
@@ -401,34 +422,34 @@ model PostTag {
 // ---------------------------------------------------------------------------
 
 model MediaAsset {
-  id        String   @id @default(cuid())
-  blobPath  String // Original
-  width     Int
-  height    Int
-  mime      String
-  altDe     String // Pflicht (SPEC §11)
-  altEn     String?
-  decorative Boolean @default(false) // alt="" ausdrücklich (SPEC §11)
+  id         String   @id @default(cuid())
+  blobPath   String // Original
+  width      Int
+  height     Int
+  mime       String
+  altDe      String // Pflicht (SPEC §11)
+  altEn      String?
+  decorative Boolean  @default(false) // alt="" ausdrücklich (SPEC §11)
   // Herkunft des Bildes: MINE (eigenes), OTHER (von jemand anderem), AI
   // (KI-generiert → Hinweis „KI-generiert" wird überall eingeblendet).
-  source    String  @default("MINE")
-  credit    String?
-  variants  String   @db.NVarChar(Max) // JSON: [{w,format,path}]
-  createdAt DateTime @default(now())
+  source     String   @default("MINE")
+  credit     String?
+  variants   String   @db.NVarChar(Max) // JSON: [{w,format,path}]
+  createdAt  DateTime @default(now())
 
-  missionPhotos    MissionPhoto[]
-  postHeroes       Post[]         @relation("PostHero")
-  publicationCovers Publication[] @relation("PublicationCover")
-  legendPortraits  LegendContent[] @relation("LegendPortrait")
+  missionPhotos      MissionPhoto[]
+  postHeroes         Post[]          @relation("PostHero")
+  publicationCovers  Publication[]   @relation("PublicationCover")
+  legendPortraits    LegendContent[] @relation("LegendPortrait")
   certificationLogos Certification[] @relation("CertificationLogo")
-  missionBanners   Mission[]      @relation("MissionBanner")
-  homeHeroes       HomeContent[]  @relation("HomeHero")
+  missionBanners     Mission[]       @relation("MissionBanner")
+  homeHeroes         HomeContent[]   @relation("HomeHero")
   // Identitäten (Phase 2)
-  identityPortraits Identity[] @relation("IdentityPortrait")
-  identityEnvelopes Identity[] @relation("IdentityEnvelope")
-  identityOgs       Identity[] @relation("IdentityOg")
-  toolIcons         Tool[]     @relation("ToolIcon")
-  dispatchHeroes    Dispatch[] @relation("DispatchHero")
+  identityPortraits  Identity[]      @relation("IdentityPortrait")
+  identityEnvelopes  Identity[]      @relation("IdentityEnvelope")
+  identityOgs        Identity[]      @relation("IdentityOg")
+  toolIcons          Tool[]          @relation("ToolIcon")
+  dispatchHeroes     Dispatch[]      @relation("DispatchHero")
 }
 
 // ---------------------------------------------------------------------------
@@ -491,13 +512,13 @@ model Identity {
   updatedAt DateTime @updatedAt
 
   attributes     IdentityAttribute[]
-  tools          Tool[]          @relation("IdentityTools")
-  missions       Mission[]       @relation("IdentityMissions")
-  talks          Talk[]          @relation("IdentityTalks")
-  publications   Publication[]   @relation("IdentityPublications")
-  certifications Certification[] @relation("IdentityCertifications")
-  dispatches     Dispatch[]      @relation("IdentityDispatches")
-  focusTopics    FocusTopic[]    @relation("IdentityFocusTopics")
+  tools          Tool[]              @relation("IdentityTools")
+  missions       Mission[]           @relation("IdentityMissions")
+  talks          Talk[]              @relation("IdentityTalks")
+  publications   Publication[]       @relation("IdentityPublications")
+  certifications Certification[]     @relation("IdentityCertifications")
+  dispatches     Dispatch[]          @relation("IdentityDispatches")
+  focusTopics    FocusTopic[]        @relation("IdentityFocusTopics")
 
   @@index([published, sortOrder])
 }
@@ -540,25 +561,25 @@ model Tool {
 // Sprache eine Zeile. Listen (Säulen, Werkzeuge) als JSON. Porträt verweist auf
 // ein hochgeladenes MediaAsset (überlebt Deployments, anders als Dateien im Repo).
 model LegendContent {
-  locale          String  @id // "de" | "en"
+  locale          String      @id // "de" | "en"
   eyebrow         String
   name            String
-  lead            String  @db.NVarChar(Max)
+  lead            String      @db.NVarChar(Max)
   missionEyebrow  String
-  missionText     String  @db.NVarChar(Max)
-  pillarsJson     String  @db.NVarChar(Max) // JSON: [{ title, text }]
-  toolsJson       String  @db.NVarChar(Max) // JSON: string[]
+  missionText     String      @db.NVarChar(Max)
+  pillarsJson     String      @db.NVarChar(Max) // JSON: [{ title, text }]
+  toolsJson       String      @db.NVarChar(Max) // JSON: string[]
   contactEyebrow  String
   contactHeading  String
-  contactText     String  @db.NVarChar(Max)
+  contactText     String      @db.NVarChar(Max)
   contactButton   String
-  contactUrl      String  @db.NVarChar(2048)
+  contactUrl      String      @db.NVarChar(2048)
   // Aktueller Arbeitgeber (im oberen Legende-Bereich anklickbar dargestellt).
   employerName    String?
-  employerUrl     String? @db.NVarChar(2048)
+  employerUrl     String?     @db.NVarChar(2048)
   portraitAssetId String?
   portrait        MediaAsset? @relation("LegendPortrait", fields: [portraitAssetId], references: [id])
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime    @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -607,29 +628,29 @@ model ChannelTask {
 // ---------------------------------------------------------------------------
 
 model Dispatch {
-  id          String    @id @default(cuid())
-  format      String    @default("NOTE") // DispatchFormat: NOTE|ANALYSIS|REFERENCE|BACKSTAGE
-  status      String    @default("DRAFT") // ContentStatus
+  id          String      @id @default(cuid())
+  format      String      @default("NOTE") // DispatchFormat: NOTE|ANALYSIS|REFERENCE|BACKSTAGE
+  status      String      @default("DRAFT") // ContentStatus
   publishAt   DateTime?
   publishedAt DateTime?
   reviewedAt  DateTime? // sichtbar bei REFERENCE („Wissen mit Haltbarkeit")
-  sourceUrl   String?   @db.NVarChar(2048)
+  sourceUrl   String?     @db.NVarChar(2048)
   sourceTitle String?
   sourceSite  String?
-  sourceImage String?   @db.NVarChar(2048)
+  sourceImage String?     @db.NVarChar(2048)
   heroAssetId String?
   heroAsset   MediaAsset? @relation("DispatchHero", fields: [heroAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   translations DispatchTranslation[]
-  identities   Identity[]    @relation("IdentityDispatches")
-  topics       Taxonomy[]    @relation("DispatchTopics")
-  tags         Tag[]         @relation("DispatchTags")
+  identities   Identity[]            @relation("IdentityDispatches")
+  topics       Taxonomy[]            @relation("DispatchTopics")
+  tags         Tag[]                 @relation("DispatchTags")
   tasks        ChannelTask[]
   // Radar-Themen (Aufklärung), zu denen diese Depesche gehört. Öffentlich sind
   // die Radar-Punkte anklickbar und filtern die Depeschenliste darauf.
-  focusTopics  FocusTopic[]  @relation("DispatchFocusTopics")
+  focusTopics  FocusTopic[]          @relation("DispatchFocusTopics")
 
   @@index([status, publishAt])
   @@index([format])
@@ -759,14 +780,14 @@ model MediaDocument {
 }
 
 model HomeContent {
-  locale      String  @id
+  locale      String      @id
   eyebrow     String?
-  headline    String? @db.NVarChar(Max)
-  lead        String? @db.NVarChar(Max)
-  roles       String? @db.NVarChar(Max)
+  headline    String?     @db.NVarChar(Max)
+  lead        String?     @db.NVarChar(Max)
+  roles       String?     @db.NVarChar(Max)
   heroAssetId String?
   heroAsset   MediaAsset? @relation("HomeHero", fields: [heroAssetId], references: [id])
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime    @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -797,11 +818,11 @@ model Pageview {
 // Rubrik. Im Adminbereich pflegbar, öffentlich als druckbarer CV abrufbar.
 // ---------------------------------------------------------------------------
 model ResumeProfile {
-  id         String   @id @default("default")
-  headline   String   @default("") // z. B. „Solution Architect · Microsoft 365 & Azure"
-  summary    String   @default("") @db.NVarChar(Max) // Kurzprofil (mehrzeilig)
-  location   String   @default("")
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default("default")
+  headline  String   @default("") // z. B. „Solution Architect · Microsoft 365 & Azure"
+  summary   String   @default("") @db.NVarChar(Max) // Kurzprofil (mehrzeilig)
+  location  String   @default("")
+  updatedAt DateTime @updatedAt
 }
 
 model ResumeEntry {

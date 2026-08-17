@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
 import { serializeRichValue } from "@/lib/content/rich";
+import { isLocale } from "@/lib/i18n/config";
 
 // Verwaltung des Vortragsrepertoires (SPEC §6/M6). Kategorien und Briefings sind
 // vom Nutzer pflegbar (anlegen, bearbeiten, löschen). Formulare nutzen
@@ -174,6 +175,27 @@ export async function createTalk(formData: FormData): Promise<void> {
   if (failed) redirect(`${LIST}?err=failed`);
   invalidate();
   redirect(`${LIST}?ok=created`);
+}
+
+/**
+ * Entfernt den Foliensatz eines Briefings in einer Sprache. Nur die Zuordnung
+ * wird gelöst — die Datei bleibt in der Ablage, damit ein versehentliches
+ * Entfernen keine bereits verteilte Datei ins Leere laufen lässt.
+ */
+export async function removeTalkSlideDeck(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const talkId = str(formData, "talkId");
+  const locale = str(formData, "locale");
+  const back = `${LIST}/bearbeiten?id=${talkId}`;
+  if (!talkId || !isLocale(locale)) redirect(`${back}&err=not-found`);
+
+  let failed = false;
+  try {
+    await db.talkSlideDeck.deleteMany({ where: { talkId, locale } });
+  } catch {
+    failed = true;
+  }
+  redirect(failed ? `${back}&err=failed` : `${back}&ok=deleted`);
 }
 
 export async function updateTalk(formData: FormData): Promise<void> {

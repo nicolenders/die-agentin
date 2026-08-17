@@ -333,6 +333,18 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
   und stehender Seite darunter.
 - Briefing-Tabelle „Gehalten bei": Sprachspalte nur am großen Bildschirm.
 
+**Einsatzmaske in Registern, Folien am Briefing** (ADR 0013 §8)
+- Erfassungsmaske eines Einsatzes in vier Registern: Einsatzdaten · Texte ·
+  Bilder · Belegmaterial (ohne den Zusatz „(Phase 9)"). `FormTabs` hält alle
+  Panels im DOM; gespeichert wird unabhängig vom sichtbaren Register.
+- Neues Modell `TalkSlideDeck` (Briefing × Sprache, Migration
+  `20260817200000_talk_slide_decks`, additiv). Upload am Briefing über
+  `/api/admin/briefings/slides` — derselbe geprüfte Weg wie bei den Vorlagen,
+  jetzt gemeinsam in `lib/media/chunked-upload.ts`.
+- Im Briefing steht die Vorlage zum Anfangen bereit (aus dem Einsatz hierher
+  verschoben); der Einsatz bietet nur noch den Foliensatz des zugeordneten
+  Briefings in seiner Vortragssprache an (`pickForLanguage`, unit-getestet).
+
 **Foliensvorlagen für Einsätze** (ADR `docs/decisions/0013-foliensvorlagen.md`)
 - Je eine PowerPoint-Vorlage DE und EN, gepflegt unter **Medien → Vorlagen**
   (`/admin/medien?tab=vorlagen`). Ablage als `SiteSetting`

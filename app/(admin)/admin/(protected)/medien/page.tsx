@@ -199,10 +199,10 @@ export default async function MedienPage({
         {active === "vorlagen" ? (
           <>
             <p className="muted" style={{ marginTop: 0 }}>
-              Foliensvorlagen für Einsätze: je eine PowerPoint-Datei auf Deutsch und auf
-              Englisch. Beim Bearbeiten eines Einsatzes steht die Vorlage in der gewählten
-              Vortragssprache zum Download bereit — die fertigen Folien lädst du dort als PDF
-              wieder hoch.
+              Foliensvorlagen: je eine PowerPoint-Datei auf Deutsch und auf Englisch — der
+              leere Rahmen im Corporate Design. Beim Bearbeiten eines <b>Briefings</b> steht sie
+              zum Anfangen bereit; die fertigen Folien liegen dann am Briefing, und ein Einsatz
+              bietet sie in seiner Vortragssprache zum Download an.
             </p>
             <SlideTemplateManager templates={slideTemplates} onRemove={removeSlideTemplate} />
           </>

@@ -4,7 +4,9 @@ import MaskBar from "@/components/admin/MaskBar";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import { rankRelatedBriefings } from "@/lib/related-briefings";
-import { createTalk, updateTalk } from "../actions";
+import TalkSlidesManager from "@/components/admin/TalkSlidesManager";
+import { getSlideTemplates } from "@/lib/queries/settings";
+import { createTalk, updateTalk, removeTalkSlideDeck } from "../actions";
 
 export const metadata = { title: "Briefing bearbeiten · Zentrale" };
 
@@ -32,9 +34,19 @@ export default async function BriefingEditPage({
   const talk = id
     ? await db.talk.findUnique({
         where: { id },
-        include: { translations: true, categories: true, audiences: true, tools: { select: { id: true } } },
+        include: {
+          translations: true,
+          categories: true,
+          audiences: true,
+          tools: { select: { id: true } },
+          slideDecks: true,
+        },
       })
     : null;
+
+  // Die Vorlagen (Medien → Vorlagen) stehen hier zum Anfangen bereit — der Weg
+  // ist: Vorlage laden, Folien bauen, Folien hier hinterlegen.
+  const templates = await getSlideTemplates();
 
   if (id && !talk) {
     return (
@@ -154,6 +166,26 @@ export default async function BriefingEditPage({
           </button>
         </div>
       </form>
+
+      <div style={{ marginTop: 16 }}>
+        <p className="eyebrow">Folien zu diesem Briefing</p>
+        <p className="meta" style={{ marginTop: -6 }}>
+          Je Sprache eine PowerPoint. Bei einem Einsatz wird der Foliensatz in der dort
+          gewählten Vortragssprache zum Download angeboten — gepflegt wird er also einmal
+          hier, nicht bei jedem Einsatz neu.
+        </p>
+        <TalkSlidesManager
+          talkId={talk?.id ?? null}
+          decks={(talk?.slideDecks ?? []).map((d) => ({
+            locale: d.locale,
+            fileName: d.fileName,
+            bytes: d.bytes,
+            blobPath: d.blobPath,
+          }))}
+          templates={templates}
+          onRemove={removeTalkSlideDeck}
+        />
+      </div>
 
       {isEdit ? (
         <div className="card bracket" style={{ marginTop: 16, maxWidth: 560 }}>

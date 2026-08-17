@@ -327,7 +327,13 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
   (`slideTemplate.<locale>.path` / `.fileName`) — keine Migration.
 - Upload über `/api/admin/missions/slide-template` (Admin, Same-Origin,
   rate-limitiert, Typprüfung über den Inhalt: ZIP + `ppt/presentation.xml`,
-  altes `.ppt` mit eigener Meldung, max. 20 MB).
+  altes `.ppt` mit eigener Meldung, max. **100 MB**).
+- **Große Vorlagen im Fluss statt im Speicher:** echte Vorlagen wiegen 30–42 MB,
+  die Container-App hat 0,5 GiB. Der Upload kommt als roher Anfragekörper und
+  wird abschnittsweise geprüft (`PresentationScanner`) und direkt in die Ablage
+  geschrieben (`storeStream`); abgebrochene Uploads räumt `deleteMedia` weg.
+  Der Medien-Proxy liefert Dateien als Strom (`openMedia`) statt sie zweimal
+  vollständig zu kopieren — das entlastet auch Bilder und Folien-PDFs.
 - Im Einsatzformular steht die Vorlage **zur gewählten Vortragssprache** direkt
   über dem vorhandenen PDF-Upload: Vorlage laden → Folien bauen → fertige Folien
   als PDF hochladen. Fehlt die Vorlage der Sprache, wird die andere angeboten

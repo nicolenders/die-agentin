@@ -20,8 +20,15 @@ export const SLIDE_TEMPLATE_MIME: Record<SlideTemplateExtension, string> = {
   potx: "application/vnd.openxmlformats-officedocument.presentationml.template",
 };
 
-/** Obergrenze wie beim Folien-Upload — eine Vorlage bleibt deutlich darunter. */
-export const MAX_SLIDE_TEMPLATE_BYTES = 20 * 1024 * 1024;
+// Eine Corporate-Vorlage mit Bildmaterial in den Folienmastern wiegt schnell
+// 40 MB und mehr. Der Upload wird deshalb nicht im Speicher gehalten, sondern
+// im Vorbeifließen geprüft und direkt in die Ablage geschrieben (siehe
+// PresentationScanner und `storeStream`) — die Container-App hat 0,5 GiB.
+export const MAX_SLIDE_TEMPLATE_MB = 100;
+export const MAX_SLIDE_TEMPLATE_BYTES = MAX_SLIDE_TEMPLATE_MB * 1024 * 1024;
+
+/** Einheitliche Meldung, damit Formular und API dieselbe Grenze nennen. */
+export const SLIDE_TEMPLATE_TOO_LARGE = `Die Datei ist größer als ${MAX_SLIDE_TEMPLATE_MB} MB.`;
 
 export const SLIDE_TEMPLATE_ACCEPT = [
   SLIDE_TEMPLATE_MIME.pptx,
@@ -90,18 +97,84 @@ function includesAscii(buf: Uint8Array, needle: string): boolean {
  * (`PK\x03\x04`), und der Eintragsname `ppt/presentation.xml` steht im lokalen
  * Header unkomprimiert im Byte-Strom. Damit wird eine umbenannte .docx oder
  * eine beliebige ZIP-Datei abgewiesen.
+ *
+ * Für eine Datei, die bereits vollständig im Speicher liegt. Der Upload nutzt
+ * denselben Test abschnittsweise (`PresentationScanner`).
  */
 export function isOfficePresentation(buf: Uint8Array): boolean {
-  if (buf.length < 4) return false;
-  const isZip = buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
-  if (!isZip) return false;
-  return includesAscii(buf, "ppt/presentation.xml");
+  const scanner = new PresentationScanner();
+  scanner.push(buf);
+  return scanner.verdict().ok;
 }
 
 /** Legacy-Binärformat (.ppt, OLE2) — erkennbar, damit die Meldung konkret wird. */
 export function isLegacyPowerPoint(buf: Uint8Array): boolean {
   const sig = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
   return buf.length >= sig.length && sig.every((b, i) => buf[i] === b);
+}
+
+const PRESENTATION_MARKER = "ppt/presentation.xml";
+
+export interface PresentationVerdict {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Dieselbe Prüfung wie `isOfficePresentation`, aber häppchenweise: Der Upload
+ * einer 40-MB-Vorlage soll nicht erst vollständig im Speicher liegen, bevor
+ * jemand hineinschaut. Der Scanner sieht jeden Abschnitt genau einmal, merkt
+ * sich nur die ersten acht Bytes (Signatur) und den Überhang an der
+ * Abschnittsgrenze — sonst könnte ein Fund genau dort zerschnitten werden.
+ */
+export class PresentationScanner {
+  #head: number[] = [];
+  #tail = new Uint8Array(0);
+  #found = false;
+  #bytes = 0;
+
+  push(chunk: Uint8Array): void {
+    if (chunk.length === 0) return;
+    this.#bytes += chunk.length;
+    if (this.#head.length < 8) {
+      this.#head.push(...Array.from(chunk.subarray(0, 8 - this.#head.length)));
+    }
+    if (this.#found) return;
+
+    const window = new Uint8Array(this.#tail.length + chunk.length);
+    window.set(this.#tail, 0);
+    window.set(chunk, this.#tail.length);
+    if (includesAscii(window, PRESENTATION_MARKER)) {
+      this.#found = true;
+      this.#tail = new Uint8Array(0);
+      return;
+    }
+    const keep = Math.min(window.length, PRESENTATION_MARKER.length - 1);
+    this.#tail = window.slice(window.length - keep);
+  }
+
+  /** Bisher gesehene Bytes — damit der Aufrufer die Obergrenze durchsetzen kann. */
+  get bytes(): number {
+    return this.#bytes;
+  }
+
+  /** Urteil nach dem letzten Abschnitt, mit Meldung für die Oberfläche. */
+  verdict(): PresentationVerdict {
+    const head = Uint8Array.from(this.#head);
+    if (this.#bytes === 0) return { ok: false, error: "Die Datei ist leer." };
+    if (isLegacyPowerPoint(head)) {
+      return {
+        ok: false,
+        error: "Das ist das alte PowerPoint-Format (.ppt). Bitte als .pptx oder .potx speichern.",
+      };
+    }
+    const isZip =
+      head.length >= 4 && head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04;
+    if (!isZip || !this.#found) {
+      return { ok: false, error: "Nur PowerPoint-Dateien (.pptx oder .potx) sind erlaubt." };
+    }
+    return { ok: true };
+  }
 }
 
 export interface SlideTemplateChoice {

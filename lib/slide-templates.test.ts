@@ -3,6 +3,10 @@ import {
   EMPTY_SLIDE_TEMPLATES,
   isLegacyPowerPoint,
   isOfficePresentation,
+  MAX_SLIDE_TEMPLATE_BYTES,
+  MAX_SLIDE_TEMPLATE_MB,
+  PresentationScanner,
+  SLIDE_TEMPLATE_TOO_LARGE,
   pickSlideTemplate,
   safeTemplateName,
   slideTemplateKeys,
@@ -28,6 +32,17 @@ describe("slideTemplateKeys", () => {
       name: "slideTemplate.de.fileName",
     });
     expect(slideTemplateKeys("en").path).not.toBe(slideTemplateKeys("de").path);
+  });
+});
+
+describe("Obergrenze", () => {
+  it("nennt in der Meldung dieselbe Zahl, die geprüft wird", () => {
+    expect(MAX_SLIDE_TEMPLATE_BYTES).toBe(MAX_SLIDE_TEMPLATE_MB * 1024 * 1024);
+    expect(SLIDE_TEMPLATE_TOO_LARGE).toContain(String(MAX_SLIDE_TEMPLATE_MB));
+  });
+
+  it("lässt eine übliche Corporate-Vorlage durch (rund 42 MB)", () => {
+    expect(42 * 1024 * 1024).toBeLessThan(MAX_SLIDE_TEMPLATE_BYTES);
   });
 });
 
@@ -71,6 +86,44 @@ describe("isOfficePresentation", () => {
   it("weist Nicht-ZIPs und leere Dateien ab", () => {
     expect(isOfficePresentation(Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d]))).toBe(false);
     expect(isOfficePresentation(new Uint8Array())).toBe(false);
+  });
+});
+
+describe("PresentationScanner", () => {
+  /** Zerlegt einen Byte-Strom in Blöcke fester Größe, wie beim Upload. */
+  function feed(bytes: Uint8Array, chunkSize: number): PresentationScanner {
+    const scanner = new PresentationScanner();
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      scanner.push(bytes.subarray(i, i + chunkSize));
+    }
+    return scanner;
+  }
+
+  it("erkennt die Präsentation auch, wenn der Fund über Blockgrenzen fällt", () => {
+    const file = fakePptx();
+    for (const size of [1, 3, 7, 1024]) {
+      expect(feed(file, size).verdict()).toEqual({ ok: true });
+    }
+  });
+
+  it("zählt alle Bytes, damit der Aufrufer die Obergrenze durchsetzen kann", () => {
+    const file = fakePptx();
+    expect(feed(file, 4).bytes).toBe(file.length);
+  });
+
+  it("nennt das alte Binärformat beim Namen", () => {
+    const legacy = Uint8Array.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0x00, 0x00]);
+    expect(feed(legacy, 3).verdict().error).toContain(".ppt");
+  });
+
+  it("weist ZIPs ohne Präsentationsteil und leere Ströme ab", () => {
+    expect(feed(fakePptx("word/document.xml"), 5).verdict().ok).toBe(false);
+    expect(new PresentationScanner().verdict()).toEqual({ ok: false, error: "Die Datei ist leer." });
+  });
+
+  it("lässt eine reine Textdatei mit dem Suchwort nicht durch", () => {
+    const text = Uint8Array.from("ppt/presentation.xml", (c) => c.charCodeAt(0));
+    expect(feed(text, 6).verdict().ok).toBe(false);
   });
 });
 

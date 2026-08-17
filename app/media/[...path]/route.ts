@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { readMedia } from "@/lib/media/storage";
+import { Readable } from "node:stream";
+import { openMedia } from "@/lib/media/storage";
 import { contentDisposition } from "@/lib/media/url";
 import { SLIDE_TEMPLATE_MIME } from "@/lib/slide-templates";
 
@@ -39,8 +40,10 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const buffer = await readMedia(name);
-  if (!buffer) {
+  // Als Strom, nicht als Puffer: eine 40-MB-Vorlage würde sonst zweimal
+  // vollständig im Speicher liegen (einmal gelesen, einmal für die Antwort).
+  const media = await openMedia(name);
+  if (!media) {
     return new NextResponse("Not found", { status: 404 });
   }
 
@@ -48,10 +51,11 @@ export async function GET(
   // (Foliensvorlagen, Folien-PDFs). Ohne den Parameter bleibt alles wie bisher.
   const download = new URL(request.url).searchParams.get("dl");
 
-  return new NextResponse(new Uint8Array(buffer), {
+  return new NextResponse(Readable.toWeb(media.stream) as ReadableStream<Uint8Array>, {
     headers: {
       "Content-Type": contentType(name),
       "Cache-Control": "public, max-age=31536000, immutable",
+      ...(media.size != null ? { "Content-Length": String(media.size) } : {}),
       ...(download ? { "Content-Disposition": contentDisposition(download) } : {}),
     },
   });

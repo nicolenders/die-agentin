@@ -34,12 +34,15 @@ const de = {
   },
   nav: {
     hq: "HQ",
-    signale: "Signale",
-    dossiers: "Dossiers",
     einsaetze: "Einsätze",
     briefings: "Briefings",
     publikationen: "Publikationen",
-    ausbildung: "Ausbildung",
+    // „Ausbildung" heißt im Deutschen Berufsausbildung; die Seite zeigt aber
+    // Zertifizierungen, Awards und Schulungen — und der Lebenslauf hat eine
+    // eigene Sektion „Ausbildung" im Sinne von Education (Audit 2.6).
+    // Der Route-Slug /ausbildung bleibt: eine Label-Änderung ist kein
+    // Redirect-Risiko wert.
+    ausbildung: "Nachweise",
     legende: "Legende",
     identitaeten: "Identitäten",
     menu: "Menü",
@@ -72,11 +75,14 @@ const de = {
     titleLine1: "Ich verbinde Menschen",
     titleLine2Prefix: "mit ",
     titleHighlight: "intelligenten Lösungen",
-    lead: "Nicole Enders — Microsoft MVP seit 2020, 7× in Folge. Ich entwerfe, baue und erkläre Lösungen rund um Microsoft AI und Modern Work. Hier laufen meine Funde, Dossiers und Einsätze zusammen.",
+    // „Funde" und „Dossiers" gibt es auf der Seite nicht mehr (Audit 2.2).
+    // Achtung: der Hero rendert `HomeContent.lead` aus der DB, dieser Text ist
+    // nur der Fallback — die Live-Fassung wird im Admin gepflegt.
+    lead: "Nicole Enders, Microsoft MVP seit 2020, 7× in Folge. Ich entwerfe, baue und erkläre Lösungen rund um Microsoft AI und Modern Work. Hier laufen Einsätze, Identitäten und Depeschen zusammen.",
+    // Fallback für die Rollenzeile, wenn im Admin keine Rollen gepflegt sind
+    // (`lib/queries/home.ts`). Kein toter Key.
     roles: ["ARCHITECT", "ADVISOR", "DEVELOPER", "TRAINER", "SPEAKER"],
     nextMission: "Nächster Einsatz",
-    lastSignal: "Letztes Signal",
-    classification: "Klassifizierung: öffentlich",
     recent: "Zuletzt eingegangen",
     countMissions: "Einsätze",
     countCountries: "Länder",
@@ -100,18 +106,6 @@ const de = {
     allBriefings: "Alle Briefings",
     noMission: "Zurzeit ist kein Einsatz geplant.",
   },
-  feed: {
-    eyebrow: "Signale · laufende Meldungen",
-    title: "Was mir aufgefallen ist",
-    lead: "Kurze Meldungen aus der Microsoft- und KI-Welt, geteilte Funde mit Einordnung und Notizen aus dem Hintergrund.",
-    filterByType: "Nach Typ filtern",
-    empty: "Sobald ich etwas teile, erscheint es hier. Schau bald wieder vorbei.",
-    types: {
-      SIGNAL: "Signal",
-      NOTE: "Kurzmeldung",
-      BACKSTAGE: "Backstage",
-    },
-  },
   // Depeschen (Phase 3). `name`/`namePlural` sind die EINZIGE Quelle des
   // öffentlich sichtbaren Namens — ein Namenswechsel passiert nur hier.
   dispatch: {
@@ -133,26 +127,32 @@ const de = {
   identity: {
     eyebrow: "Identitäten · Decknamen",
     title: "Die Identitäten",
-    lead: "Nicole tritt je nach Thema unter verschiedenen Identitäten auf — parallel und dauerhaft aktiv. Jede ist offen als ihre eigene ausgewiesen.",
+    // Ich-Form wie auf der übrigen Seite (Audit 2.3).
+    lead: "Je nach Thema trete ich unter verschiedenen Identitäten auf, parallel und dauerhaft aktiv. Jede ist offen als meine eigene ausgewiesen.",
     empty: "Noch keine Identität veröffentlicht.",
     focusLabel: "Aktueller Fokus",
-    coverage: "Was hier belegt wird",
+    coverage: "Belege",
     languagesLabel: "Sprachen",
   },
   footer: {
     contentHeading: "Inhalte",
-    aboutHeading: "Über mich als Agentin",
+    aboutHeading: "Die Agentin selbst",
     legalHeading: "Rechtliches",
     imprint: "Impressum",
     privacy: "Datenschutzerklärung",
     accessibility: "Erklärung zur Barrierefreiheit",
     cookies: "Cookie-Einstellungen",
     rss: "RSS-Feed",
-    rights: "Alle Inhalte in DE und EN verfügbar.",
+    // Die Sprachverfügbarkeit steht schon im DE/EN-Umschalter im Kopf — und
+    // widersprach dem Hinweis „bisher nur auf Deutsch" (Audit 2.4).
+    rights: "Alle Rechte vorbehalten.",
   },
   errors: {
-    notFound: "Diese Seite gibt es nicht.",
-    notFoundHint: "Vielleicht wurde sie verschoben. Zurück zum HQ.",
+    notFound: "Diese Akte existiert nicht.",
+    // Die Handlungsaufforderung gehört in den Button darunter, nicht in den
+    // Fließtext (Audit 2.5, 6.6).
+    notFoundHint: "Entweder wurde sie verlegt, oder sie war nie angelegt.",
+    backToHq: "Zurück zum HQ",
   },
 } as const;
 

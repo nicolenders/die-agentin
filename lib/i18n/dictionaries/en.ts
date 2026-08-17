@@ -33,8 +33,6 @@ const en: Dictionary = {
   },
   nav: {
     hq: "HQ",
-    signale: "Signals",
-    dossiers: "Dossiers",
     einsaetze: "Missions",
     briefings: "Briefings",
     publikationen: "Publications",
@@ -62,7 +60,8 @@ const en: Dictionary = {
     loading: "Loading …",
   },
   langNotice: {
-    onlyGerman: "This article is only available in German.",
+    // „bisher" fehlte hier und änderte damit die Aussage (Audit 2.5).
+    onlyGerman: "This article is not available in English yet.",
     onlyGermanShort: "German only",
   },
   hq: {
@@ -70,11 +69,9 @@ const en: Dictionary = {
     titleLine1: "I connect people",
     titleLine2Prefix: "with ",
     titleHighlight: "intelligent solutions",
-    lead: "Nicole Enders — Microsoft MVP since 2020, 7 years running. I design, build and explain solutions around Microsoft AI and Modern Work. This is where my finds, dossiers and missions come together.",
+    lead: "Nicole Enders, Microsoft MVP since 2020, seven years running. I design, build and explain solutions around Microsoft AI and Modern Work. Missions, identities and dispatches all come together here.",
     roles: ["ARCHITECT", "ADVISOR", "DEVELOPER", "TRAINER", "SPEAKER"],
     nextMission: "Next mission",
-    lastSignal: "Last signal",
-    classification: "Classification: public",
     recent: "Latest intake",
     countMissions: "Missions",
     countCountries: "Countries",
@@ -97,18 +94,6 @@ const en: Dictionary = {
     allBriefings: "All briefings",
     noMission: "No mission scheduled right now.",
   },
-  feed: {
-    eyebrow: "Signals · running dispatches",
-    title: "What caught my eye",
-    lead: "Short dispatches from the Microsoft and AI world, shared finds with context, and notes from behind the scenes.",
-    filterByType: "Filter by type",
-    empty: "As soon as I share something, it shows up here. Check back soon.",
-    types: {
-      SIGNAL: "Signal",
-      NOTE: "Note",
-      BACKSTAGE: "Backstage",
-    },
-  },
   dispatch: {
     name: "Dispatch",
     namePlural: "Dispatches",
@@ -128,26 +113,27 @@ const en: Dictionary = {
   identity: {
     eyebrow: "Identities · cover names",
     title: "The identities",
-    lead: "Depending on the topic, Nicole works under different identities — parallel and permanently active. Each is openly declared as her own.",
+    lead: "Depending on the topic I work under different identities, parallel and permanently active. Each is openly declared as my own.",
     empty: "No identity published yet.",
     focusLabel: "Current focus",
-    coverage: "What this proves",
+    coverage: "Track record",
     languagesLabel: "Languages",
   },
   footer: {
     contentHeading: "Content",
-    aboutHeading: "About me as an agent",
+    aboutHeading: "The agent herself",
     legalHeading: "Legal",
     imprint: "Imprint",
     privacy: "Privacy policy",
     accessibility: "Accessibility statement",
     cookies: "Cookie settings",
     rss: "RSS feed",
-    rights: "All content available in DE and EN.",
+    rights: "All rights reserved.",
   },
   errors: {
-    notFound: "This page does not exist.",
-    notFoundHint: "It may have moved. Back to HQ.",
+    notFound: "This file does not exist.",
+    notFoundHint: "Either it was moved, or it never existed.",
+    backToHq: "Back to HQ",
   },
 };
 

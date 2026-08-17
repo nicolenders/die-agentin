@@ -124,6 +124,14 @@ const de = {
       BACKSTAGE: "Backstage",
     },
   },
+  briefing: {
+    // Auf einer Seite, deren Wert die Häufigkeit ist, liest sich „0×" wie ein
+    // Defekt. Noch nicht gehaltene Briefings bekommen deshalb ein Label statt
+    // eines Zählers (Audit 4.6).
+    newInRepertoire: "Neu im Repertoire",
+    workshop: "Workshop",
+    deliveredCount: "gehalten",
+  },
   identity: {
     eyebrow: "Identitäten · Decknamen",
     title: "Die Identitäten",

@@ -107,7 +107,9 @@ export default function IdentityCoverageTabs({
             <table className="stack" role="table">
               <thead role="rowgroup">
                 <tr role="row">
-                  <th scope="col" role="columnheader">{labels.date}</th>
+                  {/* Standardsortierung ist Datum absteigend (Audit 4.8) —
+                      angesagt, damit Screenreader die Ordnung mitbekommen. */}
+                  <th scope="col" role="columnheader" aria-sort="descending">{labels.date}</th>
                   <th scope="col" role="columnheader">{labels.event}</th>
                   <th scope="col" role="columnheader">{labels.briefing}</th>
                   <th scope="col" role="columnheader">{labels.location}</th>

@@ -110,6 +110,11 @@ const en: Dictionary = {
       BACKSTAGE: "Backstage",
     },
   },
+  briefing: {
+    newInRepertoire: "New in the repertoire",
+    workshop: "Workshop",
+    deliveredCount: "delivered",
+  },
   identity: {
     eyebrow: "Identities · cover names",
     title: "The identities",

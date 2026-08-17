@@ -353,6 +353,9 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       attributes: { where: { displayPublic: true }, orderBy: { sortOrder: "asc" } },
       dispatches: { include: { translations: true } },
       missions: {
+        // Jüngster Einsatz zuerst (Audit 4.8). Ohne diese Angabe kam die
+        // Tabelle in der Reihenfolge der Datenbank und wirkte unsortiert.
+        orderBy: { startDate: "desc" },
         include: {
           translations: true,
           deliveries: { take: 1, orderBy: { heldOn: "desc" }, include: { talk: { include: { translations: true } } } },
@@ -410,7 +413,8 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
           linkable: m.caseFilePublic && Boolean(t?.slug),
           briefing: delivery && talkTitle ? { id: delivery.talkId, title: talkTitle } : null,
         };
-      }),
+      })
+      .sort((a, b) => b.date.getTime() - a.date.getTime()),
     briefings: r.talks.map((t) => ({ title: trans(t.translations)?.title ?? "" })).filter((b) => b.title),
     focusTopics: r.focusTopics.map((f) => ({
       id: f.id,

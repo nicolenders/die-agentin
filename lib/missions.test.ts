@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { availableMissionYears, isUpcoming, parseYearSelection, matchesYear } from "./missions";
+import {
+  availableMissionYears,
+  countVisitedCountries,
+  isUpcoming,
+  parseYearSelection,
+  matchesYear,
+} from "./missions";
 
 describe("availableMissionYears", () => {
   it("dedupes and sorts descending", () => {
@@ -54,5 +60,34 @@ describe("isUpcoming", () => {
   it("vergleicht über Monats- und Jahresgrenzen richtig", () => {
     expect(isUpcoming("2026-09-01", "2026-08-31")).toBe(true);
     expect(isUpcoming("2026-12-31", "2027-01-01")).toBe(false);
+  });
+});
+
+// Audit 4.10: Die Kennzahl „Länder" steht auf dem HQ und im Speaker-Kit.
+// Online-Einsätze tragen den synthetischen Ländercode „AQ" (Antarktis) aus
+// `lib/import/online.ts` und dürfen sie nicht erhöhen.
+describe("countVisitedCountries", () => {
+  const onSite = (countryCode: string) => ({ countryCode, isOnline: false });
+
+  it("zählt jedes Land genau einmal", () => {
+    expect(countVisitedCountries([onSite("DE"), onSite("DE"), onSite("NL"), onSite("US")])).toBe(3);
+  });
+
+  it("lässt Online-Einsätze außen vor", () => {
+    const missions = [onSite("DE"), { countryCode: "AQ", isOnline: true }];
+    expect(countVisitedCountries(missions)).toBe(1);
+  });
+
+  it("lässt den Antarktis-Code auch ohne isOnline-Flag außen vor", () => {
+    // Altbestand aus dem Import: Koordinaten gesetzt, Flag nicht gepflegt.
+    expect(countVisitedCountries([onSite("DE"), onSite("AQ")])).toBe(1);
+  });
+
+  it("ignoriert leere und unterschiedlich geschriebene Codes", () => {
+    expect(countVisitedCountries([onSite("de"), onSite("DE"), onSite(""), { countryCode: null }])).toBe(1);
+  });
+
+  it("liefert 0 ohne Einsätze", () => {
+    expect(countVisitedCountries([])).toBe(0);
   });
 });

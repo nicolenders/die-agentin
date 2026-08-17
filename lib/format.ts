@@ -36,6 +36,27 @@ export function formatDateTime(date: Date | string | number | null | undefined, 
   }).format(d);
 }
 
+/** Ab dieser Länge ist ein Briefing ein Workshop, kein Vortrag (Audit 4.7). */
+export const WORKSHOP_MIN_MINUTES = 180;
+
+/**
+ * Vortragsdauer. Ab 90 Minuten in Stunden, weil „420′" niemand als sieben
+ * Stunden liest (Audit 4.7).
+ */
+export function formatDuration(min: number, locale: Locale): string {
+  if (min < 90) return locale === "de" ? `${min} Min.` : `${min} min`;
+  const h = min / 60;
+  const val = Number.isInteger(h)
+    ? String(h)
+    : h.toFixed(1).replace(".", locale === "de" ? "," : ".");
+  return locale === "de" ? `${val} Std.` : `${val} h`;
+}
+
+/** Ob eine Dauer als Workshop-Format gilt. */
+export function isWorkshopDuration(min: number | null | undefined): boolean {
+  return typeof min === "number" && min >= WORKSHOP_MIN_MINUTES;
+}
+
 /** ISO-Datum (UTC) für Zeitstempel in Feeds/Sitemaps. */
 export function toIso(date: Date | string | number | null | undefined): string {
   const d = toDate(date);

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getMissionBySlug } from "@/lib/queries/missions";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDuration } from "@/lib/format";
 import { extractYouTubeId } from "@/lib/video";
 import { siteOrigin } from "@/lib/site";
 import { talkLanguageLabel } from "@/lib/mission-language";
@@ -55,7 +55,7 @@ export default async function EinsatzaktePage({
   const facts = [
     mission.sessionType ? { KEYNOTE: "Keynote", SESSION: "Session", WORKSHOP: "Workshop", PANEL: "Panel" }[mission.sessionType] ?? mission.sessionType : null,
     talkLanguageLabel(mission.sessionLanguage, locale),
-    mission.durationMin ? `${mission.durationMin} ${isDe ? "Minuten" : "minutes"}` : null,
+    mission.durationMin ? formatDuration(mission.durationMin, locale) : null,
     mission.attendeeCount ? `${mission.attendeeCount} ${isDe ? "Teilnehmende" : "attendees"}` : null,
     mission.feedbackScore != null ? `${isDe ? "Feedback" : "Feedback"} ${mission.feedbackScore}${mission.feedbackSource ? ` (${mission.feedbackSource})` : ""}` : null,
   ].filter(Boolean);

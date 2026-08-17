@@ -5,7 +5,7 @@ import { getBriefingList } from "@/lib/queries/briefings";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { richValueToPlain } from "@/lib/content/rich";
 import { alternatesFor } from "@/lib/seo/alternates";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDuration, isWorkshopDuration } from "@/lib/format";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import RichText from "@/components/content/RichText";
 import BriefingExplorer, { type ExplorerItem } from "@/components/briefings/BriefingExplorer";
@@ -32,9 +32,10 @@ export default async function BriefingsPage({
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
 
-  const [list, identities] = await Promise.all([
+  const [list, identities, dict] = await Promise.all([
     getBriefingList(locale),
     getPublishedIdentities(locale),
+    getDictionary(locale),
   ]);
   const categories = [...new Set(list.flatMap((i) => i.categories))].sort((a, b) =>
     a.localeCompare(b, locale),
@@ -54,6 +55,8 @@ export default async function BriefingsPage({
     identitySlugs: i.identitySlugs,
     level: i.level,
     durationMin: i.durationMin,
+    durationLabel: i.durationMin ? formatDuration(i.durationMin, locale) : null,
+    isWorkshop: isWorkshopDuration(i.durationMin),
     deCount: i.deCount,
     enCount: i.enCount,
     total: i.total,
@@ -73,8 +76,8 @@ export default async function BriefingsPage({
       <h1 className="eyebrow">{isDe ? "Briefings · Vortragsrepertoire" : "Briefings · talk repertoire"}</h1>
       <p className="lead">
         {isDe
-          ? "Alle Vorträge, suchbar und nach Kategorien filterbar, sortiert nach Häufigkeit."
-          : "All talks, searchable and filterable by category, sorted by frequency."}
+          ? "Mein Vortragsrepertoire, filterbar nach Thema und Identität. Die Zahl hinter dem Titel zeigt, wie oft ich den Vortrag gehalten habe."
+          : "My talk repertoire, filterable by topic and identity. The number after each title shows how often I have delivered it."}
       </p>
 
       {items.length === 0 ? (
@@ -83,7 +86,16 @@ export default async function BriefingsPage({
         </div>
       ) : (
         <div style={{ marginTop: 24 }}>
-          <BriefingExplorer items={items} categories={categories} identities={filterIdentities} locale={locale} />
+          <BriefingExplorer
+            items={items}
+            categories={categories}
+            identities={filterIdentities}
+            locale={locale}
+            labels={{
+              newInRepertoire: dict.briefing.newInRepertoire,
+              workshop: dict.briefing.workshop,
+            }}
+          />
         </div>
       )}
     </section>

@@ -6,6 +6,7 @@ import { computeGeo, project } from "@/lib/map/geo";
 import { availableViews, inBounds } from "@/lib/map/views";
 import AssetImage from "@/components/media/AssetImage";
 import { talkLanguageLabel } from "@/lib/mission-language";
+import { formatDuration } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
 
 const W = 1000;
@@ -207,7 +208,7 @@ export default function WorldMap({
                         </Link>
                         {language ? <span className="popup-chip">{language}</span> : null}
                         {selected.durationMin ? (
-                          <span className="popup-chip">{selected.durationMin} min</span>
+                          <span className="popup-chip">{formatDuration(selected.durationMin, locale)}</span>
                         ) : null}
                       </span>
                     </div>
@@ -217,7 +218,7 @@ export default function WorldMap({
                       <span className="popup-label">{labels.language}</span>
                       <span className="popup-value">
                         {language ?? "—"}
-                        {selected.durationMin ? <span className="popup-chip">{selected.durationMin} min</span> : null}
+                        {selected.durationMin ? <span className="popup-chip">{formatDuration(selected.durationMin, locale)}</span> : null}
                       </span>
                     </div>
                   ) : null}

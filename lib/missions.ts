@@ -29,6 +29,25 @@ export function isUpcoming(startDay: string, today: string): boolean {
   return startDay >= today;
 }
 
+/**
+ * Kennzahl „Länder" (Audit 4.10). Online-Einsätze bekommen beim Import
+ * synthetische Antarktis-Koordinaten mit dem Ländercode `AQ`
+ * (`lib/import/online.ts`) — sie sind kein bereistes Land und dürfen die Zahl
+ * nicht erhöhen. Diese Zahl steht im Speaker-Kit, also muss sie stimmen.
+ */
+export function countVisitedCountries(
+  missions: { countryCode: string | null; isOnline?: boolean }[],
+): number {
+  const codes = new Set<string>();
+  for (const m of missions) {
+    if (m.isOnline) continue;
+    const code = (m.countryCode ?? "").trim().toUpperCase();
+    if (!code || code === "AQ") continue;
+    codes.add(code);
+  }
+  return codes.size;
+}
+
 /** Gehört ein Einsatz in die aktuelle Auswahl? */
 export function matchesYear(
   missionYear: number,

@@ -114,6 +114,7 @@ export default async function EinsaetzePage({
             language: isDe ? "Sprache" : "Language",
             openFile: isDe ? "Einsatzakte öffnen" : "Open mission file",
             online: isDe ? "Online" : "Online",
+            showOnMap: isDe ? "Auf der Karte" : "On the map",
           },
         }}
       />

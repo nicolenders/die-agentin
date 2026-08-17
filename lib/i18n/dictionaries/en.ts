@@ -71,6 +71,7 @@ const en: Dictionary = {
     sgCopiesSold: "copy sold",
     mostRequested: "Most requested briefing",
     openMissionFile: "Open mission file",
+    showMissionOnMap: "Show on the map",
     allBriefings: "All briefings",
     noMission: "No mission scheduled right now.",
   },

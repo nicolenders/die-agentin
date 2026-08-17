@@ -60,9 +60,45 @@ Dann wird die der anderen Sprache angeboten — sichtbar gekennzeichnet. Ein
 stiller Rückfall wäre schlechter: Nicole würde in der falschen Sprache anfangen
 und es erst auf Folie zwölf merken.
 
+### 6. Große Vorlagen: im Fluss statt im Speicher
+
+Die erste Fassung übernahm die 20-MB-Grenze des Folien-Uploads. Die echten
+Vorlagen wiegen **41,7 MB (DE) und 29,5 MB (EN)** — eine Corporate-Vorlage
+trägt ihr Bildmaterial in den Folienmastern mit sich. Die Grenze anzuheben
+allein hätte nicht gereicht:
+
+- `request.formData()` liest den gesamten Upload in den Speicher, und
+  `Buffer.from(await file.arrayBuffer())` legt eine zweite Kopie an.
+- Der Medien-Proxy las die Datei vollständig ein und kopierte sie für die
+  Antwort noch einmal.
+- Die Container-App hat **0,5 GiB** (`infra/main.bicep`). Eine 42-MB-Vorlage
+  hätte im Hoch- und Herunterladen jeweils rund das Doppelte belegt — und der
+  Container bedient zugleich die öffentliche Website.
+
+Deshalb fließt die Vorlage jetzt durch, statt zwischengelagert zu werden:
+
+- **Upload:** roher Anfragekörper statt Formulardatei (Sprache und Dateiname in
+  der Query), `Readable.fromWeb(request.body)` → `Transform` → `storeStream`.
+  Der `PresentationScanner` prüft im Vorbeifließen (Signatur, Marker,
+  Überlappung an den Blockgrenzen) und bricht bei Überschreiten der Grenze ab;
+  angefangene Dateien werden mit `deleteMedia` weggeräumt. Im Speicher liegen
+  nur die Blöcke, die gerade unterwegs sind (~8 MB beim Blob-Upload).
+- **Download:** `openMedia` liefert einen Strom, `/media/…` reicht ihn durch.
+  Das entlastet auch Bilder und Folien-PDFs.
+- **Grenze: 100 MB.** Nicht mehr durch den Arbeitsspeicher begrenzt, sondern
+  eine bewusste Obergrenze gegen Ausrutscher. Formular und API nennen dieselbe
+  Zahl (`MAX_SLIDE_TEMPLATE_MB`), und das Formular sagt vor dem Hochladen ab,
+  statt vierzig Megabyte zu übertragen und danach abzulehnen.
+
+Der Multipart-Weg (`formData`) bleibt für Bilder und Folien-PDFs, wie er ist:
+dort sind 20 MB die richtige Grenze, und die Bildverarbeitung braucht die Datei
+ohnehin als Ganzes.
+
 ## Konsequenzen
 
 - Vorlagen sind nur im Adminbereich sichtbar. Öffentlich ändert sich nichts.
 - Beim Entfernen einer Vorlage wird die Verknüpfung gelöst, die Datei bleibt in
   der Ablage. Ein Fehlgriff kostet damit keine Datei.
-- Obergrenze 20 MB, wie beim Folien-Upload.
+- Obergrenze 100 MB; der Speicherbedarf ist von der Dateigröße entkoppelt.
+- Der Medien-Proxy streamt jetzt generell. Bei sehr langsamen Verbindungen hält
+  eine Antwort länger eine Verbindung offen, belegt dafür aber kaum Speicher.

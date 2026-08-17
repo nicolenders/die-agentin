@@ -5,12 +5,17 @@ import { useRef, useState } from "react";
 import { showToast } from "@/lib/admin/toast";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import {
+  MAX_SLIDE_TEMPLATE_BYTES,
+  MAX_SLIDE_TEMPLATE_MB,
   SLIDE_TEMPLATE_ACCEPT,
+  SLIDE_TEMPLATE_TOO_LARGE,
   slideTemplateUrl,
   type SlideTemplate,
   type SlideTemplateSet,
 } from "@/lib/slide-templates";
 import type { Locale } from "@/lib/i18n/config";
+
+const formatMb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1).replace(".", ",");
 
 // Foliensvorlagen: je eine PowerPoint-Datei auf Deutsch und auf Englisch. Sie
 // gelten für alle Einsätze — im Einsatzformular wird die Vorlage in der
@@ -56,12 +61,21 @@ function SlideTemplateCard({
 
   async function upload(file: File) {
     setError(null);
+    if (file.size > MAX_SLIDE_TEMPLATE_BYTES) {
+      // Vor dem Hochladen absagen: bei 40-MB-Dateien wäre die Alternative,
+      // minutenlang zu übertragen und dann eine Absage zu bekommen.
+      setError(`${SLIDE_TEMPLATE_TOO_LARGE} (${formatMb(file.size)} MB)`);
+      return;
+    }
     setBusy(true);
     try {
-      const body = new FormData();
-      body.append("file", file);
-      body.append("locale", locale);
-      const res = await fetch("/api/admin/missions/slide-template", { method: "POST", body });
+      // Rohe Datei statt Formulardatei: so nimmt der Server sie im Fluss
+      // entgegen, ohne sie vorher vollständig im Speicher zu halten.
+      const query = new URLSearchParams({ locale, name: file.name });
+      const res = await fetch(`/api/admin/missions/slide-template?${query}`, {
+        method: "POST",
+        body: file,
+      });
       const raw = await res.text();
       let data: { error?: string };
       try {
@@ -130,7 +144,10 @@ function SlideTemplateCard({
           </form>
         ) : null}
       </div>
-      <p className="meta" style={{ marginTop: 8 }}>.pptx oder .potx, max. 20 MB.</p>
+      <p className="meta" style={{ marginTop: 8 }}>
+        .pptx oder .potx, max. {MAX_SLIDE_TEMPLATE_MB} MB. Große Vorlagen brauchen einen
+        Moment — die Schaltfläche bleibt bis zum Ende auf „Lädt hoch …“.
+      </p>
       {error ? <p className="media-error">{error}</p> : null}
     </div>
   );

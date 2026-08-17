@@ -21,11 +21,21 @@ export const SLIDE_TEMPLATE_MIME: Record<SlideTemplateExtension, string> = {
 };
 
 // Eine Corporate-Vorlage mit Bildmaterial in den Folienmastern wiegt schnell
-// 40 MB und mehr. Der Upload wird deshalb nicht im Speicher gehalten, sondern
-// im Vorbeifließen geprüft und direkt in die Ablage geschrieben (siehe
-// PresentationScanner und `storeStream`) — die Container-App hat 0,5 GiB.
+// 40 MB. Solche Dateien kommen nicht in einer einzigen Anfrage, sondern in
+// Teilstücken (siehe `storePart`/`commitParts`): jedes Stück ist für sich
+// wiederholbar, und keine Anfrage hält mehr als ein paar MB im Speicher — die
+// Container-App hat 0,5 GiB.
 export const MAX_SLIDE_TEMPLATE_MB = 100;
 export const MAX_SLIDE_TEMPLATE_BYTES = MAX_SLIDE_TEMPLATE_MB * 1024 * 1024;
+
+/** Größe eines Teilstücks beim Upload. Klein genug für jedes Ingress-Limit. */
+export const SLIDE_TEMPLATE_PART_BYTES = 4 * 1024 * 1024;
+
+/** Obergrenze für ein einzelnes Teilstück serverseitig (etwas Luft nach oben). */
+export const MAX_PART_BYTES = SLIDE_TEMPLATE_PART_BYTES * 2;
+
+/** Wie viele Teile eine Datei höchstens haben darf — aus Grenze und Teilgröße. */
+export const MAX_PARTS = Math.ceil(MAX_SLIDE_TEMPLATE_BYTES / SLIDE_TEMPLATE_PART_BYTES) + 1;
 
 /** Einheitliche Meldung, damit Formular und API dieselbe Grenze nennen. */
 export const SLIDE_TEMPLATE_TOO_LARGE = `Die Datei ist größer als ${MAX_SLIDE_TEMPLATE_MB} MB.`;
@@ -43,15 +53,26 @@ export interface SlideTemplate {
   path: string;
   /** Originalname, damit der Download nicht als UUID auf der Platte landet. */
   fileName: string;
+  /** Größe der abgelegten Datei — sichtbar, damit Vollständigkeit prüfbar ist. */
+  bytes: number;
 }
 
 export type SlideTemplateSet = Record<Locale, SlideTemplate | null>;
 
 export const EMPTY_SLIDE_TEMPLATES: SlideTemplateSet = { de: null, en: null };
 
-/** Schlüssel in `SiteSetting` für Pfad und Dateiname einer Sprache. */
-export function slideTemplateKeys(locale: Locale): { path: string; name: string } {
-  return { path: `slideTemplate.${locale}.path`, name: `slideTemplate.${locale}.fileName` };
+/** Schlüssel in `SiteSetting` für Pfad, Dateiname und Größe einer Sprache. */
+export function slideTemplateKeys(locale: Locale): { path: string; name: string; bytes: string } {
+  return {
+    path: `slideTemplate.${locale}.path`,
+    name: `slideTemplate.${locale}.fileName`,
+    bytes: `slideTemplate.${locale}.bytes`,
+  };
+}
+
+/** Kennung eines mehrteiligen Uploads — nur UUIDs, nie ein Pfadbestandteil. */
+export function isUploadId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 /** Endung aus einem Dateinamen, sofern sie zulässig ist. */
@@ -92,21 +113,6 @@ function includesAscii(buf: Uint8Array, needle: string): boolean {
   return false;
 }
 
-/**
- * Echter Typ über den Inhalt statt über die Endung: OOXML-Dateien sind ZIPs
- * (`PK\x03\x04`), und der Eintragsname `ppt/presentation.xml` steht im lokalen
- * Header unkomprimiert im Byte-Strom. Damit wird eine umbenannte .docx oder
- * eine beliebige ZIP-Datei abgewiesen.
- *
- * Für eine Datei, die bereits vollständig im Speicher liegt. Der Upload nutzt
- * denselben Test abschnittsweise (`PresentationScanner`).
- */
-export function isOfficePresentation(buf: Uint8Array): boolean {
-  const scanner = new PresentationScanner();
-  scanner.push(buf);
-  return scanner.verdict().ok;
-}
-
 /** Legacy-Binärformat (.ppt, OLE2) — erkennbar, damit die Meldung konkret wird. */
 export function isLegacyPowerPoint(buf: Uint8Array): boolean {
   const sig = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
@@ -114,67 +120,88 @@ export function isLegacyPowerPoint(buf: Uint8Array): boolean {
 }
 
 const PRESENTATION_MARKER = "ppt/presentation.xml";
+/** Lokaler Datei-Header am Anfang eines ZIP. */
+const ZIP_START = [0x50, 0x4b, 0x03, 0x04];
+/** „End of Central Directory" — die Schlussmarke eines vollständigen ZIP. */
+const ZIP_END = [0x50, 0x4b, 0x05, 0x06];
+
+/** So viel wird von Anfang und Ende gelesen, um eine Datei zu beurteilen. */
+export const ARCHIVE_PROBE_BYTES = 64 * 1024;
 
 export interface PresentationVerdict {
   ok: boolean;
   error?: string;
 }
 
+/** Größe in MB, wie sie in Meldungen und Oberfläche erscheint. */
+export function formatMb(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+}
+
+export interface ArchiveProbe {
+  /** Größe, die die Ablage meldet — nicht, was wir zu schreiben glaubten. */
+  size: number;
+  /** Größe, die der Browser vor dem Upload angekündigt hat. */
+  expectedSize: number;
+  /** Erste `ARCHIVE_PROBE_BYTES` der abgelegten Datei. */
+  head: Uint8Array;
+  /** Letzte `ARCHIVE_PROBE_BYTES` der abgelegten Datei. */
+  tail: Uint8Array;
+}
+
 /**
- * Dieselbe Prüfung wie `isOfficePresentation`, aber häppchenweise: Der Upload
- * einer 40-MB-Vorlage soll nicht erst vollständig im Speicher liegen, bevor
- * jemand hineinschaut. Der Scanner sieht jeden Abschnitt genau einmal, merkt
- * sich nur die ersten acht Bytes (Signatur) und den Überhang an der
- * Abschnittsgrenze — sonst könnte ein Fund genau dort zerschnitten werden.
+ * Beurteilt die **abgelegte** Datei, nicht den Upload: Ist sie vollständig
+ * angekommen, und ist sie wirklich eine PowerPoint-Datei?
+ *
+ * Der entscheidende Test ist die Schlussmarke des ZIP („End of Central
+ * Directory"). Eine abgeschnittene Übertragung erzeugt eine Datei, die vorne
+ * völlig richtig aussieht — PowerPoint bietet dann an, sie zu reparieren, und
+ * scheitert daran. Genau dieser Fall darf nicht als Erfolg durchgehen.
+ *
+ * Der Typ wird am Eintragsnamen `ppt/presentation.xml` erkannt: Er steht
+ * unkomprimiert im lokalen Header (Anfang) und im zentralen Verzeichnis
+ * (Ende) — eine umbenannte .docx fällt damit durch.
  */
-export class PresentationScanner {
-  #head: number[] = [];
-  #tail = new Uint8Array(0);
-  #found = false;
-  #bytes = 0;
-
-  push(chunk: Uint8Array): void {
-    if (chunk.length === 0) return;
-    this.#bytes += chunk.length;
-    if (this.#head.length < 8) {
-      this.#head.push(...Array.from(chunk.subarray(0, 8 - this.#head.length)));
-    }
-    if (this.#found) return;
-
-    const window = new Uint8Array(this.#tail.length + chunk.length);
-    window.set(this.#tail, 0);
-    window.set(chunk, this.#tail.length);
-    if (includesAscii(window, PRESENTATION_MARKER)) {
-      this.#found = true;
-      this.#tail = new Uint8Array(0);
-      return;
-    }
-    const keep = Math.min(window.length, PRESENTATION_MARKER.length - 1);
-    this.#tail = window.slice(window.length - keep);
+export function verifyTemplateArchive(probe: ArchiveProbe): PresentationVerdict {
+  const { size, expectedSize, head, tail } = probe;
+  if (size === 0) return { ok: false, error: "Die Datei ist leer." };
+  if (isLegacyPowerPoint(head)) {
+    return {
+      ok: false,
+      error: "Das ist das alte PowerPoint-Format (.ppt). Bitte als .pptx oder .potx speichern.",
+    };
   }
-
-  /** Bisher gesehene Bytes — damit der Aufrufer die Obergrenze durchsetzen kann. */
-  get bytes(): number {
-    return this.#bytes;
+  if (!startsWith(head, ZIP_START)) {
+    return { ok: false, error: "Nur PowerPoint-Dateien (.pptx oder .potx) sind erlaubt." };
   }
-
-  /** Urteil nach dem letzten Abschnitt, mit Meldung für die Oberfläche. */
-  verdict(): PresentationVerdict {
-    const head = Uint8Array.from(this.#head);
-    if (this.#bytes === 0) return { ok: false, error: "Die Datei ist leer." };
-    if (isLegacyPowerPoint(head)) {
-      return {
-        ok: false,
-        error: "Das ist das alte PowerPoint-Format (.ppt). Bitte als .pptx oder .potx speichern.",
-      };
-    }
-    const isZip =
-      head.length >= 4 && head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04;
-    if (!isZip || !this.#found) {
-      return { ok: false, error: "Nur PowerPoint-Dateien (.pptx oder .potx) sind erlaubt." };
-    }
-    return { ok: true };
+  if (expectedSize > 0 && size !== expectedSize) {
+    return {
+      ok: false,
+      error:
+        `Die Datei ist unvollständig angekommen (${formatMb(size)} von ${formatMb(expectedSize)}). ` +
+        "Bitte erneut hochladen.",
+    };
   }
+  if (!includesBytes(tail, ZIP_END)) {
+    return {
+      ok: false,
+      error:
+        "Die Datei ist unvollständig angekommen — die Schlussmarke der PowerPoint-Datei fehlt. " +
+        "Bitte erneut hochladen.",
+    };
+  }
+  if (!includesAscii(head, PRESENTATION_MARKER) && !includesAscii(tail, PRESENTATION_MARKER)) {
+    return { ok: false, error: "Nur PowerPoint-Dateien (.pptx oder .potx) sind erlaubt." };
+  }
+  return { ok: true };
+}
+
+function startsWith(buf: Uint8Array, signature: number[]): boolean {
+  return buf.length >= signature.length && signature.every((b, i) => buf[i] === b);
+}
+
+function includesBytes(buf: Uint8Array, signature: number[]): boolean {
+  return includesAscii(buf, String.fromCharCode(...signature));
 }
 
 export interface SlideTemplateChoice {

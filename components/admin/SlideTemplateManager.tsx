@@ -8,14 +8,15 @@ import {
   MAX_SLIDE_TEMPLATE_BYTES,
   MAX_SLIDE_TEMPLATE_MB,
   SLIDE_TEMPLATE_ACCEPT,
+  SLIDE_TEMPLATE_PART_BYTES,
   SLIDE_TEMPLATE_TOO_LARGE,
+  formatMb,
   slideTemplateUrl,
   type SlideTemplate,
   type SlideTemplateSet,
 } from "@/lib/slide-templates";
+import { uploadSlideTemplate } from "@/lib/admin/upload-template";
 import type { Locale } from "@/lib/i18n/config";
-
-const formatMb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1).replace(".", ",");
 
 // Foliensvorlagen: je eine PowerPoint-Datei auf Deutsch und auf Englisch. Sie
 // gelten für alle Einsätze — im Einsatzformular wird die Vorlage in der
@@ -58,43 +59,29 @@ function SlideTemplateCard({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   async function upload(file: File) {
     setError(null);
     if (file.size > MAX_SLIDE_TEMPLATE_BYTES) {
       // Vor dem Hochladen absagen: bei 40-MB-Dateien wäre die Alternative,
       // minutenlang zu übertragen und dann eine Absage zu bekommen.
-      setError(`${SLIDE_TEMPLATE_TOO_LARGE} (${formatMb(file.size)} MB)`);
+      setError(`${SLIDE_TEMPLATE_TOO_LARGE} (${formatMb(file.size)})`);
       return;
     }
     setBusy(true);
-    try {
-      // Rohe Datei statt Formulardatei: so nimmt der Server sie im Fluss
-      // entgegen, ohne sie vorher vollständig im Speicher zu halten.
-      const query = new URLSearchParams({ locale, name: file.name });
-      const res = await fetch(`/api/admin/missions/slide-template?${query}`, {
-        method: "POST",
-        body: file,
-      });
-      const raw = await res.text();
-      let data: { error?: string };
-      try {
-        data = JSON.parse(raw);
-      } catch {
-        setError(`Upload fehlgeschlagen (HTTP ${res.status}). ${raw.slice(0, 140)}`.trim());
-        return;
-      }
-      if (!res.ok) {
-        setError(data.error ?? `Upload fehlgeschlagen (HTTP ${res.status}).`);
-        return;
-      }
-      showToast(`Vorlage (${LABEL[locale]}) hinterlegt.`);
-      router.refresh();
-    } catch (err) {
-      setError(`Upload fehlgeschlagen: ${err instanceof Error ? err.message : "Netzwerkfehler"}.`);
-    } finally {
-      setBusy(false);
+    setProgress({ done: 0, total: Math.ceil(file.size / SLIDE_TEMPLATE_PART_BYTES) });
+    const result = await uploadSlideTemplate(file, locale, (done, total) =>
+      setProgress({ done, total }),
+    );
+    setBusy(false);
+    setProgress(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
     }
+    showToast(`Vorlage (${LABEL[locale]}) hinterlegt — ${formatMb(result.bytes)}.`);
+    router.refresh();
   }
 
   return (
@@ -108,7 +95,10 @@ function SlideTemplateCard({
           <p style={{ margin: "8px 0" }}>
             <a className="btn ghost sm" href={slideTemplateUrl(template)} download={template.fileName}>
               ⬇ {template.fileName}
-            </a>
+            </a>{" "}
+            {/* Die Größe steht sichtbar dabei: stimmt sie mit der Datei auf dem
+                Rechner überein, ist die Vorlage vollständig angekommen. */}
+            <span className="meta">{formatMb(template.bytes)}</span>
           </p>
         </>
       ) : (
@@ -131,7 +121,13 @@ function SlideTemplateCard({
       />
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <button type="button" className="btn ghost sm" disabled={busy} onClick={() => inputRef.current?.click()}>
-          {busy ? "Lädt hoch …" : template ? "Ersetzen" : "PowerPoint hochladen"}
+          {busy
+            ? progress
+              ? `Lädt hoch … Teil ${progress.done} von ${progress.total}`
+              : "Lädt hoch …"
+            : template
+              ? "Ersetzen"
+              : "PowerPoint hochladen"}
         </button>
         {template ? (
           <form action={onRemove} style={{ display: "inline" }}>
@@ -145,8 +141,9 @@ function SlideTemplateCard({
         ) : null}
       </div>
       <p className="meta" style={{ marginTop: 8 }}>
-        .pptx oder .potx, max. {MAX_SLIDE_TEMPLATE_MB} MB. Große Vorlagen brauchen einen
-        Moment — die Schaltfläche bleibt bis zum Ende auf „Lädt hoch …“.
+        .pptx oder .potx, max. {MAX_SLIDE_TEMPLATE_MB} MB. Große Dateien gehen in Teilstücken
+        hoch — der Fortschritt steht auf der Schaltfläche. Am Ende wird die abgelegte Datei
+        geprüft; unvollständig Angekommenes wird abgelehnt statt stillschweigend gespeichert.
       </p>
       {error ? <p className="media-error">{error}</p> : null}
     </div>

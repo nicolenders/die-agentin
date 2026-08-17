@@ -249,22 +249,22 @@ export default function PublicationSections({
           <p className="eyebrow" style={{ marginTop: 40 }}>
             {isDe ? "Weitere Veröffentlichungen" : "Further publications"}
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>{isDe ? "Jahr" : "Year"}</th>
-                <th>{isDe ? "Titel" : "Title"}</th>
-                <th>{isDe ? "Art" : "Type"}</th>
-                <th>{isDe ? "Medium" : "Medium"}</th>
+          <table className="stack" role="table">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">{isDe ? "Jahr" : "Year"}</th>
+                <th scope="col" role="columnheader">{isDe ? "Titel" : "Title"}</th>
+                <th scope="col" role="columnheader">{isDe ? "Art" : "Type"}</th>
+                <th scope="col" role="columnheader">{isDe ? "Medium" : "Medium"}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {others.map((o) => (
-                <tr key={o.id}>
-                  <td>{o.year}</td>
-                  <td>{o.title}</td>
-                  <td>{typeLabel(o.type, isDe)}</td>
-                  <td>{o.publisher ?? "—"}</td>
+                <tr role="row" key={o.id}>
+                  <td role="cell" data-label={isDe ? "Jahr" : "Year"}>{o.year}</td>
+                  <td role="cell" data-label={isDe ? "Titel" : "Title"} data-primary="">{o.title}</td>
+                  <td role="cell" data-label={isDe ? "Art" : "Type"}>{typeLabel(o.type, isDe)}</td>
+                  <td role="cell" data-label={isDe ? "Medium" : "Medium"}>{o.publisher ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -796,6 +796,101 @@ th {
   background: rgba(139, 92, 246, 0.07);
 }
 
+// Tabellen am Telefon: eine Zeile wird zur Karte.
+//
+// Eine sechsspaltige Einsatzliste passt auf 380 px nicht — sie wird entweder
+// abgeschnitten oder unleserlich gequetscht. Statt Spalten zu opfern, kippt die
+// Zeile: aus Kopfzeile und Zelle wird ein Paar aus Beschriftung und Wert
+// untereinander. Die Spaltenbeschriftung kommt aus `data-label`, steht also
+// genau einmal im Markup und bleibt automatisch übersetzt.
+//
+// `table.stack` ist bewusst eine Auszeichnung am Element und keine Regel für
+// alle Tabellen: Zweispalter (Codebuch, Merkmale) lesen sich so, wie sie sind,
+// und Tabellen aus dem Redaktionsinhalt haben keine Beschriftungen.
+//
+// Zellen mit `.hide-sm` entfallen am Telefon ganz — dort, wo eine Angabe im
+// Umfeld ohnehin schon steht.
+//
+// Wichtig zur Barrierefreiheit: `display: block` nimmt Tabellenelementen ihre
+// Rolle — ein Vorlesewerkzeug hörte sonst eine Aneinanderreihung von Text ohne
+// Spaltenbezug. Deshalb tragen diese Tabellen im Markup ihre Rollen explizit
+// (`role="table"`, `rowgroup`, `row`, `columnheader`, `cell`), und die Kopfzeile
+// bleibt vorhanden, nur optisch verborgen. Beides gehört zusammen: wer die
+// `display`-Regeln hier ändert, muss die Rollen dort mitdenken.
+.stack .hide-sm {
+  // Am großen Bildschirm sichtbar; die Ausblendung steht unten im Medienblock.
+  display: table-cell;
+}
+@media (max-width: 640px) {
+  table.stack,
+  table.stack tbody,
+  table.stack tr,
+  table.stack td {
+    display: block;
+  }
+  table.stack {
+    margin: 12px 0;
+  }
+  // Die Kopfzeile bleibt für Vorlesewerkzeuge erhalten, verschwindet aber optisch:
+  // ihre Beschriftungen stehen jetzt in jeder Karte.
+  table.stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  table.stack tr {
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: rgba(139, 92, 246, 0.04);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  table.stack td {
+    border: 0;
+    padding: 3px 0;
+    display: grid;
+    grid-template-columns: minmax(74px, 28%) 1fr;
+    gap: 12px;
+    align-items: baseline;
+  }
+  table.stack td::before {
+    content: attr(data-label);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  // Die Kennzeichnung der Karte: der Name der Veranstaltung steht als Titel über
+  // den Angaben, nicht als eine Zeile unter vielen.
+  table.stack td[data-primary] {
+    display: block;
+    font-size: 15.5px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  table.stack td[data-primary]::before {
+    display: none;
+  }
+  // Zellen ohne Beschriftung (Aktionsknopf) nehmen die volle Breite.
+  table.stack td:not([data-label]) {
+    display: block;
+    margin-top: 8px;
+    text-align: left !important;
+  }
+  table.stack td.row-action .btn {
+    width: 100%;
+  }
+  table.stack .hide-sm {
+    display: none;
+  }
+}
+
 // ---------- Feed / Signale ----------
 .feed-item {
   display: grid;
@@ -1392,6 +1487,47 @@ a.radar-chip:focus-visible {
 }
 .popup .close:hover {
   color: var(--text);
+}
+// Am Telefon füllt das Popup den Bildschirm. Über der Karte hätte es sonst rund
+// 300 px Breite und die Höhe eines Briefmarkenbildes; die Angaben zum Einsatz —
+// Briefing, Identität, Buttons — landen dann im Gescrolle. Bildschirmfüllend
+// ist es das, was es inhaltlich ist: die Kurzakte des Einsatzes.
+@media (max-width: 640px) {
+  .popup {
+    position: fixed;
+    inset: 0;
+    left: 0;
+    top: 0;
+    transform: none;
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border-width: 0;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+    font-size: 14px;
+    // Über der Kopfzeile (`.top`, z-index 60), unter der Lightbox (2000).
+    z-index: 200;
+  }
+  // Größere Schließfläche: am Telefon wird mit dem Daumen getroffen, nicht mit
+  // dem Mauszeiger.
+  .popup .close {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+    margin: -2px -4px 4px 0;
+  }
+  .popup h4 {
+    font-size: 19px;
+  }
+  .popup-banner img {
+    max-height: 30vh;
+  }
+  // Die Buttons ans untere Ende, damit sie am Daumen liegen.
+  .popup-actions {
+    margin-top: auto;
+    padding-top: 16px;
+  }
 }
 .map-legend {
   display: flex;

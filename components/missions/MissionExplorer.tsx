@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import WorldMap, { type MapMission } from "@/components/map/WorldMap";
-import { matchesYear, parseYearSelection, type YearSelection } from "@/lib/missions";
+import { isUpcoming, matchesYear, parseYearSelection, type YearSelection } from "@/lib/missions";
+import { useIsPhone } from "@/lib/hooks/use-media-query";
+import { berlinDay } from "@/lib/time";
 import { toggleCsv } from "@/lib/filters";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import type { Locale } from "@/lib/i18n/config";
@@ -19,6 +21,8 @@ export interface ExplorerMission {
   isOnline: boolean;
   year: number;
   future: boolean;
+  /** Tag des Einsatzes als `YYYY-MM-DD` — für „heute oder später". */
+  startDay: string;
   dateLabel: string;
   eventUrl: string | null;
   published: boolean;
@@ -66,6 +70,9 @@ export interface ExplorerLabels {
   statusDone: string;
   onlineLocation: string;
   empty: string;
+  /** Hinweis am Telefon, wo ohne Filter nur Anstehendes gezeigt wird. */
+  phoneNote: string;
+  phoneEmpty: string;
   map: {
     all: string;
     done: string;
@@ -196,17 +203,26 @@ export default function MissionExplorer({
   const selection: YearSelection = parseYearSelection(state.year);
   const needle = state.q.trim().toLowerCase();
 
+  // Am Telefon ist die Auswahl eine andere: keine Filter, dafür nur, was noch
+  // ansteht (heute eingeschlossen). Ein Filterband und eine Jahresliste sind auf
+  // einem schmalen Display teurer als der Nutzen — und wer unterwegs nachsieht,
+  // will wissen, wo Nicole als Nächstes auftritt.
+  const isPhone = useIsPhone();
+  const today = berlinDay();
+
   const filtered = useMemo(
     () =>
-      missions.filter(
-        (m) =>
-          (state.showOnline || !m.isOnline) &&
-          matchesYear(m.year, m.future, selection, currentYear) &&
-          (state.ids.length === 0 || m.identitySlugs.some((s) => state.ids.includes(s))) &&
-          (!state.werkzeug || m.tools.some((t) => t.slug === state.werkzeug)) &&
-          (!needle || `${m.eventName} ${m.city} ${m.countryCode}`.toLowerCase().includes(needle)),
-      ),
-    [missions, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
+      isPhone
+        ? missions.filter((m) => isUpcoming(m.startDay, today))
+        : missions.filter(
+            (m) =>
+              (state.showOnline || !m.isOnline) &&
+              matchesYear(m.year, m.future, selection, currentYear) &&
+              (state.ids.length === 0 || m.identitySlugs.some((s) => state.ids.includes(s))) &&
+              (!state.werkzeug || m.tools.some((t) => t.slug === state.werkzeug)) &&
+              (!needle || `${m.eventName} ${m.city} ${m.countryCode}`.toLowerCase().includes(needle)),
+          ),
+    [missions, isPhone, today, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
   );
 
   // Fällt der ausgewählte Einsatz durch einen Filter heraus, gilt er als nicht
@@ -390,31 +406,37 @@ export default function MissionExplorer({
           />
         ) : (
           <div className="card bracket">
-            <p className="muted" style={{ margin: 0 }}>{labels.empty}</p>
+            <p className="muted" style={{ margin: 0 }}>{isPhone ? labels.phoneEmpty : labels.empty}</p>
           </div>
         )}
       </div>
 
-      {filterBlock}
+      {isPhone ? (
+        // Statt eines stillen Ausblendens: sagen, was die Liste zeigt.
+        <p className="meta" style={{ marginTop: 14 }}>{labels.phoneNote}</p>
+      ) : (
+        filterBlock
+      )}
 
       <p className="eyebrow" style={{ marginTop: 24 }}>{labels.listTitle}</p>
       {filtered.length > 0 ? (
-        <table style={{ marginTop: 12 }}>
-          <thead>
-            <tr>
-              <th>{labels.colDate}</th>
-              <th>{labels.colEvent}</th>
-              <th>{labels.colBriefing}</th>
-              <th>{labels.colLanguage}</th>
-              <th>{labels.colLocation}</th>
-              <th>{labels.colStatus}</th>
-              <th><span className="visually-hidden">{labels.map.showOnMap}</span></th>
+        <table className="stack" role="table" style={{ marginTop: 12 }}>
+          <thead role="rowgroup">
+            <tr role="row">
+              <th scope="col" role="columnheader">{labels.colDate}</th>
+              <th scope="col" role="columnheader">{labels.colEvent}</th>
+              <th scope="col" role="columnheader">{labels.colBriefing}</th>
+              <th scope="col" role="columnheader">{labels.colLanguage}</th>
+              <th scope="col" role="columnheader">{labels.colLocation}</th>
+              <th scope="col" role="columnheader">{labels.colStatus}</th>
+              <th scope="col" role="columnheader"><span className="visually-hidden">{labels.map.showOnMap}</span></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {filtered.map((m) => (
               <tr
                 key={m.id}
+                role="row"
                 className={`mission-row${shownSelectedId === m.id ? " on" : ""}`}
                 onClick={(e) => {
                   // Links und Knöpfe in der Zeile behalten ihre eigene Wirkung.
@@ -422,15 +444,15 @@ export default function MissionExplorer({
                   selectMission(m.id);
                 }}
               >
-                <td className="meta">{m.dateLabel}</td>
-                <td>
+                <td role="cell" className="meta" data-label={labels.colDate}>{m.dateLabel}</td>
+                <td role="cell" data-label={labels.colEvent} data-primary="">
                   {m.published && m.caseFilePublic && m.slug ? (
                     <Link href={`/${locale}/einsaetze/${m.slug}`}>{m.eventName}</Link>
                   ) : (
                     m.eventName
                   )}
                 </td>
-                <td>
+                <td role="cell" data-label={labels.colBriefing}>
                   {m.briefing ? (
                     <Link href={`/${locale}/briefings?briefing=${m.briefing.id}#briefing-${m.briefing.id}`}>
                       {m.briefing.title}
@@ -439,10 +461,14 @@ export default function MissionExplorer({
                     <span className="meta">—</span>
                   )}
                 </td>
-                <td className="meta">{talkLanguageLabel(m.language, locale) ?? "—"}</td>
-                <td>{m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`}</td>
-                <td>{m.future ? labels.statusPlanned : labels.statusDone}</td>
-                <td style={{ textAlign: "right" }}>
+                <td role="cell" className="meta" data-label={labels.colLanguage}>
+                  {talkLanguageLabel(m.language, locale) ?? "—"}
+                </td>
+                <td role="cell" data-label={labels.colLocation}>
+                  {m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`}
+                </td>
+                <td role="cell" data-label={labels.colStatus}>{m.future ? labels.statusPlanned : labels.statusDone}</td>
+                <td role="cell" className="row-action" style={{ textAlign: "right" }}>
                   {/* Für Tastatur und Screenreader: die Zeilenauswahl als echter Knopf. */}
                   <button
                     type="button"
@@ -458,7 +484,7 @@ export default function MissionExplorer({
           </tbody>
         </table>
       ) : (
-        <p className="muted" style={{ marginTop: 12 }}>{labels.empty}</p>
+        <p className="muted" style={{ marginTop: 12 }}>{isPhone ? labels.phoneEmpty : labels.empty}</p>
       )}
     </div>
   );

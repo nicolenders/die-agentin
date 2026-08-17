@@ -44,6 +44,16 @@ export function berlinLocalToUtc(local: string | null | undefined): Date | null 
   return new Date(naiveUtc.getTime() - offset * 60000);
 }
 
+/**
+ * Der Kalendertag in Berlin als `YYYY-MM-DD`. Für Vergleiche „heute oder
+ * später" — ein Einsatz, der heute stattfindet, ist noch nicht vorbei, auch
+ * wenn sein Zeitstempel (Mitternacht UTC) hinter der aktuellen Uhrzeit liegt.
+ */
+export function berlinDay(instant: Date = new Date()): string {
+  // „sv-SE" formatiert als YYYY-MM-DD — genau die sortierbare Schreibweise.
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: TZ }).format(instant);
+}
+
 /** Wandelt einen UTC-Zeitpunkt in eine `datetime-local`-Zeichenkette (Berlin). */
 export function utcToBerlinLocal(date: Date | null | undefined): string {
   if (!date) return "";

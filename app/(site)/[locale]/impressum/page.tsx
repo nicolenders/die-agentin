@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { getContactInfo, getSocialLinks } from "@/lib/queries/settings";
 import { getLegalDoc } from "@/lib/queries/legal";
 import { formatDate } from "@/lib/format";
@@ -12,6 +15,21 @@ export const dynamic = "force-dynamic";
 // freien Textblöcke (Haftung, Urheberrecht, Streitschlichtung) aus dem
 // pflegbaren LegalDoc. Nicole ist Privatperson — KEINE USt-IdNr.
 const NAME = "Nicole Enders";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const dict = await getDictionary(locale);
+  return {
+    title: dict.footer.imprint,
+    description: dict.meta.impressum,
+    alternates: alternatesFor(locale, "impressum"),
+  };
+}
 
 export default async function ImpressumPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

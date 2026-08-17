@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { getCertifications, getFocusTopics, getPublications } from "@/lib/queries/records";
 import { getLegend } from "@/lib/queries/legend";
 import { getContactInfo, getSocialLinks } from "@/lib/queries/settings";
@@ -59,9 +61,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const isDe = locale === "de";
+  const dict = await getDictionary(locale);
   // Nicht indexieren: der Lebenslauf ist ein Auszug zum Drucken, keine SEO-Seite.
+  // Eine eigene Description braucht er trotzdem — sie erscheint beim Teilen des
+  // Links (Audit 1.2).
   return {
     title: isDe ? "Lebenslauf" : "Curriculum vitae",
+    description: dict.meta.cv,
+    alternates: alternatesFor(locale, "cv"),
     robots: { index: false, follow: true },
   };
 }

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { getBios, getContactInfo, getSocialLinks } from "@/lib/queries/settings";
 import { getHomeStats } from "@/lib/queries/home";
 import { getPublishedIdentities } from "@/lib/queries/identities";
@@ -16,11 +18,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const isDe = locale === "de";
+  const dict = await getDictionary(locale);
   return {
     title: isDe ? "Akte · Speaker-Kit" : "Speaker kit",
-    description: isDe
-      ? "Alles für Veranstalter in einem Zug: Bios in drei Längen, Fachgebiete, Formate und Kontakt."
-      : "Everything organisers need in one place: bios in three lengths, topics, formats and contact.",
+    description: dict.meta.akte,
+    alternates: alternatesFor(locale, "akte"),
   };
 }
 

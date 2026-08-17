@@ -4,6 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { getBriefingList } from "@/lib/queries/briefings";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { richValueToPlain } from "@/lib/content/rich";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { formatDate } from "@/lib/format";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import RichText from "@/components/content/RichText";
@@ -15,7 +16,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.nav.briefings };
+  return {
+    title: dict.nav.briefings,
+    description: dict.meta.briefings,
+    alternates: alternatesFor(locale, "briefings"),
+  };
 }
 
 export default async function BriefingsPage({

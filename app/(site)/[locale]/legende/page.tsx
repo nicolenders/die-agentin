@@ -6,6 +6,7 @@ import { getLegend } from "@/lib/queries/legend";
 import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
 import { getPublishedIdentities, getIdentityTools } from "@/lib/queries/identities";
 import { getRadarTopics } from "@/lib/queries/records";
+import { alternatesFor } from "@/lib/seo/alternates";
 import RadarTopics from "@/components/records/RadarTopics";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
@@ -31,7 +32,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.nav.legende };
+  return {
+    title: dict.nav.legende,
+    description: dict.meta.legende,
+    alternates: alternatesFor(locale, "legende"),
+  };
 }
 
 // „Die Legende" — Über mich, Mission, Säulen, Kontakt (SPEC §5). Inhalte kommen

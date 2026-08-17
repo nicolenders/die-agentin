@@ -4,6 +4,9 @@ import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getIdentityBySlug } from "@/lib/queries/identities";
+import { alternatesFor } from "@/lib/seo/alternates";
+import { firstSentence, metaDescription } from "@/lib/seo/description";
+import { richValueToPlain } from "@/lib/content/rich";
 import { formatDate } from "@/lib/format";
 import ContentArticle from "@/components/content/ContentArticle";
 import IdentityCoverageTabs from "@/components/identities/IdentityCoverageTabs";
@@ -33,7 +36,13 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   const i = await getIdentityBySlug(locale, slug);
   if (!i) return {};
-  return { title: `${i.name} · ${i.role}`, description: i.tagline || undefined };
+  // Die Tagline allein ist zu kurz für eine Description (Audit 1.2); der erste
+  // Satz der Beschreibung ergänzt sie bis zur 155-Zeichen-Grenze.
+  return {
+    title: `${i.name} · ${i.role}`,
+    description: metaDescription(i.tagline, firstSentence(richValueToPlain(i.descriptionJson))),
+    alternates: alternatesFor(locale, `identitaeten/${i.slug}`),
+  };
 }
 
 export default async function IdentityDetailPage({

@@ -13,7 +13,9 @@ interface SiteFooterProps {
 
 /** Fußzeile mit Inhalts-, Über- und Rechts-Links (SPEC §12: Footer-Pflichtlinks). */
 export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
-  const year = 2026;
+  // Kein hartkodiertes Jahr: eine Website, die im Januar noch das Vorjahr
+  // ausweist, wirkt verwaist (Audit 1.5).
+  const year = new Date().getFullYear();
   const l = (segment: string) => `/${locale}/${segment}`;
   // Nur gepflegte Profile anzeigen (SPEC: keine toten „#"-Links).
   const social = await getSocialLinks();

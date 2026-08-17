@@ -7,6 +7,31 @@ const de = {
     domain: "NICOLENDERS.COM",
     tagline: "Microsoft AI & Modern Work. Keine losen Enden.",
   },
+  // Meta-Titel und -Beschreibungen je Route (Audit 1.2/1.4). Jede Route hat
+  // ihre eigene Description; keine darf doppelt vorkommen, keine dynamischen
+  // Zahlen (die veralten still im Suchergebnis), alle höchstens 155 Zeichen.
+  meta: {
+    titleDefault: "Nicole Enders · DIE AGENTIN · Microsoft AI & Modern Work",
+    home: "Nicole Enders, Microsoft MVP seit 2020: Vorträge, Beratung und Umsetzung rund um Microsoft AI, Copilot Studio und Modern Work.",
+    legende:
+      "Wer hinter der Agentin steckt: Microsoft MVP seit 2020, Autorin, Speakerin. Mission, Arbeitsweise und das Codebuch zur Seite.",
+    einsaetze:
+      "Alle Auftritte auf der Weltkarte: Konferenzen, Meetups und Online-Events, filterbar nach Jahr, Werkzeug und Identität.",
+    identitaeten:
+      "Fünf Identitäten, unter denen ich arbeite: Schwerpunkte, Werkzeuge und die Einsätze, die dazu gehören.",
+    depeschen:
+      "Meldungen, Einordnungen und Nachschlagewerke zwischen den Einsätzen, jede Depesche einer Identität zugeordnet.",
+    briefings:
+      "Das komplette Vortragsrepertoire zu Microsoft AI, Copilot, Modern Work und Power Platform, filterbar nach Thema.",
+    publikationen: "Fachbücher und Online-Kurse zu Microsoft 365, Teams und Power Platform.",
+    ausbildung: "Microsoft-Zertifizierungen, MVP-Auszeichnungen und Schulungen im Überblick.",
+    akte: "Das Speaker-Kit für Veranstalter: Bios zum Kopieren, Pressefoto, Vortragsformate, Themen und Kontakt.",
+    cv: "Beruflicher Werdegang, Projektreferenzen, Zertifizierungen und Publikationen von Nicole Enders.",
+    impressum: "Anbieterkennzeichnung nach § 5 DDG und § 18 Abs. 2 MStV.",
+    datenschutz: "Wie diese Website mit personenbezogenen Daten umgeht.",
+    barrierefreiheit:
+      "Selbstverpflichtung zur Barrierefreiheit dieser Website und Kontakt für Rückmeldungen.",
+  },
   nav: {
     hq: "HQ",
     signale: "Signale",

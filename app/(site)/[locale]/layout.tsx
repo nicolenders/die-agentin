@@ -7,6 +7,7 @@ import { getDictionary } from "@/lib/i18n";
 import { mainNav } from "@/lib/nav";
 import { fontVariables } from "@/lib/fonts";
 import { siteOrigin } from "@/lib/site";
+import { alternatesFor } from "@/lib/seo/alternates";
 import SiteHeader, { type HeaderNavItem } from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 import JsonLd from "@/components/JsonLd";
@@ -30,28 +31,28 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
   // canonical/OG-Basis immer unter dem kanonischen Host (Phase 1.2b), unabhängig
-  // vom Request-Host. Die vollständige per-Route-canonical + hreflang folgt in
-  // Phase 13; hier wird die host-unabhängige Basis gesetzt.
+  // vom Request-Host.
   const siteUrl = siteOrigin();
   return {
     metadataBase: new URL(siteUrl),
     title: {
-      default: `${dict.brand.name} — nicolenders.com`,
+      default: dict.meta.titleDefault,
       template: `%s · ${dict.brand.name}`,
     },
-    description: dict.hq.lead,
+    // Der Hero-Lead ist mit über 200 Zeichen zu lang für die Ergebnisliste und
+    // steht zudem in der DB — die Description kommt deshalb aus `meta.home`
+    // (Audit 1.2).
+    description: dict.meta.home,
     alternates: {
-      languages: {
-        de: "/de",
-        en: "/en",
-        "x-default": "/de",
-      },
+      // canonical + hreflang des HQ. Jede Unterseite überschreibt das komplett
+      // mit ihrem eigenen `alternatesFor(...)` (Audit 1.3).
+      ...alternatesFor(locale),
       // RSS-Autodiscovery: Feed-Reader und Browser finden den Feed automatisch.
       types: {
         "application/rss+xml": [
           {
             url: locale === "en" ? "/feed.en.xml" : "/feed.xml",
-            title: `${dict.brand.name} — ${dict.dispatch.namePlural}`,
+            title: `${dict.brand.name} · ${dict.dispatch.namePlural}`,
           },
         ],
       },

@@ -5,6 +5,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getRadarTopics } from "@/lib/queries/records";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { formatDate } from "@/lib/format";
 import { DISPATCH_FORMATS, isOneOf, type DispatchFormat } from "@/lib/domain";
 
@@ -14,7 +15,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.dispatch.namePlural, description: dict.dispatch.lead };
+  return {
+    title: dict.dispatch.namePlural,
+    description: dict.meta.depeschen,
+    alternates: alternatesFor(locale, "depeschen"),
+  };
 }
 
 export default async function DepeschenPage({

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getCertifications, getFocusTopics } from "@/lib/queries/records";
+import { alternatesFor } from "@/lib/seo/alternates";
 import CertificationSections from "@/components/records/CertificationSections";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.nav.ausbildung };
+  return {
+    title: dict.nav.ausbildung,
+    description: dict.meta.ausbildung,
+    alternates: alternatesFor(locale, "ausbildung"),
+  };
 }
 
 export default async function AusbildungPage({

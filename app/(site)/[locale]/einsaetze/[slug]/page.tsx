@@ -9,6 +9,9 @@ import { extractYouTubeId } from "@/lib/video";
 import { siteOrigin } from "@/lib/site";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import { eventNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
+import { alternatesFor } from "@/lib/seo/alternates";
+import { firstSentence, metaDescription } from "@/lib/seo/description";
+import { richValueToPlain } from "@/lib/content/rich";
 import Gallery from "@/components/content/Gallery";
 import RichText from "@/components/content/RichText";
 import VideoConsent from "@/components/content/VideoConsent";
@@ -25,7 +28,14 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   const mission = await getMissionBySlug(locale, slug);
   if (!mission) return {};
-  return { title: `${mission.eventName} · ${mission.city}` };
+  // Eigene Description je Einsatzakte (Audit 1.2): Fakten zuerst, danach der
+  // Anfang des Veranstaltungstexts, hart auf 155 Zeichen gekürzt.
+  const facts = `${mission.eventName}, ${mission.city}, ${formatDate(mission.startDate, locale)}.`;
+  return {
+    title: `${mission.eventName} · ${mission.city}`,
+    description: metaDescription(facts, firstSentence(richValueToPlain(mission.eventText))),
+    alternates: alternatesFor(locale, `einsaetze/${mission.slug}`),
+  };
 }
 
 export default async function EinsatzaktePage({

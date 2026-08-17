@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getPublishedIdentities } from "@/lib/queries/identities";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { IdentityCardFeature } from "@/components/identities/IdentityCard";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.identity.title, description: dict.identity.lead };
+  return {
+    title: dict.identity.title,
+    description: dict.meta.identitaeten,
+    alternates: alternatesFor(locale, "identitaeten"),
+  };
 }
 
 export default async function IdentitaetenPage({ params }: { params: Promise<{ locale: string }> }) {

@@ -4,6 +4,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getMissions } from "@/lib/queries/missions";
 import { getPublishedIdentities } from "@/lib/queries/identities";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { formatDate } from "@/lib/format";
 import MissionExplorer, {
   type ExplorerMission,
@@ -16,7 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.nav.einsaetze };
+  return {
+    title: dict.nav.einsaetze,
+    description: dict.meta.einsaetze,
+    alternates: alternatesFor(locale, "einsaetze"),
+  };
 }
 
 export default async function EinsaetzePage({

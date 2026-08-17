@@ -9,6 +9,28 @@ const en: Dictionary = {
     domain: "NICOLENDERS.COM",
     tagline: "Microsoft AI & Modern Work. No loose ends.",
   },
+  meta: {
+    titleDefault: "Nicole Enders · DIE AGENTIN · Microsoft AI & Modern Work",
+    home: "Nicole Enders, Microsoft MVP since 2020: talks, advisory and delivery around Microsoft AI, Copilot Studio and Modern Work.",
+    legende:
+      "Who the agent is: Microsoft MVP since 2020, author and speaker. Mission, way of working and the codebook to this site.",
+    einsaetze:
+      "Every appearance on the world map: conferences, meetups and online events, filterable by year, tool and identity.",
+    identitaeten:
+      "Five identities I work under: focus areas, tools and the missions that belong to each of them.",
+    depeschen:
+      "Notes, analysis and reference pieces between missions, each dispatch tied to one identity.",
+    briefings:
+      "The full talk repertoire on Microsoft AI, Copilot, Modern Work and Power Platform, filterable by topic.",
+    publikationen: "Technical books and online courses on Microsoft 365, Teams and Power Platform.",
+    ausbildung: "Microsoft certifications, MVP awards and trainings at a glance.",
+    akte: "The speaker kit for organisers: copy-ready bios, press photo, talk formats, topics and contact.",
+    cv: "Career, selected projects, certifications and publications of Nicole Enders.",
+    impressum: "Provider identification under § 5 DDG and § 18 (2) MStV.",
+    datenschutz: "How this website handles personal data.",
+    barrierefreiheit:
+      "Voluntary accessibility commitment for this website and how to report issues.",
+  },
   nav: {
     hq: "HQ",
     signale: "Signals",

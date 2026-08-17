@@ -46,7 +46,9 @@ export default async function HQPage({
   const recentDispatches = dispatches.slice(0, 3);
   const topBriefing = ranking[0] ?? null;
   const missionHref = (m: typeof nextMission) =>
-    m?.published && m.caseFilePublic && m.slug ? `/${locale}/einsaetze/${m.slug}` : `/${locale}/einsaetze`;
+    // Führt auf die Einsatzseite und wählt den Einsatz dort auf der Karte aus —
+    // von dort geht es (falls freigegeben) weiter in die Einsatzakte.
+    m ? `/${locale}/einsaetze?einsatz=${m.id}` : `/${locale}/einsaetze`;
 
   return (
     <>
@@ -157,7 +159,7 @@ export default async function HQPage({
               </h3>
               <p className="meta">{formatDate(nextMission.startDate, locale)}</p>
               <Link className="btn" href={missionHref(nextMission)}>
-                {t.openMissionFile}
+                {t.showMissionOnMap}
               </Link>
             </>
           ) : (

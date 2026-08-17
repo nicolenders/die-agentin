@@ -1171,6 +1171,15 @@ svg.map {
 .pin.future circle.core {
   fill: var(--signal);
 }
+// Ausgewählt (Klick auf die Karte oder auf eine Zeile in der Tabelle darunter).
+.pin.on circle.core {
+  r: 6;
+  stroke-width: 1.1;
+}
+.pin.on circle.halo {
+  opacity: 0.95;
+  stroke-width: 1.6;
+}
 .pin.future circle.halo {
   stroke: var(--signal);
 }
@@ -1511,6 +1520,18 @@ a.radar-chip:focus-visible {
   border-color: var(--violet);
   color: var(--violet-bright);
   background: var(--violet-weak, rgba(139, 92, 246, 0.08));
+}
+
+// Einsatzliste: eine Zeile anklicken wählt den Einsatz auf der Karte aus.
+.mission-row {
+  cursor: pointer;
+}
+.mission-row:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+.mission-row.on {
+  background: rgba(139, 92, 246, 0.16);
+  box-shadow: inset 2px 0 0 var(--violet-bright);
 }
 
 // ---------- Utility ----------

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import WorldMap, { type MapMission } from "@/components/map/WorldMap";
 import { matchesYear, parseYearSelection, type YearSelection } from "@/lib/missions";
@@ -73,6 +73,7 @@ export interface ExplorerLabels {
     language: string;
     openFile: string;
     online: string;
+    showOnMap: string;
   };
 }
 
@@ -134,6 +135,10 @@ export default function MissionExplorer({
   const [state, setState] = useState<FilterState>(DEFAULT_STATE);
   const [mounted, setMounted] = useState(false);
   const [yearsExpanded, setYearsExpanded] = useState(false);
+  // Auf der Karte ausgewählter Einsatz (Popup). Liegt hier, weil ihn sowohl die
+  // Karte als auch die Tabelle darunter setzt.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   // Beim Aufbau: erst URL (teilbarer Deep-Link), sonst die zuletzt genutzten
   // Einstellungen aus der Sitzung. Server und erste Client-Ausgabe nutzen die
@@ -143,9 +148,15 @@ export default function MissionExplorer({
      erste Client-Ausgabe nutzen die Standardwerte; erst danach wird der externe
      Speicher gelesen, damit es keine Hydration-Abweichung gibt. */
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get("einsatz");
     const fromUrl = readFromSearch(window.location.search);
-    const initial = fromUrl ?? readFromStore() ?? DEFAULT_STATE;
+    // Kommt jemand mit einem verlinkten Einsatz (z. B. „Auf der Karte zeigen"
+    // von der Startseite), zählen die zuletzt genutzten Filter nicht: der
+    // Einsatz soll sichtbar sein, nicht von einem alten Jahresfilter verdeckt.
+    const initial = wanted ? (fromUrl ?? DEFAULT_STATE) : (fromUrl ?? readFromStore() ?? DEFAULT_STATE);
     setState(initial);
+    if (wanted) setSelectedId(wanted);
     setMounted(true);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -164,9 +175,12 @@ export default function MissionExplorer({
     if (state.ids.length) p.set("identitaet", state.ids.join(","));
     if (!state.showOnline) p.set("online", "0");
     if (state.werkzeug) p.set("werkzeug", state.werkzeug);
+    // Auch die Auswahl steht in der URL — so lässt sich ein Einsatz samt
+    // geöffnetem Popup verlinken (genau das nutzt die Startseite).
+    if (selectedId) p.set("einsatz", selectedId);
     const qs = p.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
-  }, [state, mounted]);
+  }, [state, selectedId, mounted]);
 
   const years = useMemo(
     () => [...new Set(missions.map((m) => m.year))].sort((a, b) => b - a),
@@ -188,6 +202,17 @@ export default function MissionExplorer({
       ),
     [missions, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
   );
+
+  // Fällt der ausgewählte Einsatz durch einen Filter heraus, gilt er als nicht
+  // ausgewählt — abgeleitet statt nachträglich zurückgesetzt, damit die Karte
+  // nie kurz etwas zeigt, das in der Liste darunter schon nicht mehr steht.
+  const shownSelectedId = selectedId && filtered.some((m) => m.id === selectedId) ? selectedId : null;
+
+  /** Einsatz auswählen und die Karte in den Blick holen. */
+  function selectMission(id: string | null) {
+    setSelectedId(id);
+    if (id) mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   // Anzeigename des aktiven Werkzeug-Filters (aus den Einsätzen, sonst der Slug).
   const werkzeugName = useMemo(() => {
@@ -343,12 +368,18 @@ export default function MissionExplorer({
   return (
     <div>
       {/* Karte mit der Kennzahl (angezeigt/gesamt) oben rechts. */}
-      <div className="map-wrap">
+      <div className="map-wrap" ref={mapRef}>
         <span className="map-count">
           {filtered.length}/{missions.length} {labels.missionsWord}
         </span>
         {mapMissions.length > 0 ? (
-          <WorldMap missions={mapMissions} locale={locale} labels={labels.map} />
+          <WorldMap
+            missions={mapMissions}
+            locale={locale}
+            labels={labels.map}
+            selectedId={shownSelectedId}
+            onSelect={setSelectedId}
+          />
         ) : (
           <div className="card bracket">
             <p className="muted" style={{ margin: 0 }}>{labels.empty}</p>
@@ -368,11 +399,20 @@ export default function MissionExplorer({
               <th>{labels.colBriefing}</th>
               <th>{labels.colLocation}</th>
               <th>{labels.colStatus}</th>
+              <th><span className="visually-hidden">{labels.map.showOnMap}</span></th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((m) => (
-              <tr key={m.id}>
+              <tr
+                key={m.id}
+                className={`mission-row${shownSelectedId === m.id ? " on" : ""}`}
+                onClick={(e) => {
+                  // Links und Knöpfe in der Zeile behalten ihre eigene Wirkung.
+                  if ((e.target as HTMLElement).closest("a, button")) return;
+                  selectMission(m.id);
+                }}
+              >
                 <td className="meta">{m.dateLabel}</td>
                 <td>
                   {m.published && m.caseFilePublic && m.slug ? (
@@ -392,6 +432,17 @@ export default function MissionExplorer({
                 </td>
                 <td>{m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`}</td>
                 <td>{m.future ? labels.statusPlanned : labels.statusDone}</td>
+                <td style={{ textAlign: "right" }}>
+                  {/* Für Tastatur und Screenreader: die Zeilenauswahl als echter Knopf. */}
+                  <button
+                    type="button"
+                    className="btn ghost sm"
+                    aria-pressed={shownSelectedId === m.id}
+                    onClick={() => selectMission(m.id)}
+                  >
+                    {labels.map.showOnMap}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

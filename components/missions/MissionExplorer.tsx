@@ -5,6 +5,7 @@ import Link from "next/link";
 import WorldMap, { type MapMission } from "@/components/map/WorldMap";
 import { matchesYear, parseYearSelection, type YearSelection } from "@/lib/missions";
 import { toggleCsv } from "@/lib/filters";
+import { talkLanguageLabel } from "@/lib/mission-language";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface ExplorerMission {
@@ -28,7 +29,10 @@ export interface ExplorerMission {
   identitySlugs: string[];
   identities: { slug: string; name: string; color: string }[];
   tools: { slug: string; name: string }[];
-  briefing: { id: string; title: string; language: string } | null;
+  briefing: { id: string; title: string } | null;
+  /** Vortragssprache dieses Einsatzes („de"/„en"). */
+  language: string | null;
+  durationMin: number | null;
 }
 
 export interface ExplorerIdentity {
@@ -55,6 +59,7 @@ export interface ExplorerLabels {
   colDate: string;
   colEvent: string;
   colBriefing: string;
+  colLanguage: string;
   colLocation: string;
   colStatus: string;
   statusPlanned: string;
@@ -73,6 +78,7 @@ export interface ExplorerLabels {
     language: string;
     openFile: string;
     online: string;
+    duration: string;
     showOnMap: string;
   };
 }
@@ -246,6 +252,8 @@ export default function MissionExplorer({
     bannerAi: m.bannerAi,
     identities: m.identities,
     briefing: m.briefing,
+    language: m.language,
+    durationMin: m.durationMin,
   }));
 
   const isDefault =
@@ -397,6 +405,7 @@ export default function MissionExplorer({
               <th>{labels.colDate}</th>
               <th>{labels.colEvent}</th>
               <th>{labels.colBriefing}</th>
+              <th>{labels.colLanguage}</th>
               <th>{labels.colLocation}</th>
               <th>{labels.colStatus}</th>
               <th><span className="visually-hidden">{labels.map.showOnMap}</span></th>
@@ -430,6 +439,7 @@ export default function MissionExplorer({
                     <span className="meta">—</span>
                   )}
                 </td>
+                <td className="meta">{talkLanguageLabel(m.language, locale) ?? "—"}</td>
                 <td>{m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`}</td>
                 <td>{m.future ? labels.statusPlanned : labels.statusDone}</td>
                 <td style={{ textAlign: "right" }}>

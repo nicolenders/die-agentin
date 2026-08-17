@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { cachedQuery, tags } from "@/lib/cache";
 import { pickTranslation } from "@/lib/content/pick";
+import { missionTalkLanguage } from "@/lib/mission-language";
 import { computeRanking, type RankRow, type DateRange } from "./ranking";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -149,7 +150,8 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
           countryCode: m.countryCode,
           isOnline: m.isOnline,
           heldOn: d.heldOn.toISOString(),
-          language: d.language,
+          // Sprache steht am Einsatz — dort wird sie gepflegt.
+          language: missionTalkLanguage(m.sessionLanguage, d.language) ?? d.language,
           linkable: m.contentStatus === "PUBLISHED" && m.caseFilePublic && Boolean(slug),
         };
       }),

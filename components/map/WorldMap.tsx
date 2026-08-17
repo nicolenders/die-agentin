@@ -5,6 +5,7 @@ import Link from "next/link";
 import { computeGeo, project } from "@/lib/map/geo";
 import { availableViews, inBounds } from "@/lib/map/views";
 import AssetImage from "@/components/media/AssetImage";
+import { talkLanguageLabel } from "@/lib/mission-language";
 import type { Locale } from "@/lib/i18n/config";
 
 const W = 1000;
@@ -29,13 +30,11 @@ export interface MapMission {
   bannerAlt: string;
   bannerAi: boolean;
   identities: { slug: string; name: string; color: string }[];
-  briefing: { id: string; title: string; language: string } | null;
+  briefing: { id: string; title: string } | null;
+  /** Vortragssprache dieses Einsatzes („de"/„en"). */
+  language: string | null;
+  durationMin: number | null;
 }
-
-const LANGUAGE_LABEL: Record<string, { de: string; en: string }> = {
-  de: { de: "Deutsch", en: "German" },
-  en: { de: "Englisch", en: "English" },
-};
 
 // Weltkarte (SPEC §11). Interaktiv, aber Beiwerk: die vollständige Tabelle unter
 // der Karte ist immer sichtbar (in der Seite, nicht hier). Pins sind
@@ -64,6 +63,7 @@ export default function WorldMap({
     language: string;
     openFile: string;
     online: string;
+    duration: string;
   };
 }) {
   const [viewId, setViewId] = useState("welt");
@@ -152,28 +152,22 @@ export default function WorldMap({
 
         {selected
           ? (() => {
-              const [x, y] = project(projection, selected.lon, selected.lat);
-              const language = selected.briefing
-                ? LANGUAGE_LABEL[selected.briefing.language]?.[locale] ?? selected.briefing.language.toUpperCase()
-                : null;
+              const language = talkLanguageLabel(selected.language, locale);
               return (
-                <div
-                  className="popup"
-                  style={{
-                    left: `min(max(${(x / W) * 100}% - 150px, 8px), calc(100% - 308px))`,
-                    top: `max(${(y / H) * 100}% - 150px, 8px)`,
-                  }}
-                >
+                <div className="popup" role="dialog" aria-label={selected.eventName}>
                   <button className="close" aria-label={locale === "de" ? "Schließen" : "Close"} onClick={() => select(null)}>
                     ×
                   </button>
                   {selected.bannerUrl ? (
+                    // Höhe gedeckelt: ein hohes Banner darf den Rest des Popups
+                    // nicht aus dem Bild schieben.
                     <AssetImage
                       src={selected.bannerUrl}
                       alt={selected.bannerAlt}
                       ai={selected.bannerAi}
+                      className="popup-banner"
                       style={{ display: "block", margin: "0 0 10px" }}
-                      imgStyle={{ width: "100%", borderRadius: 4, display: "block" }}
+                      imgStyle={{ width: "100%", maxHeight: 132, objectFit: "cover", borderRadius: 4, display: "block" }}
                     />
                   ) : null}
 
@@ -193,6 +187,18 @@ export default function WorldMap({
                           {selected.briefing.title}
                         </Link>
                         {language ? <span className="popup-chip">{language}</span> : null}
+                        {selected.durationMin ? (
+                          <span className="popup-chip">{selected.durationMin} min</span>
+                        ) : null}
+                      </span>
+                    </div>
+                  ) : language || selected.durationMin ? (
+                    // Ohne Briefing bleiben Sprache und Dauer trotzdem wissenswert.
+                    <div className="popup-row">
+                      <span className="popup-label">{labels.language}</span>
+                      <span className="popup-value">
+                        {language ?? "—"}
+                        {selected.durationMin ? <span className="popup-chip">{selected.durationMin} min</span> : null}
                       </span>
                     </div>
                   ) : null}

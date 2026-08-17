@@ -23,7 +23,6 @@ export interface MissionMaterialInput {
   slidesFileName?: string | null; // Originalname für den Download-Link
   recordingUrl?: string | null;
   sessionType?: string | null;
-  sessionLanguage?: string | null;
   attendeeCount?: number | null;
   feedbackScore?: number | null;
   feedbackSource?: string | null;
@@ -51,7 +50,6 @@ function materialData(m: MissionMaterialInput | undefined) {
     slidesFileName: m?.slidesFileName?.trim() || null,
     recordingUrl: m?.recordingUrl?.trim() || null,
     sessionType: isOneOf(SESSION_TYPES, m?.sessionType ?? "") ? m!.sessionType! : null,
-    sessionLanguage: m?.sessionLanguage?.trim() || null,
     attendeeCount: m?.attendeeCount != null && Number.isFinite(m.attendeeCount) ? Math.trunc(m.attendeeCount) : null,
     feedbackScore: m?.feedbackScore != null && Number.isFinite(m.feedbackScore) ? m.feedbackScore : null,
     feedbackSource: m?.feedbackSource?.trim() || null,
@@ -75,6 +73,7 @@ export interface SaveMissionInput {
   bannerAssetId?: string | null;
   talkId?: string | null;
   language: string; // Locale des Vortrags
+  durationMin?: number | null; // Länge dieses Auftritts (Vorgabe aus dem Briefing)
   de: MissionTextInput;
   en?: MissionTextInput | null;
   photoAssetIds: string[];
@@ -120,6 +119,14 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
   const status = isOneOf(MISSION_STATUSES, input.status) ? input.status : "PLANNED";
   const contentStatus =
     input.intent === "publish" ? "PUBLISHED" : input.intent === "archive" ? "ARCHIVED" : "DRAFT";
+  // Die Vortragssprache wird an EINER Stelle gepflegt und an beide Orte
+  // geschrieben: an den Einsatz (auch ohne Briefing gültig) und an die Zuordnung
+  // zum Briefing (Grundlage der Auswertung).
+  const talkLanguage: Locale = input.language === "en" ? "en" : "de";
+  const durationMin =
+    input.durationMin != null && Number.isFinite(input.durationMin) && input.durationMin >= 0
+      ? Math.trunc(input.durationMin)
+      : null;
   const startDate = new Date(`${input.startDate || "2026-01-01"}T00:00:00Z`);
   const endDate = input.endDate ? new Date(`${input.endDate}T00:00:00Z`) : null;
 
@@ -143,6 +150,8 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         eventUrl: input.eventUrl || null,
         bannerAssetId: input.bannerAssetId || null,
         tools: { connect: (input.toolIds ?? []).map((id) => ({ id })) },
+        sessionLanguage: talkLanguage,
+        durationMin,
         ...materialData(input.material),
       },
       update: {
@@ -160,6 +169,8 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         eventUrl: input.eventUrl || null,
         bannerAssetId: input.bannerAssetId || null,
         tools: { set: (input.toolIds ?? []).map((id) => ({ id })) },
+        sessionLanguage: talkLanguage,
+        durationMin,
         ...materialData(input.material),
       },
     });
@@ -182,7 +193,7 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
 
     // Optional: gehaltenen Vortrag als TalkDelivery erfassen (für Ranking, M6).
     if (input.talkId) {
-      const language: Locale = input.language === "en" ? "en" : "de";
+      const language: Locale = talkLanguage;
       const existing = await db.talkDelivery.findFirst({
         where: { talkId: input.talkId, missionId: mission.id },
         select: { id: true },

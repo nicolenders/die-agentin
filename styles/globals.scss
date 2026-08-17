@@ -1249,10 +1249,22 @@ a.radar-chip:focus-visible {
   opacity: 0.85;
 }
 
+// Popup mittig über der Karte statt am Pin: Einsätze am Kartenrand — Online-
+// Einsätze sitzen in der Antarktis, ganz unten — wurden sonst angeschnitten.
+// Der ausgewählte Pin leuchtet auf, die Zuordnung bleibt also erkennbar.
 .popup {
   position: absolute;
-  width: 300px;
-  max-width: calc(100% - 16px);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(320px, calc(100% - 32px));
+  // Nie höher als die Karte: bei langem Titel oder vielen Identitäten wird im
+  // Popup gescrollt, statt dass Inhalte oder Buttons herausragen.
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
   background:
     linear-gradient(180deg, rgba(139, 92, 246, 0.14), rgba(139, 92, 246, 0) 120px),
     rgba(9, 4, 20, 0.97);
@@ -1262,6 +1274,14 @@ a.radar-chip:focus-visible {
   font-size: 13px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65);
   z-index: 5;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+}
+// Banner: gedeckelte Höhe, damit ein hochformatiges Bild nicht das ganze Popup
+// füllt und Titel, Angaben und Buttons hinausschiebt.
+.popup-banner img {
+  max-height: 132px;
+  object-fit: cover;
 }
 .popup h4 {
   margin: 4px 0 10px;
@@ -1276,7 +1296,6 @@ a.radar-chip:focus-visible {
   align-items: center;
   gap: 6px;
   margin: 0;
-  padding-right: 18px;
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.14em;
@@ -1343,21 +1362,33 @@ a.radar-chip:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  // Immer unten, auch wenn der Inhalt darüber kürzer ausfällt.
+  margin-top: auto;
+  padding-top: 12px;
 }
 .popup-actions .btn {
   flex: 1 1 auto;
   justify-content: center;
 }
+// Schließen sitzt im Fluss (nicht absolut über dem Banner) und bleibt beim
+// Scrollen oben — so überdeckt es nie ein Bild und ist immer erreichbar.
 .popup .close {
-  position: absolute;
-  top: 6px;
-  right: 9px;
-  background: none;
-  border: 0;
+  position: sticky;
+  top: -2px;
+  align-self: flex-end;
+  margin: -6px -6px 2px 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(9, 4, 20, 0.9);
+  border: 1px solid var(--line-soft);
   color: var(--muted);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1;
+  z-index: 1;
 }
 .popup .close:hover {
   color: var(--text);

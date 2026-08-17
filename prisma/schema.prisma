@@ -149,7 +149,14 @@ model Mission {
   feedbackSource  String?
   coSpeakers      String? @db.NVarChar(Max) // JSON [{ name, url }]
   sessionType     String? // SessionType: KEYNOTE | SESSION | WORKSHOP | PANEL
+  // Sprache, in der der Vortrag gehalten wurde — als Locale-Kürzel („de"/„en"),
+  // gesetzt aus der EINEN Sprachauswahl der Erfassungsmaske. Frühere Freitexte
+  // („Deutsch") werden beim Lesen normalisiert.
   sessionLanguage String?
+  // Tatsächliche Länge dieses Auftritts in Minuten. Vorbelegt aus dem Briefing
+  // (Talk.durationMin), aber je Einsatz überschreibbar — dieselbe Session dauert
+  // auf einer Konferenz 45 und im Webinar 30 Minuten.
+  durationMin     Int?
   attendeeCount   Int?
   bannerAssetId String?
   banner        MediaAsset? @relation("MissionBanner", fields: [bannerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)

@@ -40,6 +40,8 @@ export interface MissionFormInitial {
   eventUrl: string;
   talkId: string;
   language: string;
+  /** Länge des Auftritts in Minuten, als Text fürs Eingabefeld. */
+  durationMin: string;
   de: { eventText: string; talkText: string };
   en: { eventText: string; talkText: string } | null;
   photos: { id: string; url: string }[];
@@ -55,7 +57,6 @@ export interface MissionMaterialForm {
   slidesFileName: string;
   recordingUrl: string;
   sessionType: string;
-  sessionLanguage: string;
   attendeeCount: string;
   feedbackScore: string;
   feedbackSource: string;
@@ -64,7 +65,7 @@ export interface MissionMaterialForm {
 
 export const EMPTY_MATERIAL: MissionMaterialForm = {
   slidesUrl: "", slidesPlatform: "", slidesFilePath: "", slidesFileName: "", recordingUrl: "",
-  sessionType: "", sessionLanguage: "", attendeeCount: "", feedbackScore: "", feedbackSource: "", coSpeakers: "",
+  sessionType: "", attendeeCount: "", feedbackScore: "", feedbackSource: "", coSpeakers: "",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -83,9 +84,16 @@ export default function MissionForm({
 }: {
   initial: MissionFormInitial;
   existingPins: { lat: number; lon: number }[];
-  // `languages`: Sprachen, in denen das Briefing vorliegt (Titel vorhanden).
-  // `archivedAt`: ISO-Tag, ab dem es nicht mehr gehalten wird (null = aktiv).
-  talks: { id: string; name: string; toolIds: string[]; languages: string[]; archivedAt: string | null }[];
+  // `titles`: Titel je Sprache — welcher im Dropdown steht, hängt an der
+  // gewählten Vortragssprache. `durationMin`: Vorgabe des Briefings, im Einsatz
+  // überschreibbar. `archivedAt`: Tag, ab dem es nicht mehr gehalten wird.
+  talks: {
+    id: string;
+    titles: { de: string | null; en: string | null };
+    toolIds: string[];
+    durationMin: number | null;
+    archivedAt: string | null;
+  }[];
   categories?: { id: string; name: string }[];
   allTools?: { id: string; name: string }[];
   isEdit?: boolean;
@@ -106,6 +114,9 @@ export default function MissionForm({
   const [status, setStatus] = useState(initial.status || "PLANNED");
   const [eventUrl, setEventUrl] = useState(initial.eventUrl);
   const [talkId, setTalkId] = useState(initial.talkId);
+  // Länge dieses Auftritts. Beim Wählen eines Briefings aus dessen Vorgabe
+  // übernommen, danach frei änderbar — dieselbe Session dauert nicht überall gleich.
+  const [durationMin, setDurationMin] = useState(initial.durationMin);
   const [talkList, setTalkList] = useState(talks);
   // Inline-Anlage eines neuen Briefings, ohne die Maske zu verlassen.
   const [showNewTalk, setShowNewTalk] = useState(false);
@@ -142,11 +153,16 @@ export default function MissionForm({
   const [cx, cy] = project(projection, lon, lat);
 
   // Zwei Filter auf die Briefing-Auswahl:
-  //  1. Sprache — nur, was es in der gewählten Vortragssprache gibt.
+  //  1. Sprache — angeboten wird, was es in der gewählten Vortragssprache gibt,
+  //     und zwar mit DEM Titel: bei „Englisch" der englische, sonst der deutsche.
   //  2. Archiv — was zum Einsatzdatum schon abgelegt war, ist nicht mehr wählbar.
   // Ein bereits gewähltes Briefing bleibt in beiden Fällen sichtbar, damit eine
   // bestehende Zuordnung beim Öffnen einer alten Akte nicht verschwindet.
-  const talksForLanguage = talkList.filter((t) => t.languages.includes(language));
+  const titleFor = (t: { titles: { de: string | null; en: string | null } }) =>
+    (language === "en" ? t.titles.en : t.titles.de) ?? t.titles.de ?? t.titles.en ?? "(ohne Titel)";
+  const talksForLanguage = talkList.filter((t) =>
+    (language === "en" ? t.titles.en : t.titles.de)?.trim(),
+  );
   const selectedTalk = talkList.find((t) => t.id === talkId);
   const talkOptionList = selectableTalks(
     // Ein bereits gewähltes Briefing, das die Sprache ausschließt, kommt hier
@@ -237,6 +253,7 @@ export default function MissionForm({
       bannerAssetId: banner?.id ?? null,
       talkId: talkId || null,
       language,
+      durationMin: durationMin.trim() ? Number(durationMin) : null,
       de: deText,
       en: enEnabled ? enText : null,
       photoAssetIds: photos.map((p) => p.id),
@@ -248,7 +265,6 @@ export default function MissionForm({
         slidesFileName: material.slidesFileName || null,
         recordingUrl: material.recordingUrl,
         sessionType: material.sessionType || null,
-        sessionLanguage: material.sessionLanguage,
         attendeeCount: material.attendeeCount ? Number(material.attendeeCount) : null,
         feedbackScore: material.feedbackScore ? Number(material.feedbackScore) : null,
         feedbackSource: material.feedbackSource,
@@ -275,12 +291,12 @@ export default function MissionForm({
       return;
     }
     setNewTalkBusy(true);
-    const durationMin = newTalkDuration ? Number(newTalkDuration) : null;
+    const quickDuration = newTalkDuration ? Number(newTalkDuration) : null;
     const res = await createTalkQuick({
       deTitle: newTalkTitle,
       categoryIds: newTalkCategories,
       level: newTalkLevel,
-      durationMin: Number.isFinite(durationMin as number) ? durationMin : null,
+      durationMin: Number.isFinite(quickDuration as number) ? quickDuration : null,
     });
     setNewTalkBusy(false);
     if (!res.ok || !res.id) {
@@ -290,7 +306,14 @@ export default function MissionForm({
     // Neues Briefing in die Auswahl übernehmen und direkt selektieren. Die
     // Schnellanlage kennt nur einen deutschen Titel — deshalb Sprache „de".
     setTalkList((prev) => [
-      { id: res.id!, name: res.name ?? newTalkTitle, toolIds: [], languages: ["de"], archivedAt: null },
+      {
+        id: res.id!,
+        // Die Schnellanlage kennt nur einen deutschen Titel.
+        titles: { de: res.name ?? newTalkTitle, en: null },
+        toolIds: [],
+        durationMin: newTalkDuration ? Number(newTalkDuration) : null,
+        archivedAt: null,
+      },
       ...prev,
     ]);
     setTalkId(res.id);
@@ -406,15 +429,16 @@ export default function MissionForm({
               const v = e.target.value;
               setTalkId(v);
               const t = talkList.find((x) => x.id === v);
-              // Werkzeuge des gewählten Briefings übernehmen (leert die Auswahl,
-              // wenn „keins" gewählt ist); danach weiter anpassbar.
+              // Werkzeuge und Dauer des gewählten Briefings übernehmen (leert die
+              // Auswahl, wenn „keins" gewählt ist); danach weiter anpassbar.
               setToolIds(t ? t.toolIds : []);
+              if (t?.durationMin != null) setDurationMin(String(t.durationMin));
             }}
           >
             <option value="">— keins —</option>
             {talkOptionList.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.name}
+                {titleFor(t)}
                 {t.archivedAt ? " (Archiv)" : ""}
               </option>
             ))}
@@ -469,6 +493,20 @@ export default function MissionForm({
               {newTalkError ? <p className="meta" style={{ marginTop: 8, color: "var(--danger)" }}>{newTalkError}</p> : null}
             </div>
           ) : null}
+
+          <label className="f" style={{ marginTop: 12 }}>Dauer (Minuten)</label>
+          <input
+            className="f"
+            type="number"
+            min={0}
+            value={durationMin}
+            onChange={(e) => setDurationMin(e.target.value)}
+            placeholder="aus dem Briefing"
+            style={{ maxWidth: 160 }}
+          />
+          <p className="meta" style={{ marginTop: 4 }}>
+            Vorbelegt aus dem Briefing, hier für diesen Auftritt änderbar.
+          </p>
 
           <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 6px" }}>
             <input type="checkbox" checked={isOnline} onChange={(e) => toggleOnline(e.target.checked)} style={{ width: "auto" }} />
@@ -626,9 +664,6 @@ export default function MissionForm({
               <option value="">— keine —</option>
               {SESSION_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-          </label>
-          <label className="f">Sprache des Auftritts
-            <input className="f" value={material.sessionLanguage} onChange={(e) => setMat({ sessionLanguage: e.target.value })} placeholder="Deutsch" />
           </label>
           <label className="f">Teilnehmende (Anzahl)
             <input className="f" type="number" value={material.attendeeCount} onChange={(e) => setMat({ attendeeCount: e.target.value })} />

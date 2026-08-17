@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import MissionForm, { type MissionFormInitial, EMPTY_MATERIAL } from "@/components/admin/MissionForm";
 import { missionTalkLanguage } from "@/lib/mission-language";
+import { getSlideTemplates } from "@/lib/queries/settings";
 
 export const metadata = { title: "Einsatz bearbeiten · Zentrale" };
 
@@ -27,6 +28,8 @@ export default async function EinsatzBearbeitenPage({
   searchParams: Promise<{ id?: string }>;
 }) {
   const { id } = await searchParams;
+  // Fängt Fehler selbst ab: ohne Vorlagen bleibt das Formular vollständig nutzbar.
+  const slideTemplates = await getSlideTemplates();
 
   let existingPins: { lat: number; lon: number }[] = [];
   let talks: {
@@ -145,7 +148,15 @@ export default async function EinsatzBearbeitenPage({
       <div style={{ marginBottom: 12 }}>
         <Link className="btn ghost sm" href="/admin/einsaetze">← Zurück zur Liste</Link>
       </div>
-      <MissionForm initial={initial} existingPins={existingPins} talks={talks} categories={categories} allTools={allTools} isEdit={Boolean(id)} />
+      <MissionForm
+        initial={initial}
+        existingPins={existingPins}
+        talks={talks}
+        categories={categories}
+        allTools={allTools}
+        slideTemplates={slideTemplates}
+        isEdit={Boolean(id)}
+      />
     </>
   );
 }

@@ -1,0 +1,135 @@
+import { toTalkLanguage } from "@/lib/mission-language";
+import { assetUrl } from "@/lib/media/url";
+import type { Locale } from "@/lib/i18n/config";
+
+// Foliensvorlagen für Einsätze: je eine PowerPoint-Datei auf Deutsch und auf
+// Englisch. Sie gehören nicht zu einem einzelnen Einsatz — dieselbe Vorlage
+// dient allen —, deshalb liegen sie als Seiteneinstellung (SiteSetting) und
+// nicht als Spalte an `Mission`. Keine Migration, kein Schema-Anbau.
+//
+// Im Einsatzformular wird die Vorlage in der gewählten Vortragssprache zum
+// Download angeboten; die fertigen Folien lädt Nicole danach über den
+// vorhandenen PDF-Upload am selben Einsatz wieder hoch.
+
+/** Zulässige Endungen: Präsentation und PowerPoint-Vorlage, beide OOXML. */
+export const SLIDE_TEMPLATE_EXTENSIONS = ["pptx", "potx"] as const;
+export type SlideTemplateExtension = (typeof SLIDE_TEMPLATE_EXTENSIONS)[number];
+
+export const SLIDE_TEMPLATE_MIME: Record<SlideTemplateExtension, string> = {
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  potx: "application/vnd.openxmlformats-officedocument.presentationml.template",
+};
+
+/** Obergrenze wie beim Folien-Upload — eine Vorlage bleibt deutlich darunter. */
+export const MAX_SLIDE_TEMPLATE_BYTES = 20 * 1024 * 1024;
+
+export const SLIDE_TEMPLATE_ACCEPT = [
+  SLIDE_TEMPLATE_MIME.pptx,
+  SLIDE_TEMPLATE_MIME.potx,
+  ".pptx",
+  ".potx",
+].join(",");
+
+export interface SlideTemplate {
+  locale: Locale;
+  /** Pfad in der Medienablage (wie `Mission.slidesFilePath`). */
+  path: string;
+  /** Originalname, damit der Download nicht als UUID auf der Platte landet. */
+  fileName: string;
+}
+
+export type SlideTemplateSet = Record<Locale, SlideTemplate | null>;
+
+export const EMPTY_SLIDE_TEMPLATES: SlideTemplateSet = { de: null, en: null };
+
+/** Schlüssel in `SiteSetting` für Pfad und Dateiname einer Sprache. */
+export function slideTemplateKeys(locale: Locale): { path: string; name: string } {
+  return { path: `slideTemplate.${locale}.path`, name: `slideTemplate.${locale}.fileName` };
+}
+
+/** Endung aus einem Dateinamen, sofern sie zulässig ist. */
+export function templateExtension(fileName: string): SlideTemplateExtension | null {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return (SLIDE_TEMPLATE_EXTENSIONS as readonly string[]).includes(ext)
+    ? (ext as SlideTemplateExtension)
+    : null;
+}
+
+/**
+ * Kurzer, sicherer Anzeigename aus dem Originaldateinamen: kein Pfad, keine
+ * Sonderzeichen, immer mit zulässiger Endung.
+ */
+export function safeTemplateName(raw: string, fallbackExt: SlideTemplateExtension = "pptx"): string {
+  const base = raw.split(/[\\/]/).pop() ?? "";
+  const cleaned = base.replace(/[^\p{L}\p{N}\-_. ]/gu, "").trim();
+  const ext = templateExtension(cleaned);
+  if (!cleaned || cleaned === `.${ext}`) return `vorlage.${fallbackExt}`;
+  return ext ? cleaned : `${cleaned}.${fallbackExt}`;
+}
+
+/** Sucht eine ASCII-Zeichenkette im Byte-Strom (ohne Node-Buffer, damit dieses
+ *  Modul auch im Client-Bundle unbedenklich ist). */
+function includesAscii(buf: Uint8Array, needle: string): boolean {
+  const bytes = Array.from(needle, (c) => c.charCodeAt(0));
+  const last = buf.length - bytes.length;
+  for (let i = 0; i <= last; i += 1) {
+    let hit = true;
+    for (let j = 0; j < bytes.length; j += 1) {
+      if (buf[i + j] !== bytes[j]) {
+        hit = false;
+        break;
+      }
+    }
+    if (hit) return true;
+  }
+  return false;
+}
+
+/**
+ * Echter Typ über den Inhalt statt über die Endung: OOXML-Dateien sind ZIPs
+ * (`PK\x03\x04`), und der Eintragsname `ppt/presentation.xml` steht im lokalen
+ * Header unkomprimiert im Byte-Strom. Damit wird eine umbenannte .docx oder
+ * eine beliebige ZIP-Datei abgewiesen.
+ */
+export function isOfficePresentation(buf: Uint8Array): boolean {
+  if (buf.length < 4) return false;
+  const isZip = buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+  if (!isZip) return false;
+  return includesAscii(buf, "ppt/presentation.xml");
+}
+
+/** Legacy-Binärformat (.ppt, OLE2) — erkennbar, damit die Meldung konkret wird. */
+export function isLegacyPowerPoint(buf: Uint8Array): boolean {
+  const sig = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+  return buf.length >= sig.length && sig.every((b, i) => buf[i] === b);
+}
+
+export interface SlideTemplateChoice {
+  template: SlideTemplate;
+  /** Falsch, wenn nur die Vorlage der anderen Sprache hinterlegt ist. */
+  matchesLanguage: boolean;
+}
+
+/**
+ * Die Vorlage zur Vortragssprache eines Einsatzes. Fehlt sie, wird die der
+ * anderen Sprache angeboten — aber als solche gekennzeichnet, damit niemand
+ * versehentlich in der falschen Sprache anfängt.
+ */
+export function pickSlideTemplate(
+  set: SlideTemplateSet,
+  language: string | null | undefined,
+): SlideTemplateChoice | null {
+  const wanted = toTalkLanguage(language) ?? "de";
+  const match = set[wanted];
+  if (match) return { template: match, matchesLanguage: true };
+  const other = wanted === "de" ? set.en : set.de;
+  return other ? { template: other, matchesLanguage: false } : null;
+}
+
+/**
+ * Download-URL über den Medien-Proxy. `?dl=` setzt den Originaldateinamen im
+ * Content-Disposition-Header (siehe app/media/[...path]/route.ts).
+ */
+export function slideTemplateUrl(template: SlideTemplate): string {
+  return `${assetUrl(template.path)}?dl=${encodeURIComponent(template.fileName)}`;
+}

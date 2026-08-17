@@ -2,6 +2,12 @@ import { db } from "@/lib/db";
 import { cachedQuery } from "@/lib/cache";
 import type { Locale } from "@/lib/i18n/config";
 import { SHARE_TYPES, type ShareType, shareTemplateKey, DEFAULT_SHARE_TEMPLATES, shareableProfiles } from "@/lib/share";
+import {
+  EMPTY_SLIDE_TEMPLATES,
+  slideTemplateKeys,
+  type SlideTemplateSet,
+} from "@/lib/slide-templates";
+import { locales } from "@/lib/i18n/config";
 
 // Seiteneinstellungen als Schlüssel/Wert. Aktuell die Social-Media-Profile im
 // Footer — von Nicole in den Einstellungen pflegbar, ohne Deployment.
@@ -132,6 +138,30 @@ export async function getSocialLinks(): Promise<Record<string, string>> {
   } catch {
     return {};
   }
+}
+
+/**
+ * Foliensvorlagen je Sprache (PowerPoint). Nur im Adminbereich gelesen —
+ * deshalb ungecacht, damit eine frisch hochgeladene Vorlage sofort erscheint.
+ * Ist die Datenbank nicht erreichbar, bleibt das Formular bedienbar und zeigt
+ * schlicht keine Vorlage an.
+ */
+export async function getSlideTemplates(): Promise<SlideTemplateSet> {
+  const result: SlideTemplateSet = { ...EMPTY_SLIDE_TEMPLATES };
+  const keys = locales.flatMap((l) => [slideTemplateKeys(l).path, slideTemplateKeys(l).name]);
+  try {
+    const rows = await db.siteSetting.findMany({ where: { key: { in: keys } }, select: { key: true, value: true } });
+    const map = new Map(rows.map((r) => [r.key, r.value.trim()]));
+    for (const locale of locales) {
+      const { path, name } = slideTemplateKeys(locale);
+      const storedPath = map.get(path);
+      if (!storedPath) continue;
+      result[locale] = { locale, path: storedPath, fileName: map.get(name) || "vorlage.pptx" };
+    }
+  } catch {
+    // ohne Vorlagen weiter
+  }
+  return result;
 }
 
 export interface ShareProfile {

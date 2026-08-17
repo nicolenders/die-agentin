@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { toMediaSource } from "@/lib/media/source";
+import { isLocale } from "@/lib/i18n/config";
+import { slideTemplateKeys } from "@/lib/slide-templates";
 
 const LIST = "/admin/medien";
 
@@ -77,6 +79,26 @@ export async function deleteDocument(formData: FormData): Promise<void> {
       ? `${LIST}?tab=praesentationen&ok=deleted`
       : `${LIST}?tab=praesentationen&err=${outcome}`,
   );
+}
+
+/**
+ * Entfernt die Foliensvorlage einer Sprache. Nur die Verknüpfung wird gelöst —
+ * die Datei bleibt in der Ablage, damit ein versehentliches Entfernen nicht
+ * bereits verteilte Downloads ins Leere laufen lässt.
+ */
+export async function removeSlideTemplate(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const locale = String(formData.get("locale") ?? "");
+  if (!isLocale(locale)) redirect(`${LIST}?tab=vorlagen&err=not-found`);
+
+  const keys = slideTemplateKeys(locale);
+  let failed = false;
+  try {
+    await db.siteSetting.deleteMany({ where: { key: { in: [keys.path, keys.name] } } });
+  } catch {
+    failed = true;
+  }
+  redirect(`${LIST}?tab=vorlagen&${failed ? "err=failed" : "ok=deleted"}`);
 }
 
 export async function deleteAsset(formData: FormData): Promise<void> {

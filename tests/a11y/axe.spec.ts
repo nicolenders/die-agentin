@@ -28,5 +28,17 @@ for (const locale of LOCALES) {
       const critical = results.violations.filter((v) => v.impact === "critical");
       expect(critical, JSON.stringify(critical, null, 2)).toEqual([]);
     });
+
+    // Audit 6.1: Fast alle Unterseiten hatten ihre H1 als Eyebrow gesetzt —
+    // 10,5px Mono-Versalie. Diese Regel liegt außerhalb der WCAG-Tags oben und
+    // wird deshalb eigens geprüft, zusammen mit der Anzahl.
+    test(`Überschriftenstruktur: ${path}`, async ({ page }) => {
+      await page.goto(path);
+      const results = await new AxeBuilder({ page })
+        .withRules(["page-has-heading-one", "heading-order", "empty-heading"])
+        .analyze();
+      expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
+      await expect(page.locator("main h1")).toHaveCount(1);
+    });
   }
 }

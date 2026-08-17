@@ -70,6 +70,11 @@ export default async function LegendePage({
         { term: dict.dispatch.namePlural, gloss: "Meldungen aus dem Feld: Arbeit an einer Identität." },
         { term: "Legende", gloss: "Deckgeschichte und Kartenlegende zugleich, also diese Seite." },
         { term: "Briefings", gloss: "Was ich zu einem Einsatz mitbringe: die Vorträge." },
+        // Audit 6.5: Das Codebuch erklärte nur die Hauptnavigation. Die drei
+        // erklärungsbedürftigen Begriffe aus dem Footer fehlten.
+        { term: "Akte", gloss: "Das Speaker-Kit: Bios, Pressefoto, Formate. Alles, was Veranstalter brauchen." },
+        { term: "Nachweise", gloss: "Zertifizierungen, MVP-Auszeichnungen, Schulungen." },
+        { term: "Publikationen", gloss: "Bücher und Kurse." },
       ]
     : [
         { term: "HQ", gloss: "Headquarters: the home page, the situation board." },
@@ -78,6 +83,9 @@ export default async function LegendePage({
         { term: dict.dispatch.namePlural, gloss: "Reports from the field: work on an identity." },
         { term: "Legend", gloss: "Cover story and map legend at once, which is this page." },
         { term: "Briefings", gloss: "What I bring to a mission: the talks." },
+        { term: "File", gloss: "The speaker kit: bios, press photo, formats. Everything organisers need." },
+        { term: "Credentials", gloss: "Certifications, MVP awards, trainings." },
+        { term: "Publications", gloss: "Books and courses." },
       ];
   const portraitSrc = legend.portrait?.url ?? brandAsset("portrait.jpg");
   const portraitAlt = legend.portrait?.alt ?? (isDe ? "Porträt von Nicole Enders" : "Portrait of Nicole Enders");
@@ -114,7 +122,11 @@ export default async function LegendePage({
           <div className={styles.nameRow}>
             <div style={{ minWidth: 0 }}>
               <p className="eyebrow">{legend.eyebrow}</p>
-              <h2 style={{ marginBottom: legend.employer ? 8 : undefined }}>{legend.name}</h2>
+              {/* Audit 6.2: Nicoles Name gehört auf der Über-mich-Seite in die
+                  H1. Optik unverändert (`as-h2`). */}
+              <h1 className="as-h2" style={{ marginBottom: legend.employer ? 8 : undefined }}>
+                {legend.name}
+              </h1>
               {legend.employer ? (
                 legend.employer.url ? (
                   <a
@@ -170,7 +182,7 @@ export default async function LegendePage({
       {/* Reihe 2: Warum Agentin (links) und Codebuch (rechts). */}
       <div className={styles.twoCol}>
         <div>
-          <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Warum Agentin" : "Why „agent“"}</p>
+          <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Warum Agentin" : "Why “agent”"}</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {whyAgent.map((p, i) => (
               <p key={i} style={{ fontSize: 15 }}>{p}</p>
@@ -230,16 +242,32 @@ export default async function LegendePage({
               <Link
                 key={t.slug}
                 href={`/${locale}/einsaetze?werkzeug=${t.slug}`}
-                style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".2em", color: "var(--violet-text)", border: "1px solid var(--line)", padding: "6px 12px", borderRadius: "var(--r)", textDecoration: "none" }}
+                // Historische Werkzeuge bleiben verlinkt — der Filter auf alte
+                // Einsätze ist wertvoll —, sind aber abgesetzt (Audit 6.9).
+                title={
+                  t.historic
+                    ? isDe
+                      ? `Historisch, zuletzt im Einsatz ${t.lastUsedYear}`
+                      : `Historic, last used in ${t.lastUsedYear}`
+                    : undefined
+                }
+                style={{ fontFamily: "var(--mono)", fontSize: "10.5px", letterSpacing: ".2em", color: "var(--violet-text)", border: "1px solid var(--line)", padding: "6px 12px", borderRadius: "var(--r)", textDecoration: "none", opacity: t.historic ? 0.55 : 1 }}
               >
                 {t.name}
+                {t.historic ? (
+                  <span className="visually-hidden">
+                    {isDe ? ` (historisch, zuletzt ${t.lastUsedYear})` : ` (historic, last used ${t.lastUsedYear})`}
+                  </span>
+                ) : null}
               </Link>
             ))}
           </div>
         </>
       ) : null}
 
-      {radar.length > 0 ? (
+      {/* Zwei Sätze Erklärung über einem einzigen Punkt stehen im Missverhältnis
+          (Audit 6.9): die Sektion erscheint erst ab drei Themen. */}
+      {radar.length >= 3 ? (
         <>
           <p className="eyebrow" style={{ marginTop: 32 }}>{isDe ? "Aktuelle Themen" : "Current topics"}</p>
           <p className="meta" style={{ marginTop: 0 }}>

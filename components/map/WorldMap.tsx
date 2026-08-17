@@ -65,6 +65,8 @@ export default function WorldMap({
     openFile: string;
     online: string;
     duration: string;
+    aiGenerated: string;
+    aiGeneratedImage: string;
   };
 }) {
   const [viewId, setViewId] = useState("welt");
@@ -186,6 +188,8 @@ export default function WorldMap({
                       alt={selected.bannerAlt}
                       ai={selected.bannerAi}
                       className="popup-banner"
+                      aiLabel={labels.aiGenerated}
+                      aiTitle={labels.aiGeneratedImage}
                       style={{ display: "block", margin: "0 0 10px" }}
                       imgStyle={{ width: "100%", maxHeight: 132, objectFit: "cover", borderRadius: 4, display: "block" }}
                     />

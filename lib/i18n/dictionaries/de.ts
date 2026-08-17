@@ -43,6 +43,8 @@ const de = {
     // Der Route-Slug /ausbildung bleibt: eine Label-Änderung ist kein
     // Redirect-Risiko wert.
     ausbildung: "Nachweise",
+    // War als einziges Footer-Label direkt im Code (Audit 6.9).
+    akte: "Akte (Speaker-Kit)",
     legende: "Legende",
     identitaeten: "Identitäten",
     menu: "Menü",
@@ -64,6 +66,11 @@ const de = {
     openEventSite: "Veranstaltungswebsite",
     emptyTitle: "Noch nichts hier",
     loading: "Wird geladen …",
+    // Transparenzhinweis am Bild (Audit 6.9). Stand bisher fest auf Deutsch und
+    // erschien so auch auf /en.
+    aiGenerated: "KI-generiert",
+    aiGeneratedShort: "KI",
+    aiGeneratedImage: "KI-generiertes Bild",
   },
   langNotice: {
     // Fallback-Hinweis, wenn EN fehlt (SPEC §8)
@@ -112,11 +119,15 @@ const de = {
     name: "Depesche",
     namePlural: "Depeschen",
     eyebrow: "Depeschen · aus dem Feld",
+    // Sichtbare H1 der Übersichtsseite (Audit 6.1). Ohne Kennzahlen: die
+    // veralten still und stehen dann im Suchergebnis.
+    headline: "Zwischen den Einsätzen.",
     title: "Arbeit an den Identitäten",
     lead: "Zwischen den Einsätzen: Meldungen, Einordnungen und Nachschlagewerke. Jede Depesche gehört zu einer Identität: die Arbeit daran, sie glaubhaft zu verkörpern.",
     filterByFormat: "Nach Format filtern",
     updatedLabel: "Aktualisiert",
-    empty: "Sobald eine Depesche eingeht, erscheint sie hier.",
+    empty: "Noch nichts im Umlauf. Die erste Depesche geht in Kürze raus. Bis dahin findest du die Praxis in den Einsätzen.",
+    emptyFiltered: "Zu dieser Auswahl liegt nichts vor. Filter lockern oder zurücksetzen.",
     formats: {
       NOTE: "Meldung",
       ANALYSIS: "Einordnung",
@@ -131,9 +142,24 @@ const de = {
     newInRepertoire: "Neu im Repertoire",
     workshop: "Workshop",
     deliveredCount: "gehalten",
+    // Vortragsformate der Akte (Audit 6.4), gespeist aus den Dauern der
+    // gepflegten Briefings.
+    formatsHeading: "Formate",
+    formatsLead:
+      "Was ich anbiete, mit den Dauern aus dem laufenden Repertoire. Alle Formate auf Deutsch und auf Englisch.",
+    formats: {
+      LIGHTNING: "Lightning Talk",
+      SESSION: "Session",
+      LONG_SESSION: "Long Session",
+      WORKSHOP: "Workshop",
+    },
+    pressPhoto: "Pressefoto",
+    pressPhotoDownload: "Pressefoto herunterladen",
+    pressPhotoCredit: "Bildnachweis",
   },
   identity: {
     eyebrow: "Identitäten · Decknamen",
+    headline: "Fünf Identitäten, eine Haltung.",
     title: "Die Identitäten",
     // Ich-Form wie auf der übrigen Seite (Audit 2.3).
     lead: "Je nach Thema trete ich unter verschiedenen Identitäten auf, parallel und dauerhaft aktiv. Jede ist offen als meine eigene ausgewiesen.",

@@ -114,6 +114,21 @@ h1 {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+// Hauptüberschrift einer Unterseite (Audit 6.1). Zuvor war die H1 dort als
+// `.eyebrow` gesetzt — 10,5px Mono-Versalie, also der kleinste Text der Seite.
+// Der Hero der Startseite behält seine volle Größe; die Unterseiten bekommen
+// eine eigene, ruhigere Stufe.
+h1.page-title {
+  font-size: clamp(28px, 4vw, 44px);
+  margin-top: 6px;
+}
+// H1 mit dem Aussehen einer H2 (Audit 6.2): auf Seiten, deren Überschrift im
+// Layout schon an ihrem Platz sitzt, ändert sich nur die Semantik.
+h1.as-h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 // Kategorie-Tags an Briefings: anklickbar (filtern), hervorgehoben wenn aktiv.
 .cat-tag {
   font-family: var(--mono);

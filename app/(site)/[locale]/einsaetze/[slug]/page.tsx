@@ -188,6 +188,8 @@ export default async function EinsatzaktePage({
                 <Gallery
                   images={mission.photos.map((p) => ({ url: p.url, alt: p.decorative ? "" : p.alt, ai: p.ai }))}
                   label={isDe ? "Fotos vom Einsatz" : "Mission photos"}
+                  aiLabel={dict.common.aiGenerated}
+                  aiTitle={dict.common.aiGeneratedImage}
                 />
               </div>
             ) : null}

@@ -30,7 +30,8 @@ export default async function PublikationenPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <h1 className="eyebrow">{isDe ? "Publikationen" : "Publications"}</h1>
+      <p className="eyebrow">{isDe ? "Publikationen · Bücher & Kurse" : "Publications · books & courses"}</p>
+      <h1 className="page-title">{isDe ? "Geschrieben, nicht nur gehalten." : "Written, not just delivered."}</h1>
 
       <PublicationSections items={all} locale={locale} />
 

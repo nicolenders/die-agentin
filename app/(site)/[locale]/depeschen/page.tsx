@@ -53,19 +53,24 @@ export default async function DepeschenPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <h1 className="eyebrow">{dict.dispatch.eyebrow}</h1>
+      <p className="eyebrow">{dict.dispatch.eyebrow}</p>
+      <h1 className="page-title">{dict.dispatch.headline}</h1>
       <p className="lead">{dict.dispatch.lead}</p>
 
-      <div className="year-filter" role="group" aria-label={dict.dispatch.filterByFormat} style={{ marginTop: 20 }}>
-        <Link className="chip" aria-current={activeFormat === null ? "true" : undefined} href={filterHref(null)}>
-          {dict.common.all}
-        </Link>
-        {DISPATCH_FORMATS.map((f) => (
-          <Link key={f} className="chip" aria-current={activeFormat === f ? "true" : undefined} href={filterHref(f)}>
-            {dict.dispatch.formats[f]}
+      {/* Vier Format-Filter für null Inhalte sind eine leere Geste (Audit 6.3):
+          die Chips erscheinen erst, wenn es überhaupt etwas zu filtern gibt. */}
+      {all.length > 0 ? (
+        <div className="year-filter" role="group" aria-label={dict.dispatch.filterByFormat} style={{ marginTop: 20 }}>
+          <Link className="chip" aria-current={activeFormat === null ? "true" : undefined} href={filterHref(null)}>
+            {dict.common.all}
           </Link>
-        ))}
-      </div>
+          {DISPATCH_FORMATS.map((f) => (
+            <Link key={f} className="chip" aria-current={activeFormat === f ? "true" : undefined} href={filterHref(f)}>
+              {dict.dispatch.formats[f]}
+            </Link>
+          ))}
+        </div>
+      ) : null}
 
       {/* Aus dem Radar heraus verlinkt: sichtbar machen, worauf gefiltert wird. */}
       {activeTopic ? (
@@ -82,7 +87,19 @@ export default async function DepeschenPage({
 
       {dispatches.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 26 }}>
-          <p className="muted" style={{ margin: 0 }}>{dict.dispatch.empty}</p>
+          {/* Ein leerer Zustand ist eine Einladung zum Weitergehen, kein
+              trauriger Satz (CLAUDE.md, Audit 6.3). Solange gar nichts da ist,
+              führt der Weg in die Einsätze; ein leerer Filter sagt das auch. */}
+          <p className="muted" style={{ margin: 0 }}>
+            {all.length === 0 ? dict.dispatch.empty : dict.dispatch.emptyFiltered}
+          </p>
+          {all.length === 0 ? (
+            <p style={{ marginTop: 14, marginBottom: 0 }}>
+              <Link className="btn solid sm" href={`/${locale}/einsaetze`}>
+                {dict.nav.einsaetze}
+              </Link>
+            </p>
+          ) : null}
         </div>
       ) : (
         <div className="grid g2" style={{ marginTop: 26, alignItems: "stretch" }}>

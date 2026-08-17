@@ -17,7 +17,9 @@ export function formatDate(date: Date | string | number | null | undefined, loca
   if (!d) return "";
   return new Intl.DateTimeFormat(locale === "de" ? "de-DE" : "en-GB", {
     day: "2-digit",
-    month: "2-digit",
+    // EN mit Monatskürzel (Audit 6.8): `04/09/2026` liest ein US-Publikum als
+    // 9. April. `04 Sep 2026` ist eindeutig.
+    month: locale === "de" ? "2-digit" : "short",
     year: "numeric",
     timeZone: TZ,
   }).format(d);
@@ -28,7 +30,9 @@ export function formatDateTime(date: Date | string | number | null | undefined, 
   if (!d) return "";
   return new Intl.DateTimeFormat(locale === "de" ? "de-DE" : "en-GB", {
     day: "2-digit",
-    month: "2-digit",
+    // EN mit Monatskürzel (Audit 6.8): `04/09/2026` liest ein US-Publikum als
+    // 9. April. `04 Sep 2026` ist eindeutig.
+    month: locale === "de" ? "2-digit" : "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",

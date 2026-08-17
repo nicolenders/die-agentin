@@ -73,7 +73,8 @@ export default async function BriefingsPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <h1 className="eyebrow">{isDe ? "Briefings · Vortragsrepertoire" : "Briefings · talk repertoire"}</h1>
+      <p className="eyebrow">{isDe ? "Briefings · Vortragsrepertoire" : "Briefings · talk repertoire"}</p>
+      <h1 className="page-title">{isDe ? "Was ich mitbringe." : "What I bring along."}</h1>
       <p className="lead">
         {isDe
           ? "Mein Vortragsrepertoire, filterbar nach Thema und Identität. Die Zahl hinter dem Titel zeigt, wie oft ich den Vortrag gehalten habe."

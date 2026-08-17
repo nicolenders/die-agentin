@@ -27,7 +27,8 @@ export default async function IdentitaetenPage({ params }: { params: Promise<{ l
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <h1 className="eyebrow">{dict.identity.eyebrow}</h1>
+      <p className="eyebrow">{dict.identity.eyebrow}</p>
+      <h1 className="page-title">{dict.identity.headline}</h1>
       <p className="lead">{dict.identity.lead}</p>
 
       {identities.length === 0 ? (

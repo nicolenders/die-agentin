@@ -30,7 +30,8 @@ export default async function AusbildungPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <h1 className="eyebrow">{isDe ? "Ausbildung · Zertifizierungen" : "Credentials · certifications"}</h1>
+      <p className="eyebrow">{isDe ? "Nachweise · Zertifizierungen & Awards" : "Credentials · certifications & awards"}</p>
+      <h1 className="page-title">{isDe ? "Belegt, nicht behauptet." : "Proven, not claimed."}</h1>
       <p className="lead">
         {isDe
           ? "Zertifizierungen, MVP-Auszeichnungen, Schulungen und aktuelle Themen, getrennt nach Bereichen."

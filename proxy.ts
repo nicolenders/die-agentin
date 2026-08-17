@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { canonicalHost } from "./lib/site";
-import { isNonLocalizedPath, hasLocalePrefix, pickLocaleFrom, legacyDispatchTarget } from "./lib/routing";
+import {
+  isNonLocalizedPath,
+  hasLocalePrefix,
+  pickLocaleFrom,
+  legacyDispatchTarget,
+  localeFromPath,
+  LOCALE_HEADER,
+} from "./lib/routing";
 
 // Locale-Routing (SPEC §5) UND Host-basiertes noindex (Phase 1.2a).
 //
@@ -54,7 +61,13 @@ export function proxy(request: NextRequest) {
   // Admin, API, Vorschau, Medien, Next-Interna und Dateien werden nicht
   // lokalisiert — nur durchreichen (mit noindex-Header auf Nicht-Zielhosts).
   if (isNonLocalizedPath(pathname) || hasLocalePrefix(pathname)) {
-    return withRobots(request, NextResponse.next());
+    // Sprache als Request-Header mitgeben (Audit 6.6): `not-found.tsx` erreicht
+    // im App Router keine `params` und wäre sonst immer deutsch.
+    const pathLocale = localeFromPath(pathname);
+    if (!pathLocale) return withRobots(request, NextResponse.next());
+    const headers = new Headers(request.headers);
+    headers.set(LOCALE_HEADER, pathLocale);
+    return withRobots(request, NextResponse.next({ request: { headers } }));
   }
 
   const locale = pickLocaleFrom(request.headers.get("accept-language"));

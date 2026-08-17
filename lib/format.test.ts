@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { formatDuration, isWorkshopDuration, WORKSHOP_MIN_MINUTES } from "./format";
+import {
+  formatDate,
+  formatDateTime,
+  formatDuration,
+  isWorkshopDuration,
+  WORKSHOP_MIN_MINUTES,
+} from "./format";
 
 // Audit 4.7: „420′" liest niemand als sieben Stunden. Ab 90 Minuten wird in
 // Stunden ausgegeben, ab 180 Minuten gilt das Format als Workshop.
@@ -37,5 +43,39 @@ describe("isWorkshopDuration", () => {
   it("kommt mit fehlender Angabe klar", () => {
     expect(isWorkshopDuration(null)).toBe(false);
     expect(isWorkshopDuration(undefined)).toBe(false);
+  });
+});
+
+// Audit 6.8: `04/09/2026` liest ein US-Publikum als 9. April. Deutsch bleibt
+// beim gewohnten Punktformat.
+describe("formatDate", () => {
+  // Genau der mehrdeutige Fall: 9. April, in Ziffern `09/04` — für US-Leser
+  // der 4. September.
+  const date = new Date("2026-04-09T10:00:00Z");
+
+  it("schreibt DE mit Ziffern", () => {
+    expect(formatDate(date, "de")).toBe("09.04.2026");
+  });
+
+  it("schreibt EN mit Monatskürzel", () => {
+    expect(formatDate(date, "en")).toBe("09 Apr 2026");
+  });
+
+  it("lässt in EN keine rein numerische Schreibweise zu", () => {
+    expect(formatDate(new Date("2026-09-04T10:00:00Z"), "en")).toMatch(/^04 Sept? 2026$/);
+  });
+
+  it("liefert für fehlende Werte einen leeren String", () => {
+    expect(formatDate(null, "de")).toBe("");
+    expect(formatDate("kein Datum", "en")).toBe("");
+  });
+});
+
+describe("formatDateTime", () => {
+  const date = new Date("2026-04-09T10:00:00Z");
+
+  it("nutzt dasselbe Monatsformat wie formatDate", () => {
+    expect(formatDateTime(date, "de")).toContain("09.04.2026");
+    expect(formatDateTime(date, "en")).toContain("09 Apr 2026");
   });
 });

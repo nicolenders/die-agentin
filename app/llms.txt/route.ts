@@ -1,6 +1,8 @@
 import { siteOrigin } from "@/lib/site";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
+import { getHomeStats } from "@/lib/queries/home";
+import { spellOutCount, spellOutTimes } from "@/lib/numbers";
 
 export const dynamic = "force-dynamic";
 
@@ -9,15 +11,18 @@ export const dynamic = "force-dynamic";
 // aber billig und schadet nicht.
 export async function GET() {
   const SITE = siteOrigin();
-  const [identities, dispatches] = await Promise.all([
+  const [identities, dispatches, stats] = await Promise.all([
     getPublishedIdentities("de"),
     getPublishedDispatches("de"),
+    getHomeStats(),
   ]);
 
   const lines: string[] = [
     "# Die Agentin · Nicole Enders",
     "",
-    "> Microsoft MVP seit 2020 (siebenmal in Folge), Speakerin und Autorin von zehn Fachbüchern.",
+    // Buchzahl aus der Datenbank statt hartkodiert (Audit 6.9) — der Rest der
+    // Seite zieht sie ohnehin aus `getHomeStats`.
+    `> Microsoft MVP seit 2020 (${spellOutTimes(stats.mvpAwards)} in Folge), Speakerin und Autorin von ${spellOutCount(stats.books)} Fachbüchern.`,
     "> Arbeitet an der Grenze zwischen Konfiguration und Entwicklung, von Information",
     "> Architecture in SharePoint bis zu Agents mit Copilot Studio und Microsoft Foundry.",
     "",

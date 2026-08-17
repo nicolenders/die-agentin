@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import MissionForm, { type MissionFormInitial, EMPTY_MATERIAL } from "@/components/admin/MissionForm";
+import { missionTalkLanguage } from "@/lib/mission-language";
 
 export const metadata = { title: "Einsatz bearbeiten · Zentrale" };
 
@@ -28,7 +29,13 @@ export default async function EinsatzBearbeitenPage({
   const { id } = await searchParams;
 
   let existingPins: { lat: number; lon: number }[] = [];
-  let talks: { id: string; name: string; toolIds: string[]; languages: string[]; archivedAt: string | null }[] = [];
+  let talks: {
+    id: string;
+    titles: { de: string | null; en: string | null };
+    toolIds: string[];
+    durationMin: number | null;
+    archivedAt: string | null;
+  }[] = [];
   let categories: { id: string; name: string }[] = [];
   let allTools: { id: string; name: string }[] = [];
   let initial: MissionFormInitial = {
@@ -45,6 +52,7 @@ export default async function EinsatzBearbeitenPage({
     eventUrl: "",
     talkId: "",
     language: "de",
+    durationMin: "",
     de: { eventText: "", talkText: "" },
     en: null,
     photos: [],
@@ -63,10 +71,14 @@ export default async function EinsatzBearbeitenPage({
     existingPins = missions;
     talks = talkRows.map((t) => ({
       id: t.id,
-      name: t.translations.find((x) => x.locale === "de")?.title ?? t.translations[0]?.title ?? t.id,
+      // Ein Briefing „gibt es" in einer Sprache, sobald dort ein Titel steht —
+      // und genau dieser Titel steht dann auch im Dropdown.
+      titles: {
+        de: t.translations.find((x) => x.locale === "de")?.title?.trim() || null,
+        en: t.translations.find((x) => x.locale === "en")?.title?.trim() || null,
+      },
       toolIds: t.tools.map((x) => x.id),
-      // Ein Briefing „gibt es" in einer Sprache, sobald dort ein Titel steht.
-      languages: t.translations.filter((x) => x.title.trim().length > 0).map((x) => x.locale),
+      durationMin: t.durationMin,
       archivedAt: t.archivedAt ? t.archivedAt.toISOString() : null,
     }));
     categories = catRows.map((c) => ({ id: c.id, name: c.nameDe }));
@@ -101,7 +113,9 @@ export default async function EinsatzBearbeitenPage({
           status: mission.status,
           eventUrl: mission.eventUrl ?? "",
           talkId: delivery?.talkId ?? "",
-          language: delivery?.language ?? "de",
+          // Sprache am Einsatz hat Vorrang; die Zuordnung ist der Rückfall für Altdaten.
+          language: missionTalkLanguage(mission.sessionLanguage, delivery?.language) ?? "de",
+          durationMin: mission.durationMin != null ? String(mission.durationMin) : "",
           de: { eventText: de?.eventText ?? "", talkText: de?.talkText ?? "" },
           en: en ? { eventText: en.eventText, talkText: en.talkText } : null,
           photos: mission.photos.map((p) => ({ id: p.assetId, url: assetUrl(p.asset.blobPath) })),
@@ -114,7 +128,6 @@ export default async function EinsatzBearbeitenPage({
             slidesFileName: mission.slidesFileName ?? "",
             recordingUrl: mission.recordingUrl ?? "",
             sessionType: mission.sessionType ?? "",
-            sessionLanguage: mission.sessionLanguage ?? "",
             attendeeCount: mission.attendeeCount != null ? String(mission.attendeeCount) : "",
             feedbackScore: mission.feedbackScore != null ? String(mission.feedbackScore) : "",
             feedbackSource: mission.feedbackSource ?? "",

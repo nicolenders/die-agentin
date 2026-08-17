@@ -54,6 +54,8 @@ export default async function EinsaetzePage({
     identities: m.identities,
     tools: m.tools,
     briefing: m.briefing,
+    language: m.language,
+    durationMin: m.durationMin,
   }));
 
   const explorerIdentities: ExplorerIdentity[] = identities.map((i) => ({
@@ -96,6 +98,7 @@ export default async function EinsaetzePage({
           colDate: isDe ? "Datum" : "Date",
           colEvent: isDe ? "Veranstaltung" : "Event",
           colBriefing: isDe ? "Briefing" : "Briefing",
+          colLanguage: isDe ? "Sprache" : "Language",
           colLocation: isDe ? "Ort" : "Location",
           colStatus: isDe ? "Status" : "Status",
           statusPlanned: isDe ? "Geplant" : "Planned",
@@ -112,6 +115,7 @@ export default async function EinsaetzePage({
             briefing: isDe ? "Briefing" : "Briefing",
             identity: isDe ? "Identität" : "Identity",
             language: isDe ? "Sprache" : "Language",
+            duration: isDe ? "Dauer" : "Duration",
             openFile: isDe ? "Einsatzakte öffnen" : "Open mission file",
             online: isDe ? "Online" : "Online",
             showOnMap: isDe ? "Auf der Karte" : "On the map",

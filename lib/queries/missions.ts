@@ -3,6 +3,7 @@ import { cachedQuery, tags } from "@/lib/cache";
 import { pickTranslation } from "@/lib/content/pick";
 import { assetUrl } from "@/lib/media/url";
 import { identityDisplayName } from "@/lib/identities";
+import { missionTalkLanguage } from "@/lib/mission-language";
 import type { Locale } from "@/lib/i18n/config";
 import type { MissionStatus } from "@/lib/domain";
 
@@ -30,8 +31,13 @@ export interface MissionListItem {
   // Identitäten mit Anzeigename und Farbe — fürs Karten-Popup.
   identities: { slug: string; name: string; color: string }[];
   tools: { slug: string; name: string }[]; // verknüpfte Werkzeuge (Filter + Label)
-  // Gehaltenes Briefing samt Vortragssprache (Popup, Liste).
-  briefing: { id: string; title: string; language: string } | null;
+  // Gehaltenes Briefing (Popup, Liste). Die Sprache steht am Einsatz, nicht am
+  // Briefing — dasselbe Briefing wird mal auf Deutsch, mal auf Englisch gehalten.
+  briefing: { id: string; title: string } | null;
+  /** Vortragssprache dieses Einsatzes („de"/„en") — null, wenn nicht gepflegt. */
+  language: string | null;
+  /** Länge des Auftritts in Minuten. */
+  durationMin: number | null;
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
@@ -77,10 +83,9 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
         color: i.color,
       })),
       tools: m.tools.map((t) => ({ slug: t.slug, name: t.name })),
-      briefing:
-        delivery && talkTitle
-          ? { id: delivery.talkId, title: talkTitle, language: delivery.language }
-          : null,
+      briefing: delivery && talkTitle ? { id: delivery.talkId, title: talkTitle } : null,
+      language: missionTalkLanguage(m.sessionLanguage, delivery?.language),
+      durationMin: m.durationMin,
       bannerAi: m.banner?.source === "AI",
       bannerUrl: m.banner ? assetUrl(m.banner.blobPath) : null,
       bannerAlt:
@@ -133,7 +138,9 @@ export interface MissionDetail {
   feedbackSource: string | null;
   coSpeakers: { name: string; url: string | null }[];
   sessionType: string | null;
+  /** Vortragssprache („de"/„en"), aus der einen Pflegestelle. */
   sessionLanguage: string | null;
+  durationMin: number | null;
   attendeeCount: number | null;
 }
 
@@ -175,6 +182,7 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
   const talkTitle = delivery
     ? pickTranslation(delivery.talk.translations, locale)?.translation.title ?? null
     : null;
+  const talkLanguage = missionTalkLanguage(mission.sessionLanguage, delivery?.language);
 
   return {
     id: mission.id,
@@ -195,7 +203,7 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
       decorative: p.asset.decorative,
       ai: p.asset.source === "AI",
     })),
-    briefing: delivery && talkTitle ? { title: talkTitle, language: delivery.language } : null,
+    briefing: delivery && talkTitle ? { title: talkTitle, language: talkLanguage ?? delivery.language } : null,
     identities: mission.identities.map((i) => ({ slug: i.slug, name: identityDisplayName(i, locale), color: i.color })),
     slidesUrl: mission.slidesUrl,
     slidesPlatform: mission.slidesPlatform,
@@ -207,7 +215,8 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
     feedbackSource: mission.feedbackSource,
     coSpeakers: parseCoSpeakers(mission.coSpeakers),
     sessionType: mission.sessionType,
-    sessionLanguage: mission.sessionLanguage,
+    sessionLanguage: talkLanguage,
+    durationMin: mission.durationMin,
     attendeeCount: mission.attendeeCount,
   };
 }

@@ -5,6 +5,7 @@ import { getBriefingList } from "@/lib/queries/briefings";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { richValueToPlain } from "@/lib/content/rich";
 import { formatDate } from "@/lib/format";
+import { talkLanguageLabel } from "@/lib/mission-language";
 import RichText from "@/components/content/RichText";
 import BriefingExplorer, { type ExplorerItem } from "@/components/briefings/BriefingExplorer";
 
@@ -57,7 +58,7 @@ export default async function BriefingsPage({
       eventName: m.eventName,
       location: m.isOnline ? (isDe ? "Online" : "Online") : `${m.city}, ${m.countryCode}`,
       dateLabel: formatDate(m.heldOn, locale),
-      languageLabel: m.language === "en" ? (isDe ? "Englisch" : "English") : isDe ? "Deutsch" : "German",
+      languageLabel: talkLanguageLabel(m.language, locale) ?? "—",
     })),
     abstractNode: <RichText value={i.abstract} locale={locale} />,
   }));

@@ -6,6 +6,7 @@ import ConfirmButton from "@/components/admin/ConfirmButton";
 import Flash from "@/components/admin/Flash";
 import SharePanel from "@/components/admin/SharePanel";
 import { identityDisplayName } from "@/lib/identities";
+import { missionTalkLanguage, talkLanguageLabel } from "@/lib/mission-language";
 import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { deleteMission } from "./actions";
@@ -112,11 +113,12 @@ export default async function EinsaetzeAdminPage({
             <tr>
               <th>Veranstaltung</th>
               <th>Briefing</th>
+              <th>Sprache</th>
               <th>Ort</th>
               <th>Datum</th>
               <th>Status</th>
               <th>Akte</th>
-              <th>Sprachen</th>
+              <th>Texte</th>
               <th></th>
             </tr>
           </thead>
@@ -133,6 +135,7 @@ export default async function EinsaetzeAdminPage({
                       "—"
                     )}
                   </td>
+                  <td className="meta">{talkLanguageLabel(m.language, "de") ?? "—"}</td>
                   <td className="meta">{m.isOnline ? "Online" : `${m.city}${m.countryCode ? `, ${m.countryCode}` : ""}`}</td>
                   <td className="meta">{formatDate(m.startDate, "de")}</td>
                   <td><span className={`st ${st.cls}`}>{st.label}</span></td>
@@ -238,6 +241,7 @@ async function load(
       startDate: m.startDate,
       contentStatus: m.contentStatus as ContentStatus,
       talk: delivery ? { id: delivery.talkId, title: delivery.talk.translations[0]?.title ?? "(ohne Titel)" } : null,
+      language: missionTalkLanguage(m.sessionLanguage, delivery?.language),
       hasDe: m.translations.some((t) => t.locale === "de"),
       hasEn: m.translations.some((t) => t.locale === "en"),
       share,

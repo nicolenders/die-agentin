@@ -7,6 +7,7 @@ import { getMissionBySlug } from "@/lib/queries/missions";
 import { formatDate } from "@/lib/format";
 import { extractYouTubeId } from "@/lib/video";
 import { siteOrigin } from "@/lib/site";
+import { talkLanguageLabel } from "@/lib/mission-language";
 import { eventNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
 import Gallery from "@/components/content/Gallery";
 import RichText from "@/components/content/RichText";
@@ -43,7 +44,8 @@ export default async function EinsatzaktePage({
   // Fakten-Zeile: Art, Sprache, Teilnehmende, Feedback (leere Angaben entfallen).
   const facts = [
     mission.sessionType ? { KEYNOTE: "Keynote", SESSION: "Session", WORKSHOP: "Workshop", PANEL: "Panel" }[mission.sessionType] ?? mission.sessionType : null,
-    mission.sessionLanguage,
+    talkLanguageLabel(mission.sessionLanguage, locale),
+    mission.durationMin ? `${mission.durationMin} ${isDe ? "Minuten" : "minutes"}` : null,
     mission.attendeeCount ? `${mission.attendeeCount} ${isDe ? "Teilnehmende" : "attendees"}` : null,
     mission.feedbackScore != null ? `${isDe ? "Feedback" : "Feedback"} ${mission.feedbackScore}${mission.feedbackSource ? ` (${mission.feedbackSource})` : ""}` : null,
   ].filter(Boolean);

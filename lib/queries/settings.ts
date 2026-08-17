@@ -148,15 +148,20 @@ export async function getSocialLinks(): Promise<Record<string, string>> {
  */
 export async function getSlideTemplates(): Promise<SlideTemplateSet> {
   const result: SlideTemplateSet = { ...EMPTY_SLIDE_TEMPLATES };
-  const keys = locales.flatMap((l) => [slideTemplateKeys(l).path, slideTemplateKeys(l).name]);
+  const keys = locales.flatMap((l) => Object.values(slideTemplateKeys(l)));
   try {
     const rows = await db.siteSetting.findMany({ where: { key: { in: keys } }, select: { key: true, value: true } });
     const map = new Map(rows.map((r) => [r.key, r.value.trim()]));
     for (const locale of locales) {
-      const { path, name } = slideTemplateKeys(locale);
+      const { path, name, bytes } = slideTemplateKeys(locale);
       const storedPath = map.get(path);
       if (!storedPath) continue;
-      result[locale] = { locale, path: storedPath, fileName: map.get(name) || "vorlage.pptx" };
+      result[locale] = {
+        locale,
+        path: storedPath,
+        fileName: map.get(name) || "vorlage.pptx",
+        bytes: Number(map.get(bytes) ?? 0) || 0,
+      };
     }
   } catch {
     // ohne Vorlagen weiter

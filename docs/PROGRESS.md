@@ -328,12 +328,21 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 - Upload über `/api/admin/missions/slide-template` (Admin, Same-Origin,
   rate-limitiert, Typprüfung über den Inhalt: ZIP + `ppt/presentation.xml`,
   altes `.ppt` mit eigener Meldung, max. **100 MB**).
-- **Große Vorlagen im Fluss statt im Speicher:** echte Vorlagen wiegen 30–42 MB,
-  die Container-App hat 0,5 GiB. Der Upload kommt als roher Anfragekörper und
-  wird abschnittsweise geprüft (`PresentationScanner`) und direkt in die Ablage
-  geschrieben (`storeStream`); abgebrochene Uploads räumt `deleteMedia` weg.
-  Der Medien-Proxy liefert Dateien als Strom (`openMedia`) statt sie zweimal
-  vollständig zu kopieren — das entlastet auch Bilder und Folien-PDFs.
+- **Große Vorlagen (30–42 MB) in Teilstücken:** Upload in 4-MB-Stücken
+  (`?phase=part`, je einzeln wiederholbar, produktiv Blöcke eines Azure-Block-
+  Blobs), Zusammensetzen und Prüfen beim Abschluss (`?phase=commit`). Kein
+  Ingress-Limit greift, keine Anfrage hält mehr als ein paar MB im Speicher
+  (Container-App: 0,5 GiB), Fortschritt sichtbar auf der Schaltfläche.
+- **Geprüft wird die abgelegte Datei, nicht der Upload** (`verifyTemplateArchive`):
+  Größe gegen angekündigte Größe, ZIP-Signatur, **Schlussmarke am Dateiende**,
+  Präsentationsteil im Verzeichnis. Das war die Ursache der „Datei beschädigt,
+  Reparatur scheitert"-Meldung: eine abgebrochene Übertragung sieht vorne
+  fehlerfrei aus. Unvollständiges wird gelöscht und mit Zahlen gemeldet.
+- Der Medien-Proxy liefert Dateien als Strom (`openMedia`, mit
+  `maxRetryRequests`) statt sie zweimal vollständig zu kopieren — das entlastet
+  auch Bilder und Folien-PDFs.
+- Hinterlegte Dateigröße ist in Medien → Vorlagen und im Einsatzformular
+  sichtbar, damit Vollständigkeit ohne Download prüfbar ist.
 - Im Einsatzformular steht die Vorlage **zur gewählten Vortragssprache** direkt
   über dem vorhandenen PDF-Upload: Vorlage laden → Folien bauen → fertige Folien
   als PDF hochladen. Fehlt die Vorlage der Sprache, wird die andere angeboten

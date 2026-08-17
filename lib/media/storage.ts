@@ -1,4 +1,4 @@
-import { mkdir, writeFile, stat, unlink } from "node:fs/promises";
+import { mkdir, writeFile, stat, unlink, rm, open } from "node:fs/promises";
 import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import type { Readable } from "node:stream";
@@ -70,37 +70,138 @@ export async function storeFile(
   return { path: `uploads/${relativePath}` };
 }
 
+// ---------------------------------------------------------------------------
+// Mehrteiliger Upload
+//
+// Eine 42-MB-Vorlage in einer einzigen Anfrage über das Ingress zu schieben ist
+// die fragilste Stelle der ganzen Strecke: ein Abbruch unterwegs kommt als
+// sauberes Dateiende an, und was ankommt, sieht aus wie eine gültige Datei —
+// nur eben eine halbe. Deshalb kommt die Datei in Stücken von wenigen MB, jedes
+// in einer eigenen Anfrage, die einzeln wiederholt werden kann. Azure kennt das
+// als Blockliste eines Block-Blobs; lokal werden die Teile als Dateien abgelegt
+// und beim Abschluss zusammengeschrieben.
+// ---------------------------------------------------------------------------
+
+const PARTS_DIR = ".parts";
+
+/** Block-Kennung: für ein Blob müssen alle gleich lang und base64 sein. */
+function blockId(uploadId: string, index: number): string {
+  return Buffer.from(`${uploadId}-${String(index).padStart(6, "0")}`).toString("base64");
+}
+
+function partPath(uploadId: string, index: number): string {
+  return path.join(LOCAL_DIR, PARTS_DIR, uploadId, String(index).padStart(6, "0"));
+}
+
+/** Nimmt ein Teilstück entgegen. Reihenfolge und Vollständigkeit klärt `commitParts`. */
+export async function storePart(
+  target: string,
+  uploadId: string,
+  index: number,
+  data: Buffer,
+): Promise<void> {
+  if (isBlobConfigured()) {
+    await getContainerClient()
+      .getBlockBlobClient(target)
+      .stageBlock(blockId(uploadId, index), data, data.length);
+    return;
+  }
+  const full = partPath(uploadId, index);
+  await mkdir(path.dirname(full), { recursive: true });
+  await writeFile(full, data);
+}
+
 /**
- * Wie `storeFile`, aber ohne die Datei je vollständig im Speicher zu halten:
- * der Strom wird direkt in den Blob bzw. auf die Platte geschrieben. Für große
- * Uploads (Foliensvorlagen) die einzige Variante, die in einer Container-App
- * mit 0,5 GiB verlässlich durchläuft.
- *
- * Bricht der Strom ab (z. B. weil die Obergrenze überschritten wurde), wirft
- * diese Funktion — der Aufrufer räumt die angefangene Datei mit `deleteMedia`
- * wieder weg.
+ * Setzt die Teile in der angegebenen Reihenfolge zur fertigen Datei zusammen.
+ * Fehlt ein Teil, schlägt das fehl — halbe Dateien entstehen hier nicht.
  */
-export async function storeStream(
-  relativePath: string,
-  stream: Readable,
+export async function commitParts(
+  target: string,
+  uploadId: string,
+  parts: number,
   contentType: string,
 ): Promise<StoredFile> {
+  const ids = Array.from({ length: parts }, (_, index) => blockId(uploadId, index));
   if (isBlobConfigured()) {
-    const blob = getContainerClient().getBlockBlobClient(relativePath);
-    // 4-MB-Blöcke, zwei parallel: der Speicherbedarf bleibt bei ~8 MB,
-    // unabhängig davon, wie groß die Datei ist.
-    await blob.uploadStream(stream, 4 * 1024 * 1024, 2, {
-      blobHTTPHeaders: {
-        blobContentType: contentType,
-        blobCacheControl: "public, max-age=31536000, immutable",
-      },
-    });
-    return { path: relativePath };
+    await getContainerClient()
+      .getBlockBlobClient(target)
+      .commitBlockList(ids, {
+        blobHTTPHeaders: {
+          blobContentType: contentType,
+          blobCacheControl: "public, max-age=31536000, immutable",
+        },
+      });
+    return { path: target };
   }
-  const full = path.join(LOCAL_DIR, relativePath);
+  const files = Array.from({ length: parts }, (_, index) => partPath(uploadId, index));
+  for (const file of files) await stat(file); // fehlender Teil → Fehler, kein Torso
+  const full = path.join(LOCAL_DIR, target);
   await mkdir(path.dirname(full), { recursive: true });
-  await pipeline(stream, createWriteStream(full));
-  return { path: `uploads/${relativePath}` };
+  const sink = createWriteStream(full);
+  for (const file of files) await pipeline(createReadStream(file), sink, { end: false });
+  await new Promise<void>((resolve, reject) => {
+    sink.end((error?: Error | null) => (error ? reject(error) : resolve()));
+  });
+  await discardParts(uploadId);
+  return { path: `uploads/${target}` };
+}
+
+/** Verwirft die Zwischenstücke eines Uploads (Abbruch oder nach dem Abschluss). */
+export async function discardParts(uploadId: string): Promise<void> {
+  if (isBlobConfigured()) {
+    // Nicht bestätigte Blöcke räumt Azure selbst ab (nach sieben Tagen);
+    // es gibt keine API, sie einzeln zu löschen.
+    return;
+  }
+  try {
+    await rm(path.join(LOCAL_DIR, PARTS_DIR, uploadId), { recursive: true, force: true });
+  } catch {
+    // Aufräumen darf keinen Fehler erzeugen.
+  }
+}
+
+/** Größe einer abgelegten Datei — die Antwort der Ablage, nicht unsere Annahme. */
+export async function mediaSize(name: string): Promise<number | null> {
+  const key = storageName(name);
+  try {
+    if (isBlobConfigured()) {
+      const properties = await getContainerClient().getBlockBlobClient(key).getProperties();
+      return properties.contentLength ?? null;
+    }
+    return (await stat(path.join(LOCAL_DIR, key))).size;
+  } catch {
+    return null;
+  }
+}
+
+/** Liest einen Ausschnitt — für die Prüfung von Anfang und Ende einer Datei. */
+export async function readMediaRange(
+  name: string,
+  start: number,
+  length: number,
+): Promise<Buffer | null> {
+  const key = storageName(name);
+  if (length <= 0) return Buffer.alloc(0);
+  try {
+    if (isBlobConfigured()) {
+      const response = await getContainerClient().getBlockBlobClient(key).download(start, length);
+      const body = response.readableStreamBody;
+      if (!body) return null;
+      const chunks: Buffer[] = [];
+      for await (const chunk of body) chunks.push(Buffer.from(chunk));
+      return Buffer.concat(chunks);
+    }
+    const handle = await open(path.join(LOCAL_DIR, key), "r");
+    try {
+      const buffer = Buffer.alloc(length);
+      const { bytesRead } = await handle.read(buffer, 0, length, start);
+      return buffer.subarray(0, bytesRead);
+    } finally {
+      await handle.close();
+    }
+  } catch {
+    return null;
+  }
 }
 
 /** Blob-Name aus einem gespeicherten Pfad (lokal mit `uploads/`-Präfix). */
@@ -144,7 +245,12 @@ export interface OpenedMedia {
 export async function openMedia(name: string): Promise<OpenedMedia | null> {
   if (isBlobConfigured()) {
     try {
-      const response = await getContainerClient().getBlockBlobClient(name).download();
+      // `maxRetryRequests`: reißt der Strom mitten in einer 40-MB-Datei ab,
+      // holt das SDK den Rest nach. Ohne das endet die Antwort still — und die
+      // heruntergeladene Datei wäre unbemerkt unvollständig.
+      const response = await getContainerClient()
+        .getBlockBlobClient(name)
+        .download(0, undefined, { maxRetryRequests: 8 });
       const body = response.readableStreamBody;
       if (!body) return null;
       return { stream: body as Readable, size: response.contentLength ?? null };

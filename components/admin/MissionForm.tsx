@@ -11,6 +11,7 @@ import { assetUrl } from "@/lib/media/url";
 import { showToast } from "@/lib/admin/toast";
 import {
   EMPTY_SLIDE_TEMPLATES,
+  formatMb,
   pickSlideTemplate,
   slideTemplateUrl,
   type SlideTemplateSet,
@@ -706,7 +707,10 @@ export default function MissionForm({
                 download={template.template.fileName}
               >
                 ⬇ {template.template.fileName}
-              </a>
+              </a>{" "}
+              {template.template.bytes ? (
+                <span className="meta">{formatMb(template.template.bytes)}</span>
+              ) : null}
             </>
           ) : (
             <p className="meta" style={{ marginTop: 0 }}>

@@ -94,6 +94,48 @@ Der Multipart-Weg (`formData`) bleibt für Bilder und Folien-PDFs, wie er ist:
 dort sind 20 MB die richtige Grenze, und die Bildverarbeitung braucht die Datei
 ohnehin als Ganzes.
 
+### 7. Nachtrag: der Upload kam an, die Datei war trotzdem kaputt
+
+Nach Abschnitt 6 ging der Upload durch — ohne Fehlermeldung. Die Datei ließ sich
+aber in PowerPoint nicht öffnen, und auch die angebotene Reparatur scheiterte.
+
+Ein Round-Trip durch die Route-Handler (31-MB-Datei, SHA-256 vorher/nachher,
+`zipfile.testzip()` danach) zeigte: die Verarbeitung ist byteweise korrekt. Es
+war die **Übertragung** — und die war an keiner Stelle geprüft. Genau das ist der
+gefährliche Fall: Bricht eine minutenlange Verbindung ab, kommt das serverseitig
+als sauberes Dateiende an. Vorne sieht die Datei fehlerfrei aus, die Signatur
+stimmt, der Präsentationsteil ist da. Was fehlt, steht am **Ende** — und dort hat
+niemand hingesehen.
+
+Zwei Änderungen, die zusammengehören:
+
+**Der Upload läuft in Teilstücken** (4 MB, `?phase=part`), die am Ende zur Datei
+zusammengesetzt werden (`?phase=commit`). Jedes Stück ist eine eigene, kurze
+Anfrage und wird bei einem Aussetzer bis zu dreimal wiederholt. Produktiv sind
+das die Blöcke eines Azure-Block-Blobs (`stageBlock`/`commitBlockList`), lokal
+Teildateien. Nebeneffekt: keine Anfrage hält mehr als ein paar MB im Speicher,
+und kein Ingress-Limit für einzelne Anfragen kann greifen. Der Fortschritt steht
+auf der Schaltfläche — bei 42 MB will man sehen, dass etwas passiert.
+
+**Geprüft wird, was in der Ablage liegt** — nicht, was wir geschickt haben
+(`verifyTemplateArchive`):
+
+| Prüfung | fängt ab |
+|---|---|
+| Größe gegen die angekündigte Größe | abgebrochene Übertragung |
+| ZIP-Signatur am Anfang | Fremdformat, altes `.ppt` |
+| Schlussmarke (`PK\x05\x06`) am Ende | **abgeschnittene Datei — der eigentliche Fehler** |
+| `ppt/presentation.xml` im Verzeichnis | umbenannte .docx |
+
+Erst wenn das alles stimmt, wird die Vorlage hinterlegt; sonst wird die Datei
+gelöscht und die Meldung nennt die Zahlen („20,0 MB von 42,0 MB angekommen“).
+Die hinterlegte Größe steht sichtbar in der Oberfläche — sie lässt sich mit der
+Datei auf dem Rechner vergleichen, ohne sie herunterzuladen.
+
+Beim Download setzt `openMedia` zusätzlich `maxRetryRequests`: reißt der Strom
+mitten in einer 40-MB-Datei ab, holt das SDK den Rest nach, statt die Antwort
+still zu beenden.
+
 ## Konsequenzen
 
 - Vorlagen sind nur im Adminbereich sichtbar. Öffentlich ändert sich nichts.

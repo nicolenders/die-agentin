@@ -136,6 +136,33 @@ Beim Download setzt `openMedia` zusätzlich `maxRetryRequests`: reißt der Strom
 mitten in einer 40-MB-Datei ab, holt das SDK den Rest nach, statt die Antwort
 still zu beenden.
 
+### 8. Nachtrag: Der Foliensatz gehört zum Briefing, nicht zum Einsatz
+
+Ursprünglich hing die Sprachauswahl der Vorlage am Einsatz. Falsche Stelle: Die
+Folien gehören zum **Vortrag**, nicht zum Termin. Dasselbe Briefing wird
+mehrfach gehalten — die Folien jedes Mal neu zu hinterlegen, hieße dieselbe
+Datei mehrfach zu pflegen und beim Nachbessern zu vergessen, welche Fassung wo
+liegt.
+
+Deshalb:
+
+- **Am Briefing** liegt je Sprache ein Foliensatz (`TalkSlideDeck`, eindeutig je
+  Briefing und Sprache). Dort steht auch die Vorlage zum Herunterladen — der Weg
+  ist an einer Stelle vollständig: Vorlage laden, Folien bauen, Folien hinterlegen.
+- **Am Einsatz** wird nur noch angeboten, was am zugeordneten Briefing hinterlegt
+  ist, in der für diesen Einsatz gewählten Vortragssprache. Ohne Briefing steht
+  dort der Hinweis, dass zuerst eines zu wählen ist.
+- Die Vorlagen bleiben, wo sie sind (Medien → Vorlagen): Sie gelten für alle
+  Briefings, ein Foliensatz nur für eines.
+
+Der Upload-Weg ist derselbe wie bei den Vorlagen — Teilstücke, Prüfung der
+abgelegten Datei — und liegt jetzt einmal in `lib/media/chunked-upload.ts`
+statt zweimal in zwei Routen.
+
+Fehlt die Sprache, wird die andere angeboten und **gekennzeichnet**
+(`pickForLanguage`, unit-getestet). Ein stiller Rückfall wäre hier besonders
+teuer: Man stünde mit deutschen Folien vor englischem Publikum.
+
 ## Konsequenzen
 
 - Vorlagen sind nur im Adminbereich sichtbar. Öffentlich ändert sich nichts.

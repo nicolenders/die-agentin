@@ -10,6 +10,7 @@ import {
   MAX_SLIDE_TEMPLATE_MB,
   SLIDE_TEMPLATE_PART_BYTES,
   SLIDE_TEMPLATE_TOO_LARGE,
+  pickForLanguage,
   pickSlideTemplate,
   safeTemplateName,
   slideTemplateKeys,
@@ -198,5 +199,31 @@ describe("slideTemplateUrl", () => {
     expect(slideTemplateUrl({ locale: "de", path: "a1.pptx", fileName: "Vorlage DE.pptx", bytes: 1 })).toBe(
       "/media/a1.pptx?dl=Vorlage%20DE.pptx",
     );
+  });
+});
+
+describe("pickForLanguage", () => {
+  const deDeck = { locale: "de", fileName: "folien-de.pptx" };
+  const enDeck = { locale: "en", fileName: "slides-en.pptx" };
+
+  it("wählt den Foliensatz in der Vortragssprache des Einsatzes", () => {
+    expect(pickForLanguage([deDeck, enDeck], "en")).toEqual({ item: enDeck, matchesLanguage: true });
+    expect(pickForLanguage([deDeck, enDeck], "de")).toEqual({ item: deDeck, matchesLanguage: true });
+  });
+
+  it("kennzeichnet die Ersatzsprache, statt sie stillschweigend zu liefern", () => {
+    // Sonst stünde jemand mit deutschen Folien vor englischem Publikum.
+    expect(pickForLanguage([deDeck], "en")).toEqual({ item: deDeck, matchesLanguage: false });
+    expect(pickForLanguage([enDeck], "de")).toEqual({ item: enDeck, matchesLanguage: false });
+  });
+
+  it("kommt mit Lücken, Freitext und Leere zurecht", () => {
+    expect(pickForLanguage([null, undefined, enDeck], "English")).toEqual({ item: enDeck, matchesLanguage: true });
+    expect(pickForLanguage([], "de")).toBeNull();
+    expect(pickForLanguage([null], "de")).toBeNull();
+  });
+
+  it("fällt ohne erkennbare Sprache auf Deutsch zurück", () => {
+    expect(pickForLanguage([deDeck, enDeck], null)).toEqual({ item: deDeck, matchesLanguage: true });
   });
 });

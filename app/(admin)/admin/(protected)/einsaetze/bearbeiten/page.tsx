@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import MissionForm, { type MissionFormInitial, EMPTY_MATERIAL } from "@/components/admin/MissionForm";
 import { missionTalkLanguage } from "@/lib/mission-language";
-import { getSlideTemplates } from "@/lib/queries/settings";
 
 export const metadata = { title: "Einsatz bearbeiten · Zentrale" };
 
@@ -28,8 +27,6 @@ export default async function EinsatzBearbeitenPage({
   searchParams: Promise<{ id?: string }>;
 }) {
   const { id } = await searchParams;
-  // Fängt Fehler selbst ab: ohne Vorlagen bleibt das Formular vollständig nutzbar.
-  const slideTemplates = await getSlideTemplates();
 
   let existingPins: { lat: number; lon: number }[] = [];
   let talks: {
@@ -38,6 +35,7 @@ export default async function EinsatzBearbeitenPage({
     toolIds: string[];
     durationMin: number | null;
     archivedAt: string | null;
+    decks: { locale: string; fileName: string; bytes: number; blobPath: string }[];
   }[] = [];
   let categories: { id: string; name: string }[] = [];
   let allTools: { id: string; name: string }[] = [];
@@ -67,7 +65,7 @@ export default async function EinsatzBearbeitenPage({
   try {
     const [missions, talkRows, catRows, toolRows] = await Promise.all([
       db.mission.findMany({ select: { lat: true, lon: true } }),
-      db.talk.findMany({ include: { translations: true, tools: { select: { id: true } } } }),
+      db.talk.findMany({ include: { translations: true, tools: { select: { id: true } }, slideDecks: true } }),
       db.taxonomy.findMany({ where: { kind: "TALK" }, orderBy: { sortOrder: "asc" }, select: { id: true, nameDe: true } }),
       db.tool.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
     ]);
@@ -83,6 +81,13 @@ export default async function EinsatzBearbeitenPage({
       toolIds: t.tools.map((x) => x.id),
       durationMin: t.durationMin,
       archivedAt: t.archivedAt ? t.archivedAt.toISOString() : null,
+      // Der Foliensatz hängt am Briefing; der Einsatz bietet ihn nur an.
+      decks: t.slideDecks.map((d) => ({
+        locale: d.locale,
+        fileName: d.fileName,
+        bytes: d.bytes,
+        blobPath: d.blobPath,
+      })),
     }));
     categories = catRows.map((c) => ({ id: c.id, name: c.nameDe }));
     allTools = toolRows.map((t) => ({ id: t.id, name: t.name }));
@@ -154,7 +159,6 @@ export default async function EinsatzBearbeitenPage({
         talks={talks}
         categories={categories}
         allTools={allTools}
-        slideTemplates={slideTemplates}
         isEdit={Boolean(id)}
       />
     </>

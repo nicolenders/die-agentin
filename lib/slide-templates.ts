@@ -204,26 +204,45 @@ function includesBytes(buf: Uint8Array, signature: number[]): boolean {
   return includesAscii(buf, String.fromCharCode(...signature));
 }
 
+export interface LocalizedPick<T> {
+  item: T;
+  /** Falsch, wenn nur die Datei der anderen Sprache vorliegt. */
+  matchesLanguage: boolean;
+}
+
+/**
+ * Wählt aus sprachabhängigen Dateien die zur Vortragssprache passende. Fehlt
+ * sie, wird die andere angeboten — aber als solche gekennzeichnet, damit
+ * niemand versehentlich in der falschen Sprache anfängt oder die falsche
+ * Fassung mit auf die Bühne nimmt. Ein stiller Rückfall wäre schlechter.
+ *
+ * Gilt für die Vorlagen (Medien) wie für die Foliensätze (Briefing).
+ */
+export function pickForLanguage<T extends { locale: string }>(
+  items: (T | null | undefined)[],
+  language: string | null | undefined,
+): LocalizedPick<T> | null {
+  const wanted = toTalkLanguage(language) ?? "de";
+  const present = items.filter((x): x is T => Boolean(x));
+  const match = present.find((x) => toTalkLanguage(x.locale) === wanted);
+  if (match) return { item: match, matchesLanguage: true };
+  const other = present.find((x) => toTalkLanguage(x.locale) === (wanted === "de" ? "en" : "de"));
+  return other ? { item: other, matchesLanguage: false } : null;
+}
+
 export interface SlideTemplateChoice {
   template: SlideTemplate;
   /** Falsch, wenn nur die Vorlage der anderen Sprache hinterlegt ist. */
   matchesLanguage: boolean;
 }
 
-/**
- * Die Vorlage zur Vortragssprache eines Einsatzes. Fehlt sie, wird die der
- * anderen Sprache angeboten — aber als solche gekennzeichnet, damit niemand
- * versehentlich in der falschen Sprache anfängt.
- */
+/** Die Vorlage zur Vortragssprache. Siehe `pickForLanguage`. */
 export function pickSlideTemplate(
   set: SlideTemplateSet,
   language: string | null | undefined,
 ): SlideTemplateChoice | null {
-  const wanted = toTalkLanguage(language) ?? "de";
-  const match = set[wanted];
-  if (match) return { template: match, matchesLanguage: true };
-  const other = wanted === "de" ? set.en : set.de;
-  return other ? { template: other, matchesLanguage: false } : null;
+  const picked = pickForLanguage([set.de, set.en], language);
+  return picked ? { template: picked.item, matchesLanguage: picked.matchesLanguage } : null;
 }
 
 /**

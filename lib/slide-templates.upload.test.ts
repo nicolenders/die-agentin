@@ -30,13 +30,22 @@ vi.mock("@/lib/db", () => {
 });
 
 const ENDPOINT = "http://localhost:3000/api/admin/missions/slide-template";
+const LOCAL = path.join(process.cwd(), "public", "uploads");
 const stored: string[] = [];
+const uploads: string[] = [];
 
+// Nur die eigenen Spuren beseitigen — siehe Hinweis in talk-slides.upload.test.ts.
 afterAll(async () => {
-  for (const name of stored) {
-    await rm(path.join(process.cwd(), "public", "uploads", name), { force: true });
-  }
+  for (const name of stored) await rm(path.join(LOCAL, name), { force: true });
+  for (const id of uploads) await rm(path.join(LOCAL, ".parts", id), { recursive: true, force: true });
 });
+
+/** Upload-Kennung, die am Ende mit aufgeräumt wird. */
+function newUploadId(): string {
+  const id = randomUUID();
+  uploads.push(id);
+  return id;
+}
 
 const ascii = (text: string) => Buffer.from(text, "latin1");
 
@@ -97,7 +106,7 @@ describe("Foliensvorlage: Upload in Teilen, Prüfung, Download", () => {
   it("liefert die Datei Byte für Byte zurück", async () => {
     const { GET } = await import("@/app/media/[...path]/route");
     const file = fakePresentation(10 * 1024 * 1024);
-    const uploadId = randomUUID();
+    const uploadId = newUploadId();
 
     const parts = await uploadParts(file, uploadId);
     expect(parts).toBeGreaterThan(1); // wirklich mehrteilig
@@ -123,7 +132,7 @@ describe("Foliensvorlage: Upload in Teilen, Prüfung, Download", () => {
 
   it("lehnt eine abgebrochene Übertragung ab, statt sie zu hinterlegen", async () => {
     const file = fakePresentation(10 * 1024 * 1024);
-    const uploadId = randomUUID();
+    const uploadId = newUploadId();
 
     // Nur die Hälfte der Teile — der Rest ging unterwegs verloren.
     const total = await uploadParts(file, uploadId, 1);
@@ -138,7 +147,7 @@ describe("Foliensvorlage: Upload in Teilen, Prüfung, Download", () => {
   });
 
   it("weist eine fremde Datei ab", async () => {
-    const uploadId = randomUUID();
+    const uploadId = newUploadId();
     const { POST } = await import("@/app/api/admin/missions/slide-template/route");
     const pdf = Buffer.concat([ascii("%PDF-1.7"), Buffer.alloc(2048, 3)]);
     await POST(

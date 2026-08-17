@@ -80,7 +80,7 @@ export interface SaveMissionInput {
   photoAssetIds: string[];
   toolIds?: string[];
   material?: MissionMaterialInput;
-  intent: "draft" | "publish";
+  intent: "draft" | "publish" | "archive";
 }
 
 export interface SaveMissionResult {
@@ -118,7 +118,8 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
     return { ok: false, error: "Veranstaltungsname fehlt." };
   }
   const status = isOneOf(MISSION_STATUSES, input.status) ? input.status : "PLANNED";
-  const contentStatus = input.intent === "publish" ? "PUBLISHED" : "DRAFT";
+  const contentStatus =
+    input.intent === "publish" ? "PUBLISHED" : input.intent === "archive" ? "ARCHIVED" : "DRAFT";
   const startDate = new Date(`${input.startDate || "2026-01-01"}T00:00:00Z`);
   const endDate = input.endDate ? new Date(`${input.endDate}T00:00:00Z`) : null;
 

@@ -28,7 +28,7 @@ export default async function EinsatzBearbeitenPage({
   const { id } = await searchParams;
 
   let existingPins: { lat: number; lon: number }[] = [];
-  let talks: { id: string; name: string; toolIds: string[]; languages: string[] }[] = [];
+  let talks: { id: string; name: string; toolIds: string[]; languages: string[]; archivedAt: string | null }[] = [];
   let categories: { id: string; name: string }[] = [];
   let allTools: { id: string; name: string }[] = [];
   let initial: MissionFormInitial = {
@@ -67,6 +67,7 @@ export default async function EinsatzBearbeitenPage({
       toolIds: t.tools.map((x) => x.id),
       // Ein Briefing „gibt es" in einer Sprache, sobald dort ein Titel steht.
       languages: t.translations.filter((x) => x.title.trim().length > 0).map((x) => x.locale),
+      archivedAt: t.archivedAt ? t.archivedAt.toISOString() : null,
     }));
     categories = catRows.map((c) => ({ id: c.id, name: c.nameDe }));
     allTools = toolRows.map((t) => ({ id: t.id, name: t.name }));

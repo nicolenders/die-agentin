@@ -27,7 +27,8 @@ async function loadCatalog(locale: Locale): Promise<BriefingCategory[]> {
     orderBy: { sortOrder: "asc" },
     include: {
       talkMulti: {
-        where: { active: true },
+        // Archivierte Briefings verschwinden aus dem öffentlichen Katalog.
+        where: { active: true, archivedAt: null },
         include: {
           translations: true,
           deliveries: { select: { language: true } },
@@ -102,7 +103,7 @@ export interface BriefingListItem {
 // Briefings-Seite (kein Duplikat je Kategorie mehr).
 async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
   const talks = await db.talk.findMany({
-    where: { active: true },
+    where: { active: true, archivedAt: null },
     include: {
       translations: true,
       categories: { select: { nameDe: true, nameEn: true } },

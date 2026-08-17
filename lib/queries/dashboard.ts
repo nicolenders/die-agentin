@@ -1,33 +1,61 @@
 import { db } from "@/lib/db";
 
-export interface DashboardStats {
+// Kennzahlen der Einsatzzentrale. Je Inhaltsart dieselben drei Zahlen —
+// Entwurf, veröffentlicht, Archiv — damit auf einen Blick klar ist, wo etwas
+// liegen geblieben ist.
+//
+// Einsätze und Depeschen führen dafür einen Status (ContentStatus). Briefings
+// haben keinen: dort ist „veröffentlicht" gleich „auf der Website sichtbar",
+// „Entwurf" gleich „verborgen" und „Archiv" das Archivierungsdatum.
+
+export interface ContentCounts {
   drafts: number;
-  scheduled: number;
   published: number;
-  channelErrors: number;
-  /** true, wenn die (serverlose) DB nicht erreichbar war — Admin zeigt dann
-   *  einen „Datenbank wird geweckt"-Zustand statt eines Timeouts (SPEC §2.1). */
+  archived: number;
+}
+
+export interface DashboardStats {
+  missions: ContentCounts;
+  briefings: ContentCounts;
+  dispatches: ContentCounts;
+  /** true, wenn die (serverlose) DB nicht erreichbar war — die Zentrale zeigt
+   *  dann einen „Datenbank wird geweckt"-Zustand statt eines Timeouts (SPEC §2.1). */
   dbUnavailable: boolean;
 }
 
-const EMPTY: DashboardStats = {
-  drafts: 0,
-  scheduled: 0,
-  published: 0,
-  channelErrors: 0,
-  dbUnavailable: false,
-};
+const EMPTY: ContentCounts = { drafts: 0, published: 0, archived: 0 };
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    const [drafts, scheduled, published, channelErrors] = await Promise.all([
-      db.post.count({ where: { status: "DRAFT" } }),
-      db.post.count({ where: { status: "SCHEDULED" } }),
-      db.post.count({ where: { status: "PUBLISHED" } }),
-      db.channelTask.count({ where: { state: "FAILED" } }),
+    const [
+      missionDrafts,
+      missionPublished,
+      missionArchived,
+      briefingDrafts,
+      briefingPublished,
+      briefingArchived,
+      dispatchDrafts,
+      dispatchPublished,
+      dispatchArchived,
+    ] = await Promise.all([
+      db.mission.count({ where: { contentStatus: "DRAFT" } }),
+      db.mission.count({ where: { contentStatus: "PUBLISHED" } }),
+      db.mission.count({ where: { contentStatus: "ARCHIVED" } }),
+      db.talk.count({ where: { archivedAt: null, active: false } }),
+      db.talk.count({ where: { archivedAt: null, active: true } }),
+      db.talk.count({ where: { NOT: { archivedAt: null } } }),
+      db.dispatch.count({ where: { status: "DRAFT" } }),
+      db.dispatch.count({ where: { status: "PUBLISHED" } }),
+      db.dispatch.count({ where: { status: "ARCHIVED" } }),
     ]);
-    return { drafts, scheduled, published, channelErrors, dbUnavailable: false };
+
+    return {
+      missions: { drafts: missionDrafts, published: missionPublished, archived: missionArchived },
+      briefings: { drafts: briefingDrafts, published: briefingPublished, archived: briefingArchived },
+      dispatches: { drafts: dispatchDrafts, published: dispatchPublished, archived: dispatchArchived },
+      dbUnavailable: false,
+    };
   } catch {
-    return { ...EMPTY, dbUnavailable: true };
+    return { missions: EMPTY, briefings: EMPTY, dispatches: EMPTY, dbUnavailable: true };
   }
 }

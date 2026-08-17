@@ -1,120 +1,124 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/guard";
-import { getDashboardStats } from "@/lib/queries/dashboard";
+import { getDashboardStats, type ContentCounts } from "@/lib/queries/dashboard";
+import EntityIcon, { type EntityIconName } from "@/components/admin/EntityIcon";
 
 export const metadata = { title: "Einsatzzentrale · Zentrale" };
 
-// Dashboard / Einsatzzentrale. Liest Kennzahlen aus der DB (Admin toleriert
-// einen Kaltstart der serverlosen DB, SPEC §2.1). Reiche Kachel-Details der
-// Warteschlange und Kanäle folgen in M3/M7.
+// Kennzahlen je Inhaltsart. Jede Zahl ist ein Link in die passend gefilterte
+// Liste — die Zentrale zeigt nicht nur, wo etwas liegt, sondern bringt einen
+// auch hin.
+const OVERVIEW: { key: keyof Pick<Awaited<ReturnType<typeof getDashboardStats>>, "missions" | "briefings" | "dispatches">; label: string; icon: EntityIconName; list: string; filter: { drafts: string; published: string; archived: string } }[] = [
+  {
+    key: "missions",
+    label: "Einsätze",
+    icon: "mission",
+    list: "/admin/einsaetze",
+    filter: { drafts: "?status=DRAFT", published: "?status=PUBLISHED", archived: "?status=ARCHIVED" },
+  },
+  {
+    key: "briefings",
+    label: "Briefings",
+    icon: "briefing",
+    list: "/admin/briefings?tab=alle",
+    filter: { drafts: "&sichtbar=nein", published: "&sichtbar=ja", archived: "&sichtbar=archiv" },
+  },
+  {
+    key: "dispatches",
+    label: "Depeschen",
+    icon: "dispatch",
+    list: "/admin/depeschen",
+    filter: { drafts: "?status=DRAFT", published: "?status=PUBLISHED", archived: "?status=ARCHIVED" },
+  },
+];
+
+// Erfassen und Nachschlagen als Kacheln mit Symbol — Einsatz, Briefing und
+// Depesche sind schon an der Form zu unterscheiden.
+const CREATE: { href: string; label: string; icon: EntityIconName }[] = [
+  { href: "/admin/einsaetze/bearbeiten", label: "Einsatz", icon: "mission" },
+  { href: "/admin/briefings/bearbeiten", label: "Briefing", icon: "briefing" },
+  { href: "/admin/depeschen/bearbeiten", label: "Depesche", icon: "dispatch" },
+  { href: "/admin/publikationen/bearbeiten", label: "Publikation", icon: "publication" },
+  { href: "/admin/identitaeten/bearbeiten", label: "Identität", icon: "identity" },
+  { href: "/admin/ausbildung/bearbeiten", label: "Auszeichnung", icon: "award" },
+  { href: "/admin/medien?tab=hochladen", label: "Medien", icon: "media" },
+];
+
+const JUMP: { href: string; label: string; icon: EntityIconName }[] = [
+  { href: "/admin/redaktionsplan", label: "Redaktionsplan", icon: "plan" },
+  { href: "/admin/aufklaerung", label: "Radar", icon: "radar" },
+  { href: "/admin/statistik", label: "Auswertung", icon: "stats" },
+  { href: "/admin/lebenslauf", label: "Lebenslauf", icon: "resume" },
+  { href: "/admin/einstellungen?tab=kanaele", label: "Kanäle", icon: "settings" },
+];
+
+function CountCell({ href, value, label }: { href: string; value: number; label: string }) {
+  return (
+    <Link className={`count${value === 0 ? " zero" : ""}`} href={href}>
+      <b>{value}</b>
+      <span>{label}</span>
+    </Link>
+  );
+}
+
 export default async function DashboardPage() {
   const user = await getSessionUser();
   const stats = await getDashboardStats();
   const greetingName = user?.name?.split(" ")[0] ?? "Nicole";
+  const counts: Record<(typeof OVERVIEW)[number]["key"], ContentCounts> = {
+    missions: stats.missions,
+    briefings: stats.briefings,
+    dispatches: stats.dispatches,
+  };
 
   return (
-    <section>
-      <h1>Guten Tag, {greetingName}.</h1>
-      {stats.dbUnavailable ? (
-        <p className="st sched" style={{ display: "inline-block" }}>
-          Datenbank wird geweckt … einen Moment.
-        </p>
-      ) : (
-        <p className="muted">
-          {stats.drafts} Entwürfe, {stats.scheduled} eingeplant, {stats.published}{" "}
-          veröffentlicht.
-        </p>
-      )}
-
-      <div className="grid g4" style={{ margin: "22px 0 26px" }}>
-        <div className="card bracket stat">
-          <b>{stats.drafts}</b>
-          <span>Entwürfe</span>
-        </div>
-        <div className="card bracket stat">
-          <b>{stats.scheduled}</b>
-          <span>Eingeplant</span>
-        </div>
-        <div className="card bracket stat">
-          <b>{stats.published}</b>
-          <span>Veröffentlicht</span>
-        </div>
-        <div className="card bracket stat">
-          <b>{stats.channelErrors}</b>
-          <span>Kanal-Fehler</span>
-        </div>
+    <section className="hq">
+      <div className="hq-head">
+        <h1>Guten Tag, {greetingName}.</h1>
+        {stats.dbUnavailable ? (
+          <p className="st sched" style={{ display: "inline-block", margin: 0 }}>
+            Datenbank wird geweckt … einen Moment.
+          </p>
+        ) : null}
       </div>
 
-      {/* Alles, was zum Erfassen von Inhalten gebraucht wird — direkt griffbereit. */}
-      <p className="eyebrow" style={{ marginTop: 26 }}>Neuen Inhalt erfassen</p>
-      <div className="grid g3" style={{ marginTop: 12 }}>
-        {[
-          { href: "/admin/depeschen/bearbeiten", title: "Depesche", meta: "Kurzmeldung oder Fund — Link einfügen, Vorschau wird geholt" },
-          { href: "/admin/einsaetze/bearbeiten", title: "Einsatz", meta: "Vor Ort oder online — Ort, Datum und Briefing zuordnen" },
-          { href: "/admin/briefings/bearbeiten", title: "Briefing", meta: "Vortrag ins Repertoire aufnehmen" },
-          { href: "/admin/publikationen/bearbeiten", title: "Publikation", meta: "Buch, Artikel, Kurs oder Repository" },
-          { href: "/admin/identitaeten/bearbeiten", title: "Identität", meta: "Deckname mit Fokus und Werkzeugen" },
-          { href: "/admin/ausbildung/bearbeiten", title: "Auszeichnung / Zertifizierung", meta: "MVP, Zertifikat oder aktuelles Lernthema" },
-          { href: "/admin/medien", title: "Fotos", meta: "Bilder hochladen — Alt-Texte werden abgefragt" },
-        ].map((q) => (
-          <Link key={q.href + q.title} className="card bracket" href={q.href} style={{ color: "inherit" }}>
-            <p className="eyebrow">Neu anlegen</p>
-            <b>{q.title}</b>
-            <div className="meta">{q.meta}</div>
+      <div className="hq-overview">
+        {OVERVIEW.map((row) => {
+          const c = counts[row.key];
+          return (
+            <div className="card bracket hq-card" key={row.key}>
+              <Link className="hq-card-head" href={row.list}>
+                <EntityIcon name={row.icon} size={22} />
+                <b>{row.label}</b>
+              </Link>
+              <div className="hq-counts">
+                <CountCell href={`${row.list}${row.filter.drafts}`} value={c.drafts} label="Entwurf" />
+                <CountCell href={`${row.list}${row.filter.published}`} value={c.published} label="Veröffentlicht" />
+                <CountCell href={`${row.list}${row.filter.archived}`} value={c.archived} label="Archiv" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="eyebrow hq-label">Neu anlegen</p>
+      <div className="hq-tiles">
+        {CREATE.map((q) => (
+          <Link key={q.href} className="tile" href={q.href}>
+            <EntityIcon name={q.icon} size={22} />
+            <span>{q.label}</span>
           </Link>
         ))}
       </div>
 
-      <p className="eyebrow" style={{ marginTop: 26 }}>Überblick</p>
-      <div className="grid g3" style={{ marginTop: 12 }}>
-        <Link className="card bracket" href="/admin/redaktionsplan" style={{ color: "inherit" }}>
-          <b>Redaktionsplan</b>
-          <div className="meta">Was ist geplant, was ist eingetaktet</div>
-        </Link>
-        <Link className="card bracket" href="/admin/statistik" style={{ color: "inherit" }}>
-          <b>Auswertung</b>
-          <div className="meta">Seitenaufrufe und Besucher nach Zeitraum und Land</div>
-        </Link>
-        <Link className="card bracket" href="/admin/einstellungen?tab=kanaele" style={{ color: "inherit" }}>
-          <b>Kanäle</b>
-          <div className="meta">Social-Media-Profile und Teilen-Vorlagen</div>
-        </Link>
-      </div>
-
-      {/* Lebenslauf-Export: öffnet einen druckfertigen A4-Auszug in einem neuen
-          Tab (Browser → Drucken → Als PDF speichern). Auswahl nach Datenart und
-          Zeitraum; per GET direkt an die /cv-Seite. */}
-      <p className="eyebrow" style={{ marginTop: 26 }}>Lebenslauf exportieren</p>
-      <div className="card bracket" style={{ marginTop: 12, maxWidth: 620 }}>
-        <p className="meta" style={{ marginTop: 0 }}>
-          Erzeugt einen druckfertigen Lebenslauf im A4-Format (zum Ausdrucken oder als
-          PDF für eine Bewerbung). Öffnet in einem neuen Tab.
-        </p>
-        <form action="/de/cv" method="get" target="_blank">
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-            <label className="f" style={{ margin: 0 }}>
-              Datenart
-              <select className="f" name="art" defaultValue="alle">
-                <option value="alle">Alles</option>
-                <option value="publikationen">Nur Publikationen</option>
-                <option value="ausbildung">Nur Ausbildung & Auszeichnungen</option>
-              </select>
-            </label>
-            <label className="f" style={{ margin: 0 }}>
-              Von Jahr
-              <input className="f" name="von" type="number" placeholder="z. B. 2018" style={{ maxWidth: 130 }} />
-            </label>
-            <label className="f" style={{ margin: 0 }}>
-              Bis Jahr
-              <input className="f" name="bis" type="number" placeholder="z. B. 2026" style={{ maxWidth: 130 }} />
-            </label>
-            <button className="btn solid sm" type="submit">Lebenslauf öffnen</button>
-          </div>
-        </form>
-        <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
-          Leere Jahresfelder = kein Zeitfilter. Englische Fassung:{" "}
-          <a href="/en/cv" target="_blank" rel="noopener noreferrer">/en/cv</a>.
-        </p>
+      <p className="eyebrow hq-label">Direkt hin</p>
+      <div className="hq-tiles">
+        {JUMP.map((q) => (
+          <Link key={q.href} className="tile ghost" href={q.href}>
+            <EntityIcon name={q.icon} size={20} />
+            <span>{q.label}</span>
+          </Link>
+        ))}
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { identityDisplayName } from "@/lib/identities";
 import { formatDate } from "@/lib/format";
+import { talkArchiveState } from "@/lib/briefings/archive";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import RichTextField from "@/components/admin/editor/RichTextField";
@@ -20,6 +21,7 @@ import {
   createTalk,
   deleteTalk,
   toggleTalkVisibility,
+  toggleTalkArchive,
   reorderTalk,
 } from "./actions";
 
@@ -54,14 +56,15 @@ export default async function BriefingsAdminPage({
   const active = TABS.find((t) => t.id === tab)?.id ?? "alle";
   const term = (q ?? "").trim().toLowerCase();
   const categoryFilter = (kategorie ?? "").trim();
-  const visibilityFilter = sichtbar === "ja" || sichtbar === "nein" ? sichtbar : "";
+  const visibilityFilter =
+    sichtbar === "ja" || sichtbar === "nein" || sichtbar === "archiv" ? sichtbar : "";
   const isFiltered = term !== "" || categoryFilter !== "" || visibilityFilter !== "";
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
 
   let categories: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
   let audienceTags: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
-  let talks: { id: string; title: string; categoryIds: string[]; category: string; audience: string; level: string | null; durationMin: number | null; deliveries: number; active: boolean; share: { textDe: string; textEn: string } | null }[] = [];
+  let talks: { id: string; title: string; categoryIds: string[]; category: string; audience: string; level: string | null; durationMin: number | null; deliveries: number; active: boolean; archivedAt: Date | null; share: { textDe: string; textEn: string } | null }[] = [];
   let dbError = false;
   try {
     const [cats, auds, talkRows] = await Promise.all([
@@ -79,7 +82,7 @@ export default async function BriefingsAdminPage({
       // Briefings haben keine eigene öffentliche Detailseite → Link auf die
       // Briefings-Übersicht. Teilen nur für aktive Briefings mit Titel.
       const share =
-        t.active && de?.title
+        t.active && !t.archivedAt && de?.title
           ? {
               textDe: renderShareText(templates.briefing.de, { title, url: base + sharePublicPath("briefing", "de", null), identities: names }, "de"),
               textEn: renderShareText(templates.briefing.en, { title: en?.title ?? title, url: base + sharePublicPath("briefing", "en", null), identities: names }, "en"),
@@ -95,6 +98,7 @@ export default async function BriefingsAdminPage({
         durationMin: t.durationMin,
         deliveries: t._count.deliveries,
         active: t.active,
+        archivedAt: t.archivedAt,
         share,
       };
     });
@@ -107,8 +111,13 @@ export default async function BriefingsAdminPage({
   const visibleTalks = talks.filter((t) => {
     if (term && !t.title.toLowerCase().includes(term)) return false;
     if (categoryFilter && !t.categoryIds.includes(categoryFilter)) return false;
-    if (visibilityFilter === "ja" && !t.active) return false;
-    if (visibilityFilter === "nein" && t.active) return false;
+    const state = talkArchiveState(t);
+    if (visibilityFilter === "ja" && state !== "active") return false;
+    if (visibilityFilter === "nein" && state !== "hidden") return false;
+    if (visibilityFilter === "archiv" && state !== "archived") return false;
+    // Ohne ausdrücklichen Archiv-Filter bleibt das Archiv außen vor — sonst
+    // steht Abgelegtes zwischen dem, was noch gehalten wird.
+    if (visibilityFilter === "" && state === "archived") return false;
     return true;
   });
 
@@ -159,9 +168,10 @@ export default async function BriefingsAdminPage({
               <label className="f">
                 Auf Website
                 <select className="f" name="sichtbar" defaultValue={visibilityFilter} style={{ minWidth: 140 }}>
-                  <option value="">Alle</option>
+                  <option value="">Aktuelle (ohne Archiv)</option>
                   <option value="ja">Sichtbar</option>
                   <option value="nein">Verborgen</option>
+                  <option value="archiv">Archiv</option>
                 </select>
               </label>
               <button className="btn solid sm" type="submit">Filtern</button>
@@ -178,7 +188,7 @@ export default async function BriefingsAdminPage({
             ) : (
               <table style={{ marginTop: 12 }}>
                 <thead>
-                  <tr><th style={{ width: 60 }}>Reihenf.</th><th>Titel</th><th>Kategorie</th><th>Zielgruppe</th><th>Einsätze</th><th>Auf Website</th><th></th></tr>
+                  <tr><th style={{ width: 60 }}>Reihenf.</th><th>Titel</th><th>Kategorie</th><th>Zielgruppe</th><th>Einsätze</th><th>Zustand</th><th></th></tr>
                 </thead>
                 <tbody>
                   {visibleTalks.map((t) => {
@@ -201,13 +211,19 @@ export default async function BriefingsAdminPage({
                       <td className="meta">{t.category}</td>
                       <td className="meta">{t.audience}</td>
                       <td>{t.deliveries}</td>
-                      <td>
-                        <form action={toggleTalkVisibility} style={{ display: "inline" }}>
-                          <input type="hidden" name="id" value={t.id} />
-                          <button className="btn ghost sm" type="submit" title="Sichtbarkeit auf der Website umschalten">
-                            {t.active ? "Sichtbar ✓" : "Verborgen"}
-                          </button>
-                        </form>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        {t.archivedAt ? (
+                          <span className="st" title={`Archiviert am ${formatDate(t.archivedAt, "de")}`}>
+                            Archiv · {formatDate(t.archivedAt, "de")}
+                          </span>
+                        ) : (
+                          <form action={toggleTalkVisibility} style={{ display: "inline" }}>
+                            <input type="hidden" name="id" value={t.id} />
+                            <button className="btn ghost sm" type="submit" title="Sichtbarkeit auf der Website umschalten">
+                              {t.active ? "Sichtbar ✓" : "Verborgen"}
+                            </button>
+                          </form>
+                        )}
                       </td>
                       <td style={{ whiteSpace: "nowrap" }}>
                         {t.share ? (
@@ -216,6 +232,12 @@ export default async function BriefingsAdminPage({
                           </>
                         ) : null}
                         <Link className="btn ghost sm" href={`/admin/briefings/bearbeiten?id=${t.id}`}>Bearbeiten</Link>{" "}
+                        <form action={toggleTalkArchive} style={{ display: "inline" }}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <button className="btn ghost sm" type="submit">
+                            {t.archivedAt ? "Zurückholen" : "Archivieren"}
+                          </button>
+                        </form>{" "}
                         <form action={deleteTalk} style={{ display: "inline" }}>
                           <input type="hidden" name="id" value={t.id} />
                           <ConfirmButton confirmText={`Briefing „${t.title}“ wirklich löschen? Auch die Einsatz-Zählung geht verloren.`}>Löschen</ConfirmButton>

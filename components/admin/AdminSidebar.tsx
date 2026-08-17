@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BrandMark from "@/components/BrandMark";
+import EntityIcon from "@/components/admin/EntityIcon";
 import { adminNav } from "@/lib/admin-nav";
 
 // Seitliche Navigation der Redaktion. Client-Komponente wegen der Ableitung des
@@ -31,7 +32,7 @@ export default function AdminSidebar() {
           <span key={item.href}>
             {item.section ? <div className="sec">{item.section}</div> : null}
             <Link href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
-              <i aria-hidden="true">{item.icon}</i>
+              <EntityIcon name={item.icon} size={17} />
               {item.label}
             </Link>
           </span>

@@ -102,12 +102,14 @@
   color: var(--text);
   box-shadow: inset 2px 0 0 var(--violet-bright);
 }
-.aside nav a i {
-  font-family: var(--mono);
-  font-style: normal;
-  font-size: 10px;
+.aside nav a svg {
   color: var(--violet-bright);
-  width: 22px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.aside nav a:hover svg,
+.aside nav a[aria-current="page"] svg {
+  opacity: 1;
 }
 .aside .sec {
   font-family: var(--mono);
@@ -302,6 +304,163 @@
   font-size: 13px;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+// ---------------------------------------------------------------------------
+// Einsatzzentrale. Ziel: alles ohne Scrollen sichtbar. Deshalb eine
+// Höhenaufteilung statt gestapelter Blöcke — der Kennzahlenteil darf wachsen,
+// die Kachelreihen bleiben kompakt.
+// ---------------------------------------------------------------------------
+.hq {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  // Kopfleiste (60) + Innenabstand der Inhaltsfläche; der Rest gehört uns.
+  min-height: calc(100vh - 60px - 96px);
+}
+.hq-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.hq-head h1 {
+  margin: 0;
+  font-size: clamp(30px, 4.4vw, 54px);
+  line-height: 1.05;
+}
+.hq-label {
+  margin: 4px 0 0;
+}
+
+.hq-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+.hq-card {
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hq-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  text-decoration: none;
+}
+.hq-card-head svg {
+  color: var(--violet-bright);
+}
+.hq-card-head b {
+  font-family: var(--display);
+  letter-spacing: 0.09em;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+.hq-card-head:hover b {
+  color: var(--violet-text);
+}
+.hq-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+// Jede Zahl führt in die passend gefilterte Liste.
+.count {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 5px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+.count:hover {
+  border-color: var(--violet);
+  background: rgba(139, 92, 246, 0.1);
+}
+.count b {
+  display: block;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(92deg, var(--violet-bright), var(--magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.count span {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+// Eine Null ist eine Information, kein Alarm — sie tritt zurück.
+.count.zero b {
+  background: none;
+  -webkit-text-fill-color: #5c4e7c;
+  color: #5c4e7c;
+}
+
+// Kachel-Knöpfe (anlegen, springen).
+.hq-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+}
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: linear-gradient(160deg, rgba(139, 92, 246, 0.14), rgba(139, 92, 246, 0.03));
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13.5px;
+  transition:
+    border-color 0.14s ease,
+    transform 0.14s ease,
+    box-shadow 0.14s ease;
+}
+.tile svg {
+  color: var(--violet-bright);
+  flex-shrink: 0;
+}
+.tile:hover {
+  border-color: var(--violet-bright);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.18);
+}
+.tile:focus-visible {
+  outline: 2px solid var(--violet-bright);
+  outline-offset: 2px;
+}
+.tile.ghost {
+  background: none;
+  border-color: var(--line-soft);
+  color: var(--muted);
+  padding: 10px 13px;
+  font-size: 13px;
+}
+.tile.ghost:hover {
+  color: var(--text);
+  border-color: var(--violet);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile:hover {
+    transform: none;
+  }
 }
 
 // Kurzmeldungen oben rechts („Gespeichert."). Liegen über allem, nehmen keine

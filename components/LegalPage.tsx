@@ -3,6 +3,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getLegalDoc, type LegalKey } from "@/lib/queries/legal";
 import { formatDate } from "@/lib/format";
 import RichText from "@/components/content/RichText";
+import { isRichEmpty } from "@/lib/content/rich";
 
 const DEFAULT_TITLE: Record<LegalKey, { de: string; en: string }> = {
   IMPRINT: { de: "Impressum", en: "Imprint" },
@@ -23,11 +24,14 @@ export default async function LegalPage({
   if (!isLocale(locale)) notFound();
   const doc = await getLegalDoc(docKey, locale);
   const fallbackTitle = DEFAULT_TITLE[docKey][locale === "en" ? "en" : "de"];
+  // Ein Zeitstempel über einem leeren Text wirkt schlechter als gar keiner
+  // (Audit 5.3): ohne Inhalt greift der ehrliche Hinweis.
+  const hasBody = doc !== null && !isRichEmpty(doc.body);
 
   return (
     <section style={{ padding: "44px 0 90px", maxWidth: 760 }}>
       <h1 style={{ fontSize: "clamp(28px,4vw,44px)" }}>{doc?.title ?? fallbackTitle}</h1>
-      {doc ? (
+      {hasBody ? (
         <>
           <p className="meta">
             {locale === "de" ? "Zuletzt aktualisiert" : "Last updated"} {formatDate(doc.updatedAt, locale)}

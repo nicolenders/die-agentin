@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { readMedia } from "@/lib/media/storage";
+import { contentDisposition } from "@/lib/media/url";
+import { SLIDE_TEMPLATE_MIME } from "@/lib/slide-templates";
 
 export const runtime = "nodejs";
 
@@ -17,6 +19,8 @@ const CONTENT_TYPES: Record<string, string> = {
   gif: "image/gif",
   svg: "image/svg+xml",
   pdf: "application/pdf",
+  pptx: SLIDE_TEMPLATE_MIME.pptx,
+  potx: SLIDE_TEMPLATE_MIME.potx,
 };
 
 function contentType(name: string): string {
@@ -25,7 +29,7 @@ function contentType(name: string): string {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
@@ -40,10 +44,15 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
+  // `?dl=<Dateiname>` liefert die Datei als Download mit sprechendem Namen
+  // (Foliensvorlagen, Folien-PDFs). Ohne den Parameter bleibt alles wie bisher.
+  const download = new URL(request.url).searchParams.get("dl");
+
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": contentType(name),
       "Cache-Control": "public, max-age=31536000, immutable",
+      ...(download ? { "Content-Disposition": contentDisposition(download) } : {}),
     },
   });
 }

@@ -7,7 +7,9 @@ import MediaUpload from "@/components/admin/MediaUpload";
 import DocumentUpload from "@/components/admin/DocumentUpload";
 import AssetImage from "@/components/media/AssetImage";
 import MediaLibraryTable from "@/components/admin/MediaLibraryTable";
-import { updateAsset, deleteAsset, updateDocument, deleteDocument } from "./actions";
+import SlideTemplateManager from "@/components/admin/SlideTemplateManager";
+import { getSlideTemplates } from "@/lib/queries/settings";
+import { updateAsset, deleteAsset, updateDocument, deleteDocument, removeSlideTemplate } from "./actions";
 
 export const metadata = { title: "Medien · Zentrale" };
 
@@ -17,6 +19,7 @@ export const metadata = { title: "Medien · Zentrale" };
 const TABS = [
   { id: "bilder", label: "Bilder" },
   { id: "praesentationen", label: "Präsentationen" },
+  { id: "vorlagen", label: "Vorlagen" },
   { id: "hochladen", label: "Hochladen" },
 ] as const;
 
@@ -42,13 +45,16 @@ export default async function MedienPage({
   } catch {
     dbError = true;
   }
+  // Fehlertolerant (fängt selbst ab) — die Vorlagen sollen sichtbar bleiben,
+  // auch wenn die Bildliste gerade nicht geladen werden konnte.
+  const slideTemplates = await getSlideTemplates();
 
   return (
     <section>
       <h1>Medien</h1>
       <p className="muted">
-        Bilder und Präsentationen an einem Ort. Alt-Texte für Bilder sind Pflicht (außer
-        dekorativ). Klick auf ein Vorschaubild zeigt es groß.
+        Bilder, Präsentationen und Foliensvorlagen an einem Ort. Alt-Texte für Bilder sind
+        Pflicht (außer dekorativ). Klick auf ein Vorschaubild zeigt es groß.
       </p>
       <Flash ok={ok} err={err} />
 
@@ -188,6 +194,18 @@ export default async function MedienPage({
               </table>
             </div>
           )
+        ) : null}
+
+        {active === "vorlagen" ? (
+          <>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Foliensvorlagen für Einsätze: je eine PowerPoint-Datei auf Deutsch und auf
+              Englisch. Beim Bearbeiten eines Einsatzes steht die Vorlage in der gewählten
+              Vortragssprache zum Download bereit — die fertigen Folien lädst du dort als PDF
+              wieder hoch.
+            </p>
+            <SlideTemplateManager templates={slideTemplates} onRemove={removeSlideTemplate} />
+          </>
         ) : null}
 
         {active === "hochladen" ? (

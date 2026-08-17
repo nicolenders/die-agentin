@@ -9,6 +9,12 @@ import RichTextField from "@/components/admin/editor/RichTextField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { assetUrl } from "@/lib/media/url";
 import { showToast } from "@/lib/admin/toast";
+import {
+  EMPTY_SLIDE_TEMPLATES,
+  pickSlideTemplate,
+  slideTemplateUrl,
+  type SlideTemplateSet,
+} from "@/lib/slide-templates";
 import { isSelectableForMission, selectableTalks } from "@/lib/briefings/archive";
 import {
   saveMission,
@@ -74,12 +80,15 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Abgesagt",
 };
 
+const LANGUAGE_LABEL: Record<string, string> = { de: "Deutsch", en: "Englisch" };
+
 export default function MissionForm({
   initial,
   existingPins,
   talks,
   categories = [],
   allTools = [],
+  slideTemplates = EMPTY_SLIDE_TEMPLATES,
   isEdit = false,
 }: {
   initial: MissionFormInitial;
@@ -96,6 +105,8 @@ export default function MissionForm({
   }[];
   categories?: { id: string; name: string }[];
   allTools?: { id: string; name: string }[];
+  /** Hinterlegte PowerPoint-Vorlagen je Sprache (Medien → Vorlagen). */
+  slideTemplates?: SlideTemplateSet;
   isEdit?: boolean;
 }) {
   const router = useRouter();
@@ -178,6 +189,10 @@ export default function MissionForm({
   const hiddenByArchive = talksForLanguage.filter(
     (t) => t.id !== talkId && !isSelectableForMission(t, startDate || null),
   ).length;
+
+  // Die Foliensvorlage folgt der Vortragssprache: wird oben auf Englisch
+  // umgestellt, steht hier sofort die englische Vorlage.
+  const template = pickSlideTemplate(slideTemplates, language);
 
   /** Online umschalten: Ort in die Antarktis setzen bzw. Eingaben freigeben. */
   function toggleOnline(next: boolean) {
@@ -674,6 +689,34 @@ export default function MissionForm({
           <label className="f">Feedback-Quelle
             <input className="f" value={material.feedbackSource} onChange={(e) => setMat({ feedbackSource: e.target.value })} placeholder="Sessionize" />
           </label>
+        </div>
+
+        <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
+          <p className="eyebrow" style={{ marginTop: 0 }}>Foliensvorlage ({LANGUAGE_LABEL[language] ?? "Deutsch"})</p>
+          {template ? (
+            <>
+              <p className="meta" style={{ marginTop: 0 }}>
+                {template.matchesLanguage
+                  ? "Vorlage zur gewählten Vortragssprache. Damit anfangen, fertige Folien unten als PDF hochladen."
+                  : `Für ${LANGUAGE_LABEL[language] ?? "diese Sprache"} ist noch keine Vorlage hinterlegt — hier steht die ${LANGUAGE_LABEL[template.template.locale]}-Fassung.`}
+              </p>
+              <a
+                className="btn ghost sm"
+                href={slideTemplateUrl(template.template)}
+                download={template.template.fileName}
+              >
+                ⬇ {template.template.fileName}
+              </a>
+            </>
+          ) : (
+            <p className="meta" style={{ marginTop: 0 }}>
+              Noch keine Vorlage hinterlegt.{" "}
+              <a href="/admin/medien?tab=vorlagen" target="_blank" rel="noopener noreferrer">
+                Unter Medien → Vorlagen
+              </a>{" "}
+              legst du je eine PowerPoint-Datei für Deutsch und Englisch ab.
+            </p>
+          )}
         </div>
 
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>

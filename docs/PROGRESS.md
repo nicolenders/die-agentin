@@ -319,6 +319,23 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 
 ---
 
+## Nachträge (nach den 14 Phasen)
+
+**Foliensvorlagen für Einsätze** (ADR `docs/decisions/0013-foliensvorlagen.md`)
+- Je eine PowerPoint-Vorlage DE und EN, gepflegt unter **Medien → Vorlagen**
+  (`/admin/medien?tab=vorlagen`). Ablage als `SiteSetting`
+  (`slideTemplate.<locale>.path` / `.fileName`) — keine Migration.
+- Upload über `/api/admin/missions/slide-template` (Admin, Same-Origin,
+  rate-limitiert, Typprüfung über den Inhalt: ZIP + `ppt/presentation.xml`,
+  altes `.ppt` mit eigener Meldung, max. 20 MB).
+- Im Einsatzformular steht die Vorlage **zur gewählten Vortragssprache** direkt
+  über dem vorhandenen PDF-Upload: Vorlage laden → Folien bauen → fertige Folien
+  als PDF hochladen. Fehlt die Vorlage der Sprache, wird die andere angeboten
+  und als solche gekennzeichnet; fehlt beides, führt der Hinweis nach
+  Medien → Vorlagen.
+- `/media/…?dl=<Dateiname>` setzt `Content-Disposition`, damit der Download
+  nicht als UUID landet (`lib/media/url.ts`, unit-getestet).
+
 ## 14.5 — Abschlussliste (Stand dieser Sitzung)
 
 **`TODO(nicole)`-Marker (grep):**

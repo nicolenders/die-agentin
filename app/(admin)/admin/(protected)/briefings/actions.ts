@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
 import { serializeRichValue } from "@/lib/content/rich";
+import { planTalkMerge } from "@/lib/briefings/merge";
 import { isLocale } from "@/lib/i18n/config";
 
 // Verwaltung des Vortragsrepertoires (SPEC §6/M6). Kategorien und Briefings sind
@@ -391,6 +392,130 @@ export async function reorderTalk(formData: FormData): Promise<void> {
   }
   invalidate();
   redirect(`${LIST}?ok=reordered`);
+}
+
+/**
+ * Zwei Briefings zusammenführen (Audit 4.2 und 4.3). Die Quelle gibt Einsätze,
+ * fehlende Sprachfassungen und Verknüpfungen ans Ziel ab und wird archiviert,
+ * nicht gelöscht — die Historie bleibt wahr. Regeln in `lib/briefings/merge.ts`.
+ */
+export async function mergeTalks(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const sourceId = str(formData, "sourceId");
+  const targetId = str(formData, "targetId");
+  if (!sourceId || !targetId) redirect(`${LIST}?err=missing-fields`);
+  if (sourceId === targetId) redirect(`${LIST}?err=merge-self`);
+
+  const select = {
+    id: true,
+    translations: { select: { locale: true, title: true, abstract: true } },
+    categories: { select: { id: true } },
+    audiences: { select: { id: true } },
+    identities: { select: { id: true } },
+    tools: { select: { id: true } },
+    deliveries: { select: { id: true } },
+  } as const;
+
+  let failed = false;
+  try {
+    const [sourceRow, targetRow] = await Promise.all([
+      db.talk.findUnique({ where: { id: sourceId }, select }),
+      db.talk.findUnique({ where: { id: targetId }, select }),
+    ]);
+    if (!sourceRow || !targetRow) redirect(`${LIST}?err=not-found`);
+
+    const toMerge = (row: NonNullable<typeof sourceRow>) => ({
+      id: row.id,
+      translations: row.translations.map((t) => ({
+        locale: t.locale,
+        title: t.title,
+        abstract: t.abstract,
+      })),
+      categoryIds: row.categories.map((c) => c.id),
+      audienceIds: row.audiences.map((a) => a.id),
+      identityIds: row.identities.map((i) => i.id),
+      toolIds: row.tools.map((t) => t.id),
+      deliveryIds: row.deliveries.map((d) => d.id),
+    });
+
+    const plan = planTalkMerge(toMerge(sourceRow), toMerge(targetRow));
+
+    await db.$transaction([
+      db.talkDelivery.updateMany({
+        where: { id: { in: plan.moveDeliveryIds } },
+        data: { talkId: plan.targetId },
+      }),
+      ...plan.addTranslations.map((t) =>
+        db.talkTranslation.create({
+          data: {
+            talkId: plan.targetId,
+            locale: t.locale,
+            title: t.title,
+            abstract: t.abstract,
+          },
+        }),
+      ),
+      db.talk.update({
+        where: { id: plan.targetId },
+        data: {
+          categories: { set: plan.categoryIds.map((id) => ({ id })) },
+          audiences: { set: plan.audienceIds.map((id) => ({ id })) },
+          identities: { set: plan.identityIds.map((id) => ({ id })) },
+          tools: { set: plan.toolIds.map((id) => ({ id })) },
+        },
+      }),
+      db.talk.update({
+        where: { id: plan.sourceId },
+        data: { active: false, archivedAt: startOfUtcDay(new Date()) },
+      }),
+    ]);
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=merge-failed`);
+  invalidate();
+  redirect(`${LIST}?tab=alle&ok=merged`);
+}
+
+/**
+ * Kategorie in eine andere überführen (Audit 4.5). Alle Briefings der Quelle
+ * bekommen die Zielkategorie, danach wird die Quelle gelöscht. Ohne das lässt
+ * sich eine belegte Kategorie nicht auflösen — Löschen ist bewusst gesperrt,
+ * solange Briefings daran hängen.
+ */
+export async function mergeTalkCategory(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const sourceId = str(formData, "sourceId");
+  const targetId = str(formData, "targetId");
+  if (!sourceId || !targetId) redirect(`${LIST}?err=missing-fields`);
+  if (sourceId === targetId) redirect(`${LIST}?err=merge-self`);
+
+  let failed = false;
+  try {
+    const talks = await db.talk.findMany({
+      where: { categories: { some: { id: sourceId } } },
+      select: { id: true, categoryId: true },
+    });
+    await db.$transaction([
+      ...talks.map((t) =>
+        db.talk.update({
+          where: { id: t.id },
+          data: {
+            categories: { disconnect: { id: sourceId }, connect: { id: targetId } },
+            // `categoryId` ist die einwertige Altspalte; sie darf nicht auf
+            // eine gelöschte Kategorie zeigen.
+            ...(t.categoryId === sourceId ? { categoryId: targetId } : {}),
+          },
+        }),
+      ),
+      db.taxonomy.delete({ where: { id: sourceId } }),
+    ]);
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${LIST}?err=merge-failed`);
+  invalidate();
+  redirect(`${LIST}?tab=kategorien&ok=merged`);
 }
 
 export async function deleteTalk(formData: FormData): Promise<void> {

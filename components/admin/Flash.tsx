@@ -24,6 +24,7 @@ export const FLASH_MESSAGES: Record<string, string> = {
   archived: "Ins Archiv gelegt. Bei neuen Einsätzen ab heute nicht mehr wählbar.",
   unarchived: "Aus dem Archiv geholt.",
   uploaded: "Hochgeladen.",
+  merged: "Zusammengeführt. Einsätze, Sprachfassungen und Verknüpfungen sind übernommen.",
   "has-links": "Identität hat verknüpfte Einträge: erst umhängen oder zurückziehen statt löschen.",
   "cannot-publish": "Nicht veröffentlichbar: Rolle (DE) und gültige Akzentfarbe sind Pflicht.",
   "missing-role": "Rolle (DE) ist Pflicht. Nichts wurde gespeichert.",
@@ -36,6 +37,8 @@ export const FLASH_MESSAGES: Record<string, string> = {
   "asset-in-use": "Bild wird noch verwendet: erst aus Beitrag/Einsatz entfernen.",
   "document-in-use": "Datei ist noch einem Einsatz zugeordnet: dort erst entfernen.",
   "audience-in-use": "Zielgruppe ist noch zugeordnet: erst umhängen oder Briefings ändern.",
+  "merge-self": "Quelle und Ziel sind dasselbe. Nichts wurde geändert.",
+  "merge-failed": "Zusammenführen fehlgeschlagen. Nichts wurde geändert.",
   failed: "Speichern fehlgeschlagen. Bitte erneut versuchen.",
 };
 

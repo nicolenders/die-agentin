@@ -16,6 +16,13 @@ Azure-DevOps-Projekt (beides kostenlos anlegbar).
 > Nichts davon wurde in dieser Umsetzung real ausgeführt (kein Azure-Zugang).
 > Prüfe den Bicep-Plan vor dem ersten Deployment mit `what-if` (Schritt 6).
 
+> **Was tatsächlich läuft:** Das produktive Deployment erfolgt über GitHub
+> Actions, nicht über die Pipeline in diesem Dokument — siehe
+> `.github/workflows/nicolenders-prod-web-AutoDeployTrigger-*.yml`. Der
+> Workflow baut das Image, rollt es auf die Container App aus und setzt die
+> Umgebungsvariablen bei jedem Push auf `main` neu. Diese Anleitung beschreibt
+> den Aufbau der Infrastruktur; die laufende Konfiguration steht im Workflow.
+
 ---
 
 ## Überblick: was passiert
@@ -182,23 +189,36 @@ az containerapp hostname add   -n nicolenders-prod-web -g nicolenders-rg --hostn
 az containerapp hostname bind  -n nicolenders-prod-web -g nicolenders-rg \
   --hostname www.deine-domain.de --environment nicolenders-prod-env --validation-method CNAME
 ```
-Danach in der Variablengruppe **beide** Variablen setzen und die Pipeline erneut
-starten:
+Danach **beide** Werte umstellen und neu deployen.
+
+**Über GitHub Actions (der laufende Weg):** Repo → Settings → Secrets and
+variables → Actions → Reiter **Variables**:
 
 | Variable | Wert | Wirkung |
 |---|---|---|
-| `siteUrl` | `https://deine-domain.de` | Feeds, Sitemap, OAuth-Redirects |
-| `publicSiteHost` | `deine-domain.de` (ohne Schema) | canonical, hreflang, og:image — und die noindex-Entscheidung |
+| `SITE_URL` | `https://deine-domain.de` | Feeds, Sitemap, `AUTH_URL` |
+| `PUBLIC_SITE_HOST` | `deine-domain.de` (ohne Schema) | canonical, hreflang, og:image — und die noindex-Entscheidung |
 
-**Reihenfolge beachten:** `publicSiteHost` erst setzen, wenn die Domain wirklich
-gebunden ist. `proxy.ts` schickt jeden anderen Host mit
+Danach den Workflow „Trigger auto deployment for nicolenders-prod-web" starten
+(Actions → Run workflow) oder auf `main` pushen.
+
+**Über die Azure-DevOps-Pipeline:** dieselben Werte als `siteUrl` und
+`publicSiteHost` in der Variablengruppe `nicolenders`.
+
+**Reihenfolge beachten:** den kanonischen Host erst setzen, wenn die Domain
+wirklich gebunden ist. `proxy.ts` schickt jeden anderen Host mit
 `X-Robots-Tag: noindex, nofollow` weg — steht dort eine Domain, die noch nicht
 auf die Container App zeigt, ist gar nichts mehr indexierbar.
 
-Solange `publicSiteHost` leer ist, leitet die App den kanonischen Host aus
-`siteUrl` ab. Das funktioniert, macht aber die Container-App-URL zum
-kanonischen Host, solange `siteUrl` darauf zeigt — dann stehen
-`azurecontainerapps.io`-Adressen in `canonical`, `hreflang` und `og:image`.
+Solange der kanonische Host leer ist, leitet die App ihn aus der Site-URL ab.
+Das funktioniert, macht aber die Container-App-URL zum kanonischen Host,
+solange die Site-URL darauf zeigt — dann stehen `azurecontainerapps.io`-Adressen
+in `canonical`, `hreflang` und `og:image`.
+
+**Nicht vergessen:** `AUTH_URL` wandert mit der Site-URL mit. Die neue
+Redirect-URI (`https://deine-domain.de/api/auth/callback/microsoft-entra-id`)
+muss in der Entra-App-Registrierung hinterlegt sein, sonst schlägt die
+Anmeldung nach dem Umzug fehl.
 
 ## Rollback
 

@@ -54,9 +54,21 @@ jobs:
       # values are stored as Container App secrets; DATABASE_URL and other
       # infrastructure-managed variables are preserved (--set-env-vars only
       # touches the keys listed here).
+      # SITE_URL und PUBLIC_SITE_HOST kommen aus Repository-Variablen
+      # (Settings → Secrets and variables → Actions → Variables), damit der
+      # Domain-Umzug eine Konfigurationsänderung bleibt und kein Commit.
+      # Ohne gesetzte Variablen greifen die bisherigen Werte.
+      #
+      # PUBLIC_SITE_HOST ist der kanonische Hostname OHNE Schema und steuert
+      # canonical, hreflang, og:image (lib/site.ts) sowie die noindex-
+      # Entscheidung in proxy.ts. Leer = Host wird aus NEXT_PUBLIC_SITE_URL
+      # abgeleitet. Erst setzen, wenn die Domain auf der Container App
+      # gebunden ist — sonst bekommt die einzige erreichbare Adresse ein
+      # noindex.
       - name: Apply application configuration
         env:
-          SITE_URL: https://nicolenders-prod-web.wittybush-b6a6f63e.westeurope.azurecontainerapps.io
+          SITE_URL: ${{ vars.SITE_URL || 'https://nicolenders-prod-web.wittybush-b6a6f63e.westeurope.azurecontainerapps.io' }}
+          PUBLIC_SITE_HOST: ${{ vars.PUBLIC_SITE_HOST }}
         run: |
           az containerapp secret set \
             --name nicolenders-prod-web \
@@ -71,6 +83,7 @@ jobs:
             --resource-group nicolenders-rg \
             --set-env-vars \
               "NEXT_PUBLIC_SITE_URL=$SITE_URL" \
+              "PUBLIC_SITE_HOST=$PUBLIC_SITE_HOST" \
               "AUTH_URL=$SITE_URL" \
               "AUTH_SECRET=secretref:auth-secret" \
               "AUTH_MICROSOFT_ENTRA_ID_ID=${{ secrets.ENTRA_CLIENT_ID }}" \

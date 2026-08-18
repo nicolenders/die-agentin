@@ -73,6 +73,7 @@ export default async function HQPage({
               sub={locale === "de" ? "Hero-Bild" : "Hero image"}
               ratio="4 / 5"
               ai={hero.heroImage?.ai ?? false}
+              locale={locale}
             />
           </div>
           <div>

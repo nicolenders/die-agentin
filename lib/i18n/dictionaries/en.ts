@@ -59,9 +59,9 @@ const en: Dictionary = {
     openEventSite: "Event website",
     emptyTitle: "Nothing here yet",
     loading: "Loading …",
-    aiGenerated: "AI-generated",
+    aiGenerated: "AI generated",
     aiGeneratedShort: "AI",
-    aiGeneratedImage: "AI-generated image",
+    aiGeneratedImage: "AI generated image",
   },
   langNotice: {
     // „bisher" fehlte hier und änderte damit die Aussage (Audit 2.5).

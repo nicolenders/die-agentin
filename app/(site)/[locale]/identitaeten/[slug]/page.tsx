@@ -119,13 +119,13 @@ export default async function IdentityDetailPage({
             <span className={styles.imageFrame}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={i.portraitUrl} alt={i.portraitAlt} />
-              {i.portraitAi ? <AiBadge /> : null}
+              {i.portraitAi ? <AiBadge locale={locale} /> : null}
             </span>
           ) : i.envelopeUrl ? (
             <span className={styles.imageFrame}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={i.envelopeUrl} alt={i.envelopeAlt} />
-              {i.envelopeAi ? <AiBadge /> : null}
+              {i.envelopeAi ? <AiBadge locale={locale} /> : null}
             </span>
           ) : (
             <div style={{ position: "absolute", inset: 0, background: i.color, opacity: 0.25 }} />
@@ -153,7 +153,7 @@ export default async function IdentityDetailPage({
             <span className={styles.imageFrame}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={i.envelopeUrl} alt={i.envelopeAlt} />
-              {i.envelopeAi ? <AiBadge /> : null}
+              {i.envelopeAi ? <AiBadge locale={locale} /> : null}
             </span>
           </div>
           <div className={styles.page}>

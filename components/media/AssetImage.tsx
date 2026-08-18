@@ -69,7 +69,12 @@ export default function AssetImage({
               <figure className="lightbox-figure" onClick={(e) => e.stopPropagation()}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={src} alt={alt} />
-                {ai ? <span className="ai-badge">KI-generiert</span> : null}
+                {/* Derselbe Hinweis wie am Bild selbst, in derselben Sprache. */}
+                {ai ? (
+                  <span className="ai-badge" aria-label={aiTitle}>
+                    {aiLabel}
+                  </span>
+                ) : null}
                 {alt ? <figcaption>{alt}</figcaption> : null}
               </figure>
             </div>,

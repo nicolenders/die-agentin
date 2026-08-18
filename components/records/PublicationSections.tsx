@@ -92,6 +92,7 @@ export default function PublicationSections({
                     sub={p.type === "COURSE" ? (isDe ? "Kurs" : "Course") : isDe ? "Buchcover" : "Book cover"}
                     ratio={ratio}
                     ai={p.coverAi}
+                    locale={locale}
                   />
                 </div>
               ) : null}
@@ -141,6 +142,7 @@ export default function PublicationSections({
                 sub={isDe ? "Buchcover" : "Book cover"}
                 ratio="2 / 3"
                 ai={b.coverAi}
+                locale={locale}
               />
               <div className="pub-body">
                 <div className="pub-tags">
@@ -201,6 +203,7 @@ export default function PublicationSections({
                   sub={c.publisher ?? "LinkedIn Learning"}
                   ratio="16 / 9"
                   ai={c.coverAi}
+                  locale={locale}
                 />
                 <div className="pub-body">
                   <div className="pub-tags">

@@ -9,8 +9,14 @@ import { getDictionarySync } from "@/lib/i18n";
  */
 export function aiImageLabels(locale: string): {
   aiGenerated: string;
+  /** Kurzform („KI"/„AI") für Vorschaubilder, auf denen der volle Text nicht lesbar ist. */
+  aiGeneratedShort: string;
   aiGeneratedImage: string;
 } {
   const t = getDictionarySync(isLocale(locale) ? locale : defaultLocale).common;
-  return { aiGenerated: t.aiGenerated, aiGeneratedImage: t.aiGeneratedImage };
+  return {
+    aiGenerated: t.aiGenerated,
+    aiGeneratedShort: t.aiGeneratedShort,
+    aiGeneratedImage: t.aiGeneratedImage,
+  };
 }

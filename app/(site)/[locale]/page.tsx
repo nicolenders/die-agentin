@@ -262,7 +262,7 @@ export default async function HQPage({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={d.hero.url} alt={d.hero.alt} loading="lazy" />
                     {d.hero.ai ? (
-                      <span className="ai-badge compact" aria-label={aiLabels.aiGeneratedImage}>
+                      <span className="ai-badge" aria-label={aiLabels.aiGeneratedImage}>
                         {aiLabels.aiGenerated}
                       </span>
                     ) : null}

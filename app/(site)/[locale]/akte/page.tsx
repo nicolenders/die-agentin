@@ -86,18 +86,20 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
           der Kontakt. Beides beantwortet die ersten Fragen eines Veranstalters
           („wer ist das?", „wie erreiche ich sie?") und passt in eine Zeile.
           Ohne gepflegtes Pressefoto nimmt die rechte Spalte die volle Breite. */}
-      <div className={portrait ? "grid g2" : ""} style={{ marginTop: 24, alignItems: "start" }}>
+      {/* Ohne `alignItems: "start"`: die Spalten sind gleich hoch, das Pressefoto
+          beginnt also bündig mit „Fakten" und endet bündig mit „Kontakt". */}
+      <div className={portrait ? "grid g2" : ""} style={{ marginTop: 24 }}>
         {portrait ? (
-          <div className="card bracket" style={{ padding: 24 }}>
+          <div className="card bracket press-card" style={{ padding: 24 }}>
             <p className="eyebrow" style={{ marginTop: 0 }}>{dict.briefing.pressPhoto}</p>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Pressefoto
-                wird zum Herunterladen angeboten, nicht optimiert ausgeliefert. */}
-            <img
-              src={portrait.url}
-              alt={portrait.alt}
-              width={180}
-              style={{ maxWidth: 180, height: "auto", borderRadius: "var(--r)" }}
-            />
+            {/* Das Bild sitzt in der freien Höhe zwischen Überschrift und
+                Download-Knopf und bleibt dabei in seiner Größe — es wächst nicht
+                über die Nachbarspalte hinaus. */}
+            <span className="press-photo">
+              {/* eslint-disable-next-line @next/next/no-img-element -- Pressefoto
+                  wird zum Herunterladen angeboten, nicht optimiert ausgeliefert. */}
+              <img src={portrait.url} alt={portrait.alt} width={180} />
+            </span>
             <p style={{ marginTop: 14, marginBottom: 0 }}>
               <a className="btn" href={portrait.url} download>
                 {dict.briefing.pressPhotoDownload}

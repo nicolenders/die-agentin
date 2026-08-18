@@ -18,6 +18,7 @@ export default function AssetImage({
   imgStyle,
   loading = "lazy",
   zoom = true,
+  compact = false,
   aiLabel = "KI-generiert",
   aiTitle = "KI-generiertes Bild",
 }: {
@@ -29,6 +30,10 @@ export default function AssetImage({
   imgStyle?: React.CSSProperties;
   loading?: "lazy" | "eager";
   zoom?: boolean;
+  // Kleine Vorschaubilder (Mediathek, Auswahllisten): kürzerer Hinweis in
+  // kleinerer Schrift. Die Position bleibt dieselbe wie an großen Bildern; der
+  // volle Wortlaut steht weiter in aria-label/title.
+  compact?: boolean;
   // Hinweistexte für KI-generierte Bilder (Audit 6.9). Als Prop, weil diese
   // Komponente im Client läuft und das Wörterbuch nicht ins Bundle soll. Die
   // deutschen Vorgaben gelten für die Redaktion, öffentliche Aufrufer reichen
@@ -49,7 +54,7 @@ export default function AssetImage({
         style={{ cursor: zoom ? "zoom-in" : undefined, ...imgStyle }}
       />
       {ai ? (
-        <span className="ai-badge" aria-label={aiTitle}>
+        <span className={`ai-badge${compact ? " compact" : ""}`} aria-label={aiTitle}>
           {aiLabel}
         </span>
       ) : null}
@@ -67,14 +72,19 @@ export default function AssetImage({
                 ×
               </button>
               <figure className="lightbox-figure" onClick={(e) => e.stopPropagation()}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={alt} />
-                {/* Derselbe Hinweis wie am Bild selbst, in derselben Sprache. */}
-                {ai ? (
-                  <span className="ai-badge" aria-label={aiTitle}>
-                    {aiLabel}
-                  </span>
-                ) : null}
+                {/* Bild und Hinweis in einem eigenen Kasten, damit der Hinweis
+                    auch hier an der Bildecke sitzt und nicht an der Unterkante
+                    der Figur — die schließt die Bildunterschrift mit ein. */}
+                <span className="lightbox-media">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={alt} />
+                  {/* Derselbe Hinweis wie am Bild selbst, in derselben Sprache. */}
+                  {ai ? (
+                    <span className="ai-badge" aria-label={aiTitle}>
+                      {aiLabel}
+                    </span>
+                  ) : null}
+                </span>
                 {alt ? <figcaption>{alt}</figcaption> : null}
               </figure>
             </div>,

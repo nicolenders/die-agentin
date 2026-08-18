@@ -60,7 +60,7 @@ export default async function IdentitaetenAdminPage({
               <tr key={r.id}>
                 <td>
                   {r.portraitUrl ? (
-                    <AssetImage src={r.portraitUrl} alt={r.codenameDe || r.roleDe} imgStyle={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
+                    <AssetImage compact aiLabel="KI" src={r.portraitUrl} alt={r.codenameDe || r.roleDe} imgStyle={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
                   ) : (
                     <span aria-hidden style={{ display: "inline-block", width: 40, height: 40, borderRadius: 4, background: r.color, opacity: 0.5 }} />
                   )}

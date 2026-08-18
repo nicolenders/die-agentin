@@ -412,15 +412,27 @@ h1.as-h2 {
   display: inline-block;
   line-height: 0;
   max-width: 100%;
+  // Deckungsgleich mit dem Bild bleiben, auch als gestrecktes Grid-/Flex-Kind:
+  // sonst misst der KI-Hinweis seinen Abstand von der Kante des Kastens statt
+  // von der Bildecke. Aufrufer, die volle Breite brauchen (Detailseite,
+  // Karten-Popup, Zertifikatslogo), setzen die Breite selbst.
+  width: fit-content;
 }
 .asset-image > img {
   max-width: 100%;
   height: auto;
 }
+// Transparenzhinweis „KI-generiert". Er sitzt überall auf der Seite an
+// derselben Stelle: unten rechts, mit demselben Abstand zur Bildkante. Der
+// Abstand steht deshalb genau einmal hier — `position: absolute` misst ihn vom
+// Innenrand des Bildkastens, ein Rahmen am Bild verschiebt ihn also nicht.
+// Bedingung an jeden Aufrufer: Der umgebende Kasten muss das Bild sein
+// (`position: relative` und deckungsgleich mit dem <img>).
 .ai-badge {
+  --ai-badge-inset: 8px;
   position: absolute;
-  right: 6px;
-  bottom: 6px;
+  right: var(--ai-badge-inset);
+  bottom: var(--ai-badge-inset);
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -436,10 +448,10 @@ h1.as-h2 {
   max-width: calc(100% - 8px);
 }
 // Kompaktvariante für kleine Thumbnails (Avatare): nur „KI", damit der Hinweis
-// das Bild nicht überdeckt. Der volle Text bleibt in aria-label/title.
+// das Bild nicht überdeckt. Der volle Text bleibt in aria-label/title. Die
+// Position ändert sich dabei nicht — nur die Schrift wird kleiner, sonst säße
+// derselbe Hinweis je nach Bildgröße woanders.
 .ai-badge.compact {
-  right: 3px;
-  bottom: 3px;
   font-size: 8px;
   padding: 1px 4px;
   letter-spacing: 0.06em;
@@ -459,6 +471,16 @@ h1.as-h2 {
   margin: 0;
   max-width: 94vw;
   max-height: 90vh;
+}
+// Bild und Hinweis liegen in einem eigenen Kasten: Ohne ihn maß der Hinweis
+// seinen Abstand von der Unterkante der ganzen Figur — also unterhalb des
+// Bildes, neben der Bildunterschrift.
+.lightbox-media {
+  position: relative;
+  // inline-block, nicht block: der Kasten soll das Bild umschließen, nicht die
+  // volle Breite der Figur — sonst rutscht der Hinweis nach rechts weg.
+  display: inline-block;
+  line-height: 0;
 }
 .lightbox-figure img {
   max-width: 94vw;
@@ -1179,8 +1201,14 @@ ol.styled li::marker {
   scroll-snap-type: x mandatory;
 }
 .gallery .galleryItem {
-  min-width: 290px;
   scroll-snap-align: start;
+  // Nicht auf die Höhe des höchsten Bildes strecken und die Mindestbreite am
+  // Bild selbst führen: Sonst ist der Kasten größer als das Bild, und der
+  // KI-Hinweis säße neben statt in der Bildecke.
+  align-self: start;
+}
+.gallery .galleryItem img {
+  min-width: 290px;
 }
 .galleryControls {
   display: flex;
@@ -1704,6 +1732,30 @@ a.radar-chip:focus-visible {
 }
 // Ansichts- und Zeitfilter nebeneinander in einer Zeile, mit dezentem Trenner.
 // Bricht erst auf schmalen Viewports um.
+// Speaker-Kit: Die Pressefoto-Box steht neben zwei gestapelten Boxen (Fakten,
+// Kontakt) und ist genauso hoch wie beide zusammen. Damit dabei kein Loch unter
+// dem Bild entsteht, nimmt das Bild die freie Höhe ein — mittig, in seiner
+// eigenen Größe, ohne die Box selbst höher zu machen.
+.press-card {
+  display: flex;
+  flex-direction: column;
+}
+.press-photo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.press-photo img {
+  max-width: 180px;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  border-radius: var(--r);
+}
+
 // Ort in der Einsatzliste: Weltkugel-Knopf und Ortsname in einer Zeile. Der
 // Knopf ersetzt die frühere Spalte „Auf der Karte" — eine ganze Spalte für eine
 // Aktion, die auch am Ort selbst sitzen kann.

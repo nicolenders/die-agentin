@@ -106,15 +106,19 @@ export default async function DepeschenPage({
           ) : null}
         </div>
       ) : (
-        <div className="grid g2" style={{ marginTop: 26, alignItems: "stretch" }}>
+        <div className="dispatch-list" style={{ marginTop: 26 }}>
           {dispatches.map((d) => (
-            <Link key={d.id} href={`/${locale}/depeschen/${d.slug}`} className="card bracket" style={{ display: "flex", flexDirection: "column" }}>
-              {/* Titelbild als Vorschau. Schlichtes <img> statt AssetImage: in
-                  einer klickbaren Karte darf ein Bildklick nicht die Lightbox
-                  öffnen, statt der Depesche zu folgen. Der KI-Hinweis bleibt
-                  trotzdem sichtbar (SPEC §11). */}
+            <Link
+              key={d.id}
+              href={`/${locale}/depeschen/${d.slug}`}
+              className={`dispatch-row${d.hero ? "" : " no-media"}`}
+            >
+              {/* Titelbild als Begleiter der Zeile. Schlichtes <img> statt
+                  AssetImage: in einer klickbaren Zeile muss der Klick aufs Bild
+                  der Depesche folgen und darf nicht die Lightbox öffnen. Der
+                  KI-Hinweis bleibt trotzdem sichtbar (SPEC §11). */}
               {d.hero ? (
-                <span className="card-thumb">
+                <span className="dispatch-thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={d.hero.url} alt={d.hero.alt} loading="lazy" />
                   {d.hero.ai ? (
@@ -124,22 +128,24 @@ export default async function DepeschenPage({
                   ) : null}
                 </span>
               ) : null}
-              <p className="meta" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: 0 }}>
-                <span className="tag">{dict.dispatch.formats[d.format]}</span>
-                {d.identities.map((i) => (
-                  <span key={i.slug} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: i.color, display: "inline-block" }} />
-                    {i.name}
-                  </span>
-                ))}
-              </p>
-              <h3 style={{ marginTop: 10 }}>{d.title}</h3>
-              {d.summary ? <p style={{ flex: 1 }}>{d.summary}</p> : <span style={{ flex: 1 }} />}
-              <p className="meta" style={{ margin: 0 }}>
-                {d.format === "REFERENCE" && d.reviewedAt
-                  ? `${dict.dispatch.updatedLabel} ${formatDate(d.reviewedAt, locale)}`
-                  : formatDate(d.publishedAt, locale)}
-              </p>
+              <div>
+                <p className="meta dispatch-tags">
+                  <span className="tag">{dict.dispatch.formats[d.format]}</span>
+                  {d.identities.map((i) => (
+                    <span key={i.slug} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: i.color, display: "inline-block" }} />
+                      {i.name}
+                    </span>
+                  ))}
+                </p>
+                <h3 className="dispatch-title">{d.title}</h3>
+                {d.summary ? <p className="dispatch-summary">{d.summary}</p> : null}
+                <p className="meta dispatch-date">
+                  {d.format === "REFERENCE" && d.reviewedAt
+                    ? `${dict.dispatch.updatedLabel} ${formatDate(d.reviewedAt, locale)}`
+                    : formatDate(d.publishedAt, locale)}
+                </p>
+              </div>
             </Link>
           ))}
         </div>

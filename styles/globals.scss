@@ -615,23 +615,94 @@ p {
   border-top: 0;
 }
 
-// Titelbild am Kopf einer Karte (Depeschen-Übersicht). Feste 16:9-Fläche: so
-// bleiben die Karten eines Rasters gleich hoch, egal wie die Originale liegen.
-.card-thumb {
+// Depeschenliste: Zeilen statt großer Kacheln. Zwei Kacheln pro Zeile füllten
+// mit Bild fast einen Bildschirm — man sah zwei Depeschen und musste für jede
+// weitere scrollen. In der Zeile führt der Text, das Titelbild begleitet ihn
+// links in fester Größe (16:9 wie im Bildwähler der Redaktion).
+.dispatch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dispatch-row {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  background: linear-gradient(180deg, rgba(18, 10, 36, 0.5), rgba(11, 5, 24, 0.5));
+  // Die ganze Zeile ist der Link — durchgehend unterstrichener Fließtext wäre
+  // hier Lärm. Beim Überfahren zeigt der Titel, dass es weitergeht.
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.dispatch-row:hover {
+  border-color: var(--violet-bright);
+  background: rgba(139, 92, 246, 0.06);
+}
+.dispatch-row:hover .dispatch-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+// Ohne Titelbild bleibt keine leere Spalte stehen — die Zeile ist dann einspaltig.
+.dispatch-row.no-media {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dispatch-thumb {
   position: relative;
   display: block;
   line-height: 0;
-  margin-bottom: 16px;
   border: 1px solid var(--line-soft);
   border-radius: 6px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.03);
 }
-.card-thumb img {
+.dispatch-thumb img {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+}
+.dispatch-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.dispatch-title {
+  margin: 9px 0 0;
+  font-size: 19px;
+}
+.dispatch-summary {
+  margin: 8px 0 0;
+  font-size: 14.5px;
+  // Auf breiten Schirmen sonst über 140 Zeichen pro Zeile — unlesbar lang.
+  max-width: 78ch;
+}
+.dispatch-date {
+  margin: 10px 0 0;
+}
+@media (max-width: 720px) {
+  .dispatch-row {
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 14px;
+    padding: 14px;
+  }
+  .dispatch-title {
+    font-size: 17px;
+  }
+}
+// Auf dem Telefon reicht die Breite nicht für zwei Spalten: Bild oben, Text
+// darunter. Nebeneinander bliebe für den Text eine Schlucht von 180 px.
+@media (max-width: 560px) {
+  .dispatch-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .grid {
@@ -963,6 +1034,37 @@ th {
   border-bottom: 1px solid var(--line-soft);
   padding-bottom: 26px;
   margin-bottom: 34px;
+}
+// Kopf mit Titelbild: Text links, Bild rechts in derselben Spaltenbreite wie
+// die Randbilder im Fließtext (.block). Über die volle Breite gesetzt schob das
+// Bild den Text aus dem Sichtfeld — hier steht schon beim Öffnen etwas zu lesen.
+.artHead.with-media {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 34px;
+  // Ist das Bild höher als Kennung, Titel und Datum, verteilt sich der Rest
+  // gleichmäßig, statt als Loch unter dem Datum zu stehen.
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .artHead.with-media {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+}
+.art-hero {
+  margin: 0;
+}
+.art-hero .asset-image {
+  display: block;
+  width: 100%;
+}
+.art-hero img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
 }
 .block {
   display: grid;

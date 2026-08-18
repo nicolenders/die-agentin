@@ -615,6 +615,25 @@ p {
   border-top: 0;
 }
 
+// Titelbild am Kopf einer Karte (Depeschen-Übersicht). Feste 16:9-Fläche: so
+// bleiben die Karten eines Rasters gleich hoch, egal wie die Originale liegen.
+.card-thumb {
+  position: relative;
+  display: block;
+  line-height: 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+.card-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
 .grid {
   display: grid;
   gap: 18px;

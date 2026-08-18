@@ -53,6 +53,8 @@ export interface ArticleInput {
   url: string;
   datePublished: string | null;
   dateModified: string | null;
+  /** Absolute URL des Titelbilds — Suchmaschinen zeigen Beiträge damit als Karte. */
+  image?: string | null;
 }
 
 /** BlogPosting-Knoten je Depesche. */
@@ -64,6 +66,7 @@ export function blogPostingNode(a: ArticleInput) {
     url: a.url,
     ...(a.datePublished ? { datePublished: a.datePublished } : {}),
     ...(a.dateModified ? { dateModified: a.dateModified } : {}),
+    ...(a.image ? { image: a.image } : {}),
     author: { "@id": PERSON_ID() },
   };
 }

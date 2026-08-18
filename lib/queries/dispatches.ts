@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { cachedQuery, tags } from "@/lib/cache";
 import { pickTranslation } from "@/lib/content/pick";
 import { identityDisplayName } from "@/lib/identities";
+import { toHeroImage, type HeroImage } from "@/lib/media/hero";
 import type { Locale } from "@/lib/i18n/config";
 import type { DispatchFormat } from "@/lib/domain";
 
@@ -25,6 +26,8 @@ export interface DispatchCard {
   reviewedAt: Date | null;
   identities: IdentityRef[];
   topics: string[];
+  /** Titelbild der Depesche — auf der Karte als Vorschau. */
+  hero: HeroImage | null;
   /** Radar-Themen (Aufklärung) — Grundlage des „Thema"-Filters. */
   focusTopicIds: string[];
   fallback: boolean;
@@ -50,6 +53,7 @@ async function loadDispatches(locale: Locale, nowMs: number): Promise<DispatchCa
     orderBy: { publishedAt: "desc" },
     include: {
       translations: true,
+      heroAsset: true,
       identities: { orderBy: { sortOrder: "asc" } },
       topics: { orderBy: { sortOrder: "asc" } },
       focusTopics: { select: { id: true } },
@@ -71,6 +75,7 @@ async function loadDispatches(locale: Locale, nowMs: number): Promise<DispatchCa
       reviewedAt: d.reviewedAt,
       identities: mapIdentities(d.identities, locale),
       topics: d.topics.map((t) => (locale === "en" ? t.nameEn : t.nameDe)),
+      hero: toHeroImage(d.heroAsset, locale),
       focusTopicIds: d.focusTopics.map((t) => t.id),
       fallback: picked.fallback,
       contentLocale: picked.contentLocale,
@@ -107,6 +112,8 @@ export interface DispatchDetail {
   sourceSite: string | null;
   identities: IdentityRef[];
   topics: string[];
+  /** Titelbild der Depesche — über dem Text und als OpenGraph-Bild. */
+  hero: HeroImage | null;
   fallback: boolean;
   contentLocale: Locale;
 }
@@ -118,6 +125,7 @@ async function loadDispatchBySlug(locale: Locale, slug: string, nowMs: number): 
       dispatch: {
         include: {
           translations: true,
+          heroAsset: true,
           identities: { orderBy: { sortOrder: "asc" } },
           topics: { orderBy: { sortOrder: "asc" } },
         },
@@ -145,6 +153,7 @@ async function loadDispatchBySlug(locale: Locale, slug: string, nowMs: number): 
     sourceSite: d.sourceSite,
     identities: mapIdentities(d.identities, locale),
     topics: d.topics.map((t) => (locale === "en" ? t.nameEn : t.nameDe)),
+    hero: toHeroImage(d.heroAsset, locale),
     fallback: picked.fallback,
     contentLocale: picked.contentLocale,
   };

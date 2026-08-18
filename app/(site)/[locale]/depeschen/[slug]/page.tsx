@@ -11,6 +11,9 @@ import { alternatesFor } from "@/lib/seo/alternates";
 import { metaDescription } from "@/lib/seo/description";
 import ContentArticle from "@/components/content/ContentArticle";
 import JsonLd from "@/components/JsonLd";
+import AssetImage from "@/components/media/AssetImage";
+import { absoluteAssetUrl } from "@/lib/media/hero";
+import { aiImageLabels } from "@/lib/media/ai-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +27,29 @@ export async function generateMetadata({
   const d = await getDispatchBySlug(locale, slug);
   if (!d) return {};
   const description = metaDescription(d.summary);
+  // Titelbild als Vorschaubild beim Teilen — absolut, weil OpenGraph keine
+  // relativen Pfade auflöst.
+  const hero = d.hero;
   return {
     title: d.title,
     description,
     alternates: alternatesFor(locale, `depeschen/${d.slug}`),
-    openGraph: { title: d.title, description },
+    openGraph: {
+      title: d.title,
+      description,
+      ...(hero
+        ? {
+            images: [
+              {
+                url: absoluteAssetUrl(hero.url, siteOrigin()),
+                width: hero.width,
+                height: hero.height,
+                alt: hero.alt,
+              },
+            ],
+          }
+        : {}),
+    },
   };
 }
 
@@ -43,6 +64,8 @@ export default async function DispatchDetailPage({
   const d = await getDispatchBySlug(locale, slug);
   if (!d) notFound();
 
+  const aiLabels = aiImageLabels(locale);
+
   const url = `${siteOrigin()}/${locale}/depeschen/${d.slug}`;
   const jsonLd = graph([
     blogPostingNode({
@@ -51,6 +74,7 @@ export default async function DispatchDetailPage({
       url,
       datePublished: d.publishedAt ? d.publishedAt.toISOString() : null,
       dateModified: (d.reviewedAt ?? d.publishedAt)?.toISOString() ?? null,
+      image: d.hero ? absoluteAssetUrl(d.hero.url, siteOrigin()) : null,
     }),
     breadcrumbNode([
       { name: dict.dispatch.namePlural, url: `${siteOrigin()}/${locale}/depeschen` },
@@ -90,6 +114,24 @@ export default async function DispatchDetailPage({
             )}
           </p>
         </div>
+
+        {/* Titelbild über dem Text. AssetImage, weil hier — anders als auf der
+            Karte — der Klick die große Ansicht öffnen darf; der KI-Hinweis
+            steht in der Sprache der Seite (SPEC §11). */}
+        {d.hero ? (
+          <figure style={{ margin: "0 0 30px" }}>
+            <AssetImage
+              src={d.hero.url}
+              alt={d.hero.alt}
+              ai={d.hero.ai}
+              aiLabel={aiLabels.aiGenerated}
+              aiTitle={aiLabels.aiGeneratedImage}
+              loading="eager"
+              style={{ display: "block" }}
+              imgStyle={{ width: "100%", borderRadius: 6 }}
+            />
+          </figure>
+        ) : null}
 
         {d.sourceUrl ? (
           <a className="quoted-link" href={d.sourceUrl} target="_blank" rel="noopener noreferrer">

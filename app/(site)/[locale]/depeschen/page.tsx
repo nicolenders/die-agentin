@@ -7,6 +7,7 @@ import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getRadarTopics } from "@/lib/queries/records";
 import { alternatesFor } from "@/lib/seo/alternates";
 import { formatDate } from "@/lib/format";
+import { aiImageLabels } from "@/lib/media/ai-labels";
 import { DISPATCH_FORMATS, isOneOf, type DispatchFormat } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,9 @@ export default async function DepeschenPage({
       (!activeFormat || d.format === activeFormat) &&
       (!activeTopic || d.focusTopicIds.includes(activeTopic.id)),
   );
+
+  // Hinweistexte für KI-generierte Bilder in der Sprache der Seite.
+  const aiLabels = aiImageLabels(locale);
 
   const topicSuffix = activeTopic ? `thema=${activeTopic.id}` : "";
   const filterHref = (f: DispatchFormat | null) => {
@@ -105,6 +109,21 @@ export default async function DepeschenPage({
         <div className="grid g2" style={{ marginTop: 26, alignItems: "stretch" }}>
           {dispatches.map((d) => (
             <Link key={d.id} href={`/${locale}/depeschen/${d.slug}`} className="card bracket" style={{ display: "flex", flexDirection: "column" }}>
+              {/* Titelbild als Vorschau. Schlichtes <img> statt AssetImage: in
+                  einer klickbaren Karte darf ein Bildklick nicht die Lightbox
+                  öffnen, statt der Depesche zu folgen. Der KI-Hinweis bleibt
+                  trotzdem sichtbar (SPEC §11). */}
+              {d.hero ? (
+                <span className="card-thumb">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={d.hero.url} alt={d.hero.alt} loading="lazy" />
+                  {d.hero.ai ? (
+                    <span className="ai-badge compact" aria-label={aiLabels.aiGeneratedImage}>
+                      {aiLabels.aiGenerated}
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
               <p className="meta" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: 0 }}>
                 <span className="tag">{dict.dispatch.formats[d.format]}</span>
                 {d.identities.map((i) => (

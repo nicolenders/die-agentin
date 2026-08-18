@@ -79,7 +79,7 @@ export async function getMediaDocuments(): Promise<MediaDocumentItem[]> {
 // --------------------------------------------------------------- Bibliothek
 
 export interface MediaUsage {
-  type: string; // z. B. „Einsatz", „Dossier", „Beitrag"
+  type: string; // z. B. „Einsatz", „Dossier", „Depesche"
   label: string; // Titel des verwendenden Eintrags
 }
 
@@ -108,11 +108,11 @@ function parseDoc(json: string): TiptapDoc | null {
 /**
  * Alle Bilder mit Metadaten und Verwendungsnachweis („wo verwendet"): direkte
  * Referenzen (Banner, Cover, Logo, Porträt, Hero, Einsatzfotos) plus Inline-
- * Bilder in Beitrags- und Dossier-Inhalten. So sieht man je Bild, in welchem
- * Einsatz/Dossier/Beitrag es steckt.
+ * Bilder in Depeschen-, Beitrags- und Dossier-Inhalten. So sieht man je Bild, in
+ * welchem Einsatz/Dossier/Beitrag/welcher Depesche es steckt.
  */
 export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
-  const [assets, missions, posts, dossiers, publications, certifications, legend, home] =
+  const [assets, missions, posts, dossiers, publications, certifications, legend, home, dispatches] =
     await Promise.all([
       db.mediaAsset.findMany({ orderBy: { createdAt: "desc" }, take: 500 }),
       db.mission.findMany({
@@ -130,6 +130,9 @@ export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
       db.certification.findMany({ select: { name: true, logoAssetId: true } }),
       db.legendContent.findMany({ select: { portraitAssetId: true } }),
       db.homeContent.findMany({ select: { heroAssetId: true } }),
+      db.dispatch.findMany({
+        select: { heroAssetId: true, translations: { select: { locale: true, title: true, bodyJson: true } } },
+      }),
     ]);
 
   const usage = new Map<string, MediaUsage[]>();
@@ -167,6 +170,14 @@ export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
   for (const c of certifications) add(c.logoAssetId, { type: "Ausbildung", label: c.name });
   for (const l of legend) add(l.portraitAssetId, { type: "Legende", label: "Über mich" });
   for (const h of home) add(h.heroAssetId, { type: "Startseite", label: "Hero" });
+  for (const d of dispatches) {
+    const title = deTitle(d.translations, "Depesche");
+    add(d.heroAssetId, { type: "Depesche", label: title });
+    for (const t of d.translations) {
+      const doc = parseDoc(t.bodyJson);
+      if (doc) for (const id of collectAssetIds(doc)) add(id, { type: "Depesche", label: title });
+    }
+  }
 
   return assets.map((a) => {
     const raw = usage.get(a.id) ?? [];

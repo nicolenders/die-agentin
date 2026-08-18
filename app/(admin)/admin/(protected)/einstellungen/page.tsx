@@ -20,7 +20,8 @@ import {
   deleteSpeakerFormat,
 } from "./actions";
 import { getSpeakerFormatsRaw } from "@/lib/queries/speaker-formats";
-import { parseFormatLanguages } from "@/lib/briefings/speaker-formats";
+import { parseFormatLanguages, toDurationUnit } from "@/lib/briefings/speaker-formats";
+import { DURATION_UNIT_LABEL } from "@/lib/briefings/duration-unit-labels";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import { saveSocialLinks, saveShareTemplates } from "./channel-actions";
 
@@ -251,8 +252,10 @@ export default async function EinstellungenPage({
       <p className="meta">
         Was du Veranstaltern anbietest. Diese Liste steht in der Akte unter „Formate“.
         Solange sie leer ist, leitet die Akte die Formate aus den Dauern deiner Briefings
-        ab. Die Dauer wird als Minutenbereich gepflegt und in beiden Sprachen richtig
-        geschrieben; nur die Untergrenze auszufüllen ergibt eine feste Dauer.
+        ab. Die Dauer bekommt ihre eigene Einheit: Minuten für einen Vortrag, Stunden oder
+        Tage für einen Workshop. Nur die Untergrenze auszufüllen ergibt eine feste Dauer
+        („3 Std.“), beide Felder einen Bereich („1 bis 2 Tage“). Die Einheit wird nicht
+        umgerechnet: 180 Minuten stehen als „180 Min.“ auf der Seite.
       </p>
 
       {speakerFormats.map((f) => {
@@ -278,28 +281,42 @@ export default async function EinstellungenPage({
 
               <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-end", marginTop: 12 }}>
                 <span>
-                  <label className="f" htmlFor={`fmt-min-${f.id}`}>Dauer von (Min.)</label>
+                  <label className="f" htmlFor={`fmt-from-${f.id}`}>Dauer von</label>
                   <input
                     className="f"
-                    id={`fmt-min-${f.id}`}
-                    name="minutesMin"
+                    id={`fmt-from-${f.id}`}
+                    name="durationFrom"
                     type="number"
                     min={1}
-                    defaultValue={f.minutesMin ?? ""}
-                    style={{ width: 120 }}
+                    defaultValue={f.durationFrom ?? ""}
+                    style={{ width: 100 }}
                   />
                 </span>
                 <span>
-                  <label className="f" htmlFor={`fmt-max-${f.id}`}>bis (Min., optional)</label>
+                  <label className="f" htmlFor={`fmt-to-${f.id}`}>bis (optional)</label>
                   <input
                     className="f"
-                    id={`fmt-max-${f.id}`}
-                    name="minutesMax"
+                    id={`fmt-to-${f.id}`}
+                    name="durationTo"
                     type="number"
                     min={1}
-                    defaultValue={f.minutesMax ?? ""}
-                    style={{ width: 120 }}
+                    defaultValue={f.durationTo ?? ""}
+                    style={{ width: 100 }}
                   />
+                </span>
+                <span>
+                  <label className="f" htmlFor={`fmt-unit-${f.id}`}>Einheit</label>
+                  <select
+                    className="f"
+                    id={`fmt-unit-${f.id}`}
+                    name="durationUnit"
+                    defaultValue={toDurationUnit(f.durationUnit)}
+                    style={{ width: 130 }}
+                  >
+                    {DURATION_UNIT_LABEL.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
                 </span>
                 <span>
                   <label className="f" htmlFor={`fmt-sort-${f.id}`}>Reihenfolge</label>
@@ -357,12 +374,20 @@ export default async function EinstellungenPage({
           </div>
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-end", marginTop: 12 }}>
             <span>
-              <label className="f" htmlFor="fmt-new-min">Dauer von (Min.)</label>
-              <input className="f" id="fmt-new-min" name="minutesMin" type="number" min={1} style={{ width: 120 }} />
+              <label className="f" htmlFor="fmt-new-from">Dauer von</label>
+              <input className="f" id="fmt-new-from" name="durationFrom" type="number" min={1} style={{ width: 100 }} />
             </span>
             <span>
-              <label className="f" htmlFor="fmt-new-max">bis (Min., optional)</label>
-              <input className="f" id="fmt-new-max" name="minutesMax" type="number" min={1} style={{ width: 120 }} />
+              <label className="f" htmlFor="fmt-new-to">bis (optional)</label>
+              <input className="f" id="fmt-new-to" name="durationTo" type="number" min={1} style={{ width: 100 }} />
+            </span>
+            <span>
+              <label className="f" htmlFor="fmt-new-unit">Einheit</label>
+              <select className="f" id="fmt-new-unit" name="durationUnit" defaultValue="MINUTES" style={{ width: 130 }}>
+                {DURATION_UNIT_LABEL.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
             </span>
             <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
               <legend className="f" style={{ padding: 0 }}>Angeboten auf</legend>

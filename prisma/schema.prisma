@@ -791,19 +791,30 @@ model MediaDocument {
 // richtig formatiert, ohne dass jemand „45 Minuten"/„45 minutes" doppelt pflegt.
 // ---------------------------------------------------------------------------
 model SpeakerFormat {
-  id         String   @id @default(cuid())
-  titleDe    String
-  titleEn    String?
-  noteDe     String?  @db.NVarChar(Max)
-  noteEn     String?  @db.NVarChar(Max)
-  minutesMin Int?
-  minutesMax Int?
+  id           String   @id @default(cuid())
+  titleDe      String
+  titleEn      String?
+  noteDe       String?  @db.NVarChar(Max)
+  noteEn       String?  @db.NVarChar(Max)
+  // Dauer als Zahlenbereich IN DER GEWÄHLTEN EINHEIT: 45 MINUTES, 3 HOURS,
+  // 2 DAYS. Ein Workshop dauert Stunden oder Tage; ihn in Minuten zu erfassen
+  // und zurückzurechnen wäre eine Rechenaufgabe bei jeder Pflege.
+  //
+  // Die Spalten heißen in der Datenbank weiterhin `minutesMin`/`minutesMax`
+  // (@map): Alle vorhandenen Zeilen stehen in Minuten, und `durationUnit` steht
+  // per Vorgabe auf MINUTES — die Werte bleiben also richtig, ohne dass Daten
+  // bewegt werden. Ein Spaltenname, den nur noch die Migration kennt, ist der
+  // kleinere Preis gegenüber einer Umschichtung im Bestand.
+  durationFrom Int?     @map("minutesMin")
+  durationTo   Int?     @map("minutesMax")
+  // Einheit der beiden Werte: MINUTES | HOURS | DAYS (lib/briefings/speaker-formats.ts).
+  durationUnit String   @default("MINUTES")
   // Sprachen, in denen das Format angeboten wird, als Kürzelliste („de,en").
-  languages  String   @default("de,en")
-  active     Boolean  @default(true)
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  languages    String   @default("de,en")
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([active, sortOrder])
 }

@@ -89,6 +89,8 @@ const de = {
     // Fallback für die Rollenzeile, wenn im Admin keine Rollen gepflegt sind
     // (`lib/queries/home.ts`). Kein toter Key.
     roles: ["ARCHITECT", "ADVISOR", "DEVELOPER", "TRAINER", "SPEAKER"],
+    focusHeading: "Woran ich gerade arbeite",
+    focusLead: "Die Werkzeuge und Themen, die mich zurzeit am meisten beschäftigen.",
     nextMission: "Nächster Einsatz",
     recent: "Zuletzt eingegangen",
     countMissions: "Einsätze",

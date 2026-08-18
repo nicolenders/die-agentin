@@ -4,7 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { notFound } from "next/navigation";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
-import { getHomeHero, getHomeStats } from "@/lib/queries/home";
+import { getHomeHero, getHomeStats, getHomeFocus } from "@/lib/queries/home";
 import { getMissions } from "@/lib/queries/missions";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getPublishedIdentities } from "@/lib/queries/identities";
@@ -14,6 +14,13 @@ import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 import { formatDate } from "@/lib/format";
 import styles from "./hq.module.scss";
+
+// Kleine Logos tragen den KI-Hinweis im Alt-Text statt als sichtbares Badge —
+// dieselbe Entscheidung wie bei den Identitäts-Thumbnails.
+function aiAlt(alt: string, ai: boolean, note: string): string {
+  if (!ai) return alt;
+  return alt ? `${alt} (${note})` : note;
+}
 
 // HQ / Startseite (SPEC §5). Der Hero ist im Admin pflegbar (HomeContent), die
 // übrigen Blöcke ziehen sich aus den gepflegten Daten. Datenzugriffe sind
@@ -30,13 +37,14 @@ export default async function HQPage({
   if (!isLocale(locale)) notFound();
   const dict = await getDictionary(locale);
   const t = dict.hq;
-  const [hero, stats, missions, dispatches, ranking, identities] = await Promise.all([
+  const [hero, stats, missions, dispatches, ranking, identities, focus] = await Promise.all([
     getHomeHero(locale),
     getHomeStats(),
     getMissions(locale),
     getPublishedDispatches(locale),
     getBriefingRanking(locale),
     getPublishedIdentities(locale),
+    getHomeFocus(locale),
   ]);
   const isDe = locale === "de";
 
@@ -145,6 +153,37 @@ export default async function HQPage({
             </Link>
           </div>
           <IdentityCompactGrid identities={identities} locale={locale} />
+        </>
+      ) : null}
+
+      {/* Woran ich gerade arbeite: die kuratierten Werkzeuge und Themen aus der
+          Redaktion. Ohne gepflegte Einträge fällt der Block ersatzlos weg. */}
+      {focus.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 52 }}>{t.focusHeading}</p>
+          <p className="meta" style={{ marginTop: -6, marginBottom: 0 }}>{t.focusLead}</p>
+          <div className={styles.focusGrid}>
+            {focus.map((f) => (
+              <article className="card bracket" key={f.id}>
+                <div className={styles.focusCard}>
+                  <div className={styles.focusHead}>
+                    {f.iconUrl ? (
+                      // Kleines Logo vom Same-Origin-/media-Proxy, bereits als WebP ausgeliefert.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={f.iconUrl}
+                        alt={f.iconAlt ? aiAlt(f.iconAlt, f.iconAi, dict.common.aiGenerated) : ""}
+                        className={styles.focusIcon}
+                        loading="lazy"
+                      />
+                    ) : null}
+                    <h3>{f.title}</h3>
+                  </div>
+                  <p>{f.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </>
       ) : null}
 

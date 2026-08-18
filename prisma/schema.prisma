@@ -444,6 +444,7 @@ model MediaAsset {
   certificationLogos Certification[] @relation("CertificationLogo")
   missionBanners     Mission[]       @relation("MissionBanner")
   homeHeroes         HomeContent[]   @relation("HomeHero")
+  homeFocusIcons     HomeFocus[]     @relation("HomeFocusIcon")
   // Identitäten (Phase 2)
   identityPortraits  Identity[]      @relation("IdentityPortrait")
   identityEnvelopes  Identity[]      @relation("IdentityEnvelope")
@@ -777,6 +778,32 @@ model MediaDocument {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// „Woran ich gerade arbeite" auf der Startseite: die Werkzeuge und Themen, mit
+// denen Nicole sich aktuell besonders beschäftigt. Je Eintrag ein kleines Logo
+// aus der Mediathek und ein Satz. Bewusst getrennt von `Tool` (das ist der
+// Stammdatensatz für Filter und Verknüpfungen) und von `FocusTopic` (Radar,
+// Ausbildung): hier steht kuratiert, was auf der Startseite erscheint.
+//
+// Die Höchstzahl steht in `lib/home-focus.ts` und wird beim Speichern geprüft.
+// Kein Enddatum, kein Archiv-Flag: ein Eintrag ist aktiv oder er ist weg.
+// ---------------------------------------------------------------------------
+model HomeFocus {
+  id          String      @id @default(cuid())
+  titleDe     String
+  titleEn     String?
+  textDe      String      @db.NVarChar(Max)
+  textEn      String?     @db.NVarChar(Max)
+  iconAssetId String?
+  icon        MediaAsset? @relation("HomeFocusIcon", fields: [iconAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  active      Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([active, sortOrder])
 }
 
 model HomeContent {

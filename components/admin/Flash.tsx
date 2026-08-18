@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { showToast } from "@/lib/admin/toast";
+import { HOME_FOCUS_MAX } from "@/lib/home-focus";
 
 // Kurze Erfolgs-/Fehlermeldung nach einer Server-Action. Die Aktionen leiten
 // nach getaner Arbeit mit `?ok=<code>` bzw. `?err=<code>` zurück; diese
@@ -32,6 +33,7 @@ export const FLASH_MESSAGES: Record<string, string> = {
   "bad-color": "Keine gültige Akzentfarbe (Hex, z. B. #8B5CF6).",
   "missing-fields": "Bitte alle Pflichtfelder ausfüllen. Nichts wurde gespeichert.",
   "not-found": "Eintrag nicht gefunden.",
+  "focus-full": `Auf der Startseite ist Platz für ${HOME_FOCUS_MAX} Einträge. Erst einen bestehenden ausblenden oder löschen, dann den neuen anlegen.`,
   "category-in-use": "Kategorie ist noch zugeordnet: erst umhängen oder löschen.",
   "alt-required": "Alt-Text ist Pflicht (außer das Bild ist dekorativ).",
   "asset-in-use": "Bild wird noch verwendet: erst aus Beitrag/Einsatz entfernen.",

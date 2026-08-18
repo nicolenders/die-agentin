@@ -75,6 +75,8 @@ const en: Dictionary = {
     titleHighlight: "intelligent solutions",
     lead: "Nicole Enders, Microsoft MVP since 2020, seven years running. I design, build and explain solutions around Microsoft AI and Modern Work. Missions, identities and dispatches all come together here.",
     roles: ["ARCHITECT", "ADVISOR", "DEVELOPER", "TRAINER", "SPEAKER"],
+    focusHeading: "What I am working on right now",
+    focusLead: "The tools and topics I am spending the most time with at the moment.",
     nextMission: "Next mission",
     recent: "Latest intake",
     countMissions: "Missions",

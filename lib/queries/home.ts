@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { cachedQuery, tags } from "@/lib/cache";
 import { assetUrl } from "@/lib/media/url";
+import { pickHomeFocusText } from "@/lib/home-focus";
 import { getDictionary } from "@/lib/i18n";
 import { countVisitedCountries } from "@/lib/missions";
 import type { Locale } from "@/lib/i18n/config";
@@ -171,5 +172,66 @@ export async function getHomeStats(): Promise<HomeStats> {
     return await run();
   } catch {
     return { missions: 0, countries: 0, briefings: 0, books: 0, mvpAwards: 0, certifications: 0, identities: 0, copiesSold: 0 };
+  }
+}
+
+// ------------------------------------------------ Woran ich gerade arbeite
+
+export const HOME_FOCUS_TAG = "home-focus";
+
+export interface HomeFocusItem {
+  id: string;
+  title: string;
+  text: string;
+  iconUrl: string | null;
+  iconAlt: string;
+  iconAi: boolean;
+}
+
+async function loadHomeFocus(locale: Locale): Promise<HomeFocusItem[]> {
+  const rows = await db.homeFocus.findMany({
+    where: { active: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: { icon: true },
+  });
+  return rows.map((row) => {
+    const { title, text } = pickHomeFocusText(row, locale);
+    return {
+      id: row.id,
+      title,
+      text,
+      iconUrl: row.icon ? assetUrl(row.icon.blobPath) : null,
+      // Ein Logo ohne eigenen Alt-Text beschreibt sich über den Titel daneben.
+      iconAlt:
+        row.icon && !row.icon.decorative
+          ? (locale === "en" && row.icon.altEn ? row.icon.altEn : row.icon.altDe) || title
+          : "",
+      iconAi: row.icon?.source === "AI",
+    };
+  });
+}
+
+/**
+ * Die kuratierten Werkzeuge und Themen der Startseite. Fällt die Datenbank aus,
+ * bleibt der Block einfach leer, statt die Startseite scheitern zu lassen.
+ */
+export async function getHomeFocus(locale: Locale): Promise<HomeFocusItem[]> {
+  const run = cachedQuery(loadHomeFocus, ["home-focus", locale], [HOME_FOCUS_TAG]);
+  try {
+    return await run(locale);
+  } catch {
+    return [];
+  }
+}
+
+/** Rohdaten für die Redaktion, inklusive der ausgeblendeten Einträge. */
+export async function getHomeFocusRaw() {
+  try {
+    return await db.homeFocus.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: { icon: true },
+    });
+  } catch {
+    return [];
   }
 }

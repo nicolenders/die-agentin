@@ -118,3 +118,52 @@
     grid-template-columns: 1fr;
   }
 }
+
+// „Woran ich gerade arbeite": Werkzeuge und Themen mit kleinem Logo. Drei
+// Spalten füllen sechs Einträge in zwei sauberen Zeilen; fünf lassen die letzte
+// Zeile offen, ohne dass eine Karte in die Breite läuft.
+.focusGrid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 14px;
+}
+@media (max-width: 900px) {
+  .focusGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .focusGrid {
+    grid-template-columns: 1fr;
+  }
+}
+// Karten eines Rasters sind gleich hoch; der Text füllt die Karte nach unten.
+.focusCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+}
+.focusHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.focusIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: var(--r);
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  padding: 5px;
+}
+.focusCard h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.focusCard p {
+  margin: 0;
+  font-size: 14.5px;
+}

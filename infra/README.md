@@ -1,39 +1,44 @@
-# Deployment nach Azure — Schritt für Schritt
+# Infrastruktur nach Azure — Schritt für Schritt
 
-Diese Anleitung bringt die Website mit **einer Azure-DevOps-Pipeline** live.
-Sie ist für Einsteiger geschrieben: alle Befehle sind zum Kopieren. Wenn du sie
-der Reihe nach abarbeitest, läuft die Pipeline beim ersten Start durch.
+Diese Anleitung baut die **Infrastruktur** auf: Ressourcengruppe, Container
+Registry, Container App, SQL-Datenbank, Blob-Speicher, Key Vault. Alle Befehle
+sind zum Kopieren.
 
-Zeitbedarf: ~30 Minuten. Voraussetzung: eine Azure-Subscription und ein
-Azure-DevOps-Projekt (beides kostenlos anlegbar).
+Zeitbedarf: ~30 Minuten. Voraussetzung: eine Azure-Subscription.
 
-> **Kein Azure DevOps / keine Pipeline?** Drei Wege führen zum Ziel:
+> **Das laufende Deployment steht nicht hier.** Gebaut und ausgerollt wird über
+> GitHub Actions:
+> `.github/workflows/nicolenders-prod-web-AutoDeployTrigger-*.yml` baut bei
+> jedem Push auf `main` das Image, rollt es auf die Container App aus und setzt
+> die Umgebungsvariablen neu. Diese Anleitung ist der **Erstaufbau**; danach
+> übernimmt der Workflow. Begründung: `docs/decisions/0015-deployment-github-actions.md`.
+
+> **Drei Wege für den Erstaufbau:**
 > - **Azure Portal (klicken)** → **[PORTAL.md](./PORTAL.md)** — Vorlage
 >   `infra/main.json` per Formular ausrollen.
-> - **Terminal (az-Befehle) ohne Cloud Shell** → **[MANUELL.md](./MANUELL.md)**.
-> - **Automatisiert** → die Pipeline unten in diesem Dokument.
+> - **Terminal (az-Befehle)** → **[MANUELL.md](./MANUELL.md)**.
+> - **Bicep direkt** → dieses Dokument.
 
 > Nichts davon wurde in dieser Umsetzung real ausgeführt (kein Azure-Zugang).
-> Prüfe den Bicep-Plan vor dem ersten Deployment mit `what-if` (Schritt 6).
-
-> **Was tatsächlich läuft:** Das produktive Deployment erfolgt über GitHub
-> Actions, nicht über die Pipeline in diesem Dokument — siehe
-> `.github/workflows/nicolenders-prod-web-AutoDeployTrigger-*.yml`. Der
-> Workflow baut das Image, rollt es auf die Container App aus und setzt die
-> Umgebungsvariablen bei jedem Push auf `main` neu. Diese Anleitung beschreibt
-> den Aufbau der Infrastruktur; die laufende Konfiguration steht im Workflow.
+> Prüfe den Bicep-Plan vor dem ersten Deployment mit `what-if` (Schritt 5).
 
 ---
 
 ## Überblick: was passiert
 
-Die Pipeline (`azure-pipelines.yml`) macht auf `main` automatisch:
+Einmalig beim Erstaufbau:
 
 1. Ressourcengruppe und Container Registry anlegen (idempotent)
-2. das Container-Image **in der Registry** bauen (kein Docker nötig)
+2. Secrets erzeugen
 3. die gesamte Infrastruktur per Bicep ausrollen (`infra/main.bicep`)
-4. die Datenbankmigration ausführen
-5. die fertige Website-URL ausgeben
+4. die GitHub-Actions-Secrets hinterlegen, damit der Deploy-Workflow arbeiten kann
+
+Danach bei jedem Push auf `main`, durch den Workflow:
+
+1. Container-Image bauen und in die Registry laden
+2. neue Revision der Container App ausrollen
+3. Umgebungsvariablen und Container-App-Secrets neu setzen
+4. Datenbankmigration beim Start des Containers (`instrumentation.ts`)
 
 Alle Azure-Ressourcen: siehe unten „Was angelegt wird".
 
@@ -86,47 +91,54 @@ az ad signed-in-user show --query id -o tsv    # → adminObjectIds
 > (`entraClientId` etc.) kannst du später nachtragen. Die öffentliche Website
 > funktioniert sofort, auch ohne Entra-App.
 
-## Schritt 4 — Service Connection in Azure DevOps
+## Schritt 4 — Zugang für GitHub Actions
 
-Damit die Pipeline nach Azure darf — **ohne Passwörter** (Workload Identity
-Federation):
+Der Deploy-Workflow meldet sich per **OIDC** an Azure an, ohne gespeichertes
+Passwort. Die drei Kennungen dafür stehen als Repository-Secrets.
 
-1. Azure DevOps → Project Settings → **Service connections** → New →
-   **Azure Resource Manager** → **Workload Identity federation (automatic)**.
-2. Subscription wählen, Ressourcengruppe leer lassen (ganze Subscription).
-3. Name exakt: **`nicolenders-azure`**.
-4. Nach dem Anlegen unter „Manage service principal" der Identität die Rolle
-   **Contributor** auf der Subscription (oder der Ressourcengruppe) geben, falls
-   nicht automatisch geschehen.
+Ist die Container App über das Azure Portal → **Deployment Center** mit dem
+Repository verbunden worden, hat Azure die Secrets bereits angelegt. Sonst von
+Hand: Repo → Settings → Secrets and variables → **Actions** → **Secrets**.
 
-## Schritt 5 — Variablengruppe in Azure DevOps
+| Secret | Inhalt |
+|---|---|
+| `NICOLENDERSPRODWEB_AZURE_CLIENT_ID` | Client-ID der App-Registrierung mit Federated Credential auf dieses Repo |
+| `NICOLENDERSPRODWEB_AZURE_TENANT_ID` | Tenant-ID |
+| `NICOLENDERSPRODWEB_AZURE_SUBSCRIPTION_ID` | Subscription-ID |
+| `NICOLENDERSPRODWEB_REGISTRY_USERNAME` | Registry-Benutzer (ACR → Access keys) |
+| `NICOLENDERSPRODWEB_REGISTRY_PASSWORD` | Registry-Passwort |
 
-Azure DevOps → Pipelines → **Library** → **+ Variable group** → Name exakt
-**`nicolenders`**. Diese Variablen anlegen (die drei Passwörter mit dem
-**Schloss-Symbol** als *secret* markieren):
+Die Identität braucht **Contributor** auf der Ressourcengruppe.
 
-| Variable | Beispiel / Wert | Secret? |
+## Schritt 5 — Anwendungs-Konfiguration in GitHub
+
+Der Workflow schreibt die Umgebungsvariablen der Container App bei **jedem**
+Lauf neu. Damit kann keine im Portal von Hand gesetzte Variable unbemerkt
+verschwinden — sie muss aber hier stehen.
+
+**Secrets** (Repo → Settings → Secrets and variables → Actions → Secrets):
+
+| Secret | Inhalt |
+|---|---|
+| `AUTH_SECRET` | *(aus Schritt 3)* |
+| `ADMIN_OBJECT_IDS` | deine Entra Object ID, kommasepariert |
+| `ENTRA_CLIENT_ID`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_SECRET` | Anmeldung, siehe unten |
+| `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | LinkedIn-Automatik, siehe unten |
+
+**Variables** (derselbe Ort, Reiter **Variables** — keine Geheimnisse):
+
+| Variable | Wert | Wirkung |
 |---|---|---|
-| `resourceGroupName` | `nicolenders-rg` | nein |
-| `location` | `germanywestcentral` | nein |
-| `acrName` | `nicolendersacr` | nein |
-| `sqlAdminPassword` | *(aus Schritt 3)* | **ja** |
-| `authSecret` | *(aus Schritt 3)* | **ja** |
-| `jobSharedSecret` | *(aus Schritt 3)* | **ja** |
-| `adminObjectIds` | *(deine Object ID)* | nein |
-| `siteUrl` | *(leer lassen — nach 1. Lauf setzen)* | nein |
-| `publicSiteHost` | *(leer lassen — erst mit eigener Domain setzen)* | nein |
-| `entraClientId` | *(leer oder später)* | nein |
-| `entraClientSecret` | *(leer oder später)* | **ja** |
-| `entraIssuer` | *(leer oder später)* | nein |
-| `linkedinClientId` | *(leer oder später)* | nein |
-| `linkedinClientSecret` | *(leer oder später)* | **ja** |
-| `budgetContactEmail` | *(leer oder deine E-Mail)* | nein |
+| `SITE_URL` | `https://nicolenders.com` | Feeds, Sitemap, `AUTH_URL` |
+| `PUBLIC_SITE_HOST` | `nicolenders.com` (ohne Schema) | canonical, hreflang, og:image, noindex-Entscheidung |
 
-> Leere optionale Werte sind in Ordnung — trage in Azure DevOps einfach ein
-> Leerzeichen ein, wenn die Oberfläche einen leeren Wert nicht speichert.
+Beide dürfen zunächst fehlen: dann greifen die Vorgabewerte im Workflow, also
+die Container-App-URL. Zum Umzug auf die eigene Domain siehe unten.
 
-## Schritt 6 — (Empfohlen) Plan prüfen
+`DATABASE_URL`, `BLOB_*` und `JOB_SHARED_SECRET` verwaltet die Infrastruktur
+(Bicep bzw. Container-App-Secrets); der Workflow fasst sie nicht an.
+
+## Schritt 6 — (Empfohlen) Bicep-Plan prüfen
 
 Bevor du echt deployst, einmal den Bicep-Plan ansehen. Dafür muss die Registry
 schon existieren, weil das Template sie referenziert:
@@ -142,22 +154,33 @@ az deployment group what-if -g nicolenders-rg \
     adminObjectIds='<object-id>'
 ```
 
-## Schritt 7 — Pipeline anlegen und starten
+## Schritt 7 — Infrastruktur ausrollen
 
-1. Azure DevOps → Pipelines → **New pipeline** → GitHub → dein Repo →
-   **Existing Azure Pipelines YAML file** → `/azure-pipelines.yml`.
-2. **Run**. Beim ersten Lauf legt Azure DevOps automatisch das Environment
-   `nicolenders-prod` an.
-3. Am Ende steht in den Logs die **Website-URL**
-   (`https://nicolenders-prod-web.<region>.azurecontainerapps.io`).
+```bash
+az deployment group create -g nicolenders-rg \
+  --template-file infra/main.bicep \
+  --parameters acrName=nicolendersacr \
+    containerImage=nicolendersacr.azurecr.io/nicolenders-prod-web:bootstrap \
+    sqlAdminPassword='<pwd>' authSecret='<secret>' jobSharedSecret='<secret>' \
+    adminObjectIds='<object-id>'
+```
 
-## Schritt 8 — `siteUrl` nachtragen (einmalig)
+Am Ende steht in der Ausgabe die **Website-URL**
+(`https://nicolenders-prod-web.<region>.azurecontainerapps.io`).
 
-Setze in der Variablengruppe `nicolenders` die Variable `siteUrl` auf die
-ausgegebene URL und starte die Pipeline erneut. Ab jetzt stimmen Feeds, Sitemap
-und OAuth-Redirects.
+Das Image `:bootstrap` muss vorher einmal in der Registry liegen — dafür gibt es
+den Workflow **„Build & push image"** (Actions → Run workflow) oder
+`az acr build -r nicolendersacr -t nicolenders-prod-web:bootstrap .`
 
-**Fertig.** Jeder weitere Push auf `main` deployt automatisch.
+## Schritt 8 — Ersten Deploy auslösen
+
+Actions → **„Trigger auto deployment for nicolenders-prod-web"** → Run workflow.
+Ab jetzt deployt jeder Push auf `main` automatisch.
+
+Trage danach `SITE_URL` unter Variables auf die ausgegebene URL ein (Schritt 5),
+sonst zeigen Feeds, Sitemap und die Anmelde-Weiterleitung ins Leere.
+
+**Fertig.**
 
 ---
 
@@ -169,18 +192,20 @@ Damit du dich im Admin anmelden kannst:
    Redirect-URI (Web): `https://<deine-webUrl>/api/auth/callback/microsoft-entra-id`.
 2. Client-ID, ein Client-Secret und den Issuer
    (`https://login.microsoftonline.com/<tenant-id>/v2.0`) notieren.
-3. In die Variablengruppe eintragen: `entraClientId`, `entraClientSecret`,
-   `entraIssuer`. Pipeline erneut starten.
+3. `ENTRA_CLIENT_ID`, `ENTRA_TENANT_ID` und `ENTRA_CLIENT_SECRET` als
+   GitHub-Secrets hinterlegen (Schritt 5) und den Deploy-Workflow erneut
+   starten.
 
 ## Optional: LinkedIn-Automatik
 
-`linkedinClientId` / `linkedinClientSecret` aus deiner LinkedIn-App in die
-Variablengruppe eintragen (SPEC §19.3: eine LinkedIn-Seite als App-Eigentümerin
-wird benötigt). Danach im Admin unter „Kanäle" verbinden.
+`LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` aus deiner LinkedIn-App als
+GitHub-Secrets hinterlegen (SPEC §19.3: eine LinkedIn-Seite als App-Eigentümerin
+wird benötigt) und den Deploy-Workflow erneut starten. Danach im Admin unter
+„Kanäle" verbinden.
 
 ## Optional: eigene Domain
 
-Bewusst nicht in der Pipeline, weil dafür eine DNS-Validierung nötig ist:
+Bewusst nicht automatisiert, weil dafür eine DNS-Validierung nötig ist:
 
 ```bash
 # 1. CNAME/TXT laut Ausgabe des ersten Befehls beim DNS-Anbieter setzen
@@ -202,8 +227,8 @@ variables → Actions → Reiter **Variables**:
 Danach den Workflow „Trigger auto deployment for nicolenders-prod-web" starten
 (Actions → Run workflow) oder auf `main` pushen.
 
-**Über die Azure-DevOps-Pipeline:** dieselben Werte als `siteUrl` und
-`publicSiteHost` in der Variablengruppe `nicolenders`.
+**Beim Erstaufbau über Bicep:** dieselben Werte als Parameter `siteUrl` und
+`publicSiteHost`.
 
 **Reihenfolge beachten:** den kanonischen Host erst setzen, wenn die Domain
 wirklich gebunden ist. `proxy.ts` schickt jeden anderen Host mit
@@ -231,8 +256,9 @@ az containerapp ingress traffic set -n nicolenders-prod-web -g nicolenders-rg \
   --revision-weight <alte-revision>=100
 ```
 
-Alternativ die mitgelieferte Pipeline `pipelines/rollback.yml` als zweite
-Pipeline anlegen und mit dem Revisionsnamen manuell starten.
+Bequemer: Actions → **„Rollback (Traffic auf eine ältere Revision)"** →
+Run workflow, Revisionsname eintragen. Der Workflow listet die vorhandenen
+Revisionen vorher auf und prüft, ob es die gewählte gibt.
 
 ---
 
@@ -255,12 +281,12 @@ Pipeline anlegen und mit dem Revisionsnamen manuell starten.
 ## Bewusste Vereinfachungen (ggü. SPEC §13/§14)
 
 - **SQL-Authentifizierung** statt Managed Identity gegen SQL (ADR 0002, Fallback):
-  deutlich einfacher einzurichten. Das Passwort liegt nur in der Variablengruppe
+  deutlich einfacher einzurichten. Das Passwort liegt nur als GitHub-Secret
   bzw. als Container-App-Secret, nie im Repo. Umstieg auf Managed Identity ist
   ein späterer, abgegrenzter Schritt.
 - **Container Registry per CLI vorab** (statt im Template): löst die
   Henne-Ei-Situation „Image bauen vor Registry".
 - **Custom Domain optional** (siehe oben), damit der erste Lauf ohne DNS
   durchläuft.
-- `npm audit` blockt die Pipeline nicht (nur Hinweis), damit ein neuer Advisory
+- `npm audit` blockt das CI-Gate nicht (nur Hinweis), damit ein neuer Advisory
   in einer Transitiv-Abhängigkeit das Deployment nicht unerwartet stoppt.

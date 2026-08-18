@@ -3,10 +3,10 @@
 //
 // Ziel: EIN Bicep-Deployment, das nach dem Bootstrap der Container Registry
 // alles Übrige idempotent anlegt und aktualisiert. Bewusst einfach gehalten,
-// damit die Pipeline direkt durchläuft (siehe infra/README.md).
+// damit der Erstaufbau direkt durchläuft (siehe infra/README.md).
 //
 // DB-Zugriff: SQL-Authentifizierung (ADR 0002, Fallback). Das Passwort kommt
-// als sicherer Parameter aus einer Azure-DevOps-Variablengruppe / Key Vault und
+// als sicherer Parameter beim Deployment (GitHub-Secret / Key Vault) und
 // landet ausschließlich als Container-App-Secret — nie im Repository.
 //
 // Custom Domain wird bewusst NICHT hier verdrahtet (erfordert DNS-Validierung

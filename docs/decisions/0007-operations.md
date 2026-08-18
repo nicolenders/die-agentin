@@ -2,6 +2,10 @@
 
 **Datum:** 01.08.2026
 **Status:** angenommen; Deployment/Validierung **offen**
+**Nachtrag:** Der Pipeline-Teil dieser Entscheidung ist durch
+[0015](./0015-deployment-github-actions.md) ersetzt — deployt wird über
+GitHub Actions, die Azure-DevOps-Pipeline ist entfernt. Die Aussagen zu
+Bicep, CSP und Rechtstexten gelten weiter.
 
 ## Content Security Policy
 

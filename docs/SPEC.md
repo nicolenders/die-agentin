@@ -9,7 +9,7 @@
 
 ## 0. Ziel in drei Sätzen
 
-Eine zweisprachige (DE/EN) Website, auf der eine einzelne Person Inhalte schnell erfasst, terminiert veröffentlicht und optional automatisch auf LinkedIn spiegelt. Kernbereiche: kurze Beiträge und geteilte Links, langlebige Wissensseiten, ein Reiseblog über Vortragsreisen mit Weltkarte, ein Vortragskatalog mit Auswertung sowie Publikationen und Zertifizierungen. Betrieb auf Azure mit möglichst geringen laufenden Kosten, WCAG 2.1 AA als Qualitätsziel, Deployment über GitHub + Azure DevOps.
+Eine zweisprachige (DE/EN) Website, auf der eine einzelne Person Inhalte schnell erfasst, terminiert veröffentlicht und optional automatisch auf LinkedIn spiegelt. Kernbereiche: kurze Beiträge und geteilte Links, langlebige Wissensseiten, ein Reiseblog über Vortragsreisen mit Weltkarte, ein Vortragskatalog mit Auswertung sowie Publikationen und Zertifizierungen. Betrieb auf Azure mit möglichst geringen laufenden Kosten, WCAG 2.1 AA als Qualitätsziel, Deployment über GitHub Actions.
 
 **Nicht-Ziele (v1):** Mehrbenutzerfähigkeit, Kommentarfunktion, Newsletter-Versand, Volltextsuche über alles, E-Commerce, Analytics mit Personenbezug.
 
@@ -516,23 +516,33 @@ Kostenbremse: Budget-Alert bei 25 €/Monat, Azure-SQL-Verhalten bei Erreichen d
 
 ## 15. CI/CD
 
-Quelle ist GitHub, Deployment über Azure DevOps.
+Quelle **und** Deployment sind GitHub. Alles läuft in GitHub Actions; eine
+Azure-DevOps-Pipeline gibt es nicht mehr (siehe `docs/decisions/0015-deployment-github-actions.md`).
 
 ```mermaid
 flowchart LR
-  PR["Pull Request<br/>GitHub"] --> CI["Pipeline: validate<br/>lint · typecheck · test · axe · npm audit"]
+  PR["Pull Request"] --> CI["Workflow: validate<br/>lint · typecheck · test · build<br/>e2e · axe · npm audit"]
   CI -->|grün| MAIN[main]
-  MAIN --> BUILD["Pipeline: build<br/>Docker → ACR mit Git-SHA"]
-  BUILD --> INFRA["Stage: infra<br/>Bicep what-if → deploy"]
-  INFRA --> STAGE["Stage: staging<br/>Revision + Smoke-Test"]
-  STAGE --> PROD["Stage: production<br/>manuelle Freigabe · Traffic 100 %"]
+  MAIN --> DEPLOY["Workflow: AutoDeployTrigger<br/>Image bauen → Container App<br/>→ Umgebungsvariablen setzen"]
+  DEPLOY --> LIVE["Neue Revision<br/>Traffic 100 %"]
+  LIVE -.->|bei Bedarf| RB["Workflow: rollback<br/>Traffic-Switch auf ältere Revision"]
 ```
 
-- Service Connection zu Azure über **Workload Identity Federation**, nicht über Service-Principal-Secrets.
-- Service Connection zu GitHub über GitHub App, Trigger per Webhook auf `main` und auf Pull Requests.
-- Datenbankmigrationen (`prisma migrate deploy`) laufen als eigener Schritt **vor** dem Umschalten des Traffics, in einem einmaligen Container-Apps-Job. Migrationen müssen abwärtskompatibel sein (erst Spalte hinzufügen, dann Code, dann alte Spalte entfernen).
+| Workflow | Datei | Auslöser |
+|---|---|---|
+| Gate vor dem Merge | `.github/workflows/validate.yml` | Pull Request, Push auf `main` |
+| Bauen und ausrollen | `.github/workflows/nicolenders-prod-web-AutoDeployTrigger-*.yml` | Push auf `main`, manuell |
+| Image ohne Deploy bauen | `.github/workflows/build-image.yml` | manuell |
+| Rollback | `.github/workflows/rollback.yml` | manuell, mit Revisionsname |
+
+- Anmeldung an Azure über **OIDC** (`azure/login@v2` mit `id-token: write`), nicht über gespeicherte Service-Principal-Secrets.
+- **Konfiguration als Code:** Der Deploy-Workflow setzt die Umgebungsvariablen der Container App bei jedem Lauf neu, damit sie nicht unbemerkt aus dem Portal verschwinden. Werte, die sich ändern können (`SITE_URL`, `PUBLIC_SITE_HOST`), kommen aus Repository-Variablen; Geheimnisse aus Secrets und als Container-App-Secret.
+- **Kein gleichzeitiges Deployment:** Deploy- und Rollback-Workflow teilen sich eine `concurrency`-Gruppe. Eine Container App verträgt nur eine Provisionierung zur Zeit; Läufe warten, statt sich gegenseitig abzubrechen.
 - Revision-Modus „multiple" mit Traffic-Splitting, damit ein Rollback ein Traffic-Switch ist und kein Redeploy.
-- Pipeline-Definitionen: `azure-pipelines.yml` plus `pipelines/templates/*.yml`.
+- **Offen:** Datenbankmigrationen (`prisma migrate deploy`) laufen derzeit **nicht** im Deploy-Workflow, sondern beim Start des Containers (`instrumentation.ts`). Migrationen müssen deshalb abwärtskompatibel sein (erst Spalte hinzufügen, dann Code, dann alte Spalte entfernen) — was ohnehin gilt.
+- **Offen:** Eine Staging-Stufe mit manueller Freigabe gibt es nicht. Ein Push auf `main` geht direkt live; die Absicherung ist das Gate davor und der Rollback danach. Für eine Person, die allein veröffentlicht, ist das der bewusste Zuschnitt.
+
+Die Bicep-Vorlage unter `infra/` beschreibt weiterhin die **Infrastruktur** und ist der Weg für den Erstaufbau (`infra/README.md`, `PORTAL.md`, `MANUELL.md`). Das laufende Deployment berührt sie nicht.
 
 ---
 
@@ -570,7 +580,14 @@ FOUNDRY_API_KEY               # falls nicht über Managed Identity
 | E2E | Playwright — Login, Beitrag anlegen, terminieren, Job auslösen, öffentliche Sichtbarkeit prüfen | PR blockiert |
 | A11y | axe-core über 8 Hauptrouten in beiden Sprachen | 0 kritische Verstöße |
 | Performance | Lighthouse CI, Budget: LCP < 2,0 s, CLS < 0,1, JS < 180 KB auf Leserseiten | Warnung |
-| Security | `npm audit --audit-level=high`, Dependabot | PR blockiert bei High |
+| Security | `npm audit --audit-level=high`, Dependabot | sichtbar, **derzeit nicht blockierend** — siehe Anmerkung |
+
+**Anmerkung zum Security-Gate:** `npm audit --audit-level=high` schlägt aktuell
+fehl. Die Findings liegen in `postcss` und `sharp` unterhalb von `next`; sie
+lassen sich nur durch ein Next-Update über die festgelegte Version hinaus
+beheben. Das ist eine Stack-Entscheidung und passiert nicht nebenbei. Der Schritt
+läuft deshalb sichtbar mit, blockiert den Merge aber nicht, bis das Update
+entschieden ist.
 
 ---
 
@@ -611,7 +628,7 @@ LinkedIn-OAuth und automatischer Versand, `ChannelTask`-Modell, Ein-Klick-Freiga
 *Fertig, wenn:* Ein veröffentlichter Beitrag automatisch auf LinkedIn erscheint und für die übrigen Kanäle eine ausführbare Aufgabe bereitliegt.
 
 **M8 — Betrieb**
-Bicep für alle Ressourcen, Azure-DevOps-Pipelines, Custom Domain mit Zertifikat, Rechtstexte-Verwaltung, Sicherheits-Header, Budget-Alert, Backup-Prüfung, Lighthouse- und axe-Läufe grün.
+Bicep für alle Ressourcen, GitHub-Actions-Workflows, Custom Domain mit Zertifikat, Rechtstexte-Verwaltung, Sicherheits-Header, Budget-Alert, Backup-Prüfung, Lighthouse- und axe-Läufe grün.
 *Fertig, wenn:* Ein Commit auf `main` nach manueller Freigabe produktiv geht und ein Rollback per Traffic-Switch nachweislich funktioniert.
 
 ---

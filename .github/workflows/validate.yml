@@ -1,0 +1,80 @@
+# CI-Gate (SPEC §17). Läuft bei jedem Pull Request und auf `main`.
+#
+# Ersetzt die `validate`-Stage aus der früheren Azure-DevOps-Pipeline. Die ist
+# nie gelaufen — deployt wurde immer über GitHub Actions —, weshalb es faktisch
+# gar kein Gate gab. Was hier steht, läuft wirklich.
+#
+# Kein Datenbankzugriff nötig: Alle Query-Funktionen fangen Fehler ab und liefern
+# leere Ergebnisse (`lib/queries/*`), die Seiten rendern also auch ohne DB. Die
+# Platzhalter unten existieren nur, damit Prisma und Auth.js beim Start nicht
+# über fehlende Variablen stolpern.
+
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Ein Lauf je Branch genügt; ältere abbrechen.
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: "sqlserver://localhost:1433;database=ci;user=sa;password=CiOnly_NoRealDatabase;encrypt=true;trustServerCertificate=true"
+  AUTH_SECRET: "ci-only-not-a-secret"
+  NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+  PUBLIC_SITE_HOST: "localhost:3000"
+  JOB_SHARED_SECRET: "ci-only"
+
+jobs:
+  checks:
+    name: lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+
+      # SPEC §17 fordert „PR blockiert bei High". Das ist heute nicht
+      # einhaltbar: die High-Findings stecken in `postcss` und `sharp`
+      # unterhalb von `next@16.2.12`, und `npm audit fix --force` würde auf
+      # `next@16.3.1` heben — eine Stack-Änderung, die nicht nebenbei passiert
+      # (CLAUDE.md: „Stack — nicht ohne Rückfrage ändern"). Deshalb sichtbar,
+      # aber vorerst nicht blockierend.
+      - name: npm audit (nicht blockierend, siehe Kommentar)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  browser:
+    name: e2e · a11y
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: E2E-Rauchtest
+        run: npx playwright test
+      - name: axe über die Hauptrouten
+        run: npx playwright test --config=playwright.a11y.config.ts
+      - name: Bericht bei Fehlschlag sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

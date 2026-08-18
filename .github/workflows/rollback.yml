@@ -1,0 +1,62 @@
+# Rollback per Traffic-Switch (SPEC §15). Manuell gestartet, kein Redeploy und
+# kein Neubau: der Traffic wandert auf eine ältere, bereits vorhandene Revision.
+#
+# Ersetzt `pipelines/rollback.yml` aus der Azure-DevOps-Zeit.
+#
+# Revisionsnamen anzeigen:
+#   az containerapp revision list -n nicolenders-prod-web -g nicolenders-rg \
+#     --query "[].{name:name, active:properties.active, created:properties.createdTime}" -o table
+# Der Workflow listet sie auch selbst auf, bevor er umschaltet.
+
+name: Rollback (Traffic auf eine ältere Revision)
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: "Revisionsname, auf den zurückgerollt wird"
+        required: true
+        type: string
+
+# Ein Deployment und ein Rollback dürfen sich nicht überholen: eine Container
+# App verträgt nur eine Provisionierung zur Zeit. Dieselbe Gruppe wie im
+# Deploy-Workflow.
+concurrency:
+  group: deploy-nicolenders-prod-web
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.NICOLENDERSPRODWEB_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.NICOLENDERSPRODWEB_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.NICOLENDERSPRODWEB_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Vorhandene Revisionen zeigen
+        run: |
+          az containerapp revision list \
+            -n nicolenders-prod-web -g nicolenders-rg \
+            --query "[].{name:name, active:properties.active, created:properties.createdTime}" \
+            -o table
+
+      - name: Traffic auf die gewählte Revision schalten
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          # Erst prüfen, ob es die Revision überhaupt gibt — sonst liefe der
+          # Traffic-Switch ins Leere und die Seite bliebe auf der kaputten
+          # Version.
+          az containerapp revision show \
+            -n nicolenders-prod-web -g nicolenders-rg --revision "$REVISION" -o none
+          az containerapp ingress traffic set \
+            -n nicolenders-prod-web -g nicolenders-rg \
+            --revision-weight "$REVISION=100"
+          echo "Rollback aktiv: 100 % Traffic auf $REVISION."

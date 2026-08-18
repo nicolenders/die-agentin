@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { cachedQuery } from "@/lib/cache";
 import {
-  formatMinutesRange,
+  formatDurationRange,
   languagesLabel,
   parseFormatLanguages,
+  toDurationUnit,
 } from "@/lib/briefings/speaker-formats";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -33,7 +34,12 @@ async function loadSpeakerFormats(locale: Locale): Promise<SpeakerFormatRow[]> {
   return rows.map((r) => ({
     id: r.id,
     title: (en ? r.titleEn?.trim() : "") || r.titleDe,
-    duration: formatMinutesRange(r.minutesMin, r.minutesMax, locale),
+    duration: formatDurationRange(
+      r.durationFrom,
+      r.durationTo,
+      toDurationUnit(r.durationUnit),
+      locale,
+    ),
     languages: languagesLabel(parseFormatLanguages(r.languages)),
     note: ((en ? r.noteEn?.trim() : "") || r.noteDe || "").trim(),
   }));

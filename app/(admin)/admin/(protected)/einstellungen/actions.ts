@@ -12,6 +12,7 @@ import {
   CONTACT_ADDRESS_KEY,
 } from "@/lib/queries/settings";
 import { SPEAKER_FORMATS_TAG } from "@/lib/queries/speaker-formats";
+import { toDurationUnit } from "@/lib/briefings/speaker-formats";
 import { locales } from "@/lib/i18n/config";
 import { serializeRichValue } from "@/lib/content/rich";
 
@@ -111,8 +112,11 @@ function formatFields(formData: FormData) {
     titleEn: String(formData.get("titleEn") ?? "").trim() || null,
     noteDe: String(formData.get("noteDe") ?? "").trim() || null,
     noteEn: String(formData.get("noteEn") ?? "").trim() || null,
-    minutesMin: optionalInt(formData.get("minutesMin")),
-    minutesMax: optionalInt(formData.get("minutesMax")),
+    // Zahl und Einheit gehören zusammen: 45 MINUTES, 3 HOURS, 2 DAYS. Es wird
+    // nichts umgerechnet — angezeigt wird, was hier steht.
+    durationFrom: optionalInt(formData.get("durationFrom")),
+    durationTo: optionalInt(formData.get("durationTo")),
+    durationUnit: toDurationUnit(String(formData.get("durationUnit") ?? "")),
     // Je Sprache eine Checkbox; ohne Auswahl bleibt die Spalte in der Akte leer.
     languages: locales.filter((l) => formData.get(`lang-${l}`) === "on").join(","),
     active: formData.get("active") === "on",

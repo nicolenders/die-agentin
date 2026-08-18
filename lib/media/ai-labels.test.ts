@@ -12,6 +12,7 @@ describe("aiImageLabels", () => {
   it("liefert den deutschen Wortlaut", () => {
     expect(aiImageLabels("de")).toEqual({
       aiGenerated: de.common.aiGenerated,
+      aiGeneratedShort: de.common.aiGeneratedShort,
       aiGeneratedImage: de.common.aiGeneratedImage,
     });
   });
@@ -19,6 +20,7 @@ describe("aiImageLabels", () => {
   it("liefert den englischen Wortlaut", () => {
     expect(aiImageLabels("en")).toEqual({
       aiGenerated: en.common.aiGenerated,
+      aiGeneratedShort: en.common.aiGeneratedShort,
       aiGeneratedImage: en.common.aiGeneratedImage,
     });
   });

@@ -69,6 +69,8 @@ export default async function PublikationenAdminPage({
                 <td style={{ width: 60 }}>
                   {p.coverUrl ? (
                     <AssetImage
+                      compact
+                      aiLabel="KI"
                       src={p.coverUrl}
                       alt={p.coverAlt}
                       ai={p.coverAi}

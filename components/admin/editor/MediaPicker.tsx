@@ -244,6 +244,8 @@ export default function MediaPicker({
                     <tr key={item.id}>
                       <td>
                         <AssetImage
+                          compact
+                          aiLabel="KI"
                           src={item.url}
                           alt={item.altDe || "Bild"}
                           ai={toMediaSource(item.source) === "AI"}

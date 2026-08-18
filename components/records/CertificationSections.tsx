@@ -104,7 +104,10 @@ export default function CertificationSections({
                       src={c.logoUrl}
                       alt={c.logoAlt}
                       ai={c.logoAi}
-                      aiLabel={aiLabels.aiGenerated}
+                      // 40-px-Logo: der volle Hinweis stünde über dem ganzen
+                      // Bild. Kurzform am Bild, voller Wortlaut im title.
+                      compact
+                      aiLabel={aiLabels.aiGeneratedShort}
                       aiTitle={aiLabels.aiGeneratedImage}
                       imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
                     />

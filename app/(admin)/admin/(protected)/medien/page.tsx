@@ -94,7 +94,7 @@ export default async function MedienPage({
                 createdAtLabel: formatDate(a.createdAt, "de"),
                 size: `${a.width}×${a.height}`,
                 usages: a.usages,
-                thumb: <AssetImage src={a.url} alt={a.altDe || "Bild"} ai={a.source === "AI"} imgStyle={{ width: 72, height: 72, objectFit: "cover", borderRadius: 4 }} />,
+                thumb: <AssetImage compact aiLabel="KI" src={a.url} alt={a.altDe || "Bild"} ai={a.source === "AI"} imgStyle={{ width: 72, height: 72, objectFit: "cover", borderRadius: 4 }} />,
                 editForm: (
                   <form action={updateAsset} id={`asset-${a.id}`}>
                     <input type="hidden" name="id" value={a.id} />

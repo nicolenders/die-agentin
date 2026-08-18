@@ -79,7 +79,7 @@ export default async function AusbildungAdminPage({
               </td>
               <td style={{ width: 48 }}>
                 {c.logoUrl ? (
-                  <AssetImage src={c.logoUrl} alt={c.name} ai={c.logoAi} imgStyle={{ width: 40, height: 40, objectFit: "contain", borderRadius: 4 }} />
+                  <AssetImage compact aiLabel="KI" src={c.logoUrl} alt={c.name} ai={c.logoAi} imgStyle={{ width: 40, height: 40, objectFit: "contain", borderRadius: 4 }} />
                 ) : (
                   <span className="meta">—</span>
                 )}

@@ -49,7 +49,7 @@ lib/db.ts               Prisma-Singleton
 styles/_tokens.scss     Design-Tokens, einzige Quelle für Farben und Typo
 prisma/                 Schema und Migrationen
 infra/                  Bicep
-pipelines/              Azure DevOps
+.github/workflows/      CI-Gate, Deployment, Rollback
 docs/                   SPEC.md, Mockups, Architekturentscheidungen
 ```
 

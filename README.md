@@ -63,6 +63,6 @@ Vor jedem Commit laufen `lint`, `typecheck` und `test`.
 
 Next.js 16 (App Router) · React 19 · TypeScript strict · SCSS + CSS Modules ·
 Prisma + Azure SQL · Auth.js v5 (Microsoft Entra ID) · TipTap 3 · d3-geo ·
-Azure Container Apps · Bicep · Azure DevOps Pipelines.
+Azure Container Apps · Bicep · GitHub Actions.
 
 Begründungen: `docs/SPEC.md` §1 und `docs/decisions/`.

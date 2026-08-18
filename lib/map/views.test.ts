@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { inBounds, availableViews, MAP_VIEWS } from "./views";
+import { inBounds, availableViews, matchesView, MAP_VIEWS } from "./views";
 
 // Referenzkoordinaten für die Tests.
 const WIEN = { lon: 16.37, lat: 48.21 }; // Österreich → in Europa und DACH
@@ -58,5 +58,35 @@ describe("availableViews", () => {
     expect(ids).toContain("welt");
     expect(ids).toContain("dach");
     expect(ids).toContain("ozeanien");
+  });
+});
+
+describe("matchesView", () => {
+  const welt = MAP_VIEWS.find((v) => v.id === "welt")!;
+  // Prag liegt im DACH-Rechteck, gehört aber nicht zu DE/AT/CH.
+  const PRAG = { lon: 14.42, lat: 50.09, countryCode: "CZ" };
+
+  it("lässt ohne Ansicht alles durch", () => {
+    expect(matchesView(null, { ...PRAG })).toBe(true);
+    expect(matchesView(welt, { ...PRAG })).toBe(true);
+  });
+
+  it("prüft das Rechteck", () => {
+    expect(matchesView(europa, { ...WIEN, countryCode: "AT" })).toBe(true);
+    expect(matchesView(europa, { ...NEW_YORK, countryCode: "US" })).toBe(false);
+  });
+
+  it("prüft bei DACH zusätzlich das Land", () => {
+    expect(matchesView(dach, { ...BERLIN, countryCode: "DE" })).toBe(true);
+    expect(matchesView(dach, { ...WIEN, countryCode: "AT" })).toBe(true);
+    expect(matchesView(dach, PRAG)).toBe(false);
+  });
+
+  it("nimmt das Länderkürzel unabhängig von der Schreibweise", () => {
+    expect(matchesView(dach, { ...BERLIN, countryCode: "de" })).toBe(true);
+  });
+
+  it("wertet ein fehlendes Länderkürzel als „nicht in DACH“", () => {
+    expect(matchesView(dach, { ...BERLIN, countryCode: null })).toBe(false);
   });
 });

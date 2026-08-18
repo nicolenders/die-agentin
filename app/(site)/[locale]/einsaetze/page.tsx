@@ -75,17 +75,17 @@ export default async function EinsaetzePage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      {/* Überschrift und „Briefings"-Button in einer Zeile — spart Höhe. */}
+      {/* Überschrift und „Briefings"-Button in einer Zeile — spart Höhe. Die
+          Abstände bleiben die der übrigen Seiten (.eyebrow/.page-title): mit
+          `margin: 0` klebte die Überschrift an der Kennung darüber. */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p className="eyebrow" style={{ margin: 0 }}>
-            {isDe ? "Einsätze · Weltkarte" : "Missions · world map"}
-          </p>
-          <h1 className="page-title" style={{ margin: 0 }}>
+          <p className="eyebrow">{isDe ? "Einsätze · Weltkarte" : "Missions · world map"}</p>
+          <h1 className="page-title">
             {isDe ? "Auftritte, nach Ort sortiert." : "Appearances, sorted by place."}
           </h1>
         </div>
-        <Link className="btn ghost sm" href={`/${locale}/briefings`}>
+        <Link className="btn ghost sm" href={`/${locale}/briefings`} style={{ flexShrink: 0 }}>
           {isDe ? "Briefings" : "Briefings"} →
         </Link>
       </div>

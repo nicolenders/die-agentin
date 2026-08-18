@@ -13,6 +13,7 @@ import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
 import { parseRichValue } from "@/lib/content/rich";
 import { renderInlineFieldContent } from "@/components/content/RenderDocument";
 import { formatDate } from "@/lib/format";
+import { aiImageLabels } from "@/lib/media/ai-labels";
 import styles from "./hq.module.scss";
 
 // Kleine Logos tragen den KI-Hinweis im Alt-Text statt als sichtbares Badge —
@@ -52,6 +53,7 @@ export default async function HQPage({
     .filter((m) => m.future)
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())[0];
   const recentDispatches = dispatches.slice(0, 3);
+  const aiLabels = aiImageLabels(locale);
   const topBriefing = ranking[0] ?? null;
   const missionHref = (m: typeof nextMission) =>
     // Führt auf die Einsatzseite und wählt den Einsatz dort auf der Karte aus —
@@ -249,16 +251,29 @@ export default async function HQPage({
             {recentDispatches.map((d) => (
               <Link
                 key={d.id}
-                className="card bracket"
+                className="card bracket dispatch-tile"
                 href={`/${locale}/depeschen/${d.slug}`}
-                style={{ display: "block" }}
               >
+                {/* Dasselbe Titelbild wie in der Depeschenliste, nur oben statt
+                    links. Schlichtes <img>: in einer klickbaren Kachel muss der
+                    Klick aufs Bild der Depesche folgen. */}
+                {d.hero ? (
+                  <span className="dispatch-thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={d.hero.url} alt={d.hero.alt} loading="lazy" />
+                    {d.hero.ai ? (
+                      <span className="ai-badge compact" aria-label={aiLabels.aiGeneratedImage}>
+                        {aiLabels.aiGenerated}
+                      </span>
+                    ) : null}
+                  </span>
+                ) : null}
                 <span className="tag" style={d.identities[0] ? { borderColor: d.identities[0].color } : undefined}>
                   {dict.dispatch.formats[d.format]}
                 </span>
-                <h3 style={{ marginTop: 12 }}>{d.title}</h3>
-                {d.summary ? <p style={{ fontSize: "14.5px" }}>{d.summary}</p> : null}
-                <p className="meta">
+                <h3 className="dispatch-title">{d.title}</h3>
+                {d.summary ? <p className="dispatch-summary">{d.summary}</p> : null}
+                <p className="meta dispatch-date">
                   {d.publishedAt ? formatDate(d.publishedAt, locale) : ""}
                   {d.fallback ? " · DE" : ""}
                 </p>

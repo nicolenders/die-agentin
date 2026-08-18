@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { computeGeo, project } from "@/lib/map/geo";
-import { availableViews, inBounds } from "@/lib/map/views";
+import { inBounds, type MapViewDef } from "@/lib/map/views";
 import AssetImage from "@/components/media/AssetImage";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import { formatDuration } from "@/lib/format";
@@ -44,11 +44,14 @@ export default function WorldMap({
   missions,
   locale,
   labels,
+  view = null,
   selectedId = null,
   onSelect,
 }: {
   missions: MapMission[];
   locale: Locale;
+  /** Gewählter Ausschnitt (Welt/Kontinent/DACH); null = ganze Welt. */
+  view?: MapViewDef | null;
   /** Von außen gewählter Einsatz (Tabellenzeile, Deep-Link). */
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
@@ -58,7 +61,6 @@ export default function WorldMap({
     size: string;
     open: string;
     all: string;
-    view: string;
     briefing: string;
     identity: string;
     language: string;
@@ -69,7 +71,6 @@ export default function WorldMap({
     aiGeneratedImage: string;
   };
 }) {
-  const [viewId, setViewId] = useState("welt");
   const selected = missions.find((m) => m.id === selectedId) ?? null;
   const select = (id: string | null) => onSelect?.(id);
 
@@ -92,11 +93,11 @@ export default function WorldMap({
     };
   }, [selected, onSelect]);
 
-  // Nur Ansichten anbieten, in denen Einsätze liegen (Welt und DACH immer).
-  const views = useMemo(() => availableViews(missions), [missions]);
-  const activeView = views.find((v) => v.id === viewId) ?? views[0];
-  const activeBounds = activeView?.bounds ?? null;
-  const activeCountries = activeView?.countries ?? null;
+  // Die Ansicht (Welt/Kontinente/DACH) wird außerhalb gewählt: sie filtert dort
+  // auch die Einsatzliste, damit Karte und Liste dasselbe zeigen. Hier bestimmt
+  // sie nur noch, welcher Ausschnitt gezeichnet wird.
+  const activeBounds = view?.bounds ?? null;
+  const activeCountries = view?.countries ?? null;
 
   const { landPath, graticulePath, projection } = useMemo(
     () => computeGeo(W, H, activeBounds, activeCountries),
@@ -107,31 +108,8 @@ export default function WorldMap({
   // übergebenen Einsätze, nur eingeschränkt durch die gewählte Ansicht (Bounds).
   const visible = missions.filter((m) => inBounds(activeBounds, m.lon, m.lat));
 
-  function chooseView(id: string) {
-    setViewId(id);
-    select(null); // Popup schließen — der Pin liegt evtl. außerhalb der neuen Ansicht.
-  }
-
   return (
     <div>
-      {/* Ansicht (Welt/Kontinente/DACH). */}
-      {views.length > 1 ? (
-        <div className="map-filters">
-          <div className="year-filter" role="group" aria-label={labels.view}>
-            {views.map((v) => (
-              <button
-                key={v.id}
-                className="chip"
-                aria-pressed={activeView?.id === v.id}
-                onClick={() => chooseView(v.id)}
-              >
-                {locale === "de" ? v.labelDe : v.labelEn}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       <div className="map-shell" style={{ position: "relative" }}>
         <svg
           className="map"

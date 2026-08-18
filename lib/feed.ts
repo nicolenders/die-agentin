@@ -113,3 +113,49 @@ export function parseFeedKinds(value: string | null | undefined): FeedKind[] {
   if (picked.size === 0) return [...FEED_KINDS];
   return FEED_KINDS.filter((k) => picked.has(k));
 }
+
+/**
+ * Führt die Einträge der drei Arten zu einem Feed zusammen.
+ *
+ * Reines Sortieren nach Datum reichte nicht: Einsätze und Briefings tragen als
+ * Datum den Zeitpunkt, an dem die Zeile angelegt wurde. Beim Aufbau des
+ * Bestands entstanden Dutzende davon an einem Tag — sie waren damit alle
+ * „neuer" als jede veröffentlichte Depesche und drängten die Depeschen
+ * vollständig aus den 50 Plätzen. Wer den Feed abonniert hatte, bekam Einsätze
+ * und Briefings, aber keine einzige Depesche.
+ *
+ * Deshalb bekommt jede vorhandene Art zuerst ihren garantierten Anteil
+ * (`limit / Anzahl der Arten`); die übrigen Plätze füllt das Datum. Innerhalb
+ * des Feeds bleibt die Reihenfolge chronologisch.
+ */
+export function mergeFeedEntries<T extends { kind: FeedKind; pubDate: Date | null }>(
+  entries: T[],
+  limit: number,
+): T[] {
+  if (limit <= 0) return [];
+  const newestFirst = (a: T, b: T) => (b.pubDate?.getTime() ?? 0) - (a.pubDate?.getTime() ?? 0);
+
+  const byKind = new Map<FeedKind, T[]>();
+  for (const entry of entries) {
+    const list = byKind.get(entry.kind) ?? [];
+    list.push(entry);
+    byKind.set(entry.kind, list);
+  }
+  for (const list of byKind.values()) list.sort(newestFirst);
+
+  const present = FEED_KINDS.filter((k) => (byKind.get(k)?.length ?? 0) > 0);
+  if (present.length === 0) return [];
+
+  const share = Math.max(1, Math.floor(limit / present.length));
+  const picked: T[] = [];
+  const rest: T[] = [];
+  for (const kind of present) {
+    const list = byKind.get(kind) ?? [];
+    picked.push(...list.slice(0, share));
+    rest.push(...list.slice(share));
+  }
+
+  rest.sort(newestFirst);
+  picked.push(...rest.slice(0, Math.max(0, limit - picked.length)));
+  return picked.sort(newestFirst).slice(0, limit);
+}

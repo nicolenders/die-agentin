@@ -11,6 +11,12 @@ export interface MapViewDef {
   bounds: GeoBounds; // null = ganze Welt
   always?: boolean; // immer anbieten, auch ohne Einsätze in der Region
   countries?: string[]; // nur diese Länder zeichnen (ISO-3166-1 numerisch), sonst ganze Landmasse
+  /**
+   * Nur Einsätze aus diesen Ländern (ISO-3166-1 alpha-2). Gesetzt, wo das
+   * Rechteck mehr umfasst, als die Ansicht verspricht: das DACH-Rechteck reicht
+   * bis Prag und Mailand, „DACH" meint aber DE/AT/CH.
+   */
+  countryCodes?: string[];
 }
 
 export const MAP_VIEWS: MapViewDef[] = [
@@ -29,6 +35,7 @@ export const MAP_VIEWS: MapViewDef[] = [
     bounds: [[5, 45.5], [17.5, 55.5]],
     always: true,
     countries: ["276", "040", "756"],
+    countryCodes: ["DE", "AT", "CH"],
   },
 ];
 
@@ -37,6 +44,20 @@ export function inBounds(bounds: GeoBounds, lon: number, lat: number): boolean {
   if (!bounds) return true;
   const [[minLon, minLat], [maxLon, maxLat]] = bounds;
   return lon >= minLon && lon <= maxLon && lat >= minLat && lat <= maxLat;
+}
+
+/**
+ * Liegt ein Einsatz in der Ansicht? Rechteck plus — wo gesetzt — die Länderliste.
+ * Genau danach filtern Karte und Liste, damit beide dasselbe zeigen.
+ */
+export function matchesView(
+  view: MapViewDef | null | undefined,
+  point: { lon: number; lat: number; countryCode?: string | null },
+): boolean {
+  if (!view) return true;
+  if (!inBounds(view.bounds, point.lon, point.lat)) return false;
+  if (!view.countryCodes) return true;
+  return view.countryCodes.includes((point.countryCode ?? "").toUpperCase());
 }
 
 /**

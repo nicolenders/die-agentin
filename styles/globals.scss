@@ -687,6 +687,29 @@ p {
 .dispatch-date {
   margin: 10px 0 0;
 }
+// Kachel der Startseite („Neueste Depeschen"): dieselbe Bildregel wie in der
+// Liste, nur oben statt links. Auch hier ist die ganze Kachel der Link — also
+// nichts darin unterstreichen, sondern beim Überfahren den Titel.
+.dispatch-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-decoration: none;
+}
+.dispatch-tile .dispatch-thumb {
+  align-self: stretch;
+  margin-bottom: 14px;
+}
+.dispatch-tile .dispatch-summary {
+  // Der Text füllt die Kachelhöhe, damit das Datum aller drei Kacheln auf einer
+  // Grundlinie sitzt (CLAUDE.md).
+  flex: 1;
+}
+.dispatch-tile:hover .dispatch-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 @media (max-width: 720px) {
   .dispatch-row {
     grid-template-columns: 150px minmax(0, 1fr);
@@ -987,9 +1010,6 @@ th {
     display: block;
     margin-top: 8px;
     text-align: left !important;
-  }
-  table.stack td.row-action .btn {
-    width: 100%;
   }
   table.stack .hide-sm {
     display: none;
@@ -1684,6 +1704,44 @@ a.radar-chip:focus-visible {
 }
 // Ansichts- und Zeitfilter nebeneinander in einer Zeile, mit dezentem Trenner.
 // Bricht erst auf schmalen Viewports um.
+// Ort in der Einsatzliste: Weltkugel-Knopf und Ortsname in einer Zeile. Der
+// Knopf ersetzt die frühere Spalte „Auf der Karte" — eine ganze Spalte für eine
+// Aktion, die auch am Ort selbst sitzen kann.
+.location-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.globe-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--violet-text);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+}
+.globe-btn:hover {
+  color: var(--violet-bright);
+  border-color: var(--violet);
+  background: rgba(139, 92, 246, 0.12);
+}
+// Der ausgewählte Einsatz ist auch in der Liste zu erkennen.
+.globe-btn[aria-pressed="true"] {
+  color: var(--violet-bright);
+  border-color: var(--violet-bright);
+  background: rgba(139, 92, 246, 0.18);
+}
+
 .map-filters {
   display: flex;
   align-items: center;

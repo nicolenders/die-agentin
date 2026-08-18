@@ -9,6 +9,12 @@ import { alternatesFor } from "@/lib/seo/alternates";
 import { formatDate } from "@/lib/format";
 import { aiImageLabels } from "@/lib/media/ai-labels";
 import { DISPATCH_FORMATS, isOneOf, type DispatchFormat } from "@/lib/domain";
+import {
+  dispatchYears,
+  matchesDispatchSearch,
+  matchesDispatchYear,
+  parseDispatchYear,
+} from "@/lib/dispatches/filter";
 
 export const dynamic = "force-dynamic";
 
@@ -28,38 +34,104 @@ export default async function DepeschenPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ format?: string; thema?: string }>;
+  searchParams: Promise<{ format?: string; thema?: string; jahr?: string; q?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const { format, thema } = await searchParams;
+  const { format, thema, jahr, q } = await searchParams;
   const dict = await getDictionary(locale);
   const isDe = locale === "de";
 
   const activeFormat: DispatchFormat | null = isOneOf(DISPATCH_FORMATS, format) ? format : null;
+  const activeYear = parseDispatchYear(jahr);
+  const query = (q ?? "").trim();
   const topicId = (thema ?? "").trim();
   const [all, radar] = await Promise.all([getPublishedDispatches(locale), getRadarTopics(locale)]);
   const activeTopic = topicId ? radar.find((r) => r.id === topicId) ?? null : null;
   const dispatches = all.filter(
     (d) =>
       (!activeFormat || d.format === activeFormat) &&
-      (!activeTopic || d.focusTopicIds.includes(activeTopic.id)),
+      (!activeTopic || d.focusTopicIds.includes(activeTopic.id)) &&
+      matchesDispatchYear(d, activeYear) &&
+      matchesDispatchSearch(d, query),
   );
+
+  // Jahre mit Depeschen — ein Blib je Jahr, keine leeren Jahre dazwischen.
+  const years = dispatchYears(all);
+  const filtered = Boolean(activeFormat || activeTopic || activeYear || query);
 
   // Hinweistexte für KI-generierte Bilder in der Sprache der Seite.
   const aiLabels = aiImageLabels(locale);
 
-  const topicSuffix = activeTopic ? `thema=${activeTopic.id}` : "";
-  const filterHref = (f: DispatchFormat | null) => {
-    const parts = [f ? `format=${f}` : "", topicSuffix].filter(Boolean);
+  // Alle Filter stehen in der Adresse und lassen sich verlinken; jeder Blib
+  // ändert genau seinen Teil und lässt die übrigen stehen.
+  const hrefWith = (patch: {
+    format?: DispatchFormat | null;
+    jahr?: number | null;
+    q?: string | null;
+  }) => {
+    const nextFormat = patch.format === undefined ? activeFormat : patch.format;
+    const nextYear = patch.jahr === undefined ? activeYear : patch.jahr;
+    const nextQuery = patch.q === undefined ? query : (patch.q ?? "");
+    const parts = [
+      nextFormat ? `format=${nextFormat}` : "",
+      activeTopic ? `thema=${activeTopic.id}` : "",
+      nextYear ? `jahr=${nextYear}` : "",
+      nextQuery ? `q=${encodeURIComponent(nextQuery)}` : "",
+    ].filter(Boolean);
     return `/${locale}/depeschen${parts.length ? `?${parts.join("&")}` : ""}`;
   };
+  const filterHref = (f: DispatchFormat | null) => hrefWith({ format: f });
+  // „Thema ✕" nimmt nur das Thema weg und lässt Format, Jahr und Suche stehen.
+  const topicClearedHref = (() => {
+    const parts = [
+      activeFormat ? `format=${activeFormat}` : "",
+      activeYear ? `jahr=${activeYear}` : "",
+      query ? `q=${encodeURIComponent(query)}` : "",
+    ].filter(Boolean);
+    return `/${locale}/depeschen${parts.length ? `?${parts.join("&")}` : ""}`;
+  })();
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
       <p className="eyebrow">{dict.dispatch.eyebrow}</p>
       <h1 className="page-title">{dict.dispatch.headline}</h1>
       <p className="lead">{dict.dispatch.lead}</p>
+
+      {/* Suche als gewöhnliches GET-Formular: der Suchbegriff steht damit in der
+          Adresse (teilbar, zurück-Taste funktioniert) und die Seite bleibt eine
+          Server Component — kein JavaScript nötig, um zu suchen. Die übrigen
+          Filter reisen als versteckte Felder mit. */}
+      {all.length > 0 ? (
+        <form
+          action={`/${locale}/depeschen`}
+          method="get"
+          role="search"
+          className="filter-row"
+          style={{ marginTop: 20 }}
+        >
+          {activeFormat ? <input type="hidden" name="format" value={activeFormat} /> : null}
+          {activeTopic ? <input type="hidden" name="thema" value={activeTopic.id} /> : null}
+          {activeYear ? <input type="hidden" name="jahr" value={activeYear} /> : null}
+          <input
+            className="f"
+            type="search"
+            name="q"
+            defaultValue={query}
+            placeholder={dict.dispatch.searchPlaceholder}
+            aria-label={dict.dispatch.searchLabel}
+            style={{ maxWidth: 320 }}
+          />
+          <button className="btn ghost sm" type="submit">
+            {dict.dispatch.searchSubmit}
+          </button>
+          {query ? (
+            <Link className="btn ghost sm" href={hrefWith({ q: null })}>
+              {dict.dispatch.searchClear}
+            </Link>
+          ) : null}
+        </form>
+      ) : null}
 
       {/* Vier Format-Filter für null Inhalte sind eine leere Geste (Audit 6.3):
           die Chips erscheinen erst, wenn es überhaupt etwas zu filtern gibt. */}
@@ -76,16 +148,39 @@ export default async function DepeschenPage({
         </div>
       ) : null}
 
+      {/* Ein Blib je Jahr, in dem es Depeschen gibt. Bei nur einem Jahrgang wäre
+          der Filter eine Attrappe — dann erscheint er nicht. */}
+      {years.length > 1 ? (
+        <div className="year-filter" role="group" aria-label={dict.dispatch.filterByYear} style={{ marginTop: 10 }}>
+          <Link className="chip" aria-current={activeYear === null ? "true" : undefined} href={hrefWith({ jahr: null })}>
+            {dict.dispatch.yearAll}
+          </Link>
+          {years.map((y) => (
+            <Link key={y} className="chip" aria-current={activeYear === y ? "true" : undefined} href={hrefWith({ jahr: y })}>
+              {y}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
       {/* Aus dem Radar heraus verlinkt: sichtbar machen, worauf gefiltert wird. */}
       {activeTopic ? (
         <p className="year-filter" style={{ marginTop: 12 }}>
           <Link
             className="chip"
             aria-current="true"
-            href={`/${locale}/depeschen${activeFormat ? `?format=${activeFormat}` : ""}`}
+            href={topicClearedHref}
           >
             {isDe ? "Thema" : "Topic"}: {activeTopic.title} ✕
           </Link>
+        </p>
+      ) : null}
+
+      {/* Bei aktivem Filter sagen, wie viel von wie viel zu sehen ist — sonst
+          wirkt eine kurze Liste wie ein leerer Bestand. */}
+      {filtered && dispatches.length > 0 ? (
+        <p className="meta" style={{ marginTop: 14, marginBottom: 0 }}>
+          {dispatches.length} {dict.dispatch.countOf} {all.length} {dict.dispatch.namePlural}
         </p>
       ) : null}
 

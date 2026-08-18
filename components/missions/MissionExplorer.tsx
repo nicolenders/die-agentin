@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import WorldMap, { type MapMission } from "@/components/map/WorldMap";
+import { availableViews, matchesView } from "@/lib/map/views";
 import { isUpcoming, matchesYear, parseYearSelection, type YearSelection } from "@/lib/missions";
 import { useIsPhone } from "@/lib/hooks/use-media-query";
 import { berlinDay } from "@/lib/time";
@@ -92,26 +93,56 @@ export interface ExplorerLabels {
   };
 }
 
+/** Weltkugel — führt den Einsatz auf der Karte vor. */
+function GlobeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M3.3 9h17.4M3.3 15h17.4" fill="none" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
 interface FilterState {
   q: string;
   year: string; // "aktuell" | "alle" | Jahreszahl
   ids: string[];
   showOnline: boolean;
   werkzeug: string; // Werkzeug-Slug oder "" (kein Werkzeug-Filter)
+  /** Kartenausschnitt (Welt/Kontinent/DACH) — filtert auch die Liste. */
+  view: string;
 }
 
 const STORE_KEY = "einsaetze:filter";
-const DEFAULT_STATE: FilterState = { q: "", year: "alle", ids: [], showOnline: true, werkzeug: "" };
+const DEFAULT_STATE: FilterState = {
+  q: "",
+  year: "alle",
+  ids: [],
+  showOnline: true,
+  werkzeug: "",
+  view: "welt",
+};
 
 function readFromSearch(search: string): FilterState | null {
   const p = new URLSearchParams(search);
-  if (!p.has("jahr") && !p.has("identitaet") && !p.has("q") && !p.has("online") && !p.has("werkzeug")) return null;
+  if (
+    !p.has("jahr") &&
+    !p.has("identitaet") &&
+    !p.has("q") &&
+    !p.has("online") &&
+    !p.has("werkzeug") &&
+    !p.has("ansicht")
+  ) {
+    return null;
+  }
   return {
     q: p.get("q") ?? "",
     year: p.get("jahr") ?? "alle",
     ids: (p.get("identitaet") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     showOnline: p.get("online") !== "0",
     werkzeug: p.get("werkzeug") ?? "",
+    view: p.get("ansicht") ?? "welt",
   };
 }
 
@@ -126,6 +157,7 @@ function readFromStore(): FilterState | null {
       ids: Array.isArray(parsed.ids) ? parsed.ids.filter((x): x is string => typeof x === "string") : [],
       showOnline: parsed.showOnline !== false,
       werkzeug: typeof parsed.werkzeug === "string" ? parsed.werkzeug : "",
+      view: typeof parsed.view === "string" ? parsed.view : "welt",
     };
   } catch {
     return null;
@@ -190,6 +222,7 @@ export default function MissionExplorer({
     if (state.ids.length) p.set("identitaet", state.ids.join(","));
     if (!state.showOnline) p.set("online", "0");
     if (state.werkzeug) p.set("werkzeug", state.werkzeug);
+    if (state.view && state.view !== "welt") p.set("ansicht", state.view);
     // Auch die Auswahl steht in der URL — so lässt sich ein Einsatz samt
     // geöffnetem Popup verlinken (genau das nutzt die Startseite).
     if (selectedId) p.set("einsatz", selectedId);
@@ -201,6 +234,11 @@ export default function MissionExplorer({
     () => [...new Set(missions.map((m) => m.year))].sort((a, b) => b - a),
     [missions],
   );
+
+  // Ansichten aus dem gesamten Bestand, nicht aus der gefilterten Auswahl: sonst
+  // verschwindet der Knopf, mit dem man gerade gefiltert hat.
+  const views = useMemo(() => availableViews(missions), [missions]);
+  const activeView = views.find((v) => v.id === state.view) ?? views[0] ?? null;
   const currentYear = new Date().getUTCFullYear();
   const selection: YearSelection = parseYearSelection(state.year);
   const needle = state.q.trim().toLowerCase();
@@ -215,16 +253,17 @@ export default function MissionExplorer({
   const filtered = useMemo(
     () =>
       isPhone
-        ? missions.filter((m) => isUpcoming(m.startDay, today))
+        ? missions.filter((m) => isUpcoming(m.startDay, today) && matchesView(activeView, m))
         : missions.filter(
             (m) =>
+              matchesView(activeView, m) &&
               (state.showOnline || !m.isOnline) &&
               matchesYear(m.year, m.future, selection, currentYear) &&
               (state.ids.length === 0 || m.identitySlugs.some((s) => state.ids.includes(s))) &&
               (!state.werkzeug || m.tools.some((t) => t.slug === state.werkzeug)) &&
               (!needle || `${m.eventName} ${m.city} ${m.countryCode}`.toLowerCase().includes(needle)),
           ),
-    [missions, isPhone, today, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
+    [missions, isPhone, today, activeView, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
   );
 
   // Fällt der ausgewählte Einsatz durch einen Filter heraus, gilt er als nicht
@@ -275,7 +314,18 @@ export default function MissionExplorer({
   }));
 
   const isDefault =
-    state.q === "" && state.year === "alle" && state.ids.length === 0 && state.showOnline && state.werkzeug === "";
+    state.q === "" &&
+    state.year === "alle" &&
+    state.ids.length === 0 &&
+    state.showOnline &&
+    state.werkzeug === "" &&
+    state.view === "welt";
+
+  /** Ausschnitt wechseln. Das Popup schließt: der Pin liegt evtl. außerhalb. */
+  function chooseView(id: string) {
+    setState((s) => ({ ...s, view: id }));
+    setSelectedId(null);
+  }
 
   const set = (patch: Partial<FilterState>) => setState((s) => ({ ...s, ...patch }));
 
@@ -320,14 +370,6 @@ export default function MissionExplorer({
               )
               : null}
         </span>
-        <button
-          type="button"
-          className="chip sm"
-          aria-pressed={state.showOnline}
-          onClick={() => set({ showOnline: !state.showOnline })}
-        >
-          {labels.onlineToggle}
-        </button>
         {state.werkzeug ? (
           <button
             type="button"
@@ -393,6 +435,39 @@ export default function MissionExplorer({
 
   return (
     <div>
+      {/* Ausschnitt der Karte — und zugleich Filter der Liste darunter: Wer
+          „Europa" wählt, will die europäischen Einsätze sehen, nicht nur einen
+          anderen Kartenausschnitt. „Online" steht hier mit, abgesetzt hinter
+          DACH: Online-Einsätze haben keinen Ort, gehören aber in dieselbe
+          Entscheidung „was sehe ich gerade?". */}
+      {views.length > 1 ? (
+        <div className="map-filters">
+          <div className="year-filter" role="group" aria-label={labels.map.view}>
+            {views.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                className="chip"
+                aria-pressed={activeView?.id === v.id}
+                onClick={() => chooseView(v.id)}
+              >
+                {locale === "de" ? v.labelDe : v.labelEn}
+              </button>
+            ))}
+          </div>
+          <div className="year-filter" role="group" aria-label={labels.onlineToggle}>
+            <button
+              type="button"
+              className="chip"
+              aria-pressed={state.showOnline}
+              onClick={() => set({ showOnline: !state.showOnline })}
+            >
+              {labels.onlineToggle}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Karte mit der Kennzahl (angezeigt/gesamt) oben rechts. */}
       <div className="map-wrap" ref={mapRef}>
         <span className="map-count">
@@ -403,6 +478,7 @@ export default function MissionExplorer({
             missions={mapMissions}
             locale={locale}
             labels={labels.map}
+            view={activeView}
             selectedId={shownSelectedId}
             onSelect={setSelectedId}
           />
@@ -431,7 +507,6 @@ export default function MissionExplorer({
               <th scope="col" role="columnheader">{labels.colLanguage}</th>
               <th scope="col" role="columnheader">{labels.colLocation}</th>
               <th scope="col" role="columnheader">{labels.colStatus}</th>
-              <th scope="col" role="columnheader"><span className="visually-hidden">{labels.map.showOnMap}</span></th>
             </tr>
           </thead>
           <tbody role="rowgroup">
@@ -467,20 +542,24 @@ export default function MissionExplorer({
                   {talkLanguageLabel(m.language, locale) ?? "—"}
                 </td>
                 <td role="cell" data-label={labels.colLocation}>
-                  {m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`}
+                  {/* Der Globus vor dem Ort holt den Einsatz auf die Karte. Als
+                      echter Knopf (Tastatur, Screenreader); der Titel nennt die
+                      Wirkung, eine eigene Spalte dafür braucht es nicht mehr. */}
+                  <span className="location-cell">
+                    <button
+                      type="button"
+                      className="globe-btn"
+                      aria-pressed={shownSelectedId === m.id}
+                      title={labels.map.showOnMap}
+                      aria-label={`${labels.map.showOnMap}: ${m.isOnline ? labels.onlineLocation : m.city}`}
+                      onClick={() => selectMission(m.id)}
+                    >
+                      <GlobeIcon />
+                    </button>
+                    <span>{m.isOnline ? labels.onlineLocation : `${m.city}, ${m.countryCode}`}</span>
+                  </span>
                 </td>
                 <td role="cell" data-label={labels.colStatus}>{m.future ? labels.statusPlanned : labels.statusDone}</td>
-                <td role="cell" className="row-action" style={{ textAlign: "right" }}>
-                  {/* Für Tastatur und Screenreader: die Zeilenauswahl als echter Knopf. */}
-                  <button
-                    type="button"
-                    className="btn ghost sm"
-                    aria-pressed={shownSelectedId === m.id}
-                    onClick={() => selectMission(m.id)}
-                  >
-                    {labels.map.showOnMap}
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>

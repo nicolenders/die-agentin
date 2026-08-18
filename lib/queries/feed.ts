@@ -4,7 +4,7 @@ import { pickTranslation } from "@/lib/content/pick";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getDictionary } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
-import { FEED_KINDS, type FeedItem, type FeedKind } from "@/lib/feed";
+import { FEED_KINDS, mergeFeedEntries, type FeedItem, type FeedKind } from "@/lib/feed";
 import type { Locale } from "@/lib/i18n/config";
 
 // Inhalte des RSS-Feeds. Der Feed trug lange nur Depeschen; wer die Agentin
@@ -163,7 +163,7 @@ export async function getFeedEntries(
     }
   }
 
-  return entries
-    .sort((a, b) => (b.pubDate?.getTime() ?? 0) - (a.pubDate?.getTime() ?? 0))
-    .slice(0, FEED_ITEM_LIMIT);
+  // Nicht bloß nach Datum schneiden: sonst verdrängt eine Art die anderen
+  // (siehe `mergeFeedEntries`).
+  return mergeFeedEntries(entries, FEED_ITEM_LIMIT);
 }

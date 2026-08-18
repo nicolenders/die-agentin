@@ -82,9 +82,10 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
           : "Everything in one place: copy-ready bios, press photo, talk formats, topics and the fastest way to reach me."}
       </p>
 
-      {/* Oben nebeneinander: das Pressefoto links, die harten Fakten rechts.
-          Beides braucht ein Veranstalter zuerst, beides passt in eine Zeile.
-          Ohne gepflegtes Pressefoto steht dort nur die Faktenbox. */}
+      {/* Reihe 1: links das Pressefoto, rechts die harten Fakten und darunter
+          der Kontakt. Beides beantwortet die ersten Fragen eines Veranstalters
+          („wer ist das?", „wie erreiche ich sie?") und passt in eine Zeile.
+          Ohne gepflegtes Pressefoto nimmt die rechte Spalte die volle Breite. */}
       <div className={portrait ? "grid g2" : ""} style={{ marginTop: 24, alignItems: "start" }}>
         {portrait ? (
           <div className="card bracket" style={{ padding: 24 }}>
@@ -110,34 +111,83 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
           </div>
         ) : null}
 
-        {/* Harte Fakten als Text (auch für KI-Systeme, Phase 13.4). */}
-        <div className="card bracket" style={{ padding: 24 }}>
-          <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Fakten" : "Facts"}</p>
-          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-            <li>{isDe ? `Microsoft MVP seit 2020, ${stats.mvpAwards}× in Folge.` : `Microsoft MVP since 2020, ${stats.mvpAwards} years running.`}</li>
-            <li>{isDe ? `${stats.books} Fachbücher, ${stats.certifications} Zertifizierungen.` : `${stats.books} technical books, ${stats.certifications} certifications.`}</li>
-            <li>{isDe ? `${stats.missions} Einsätze in ${stats.countries} Ländern.` : `${stats.missions} missions in ${stats.countries} countries.`}</li>
-            <li>{isDe ? `${identities.length} Identitäten (Fachgebiete).` : `${identities.length} identities (areas).`}</li>
-          </ul>
-          <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
-            {isDe ? "Zahlen aus dem laufenden Bestand. Sie veralten nicht mit der Bio." : "Numbers pulled live. They don't go stale with the bio."}
-          </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {/* Harte Fakten als Text (auch für KI-Systeme, Phase 13.4). */}
+          <div className="card bracket" style={{ padding: 24 }}>
+            <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Fakten" : "Facts"}</p>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              <li>{isDe ? `Microsoft MVP seit 2020, ${stats.mvpAwards}× in Folge.` : `Microsoft MVP since 2020, ${stats.mvpAwards} years running.`}</li>
+              <li>{isDe ? `${stats.books} Fachbücher, ${stats.certifications} Zertifizierungen.` : `${stats.books} technical books, ${stats.certifications} certifications.`}</li>
+              <li>{isDe ? `${stats.missions} Einsätze in ${stats.countries} Ländern.` : `${stats.missions} missions in ${stats.countries} countries.`}</li>
+              <li>{isDe ? `${identities.length} Identitäten (Fachgebiete).` : `${identities.length} identities (areas).`}</li>
+            </ul>
+            <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
+              {isDe ? "Zahlen aus dem laufenden Bestand. Sie veralten nicht mit der Bio." : "Numbers pulled live. They don't go stale with the bio."}
+            </p>
+          </div>
+
+          <div className="card bracket" style={{ padding: 24 }}>
+            <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Kontakt" : "Contact"}</p>
+            <p style={{ fontSize: 15 }}>{isDe ? "Für Anfragen zu Vorträgen und Workshops:" : "For talk and workshop enquiries:"}</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+              {social.linkedin ? <a className="btn" href={social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a> : null}
+              {contact.email ? <a className="btn ghost" href={`mailto:${contact.email}`}>{isDe ? "E-Mail" : "Email"}</a> : null}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Die Fachgebiete stehen über den Bios: sie beantworten „worüber spricht
-          sie?" — die Frage, die vor der Wahl der Bio-Länge kommt. */}
-      {identities.length > 0 ? (
-        <>
-          <p className="eyebrow" style={{ marginTop: 40 }}>{isDe ? "Fachgebiete / Identitäten" : "Areas / identities"}</p>
-          <div style={{ marginTop: 12 }}>
-            <IdentityCompactGrid identities={identities} locale={locale} />
-          </div>
-        </>
+      {/* Reihe 2: worüber sie spricht (Fachgebiete) und in welcher Form
+          (Formate) — nebeneinander, weil ein Veranstalter beides zusammen
+          abwägt. Fehlt eine der beiden Seiten, nimmt die andere die Breite. */}
+      {identities.length > 0 || formats.length > 0 ? (
+        <div
+          className={identities.length > 0 && formats.length > 0 ? "grid g2" : ""}
+          style={{ marginTop: 40, alignItems: "start" }}
+        >
+          {identities.length > 0 ? (
+            <div>
+              <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Fachgebiete / Identitäten" : "Areas / identities"}</p>
+              <div style={{ marginTop: 12 }}>
+                <IdentityCompactGrid identities={identities} locale={locale} columns={2} />
+              </div>
+            </div>
+          ) : null}
+
+          {formats.length > 0 ? (
+            <div className="card bracket" style={{ padding: 24 }}>
+              <p className="eyebrow" style={{ marginTop: 0 }}>{dict.briefing.formatsHeading}</p>
+              <p className="meta" style={{ marginTop: -6 }}>{dict.briefing.formatsLead}</p>
+              {/* `table.stack` nimmt den Elementen am Telefon ihre Tabellenrolle;
+                  die Rollen stehen deshalb ausdrücklich im Markup (styles/globals.scss). */}
+              <table className="stack" role="table" style={{ marginTop: 12 }}>
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th scope="col" role="columnheader">{dict.briefing.formatsHeading}</th>
+                    <th scope="col" role="columnheader">{isDe ? "Dauer" : "Duration"}</th>
+                    <th scope="col" role="columnheader">{dict.common.language}</th>
+                  </tr>
+                </thead>
+                <tbody role="rowgroup">
+                  {formats.map((f) => (
+                    <tr role="row" key={f.id}>
+                      <td role="cell" data-primary="" data-label={dict.briefing.formatsHeading}>
+                        {f.title}
+                        {f.note ? <div className="meta">{f.note}</div> : null}
+                      </td>
+                      <td role="cell" className="meta" data-label={isDe ? "Dauer" : "Duration"}>{f.duration}</td>
+                      <td role="cell" className="meta" data-label={dict.common.language}>{f.languages}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
-      {/* Bios als Register statt untereinander: gebraucht wird immer genau eine
-          Länge. */}
+      {/* Zum Schluss die Bios — als Register statt untereinander: gebraucht wird
+          immer genau eine Länge. */}
       <p className="eyebrow" style={{ marginTop: 40 }}>{isDe ? "Bios zum Kopieren" : "Copy-ready bios"}</p>
       {bioBlocks.length > 0 ? (
         <BioTabs
@@ -150,49 +200,6 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
           <p className="muted" style={{ margin: 0 }}>{isDe ? "Bios werden gerade gepflegt." : "Bios are being maintained."}</p>
         </div>
       )}
-
-      {/* Formate und Kontakt nebeneinander: was ich anbiete und wie man es
-          bucht, gehören in einen Blick. */}
-      <div className={formats.length > 0 ? "grid g2" : ""} style={{ marginTop: 40, alignItems: "start" }}>
-        {formats.length > 0 ? (
-          <div className="card bracket" style={{ padding: 24 }}>
-            <p className="eyebrow" style={{ marginTop: 0 }}>{dict.briefing.formatsHeading}</p>
-            <p className="meta" style={{ marginTop: -6 }}>{dict.briefing.formatsLead}</p>
-            {/* `table.stack` nimmt den Elementen am Telefon ihre Tabellenrolle;
-                die Rollen stehen deshalb ausdrücklich im Markup (styles/globals.scss). */}
-            <table className="stack" role="table" style={{ marginTop: 12 }}>
-              <thead role="rowgroup">
-                <tr role="row">
-                  <th scope="col" role="columnheader">{dict.briefing.formatsHeading}</th>
-                  <th scope="col" role="columnheader">{isDe ? "Dauer" : "Duration"}</th>
-                  <th scope="col" role="columnheader">{dict.common.language}</th>
-                </tr>
-              </thead>
-              <tbody role="rowgroup">
-                {formats.map((f) => (
-                  <tr role="row" key={f.id}>
-                    <td role="cell" data-primary="" data-label={dict.briefing.formatsHeading}>
-                      {f.title}
-                      {f.note ? <div className="meta">{f.note}</div> : null}
-                    </td>
-                    <td role="cell" className="meta" data-label={isDe ? "Dauer" : "Duration"}>{f.duration}</td>
-                    <td role="cell" className="meta" data-label={dict.common.language}>{f.languages}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-
-        <div className="card bracket" style={{ padding: 24 }}>
-          <p className="eyebrow" style={{ marginTop: 0 }}>{isDe ? "Kontakt" : "Contact"}</p>
-          <p style={{ fontSize: 15 }}>{isDe ? "Für Anfragen zu Vorträgen und Workshops:" : "For talk and workshop enquiries:"}</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-            {social.linkedin ? <a className="btn" href={social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a> : null}
-            {contact.email ? <a className="btn ghost" href={`mailto:${contact.email}`}>{isDe ? "E-Mail" : "Email"}</a> : null}
-          </div>
-        </div>
-      </div>
     </section>
   );
 }

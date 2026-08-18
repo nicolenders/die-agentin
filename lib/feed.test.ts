@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRssFeed, escapeXml, parseFeedKinds, FEED_KINDS } from "./feed";
+import { buildRssFeed, escapeXml, mergeFeedEntries, parseFeedKinds, FEED_KINDS } from "./feed";
 
 describe("feed", () => {
   it("escaped XML-Sonderzeichen", () => {
@@ -96,5 +96,56 @@ describe("parseFeedKinds", () => {
 
   it("fällt bei unbekannten Werten auf alle Arten zurück", () => {
     expect(parseFeedKinds("unsinn")).toEqual([...FEED_KINDS]);
+  });
+});
+
+describe("mergeFeedEntries", () => {
+  // Der Fall aus der Praxis: Einsätze und Briefings wurden beim Aufbau des
+  // Bestands am selben Tag angelegt und sind damit „neuer" als jede Depesche.
+  const bulk = (kind: "mission" | "briefing", count: number, day: string) =>
+    Array.from({ length: count }, (_, i) => ({ kind, id: `${kind}-${i}`, pubDate: new Date(day) }));
+  const dispatches = [
+    { kind: "dispatch" as const, id: "d-1", pubDate: new Date("2026-06-17T00:00:00Z") },
+    { kind: "dispatch" as const, id: "d-2", pubDate: new Date("2026-07-01T00:00:00Z") },
+  ];
+
+  it("lässt keine Art von den anderen verdrängen", () => {
+    const merged = mergeFeedEntries(
+      [...dispatches, ...bulk("mission", 30, "2026-08-18"), ...bulk("briefing", 30, "2026-08-18")],
+      50,
+    );
+    expect(merged).toHaveLength(50);
+    expect(merged.filter((e) => e.kind === "dispatch")).toHaveLength(2);
+  });
+
+  it("sortiert das Ergebnis nach Datum, neueste zuerst", () => {
+    const merged = mergeFeedEntries(
+      [...dispatches, ...bulk("mission", 3, "2026-08-18")],
+      50,
+    );
+    const times = merged.map((e) => e.pubDate?.getTime() ?? 0);
+    expect([...times].sort((a, b) => b - a)).toEqual(times);
+  });
+
+  it("füllt freie Plätze mit den neuesten Einträgen der übrigen Arten", () => {
+    const merged = mergeFeedEntries([...dispatches, ...bulk("mission", 30, "2026-08-18")], 10);
+    expect(merged).toHaveLength(10);
+    expect(merged.filter((e) => e.kind === "dispatch")).toHaveLength(2);
+    expect(merged.filter((e) => e.kind === "mission")).toHaveLength(8);
+  });
+
+  it("nutzt alle Plätze, wenn nur eine Art vorliegt", () => {
+    expect(mergeFeedEntries(bulk("mission", 30, "2026-08-18"), 10)).toHaveLength(10);
+  });
+
+  it("verträgt leere Eingaben und ein Limit von null", () => {
+    expect(mergeFeedEntries([], 50)).toEqual([]);
+    expect(mergeFeedEntries(dispatches, 0)).toEqual([]);
+  });
+
+  it("behandelt Einträge ohne Datum als älteste", () => {
+    const undated = { kind: "dispatch" as const, id: "d-0", pubDate: null };
+    const merged = mergeFeedEntries([undated, ...dispatches], 50);
+    expect(merged[merged.length - 1]).toBe(undated);
   });
 });

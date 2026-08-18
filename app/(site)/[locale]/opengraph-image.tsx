@@ -25,7 +25,7 @@ async function loadMark(): Promise<string | null> {
 // die Seite Beiträge automatisch auf LinkedIn spiegelt (SPEC §7). Kein externes
 // Asset nötig; wird beim Build je Sprache erzeugt.
 
-export const alt = "Die Agentin — nicolenders.com";
+export const alt = "Die Agentin · nicolenders.com";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

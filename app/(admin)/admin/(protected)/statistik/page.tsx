@@ -160,7 +160,7 @@ export default async function StatistikPage({
     <section>
       <h1>Auswertung</h1>
       <p className="muted">
-        Eigene, datensparsame Reichweiten-Erfassung — first-party, ohne Cookies, ohne gespeicherte
+        Eigene, datensparsame Reichweiten-Erfassung: first-party, ohne Cookies, ohne gespeicherte
         IP. Besucherzahlen sind tagesbezogen geschätzt (ungefähr).
       </p>
 
@@ -202,7 +202,7 @@ export default async function StatistikPage({
       {!summary.available ? (
         <div className="card bracket" style={{ marginTop: 16 }}>
           <p className="muted" style={{ margin: 0 }}>
-            Datenbank nicht erreichbar — bitte in einem Moment erneut versuchen.
+            Datenbank nicht erreichbar. Bitte in einem Moment erneut versuchen.
           </p>
         </div>
       ) : (

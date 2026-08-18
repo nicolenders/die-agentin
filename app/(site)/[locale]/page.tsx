@@ -59,7 +59,7 @@ export default async function HQPage({
               src={hero.heroImage?.url ?? brandAsset("hero.jpg")}
               alt={
                 hero.heroImage?.alt ??
-                (locale === "de" ? "Die Agentin — Markenbild" : "Die Agentin — brand visual")
+                (locale === "de" ? "Die Agentin · Markenbild" : "Die Agentin · brand visual")
               }
               label="Die Agentin"
               sub={locale === "de" ? "Hero-Bild" : "Hero image"}
@@ -94,8 +94,8 @@ export default async function HQPage({
         <p className="eyebrow">{isDe ? "Die Agentin" : "The agent"}</p>
         <p style={{ fontSize: 18, fontFamily: "var(--display)", fontWeight: 300, lineHeight: 1.55, margin: 0 }}>
           {isDe
-            ? "„Agentin“ hat zwei Bedeutungen — und ich meine beide: die, die im Verborgenen arbeitet und Fäden verbindet, und die, die AI Agents baut. „Enders“ heißt: keine losen Enden."
-            : "“Agent” means two things here — and I mean both: the one who works in the background and connects the threads, and the one who builds AI agents. “Enders” stands for: no loose ends."}
+            ? "„Agentin“ hat zwei Bedeutungen, und ich meine beide: die, die im Verborgenen arbeitet und Fäden verbindet, und die, die AI Agents baut. „Enders“ heißt: keine losen Enden."
+            : "“Agent” means two things here, and I mean both: the one who works in the background and connects the threads, and the one who builds AI agents. “Enders” stands for: no loose ends."}
         </p>
         <p style={{ marginTop: 12 }}>
           <Link className="btn ghost sm" href={`/${locale}/legende`}>

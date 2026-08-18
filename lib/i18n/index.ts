@@ -1,4 +1,5 @@
 import de from "./dictionaries/de";
+import en from "./dictionaries/en";
 import type { Locale } from "./config";
 
 // Der Typ der Wörterbücher wird aus der deutschen Quellsprache abgeleitet.
@@ -19,13 +20,21 @@ type Widen<T> = T extends string
 
 export type Dictionary = Widen<typeof de>;
 
-const loaders: Record<Locale, () => Promise<{ default: Dictionary }>> = {
-  de: async () => ({ default: de as unknown as Dictionary }),
-  en: () => import("./dictionaries/en"),
+const dictionaries: Record<Locale, Dictionary> = {
+  de: de as unknown as Dictionary,
+  en,
 };
 
 /** Lädt das Wörterbuch für die gewünschte Sprache (Server Components). */
 export async function getDictionary(locale: Locale): Promise<Dictionary> {
-  const mod = await loaders[locale]();
-  return mod.default;
+  return dictionaries[locale];
+}
+
+/**
+ * Dasselbe Wörterbuch ohne `await`. Für Komponenten, die kein `async` sein
+ * können oder sollen und trotzdem einen Text brauchen — etwa der Hinweis
+ * „KI-generiert" am Bild (Audit 6.9), der bisher fest auf Deutsch stand.
+ */
+export function getDictionarySync(locale: Locale): Dictionary {
+  return dictionaries[locale];
 }

@@ -43,7 +43,7 @@ export default async function BeitraegePage() {
       ) : posts.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 18 }}>
           <p className="eyebrow">Noch keine Beiträge</p>
-          <p className="muted">Leg deinen ersten Beitrag an — der erste Fund wartet sicher schon.</p>
+          <p className="muted">Leg deinen ersten Beitrag an. Der erste Fund wartet sicher schon.</p>
         </div>
       ) : (
         <table style={{ marginTop: 18 }}>

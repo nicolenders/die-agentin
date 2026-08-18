@@ -18,6 +18,8 @@ export default function AssetImage({
   imgStyle,
   loading = "lazy",
   zoom = true,
+  aiLabel = "KI-generiert",
+  aiTitle = "KI-generiertes Bild",
 }: {
   src: string;
   alt: string;
@@ -27,6 +29,12 @@ export default function AssetImage({
   imgStyle?: React.CSSProperties;
   loading?: "lazy" | "eager";
   zoom?: boolean;
+  // Hinweistexte für KI-generierte Bilder (Audit 6.9). Als Prop, weil diese
+  // Komponente im Client läuft und das Wörterbuch nicht ins Bundle soll. Die
+  // deutschen Vorgaben gelten für die Redaktion, öffentliche Aufrufer reichen
+  // die Sprachfassung durch.
+  aiLabel?: string;
+  aiTitle?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -41,8 +49,8 @@ export default function AssetImage({
         style={{ cursor: zoom ? "zoom-in" : undefined, ...imgStyle }}
       />
       {ai ? (
-        <span className="ai-badge" aria-label="KI-generiertes Bild">
-          KI-generiert
+        <span className="ai-badge" aria-label={aiTitle}>
+          {aiLabel}
         </span>
       ) : null}
 

@@ -71,7 +71,7 @@ export default async function AdminSearchPage({
       {!isSearchable(term) ? (
         <div className="card bracket" style={{ marginTop: 18 }}>
           <p className="muted" style={{ margin: 0 }}>
-            Mindestens {MIN_QUERY_LENGTH} Zeichen eingeben — dann durchsuche ich alle Bereiche.
+            Mindestens {MIN_QUERY_LENGTH} Zeichen eingeben, dann durchsuche ich alle Bereiche.
           </p>
         </div>
       ) : (

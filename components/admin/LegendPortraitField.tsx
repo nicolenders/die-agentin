@@ -32,7 +32,7 @@ export default function LegendPortraitField({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url} alt="Porträt-Vorschau" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <span className="meta" style={{ padding: 8, textAlign: "center" }}>Kein Bild — Platzhalter wird gezeigt</span>
+            <span className="meta" style={{ padding: 8, textAlign: "center" }}>Kein Bild, Platzhalter wird gezeigt</span>
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -29,6 +29,51 @@ for (const path of ["signale", "dossiers"]) {
   });
 }
 
+// Audit 1.2/1.3: Jede öffentliche Route liefert eine eigene Meta-Description
+// und genau ein canonical auf sich selbst. Vorher erbten sieben Routen die
+// Description der Startseite.
+const PUBLIC_ROUTES = [
+  "",
+  "depeschen",
+  "identitaeten",
+  "einsaetze",
+  "briefings",
+  "publikationen",
+  "ausbildung",
+  "akte",
+  "legende",
+  "impressum",
+  "datenschutz",
+  "barrierefreiheit",
+];
+
+for (const locale of ["de", "en"] as const) {
+  test(`Meta-Descriptions sind je Route eigen (${locale})`, async ({ page }) => {
+    const seen = new Map<string, string>();
+    for (const route of PUBLIC_ROUTES) {
+      const path = `/${locale}${route ? `/${route}` : ""}`;
+      await page.goto(path);
+      const description = await page
+        .locator('head meta[name="description"]')
+        .getAttribute("content");
+      expect(description, `${path} hat keine Meta-Description`).toBeTruthy();
+      const duplicate = seen.get(description!);
+      expect(duplicate, `${path} wiederholt die Description von ${duplicate}`).toBeUndefined();
+      seen.set(description!, path);
+    }
+  });
+
+  test(`Canonical zeigt je Route auf sich selbst (${locale})`, async ({ page }) => {
+    for (const route of PUBLIC_ROUTES) {
+      const path = `/${locale}${route ? `/${route}` : ""}`;
+      await page.goto(path);
+      const canonicals = page.locator('head link[rel="canonical"]');
+      await expect(canonicals).toHaveCount(1);
+      expect(await canonicals.getAttribute("href")).toContain(path);
+    }
+  });
+}
+
 test("Skip-Link ist als erstes fokussierbares Element vorhanden", async ({ page }) => {
   await page.goto("/de");
   await page.keyboard.press("Tab");

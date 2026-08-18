@@ -1,9 +1,13 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { getContactInfo, getSocialLinks } from "@/lib/queries/settings";
 import { getLegalDoc } from "@/lib/queries/legal";
 import { formatDate } from "@/lib/format";
 import RichText from "@/components/content/RichText";
+import { isRichEmpty } from "@/lib/content/rich";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +16,21 @@ export const dynamic = "force-dynamic";
 // freien Textblöcke (Haftung, Urheberrecht, Streitschlichtung) aus dem
 // pflegbaren LegalDoc. Nicole ist Privatperson — KEINE USt-IdNr.
 const NAME = "Nicole Enders";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const dict = await getDictionary(locale);
+  return {
+    title: dict.footer.imprint,
+    description: dict.meta.impressum,
+    alternates: alternatesFor(locale, "impressum"),
+  };
+}
 
 export default async function ImpressumPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -24,11 +43,14 @@ export default async function ImpressumPage({ params }: { params: Promise<{ loca
   ]);
 
   const incomplete = !contact.postalAddress || !contact.email;
+  const hasBody = doc !== null && !isRichEmpty(doc.body);
 
   return (
     <section style={{ padding: "44px 0 90px", maxWidth: 760 }}>
       <h1 style={{ fontSize: "clamp(28px,4vw,44px)" }}>{isDe ? "Impressum" : "Imprint"}</h1>
-      {doc ? (
+      {/* Ein Zeitstempel über einem leeren Text wirkt schlechter als gar keiner
+          (Audit 5.3) — er erscheint erst, wenn wirklich Inhalt gepflegt ist. */}
+      {hasBody ? (
         <p className="meta">
           {isDe ? "Zuletzt aktualisiert" : "Last updated"} {formatDate(doc.updatedAt, locale)}
         </p>
@@ -86,9 +108,25 @@ export default async function ImpressumPage({ params }: { params: Promise<{ loca
             </>
           ) : null}
         </p>
+
+        {/* § 18 Abs. 2 MStV (Audit 5.1): Die Seite betreibt mit den Depeschen
+            und den Einsatz-Rückblicken ein journalistisch-redaktionelles
+            Angebot. Bewusst als strukturierter Abschnitt aus denselben
+            Einstellungen wie die § 5 DDG-Angaben — so bleibt es bei einer
+            Adresspflege an einer Stelle. */}
+        {contact.postalAddress ? (
+          <>
+            <h2>
+              {isDe
+                ? "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV"
+                : "Responsible for content under § 18 (2) MStV"}
+            </h2>
+            <p>{isDe ? `${NAME}, Anschrift wie oben.` : `${NAME}, address as above.`}</p>
+          </>
+        ) : null}
       </div>
 
-      {doc ? <RichText value={doc.body} locale={locale} /> : null}
+      {hasBody ? <RichText value={doc.body} locale={locale} /> : null}
     </section>
   );
 }

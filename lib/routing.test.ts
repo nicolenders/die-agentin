@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { isNonLocalizedPath, hasLocalePrefix, pickLocaleFrom, legacyDispatchTarget } from "./routing";
+import {
+  isNonLocalizedPath,
+  hasLocalePrefix,
+  localeFromPath,
+  pickLocaleFrom,
+  legacyDispatchTarget,
+} from "./routing";
 
 describe("isNonLocalizedPath", () => {
   it("excludes the exact roots (regression: /admin must not be localized)", () => {
@@ -58,5 +64,26 @@ describe("legacyDispatchTarget", () => {
     expect(legacyDispatchTarget("/de/depeschen")).toBeNull();
     expect(legacyDispatchTarget("/de/einsaetze")).toBeNull();
     expect(legacyDispatchTarget("/admin")).toBeNull();
+  });
+});
+
+// Audit 6.6: Ohne diese Ableitung bekämen englische Besucher eine deutsche
+// 404-Seite — `not-found.tsx` erreicht im App Router keine `params`.
+describe("localeFromPath", () => {
+  it("liest die Sprache aus dem Pfad", () => {
+    expect(localeFromPath("/en")).toBe("en");
+    expect(localeFromPath("/en/gibtsnicht")).toBe("en");
+    expect(localeFromPath("/de/briefings")).toBe("de");
+  });
+
+  it("liefert null ohne Sprachpräfix", () => {
+    expect(localeFromPath("/")).toBeNull();
+    expect(localeFromPath("/briefings")).toBeNull();
+    expect(localeFromPath("/admin/briefings")).toBeNull();
+  });
+
+  it("lässt sich von einem ähnlichen Segment nicht täuschen", () => {
+    expect(localeFromPath("/deutschland")).toBeNull();
+    expect(localeFromPath("/endlich/mehr")).toBeNull();
   });
 });

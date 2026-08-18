@@ -1,3 +1,6 @@
+import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { getDictionarySync } from "@/lib/i18n";
+
 // Markenbild mit Platzhalter-Fallback. Liegt `src` vor, wird das Bild gezeigt;
 // sonst ein gestalteter „Bildplatz" im Marken-Look (Zielmarke + Mono-Metazeile).
 // Server-kompatibel (kein "use client").
@@ -10,6 +13,7 @@ export default function BrandImage({
   className = "",
   ai = false,
   fill = false,
+  locale = defaultLocale,
 }: {
   src: string | null;
   alt: string;
@@ -18,6 +22,8 @@ export default function BrandImage({
   ratio?: string;
   className?: string;
   ai?: boolean;
+  // Sprache für den Hinweis „KI-generiert" (Audit 6.9).
+  locale?: Locale;
   // `fill`: das Bild füllt die volle Höhe seines (dann höhenbestimmenden) Eltern-
   // elements statt ein eigenes Seitenverhältnis vorzugeben — für Layouts, in denen
   // das Bild bündig mit einer Nachbarspalte abschließen soll. Das Bild bleibt
@@ -33,7 +39,9 @@ export default function BrandImage({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={src} alt={alt} />
-          {ai ? <span className="ai-badge">KI-generiert</span> : null}
+          {ai ? (
+            <span className="ai-badge">{getDictionarySync(locale).common.aiGenerated}</span>
+          ) : null}
         </>
       ) : (
         <div className="brand-ph" role="img" aria-label={alt}>

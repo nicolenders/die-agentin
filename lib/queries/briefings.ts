@@ -3,6 +3,7 @@ import { cachedQuery, tags } from "@/lib/cache";
 import { pickTranslation } from "@/lib/content/pick";
 import { missionTalkLanguage } from "@/lib/mission-language";
 import { computeRanking, type RankRow, type DateRange } from "./ranking";
+import { sortBriefings } from "@/lib/briefings/sort";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface BriefingCard {
@@ -117,8 +118,8 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
     },
   });
 
-  // Manuelle Reihenfolge (sortOrder) hat Vorrang; bei Gleichstand die häufiger
-  // gehaltenen zuerst.
+  // Häufigkeit führt, die manuelle Reihenfolge ist Feinschliff bei Gleichstand
+  // (Audit 4.1, Begründung in `lib/briefings/sort.ts`).
   const order = new Map(talks.map((t) => [t.id, t.sortOrder]));
   const items = talks.map((t): BriefingListItem => {
     const picked = pickTranslation(t.translations, locale);
@@ -158,12 +159,10 @@ async function loadBriefingList(locale: Locale): Promise<BriefingListItem[]> {
     };
   });
 
-  return items.sort(
-    (a, b) =>
-      (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) ||
-      b.total - a.total ||
-      a.title.localeCompare(b.title, locale),
-  );
+  return sortBriefings(
+    items.map((i) => ({ ...i, sortOrder: order.get(i.id) ?? 0 })),
+    locale,
+  ).map(({ sortOrder: _sortOrder, ...item }) => item);
 }
 
 export async function getBriefingList(locale: Locale): Promise<BriefingListItem[]> {

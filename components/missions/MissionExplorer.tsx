@@ -74,6 +74,8 @@ export interface ExplorerLabels {
   phoneNote: string;
   phoneEmpty: string;
   map: {
+    aiGenerated: string;
+    aiGeneratedImage: string;
     all: string;
     done: string;
     planned: string;

@@ -16,10 +16,15 @@ export default function Gallery({
   images,
   label,
   caption,
+  aiLabel,
+  aiTitle,
 }: {
   images: GalleryImage[];
   label: string;
   caption?: string;
+  // Hinweistexte für KI-generierte Bilder (Audit 6.9), serverseitig gebaut.
+  aiLabel?: string;
+  aiTitle?: string;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +76,8 @@ export default function Gallery({
               src={img.url}
               alt={img.alt}
               ai={img.ai}
+              aiLabel={aiLabel}
+              aiTitle={aiTitle}
             />
           ) : (
             <div key={i} className="ph galleryItem">

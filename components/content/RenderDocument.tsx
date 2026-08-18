@@ -5,6 +5,7 @@ import { slugify } from "@/lib/slug";
 import Gallery, { type GalleryImage } from "./Gallery";
 import VideoConsent from "./VideoConsent";
 import AssetImage from "@/components/media/AssetImage";
+import { aiImageLabels } from "@/lib/media/ai-labels";
 
 // Renderer (SPEC §4). Bildet TipTap-Node-Typen auf React-Komponenten ab. KEIN
 // dangerouslySetInnerHTML. Reine Funktion — dieselbe Ausgabe in der
@@ -76,6 +77,8 @@ function Figure({
           src={asset.url}
           alt={asset.decorative ? "" : asset.alt}
           ai={asset.ai}
+          aiLabel={aiImageLabels(ctx.locale).aiGenerated}
+          aiTitle={aiImageLabels(ctx.locale).aiGeneratedImage}
           imgStyle={{ width: "100%", borderRadius: 6 }}
         />
       ) : (
@@ -204,6 +207,8 @@ function renderNode(
           key={key}
           images={images}
           label="Bildergalerie"
+          aiLabel={aiImageLabels(ctx.locale).aiGenerated}
+          aiTitle={aiImageLabels(ctx.locale).aiGeneratedImage}
           caption={typeof node.attrs?.caption === "string" ? node.attrs.caption : undefined}
         />
       );

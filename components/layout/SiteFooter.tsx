@@ -4,6 +4,7 @@ import BrandMark from "@/components/BrandMark";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n";
 import { getSocialLinks } from "@/lib/queries/settings";
+import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import SocialLinks from "@/components/SocialLinks";
 
 interface SiteFooterProps {
@@ -13,10 +14,15 @@ interface SiteFooterProps {
 
 /** Fußzeile mit Inhalts-, Über- und Rechts-Links (SPEC §12: Footer-Pflichtlinks). */
 export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
-  const year = 2026;
+  // Kein hartkodiertes Jahr: eine Website, die im Januar noch das Vorjahr
+  // ausweist, wirkt verwaist (Audit 1.5).
+  const year = new Date().getFullYear();
   const l = (segment: string) => `/${locale}/${segment}`;
   // Nur gepflegte Profile anzeigen (SPEC: keine toten „#"-Links).
   const social = await getSocialLinks();
+  // Ein beworbener Feed ohne Einträge ist ein totes Versprechen (Audit 6.3):
+  // der RSS-Link erscheint erst mit der ersten veröffentlichten Depesche.
+  const dispatches = await getPublishedDispatches(locale);
 
   return (
     <footer className={styles.footer}>
@@ -46,10 +52,12 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
         <div>
           <h4>{dict.footer.aboutHeading}</h4>
           <Link href={l("legende")}>{dict.nav.legende}</Link>
-          <Link href={l("akte")}>{locale === "de" ? "Akte (Speaker-Kit)" : "Speaker kit"}</Link>
+          <Link href={l("akte")}>{dict.nav.akte}</Link>
           <Link href={l("publikationen")}>{dict.nav.publikationen}</Link>
           <Link href={l("ausbildung")}>{dict.nav.ausbildung}</Link>
-          <a href={`/feed${locale === "en" ? ".en" : ""}.xml`}>{dict.footer.rss}</a>
+          {dispatches.length > 0 ? (
+            <a href={`/feed${locale === "en" ? ".en" : ""}.xml`}>{dict.footer.rss}</a>
+          ) : null}
         </div>
 
         <div>

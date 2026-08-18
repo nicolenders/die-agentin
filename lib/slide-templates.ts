@@ -186,7 +186,7 @@ export function verifyTemplateArchive(probe: ArchiveProbe): PresentationVerdict 
     return {
       ok: false,
       error:
-        "Die Datei ist unvollständig angekommen — die Schlussmarke der PowerPoint-Datei fehlt. " +
+        "Die Datei ist unvollständig angekommen: die Schlussmarke der PowerPoint-Datei fehlt. " +
         "Bitte erneut hochladen.",
     };
   }

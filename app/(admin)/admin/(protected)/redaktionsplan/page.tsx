@@ -91,7 +91,7 @@ export default async function RedaktionsplanPage({
 
       {view === "tabelle" ? (
         sorted.length === 0 ? (
-          <div className="card bracket" style={{ marginTop: 16 }}><p className="muted" style={{ margin: 0 }}>Nichts geplant. Der Plan ist leer — Zeit für eine Depesche.</p></div>
+          <div className="card bracket" style={{ marginTop: 16 }}><p className="muted" style={{ margin: 0 }}>Nichts geplant. Der Plan ist leer. Zeit für eine Depesche.</p></div>
         ) : (
           <table style={{ marginTop: 16 }}>
             <thead>

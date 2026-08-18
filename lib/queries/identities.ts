@@ -296,19 +296,53 @@ export async function getPublishedIdentities(locale: Locale): Promise<IdentityCa
  * Namen, ohne Groß-/Kleinschreibung) entfernt, alphabetisch sortiert. Ersetzt die
  * frühere freie Werkzeug-Liste der Legende; gepflegt wird jetzt je Identität.
  */
-export async function getIdentityTools(): Promise<{ name: string; slug: string }[]> {
+export interface IdentityTool {
+  name: string;
+  slug: string;
+  /** Jahr des jüngsten Einsatzes mit diesem Werkzeug, null ohne Einsatz. */
+  lastUsedYear: number | null;
+  /**
+   * Länger nicht mehr im Einsatz (Audit 6.9). Solche Werkzeuge — „Power Virtual
+   * Agents" etwa ist in Copilot Studio aufgegangen — bleiben stehen, weil der
+   * Filter auf historische Einsätze wertvoll ist, werden aber abgesetzt.
+   */
+  historic: boolean;
+}
+
+/** Ab so vielen Jahren ohne Einsatz gilt ein Werkzeug als historisch. */
+const HISTORIC_AFTER_YEARS = 3;
+
+export async function getIdentityTools(nowYear = new Date().getUTCFullYear()): Promise<IdentityTool[]> {
   try {
     const rows = await db.tool.findMany({
       where: { identities: { some: { published: true } } },
-      select: { name: true, slug: true },
+      select: {
+        name: true,
+        slug: true,
+        missions: { select: { startDate: true }, orderBy: { startDate: "desc" }, take: 1 },
+      },
     });
-    const seen = new Map<string, { name: string; slug: string }>();
+    const seen = new Map<string, IdentityTool>();
     for (const r of rows) {
       const name = r.name.trim();
       const key = name.toLowerCase();
-      if (name && !seen.has(key)) seen.set(key, { name, slug: r.slug });
+      if (!name || seen.has(key)) continue;
+      const lastUsedYear = r.missions[0]?.startDate.getUTCFullYear() ?? null;
+      seen.set(key, {
+        name,
+        slug: r.slug,
+        lastUsedYear,
+        historic: lastUsedYear !== null && nowYear - lastUsedYear >= HISTORIC_AFTER_YEARS,
+      });
     }
-    return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, "de"));
+    // Zuletzt genutzte zuerst; bei Gleichstand alphabetisch. Werkzeuge ohne
+    // Einsatz stehen hinten, aber vor den historischen.
+    return [...seen.values()].sort(
+      (a, b) =>
+        Number(a.historic) - Number(b.historic) ||
+        (b.lastUsedYear ?? 0) - (a.lastUsedYear ?? 0) ||
+        a.name.localeCompare(b.name, "de"),
+    );
   } catch {
     return [];
   }
@@ -353,6 +387,9 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       attributes: { where: { displayPublic: true }, orderBy: { sortOrder: "asc" } },
       dispatches: { include: { translations: true } },
       missions: {
+        // Jüngster Einsatz zuerst (Audit 4.8). Ohne diese Angabe kam die
+        // Tabelle in der Reihenfolge der Datenbank und wirkte unsortiert.
+        orderBy: { startDate: "desc" },
         include: {
           translations: true,
           deliveries: { take: 1, orderBy: { heldOn: "desc" }, include: { talk: { include: { translations: true } } } },
@@ -410,7 +447,8 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
           linkable: m.caseFilePublic && Boolean(t?.slug),
           briefing: delivery && talkTitle ? { id: delivery.talkId, title: talkTitle } : null,
         };
-      }),
+      })
+      .sort((a, b) => b.date.getTime() - a.date.getTime()),
     briefings: r.talks.map((t) => ({ title: trans(t.translations)?.title ?? "" })).filter((b) => b.title),
     focusTopics: r.focusTopics.map((f) => ({
       id: f.id,

@@ -1,4 +1,4 @@
-import { locales, defaultLocale } from "@/lib/i18n/config";
+import { locales, defaultLocale, type Locale } from "@/lib/i18n/config";
 
 // Reine Routing-Entscheidungen für die Middleware (`proxy.ts`). Ausgelagert und
 // testbar, weil ein Fehler hier (siehe /admin-Regression) den ganzen Bereich
@@ -18,6 +18,22 @@ export function isNonLocalizedPath(pathname: string): boolean {
 /** true, wenn der Pfad bereits ein Locale-Präfix trägt (`/de`, `/en/…`). */
 export function hasLocalePrefix(pathname: string): boolean {
   return locales.some((locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`));
+}
+
+/** Header, über den die Middleware die Sprache des Pfads weiterreicht. */
+export const LOCALE_HEADER = "x-locale";
+
+/**
+ * Sprache aus dem Pfad (`/en/briefings` → `"en"`), sonst `null`.
+ *
+ * Gebraucht für die 404-Seite (Audit 6.6): `not-found.tsx` bekommt im App
+ * Router keine `params`, sonst bliebe die Fehlerseite für englische Besucher
+ * deutsch. Die Middleware liest die Sprache hier aus und reicht sie als
+ * Request-Header weiter.
+ */
+export function localeFromPath(pathname: string): Locale | null {
+  const segment = pathname.split("/")[1]?.toLowerCase();
+  return locales.find((l) => l === segment) ?? null;
 }
 
 /** Ziel-Locale aus dem Accept-Language-Header (Fallback: Standardsprache). */

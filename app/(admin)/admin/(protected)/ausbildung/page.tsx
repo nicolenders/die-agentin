@@ -126,7 +126,7 @@ export default async function AusbildungAdminPage({
         <input type="hidden" name="family" value="MICROSOFT" />
       )}
       <label className="f">Kategorien (optional, Mehrfachauswahl)</label>
-      <CategoryMultiSelect name="categoryIds" options={certCats.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Optional — Kategorien unter „Kategorien & Tags“ anlegen." />
+      <CategoryMultiSelect name="categoryIds" options={certCats.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Optional: Kategorien unter „Kategorien & Tags“ anlegen." />
       <label className="f">Bezeichnung</label>
       <input className="f" name="name" placeholder="z. B. Azure AI Engineer Associate" required />
       <label className="f">Kürzel</label>
@@ -172,7 +172,7 @@ export default async function AusbildungAdminPage({
   return (
     <section>
       <h1>Ausbildung &amp; Auszeichnungen</h1>
-      <p className="muted">Zertifizierungen, MVP Awards, Schulungen und weitere Auszeichnungen — je Art links anlegen, rechts verwalten.</p>
+      <p className="muted">Zertifizierungen, MVP Awards, Schulungen und weitere Auszeichnungen: je Art links anlegen, rechts verwalten.</p>
       <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 

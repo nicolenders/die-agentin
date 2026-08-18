@@ -39,7 +39,7 @@ export default function ColorField({ name, initial }: { name: string; initial: s
         {!valid
           ? "⚠ Keine gültige Hex-Farbe (z. B. #8B5CF6)."
           : ratio !== null
-            ? `Kontrast gegen den Seitengrund: ${ratio.toFixed(1)}:1${weak ? " — ⚠ schwach (unter 3:1)." : " — ok."}`
+            ? `Kontrast gegen den Seitengrund: ${ratio.toFixed(1)}:1${weak ? ", ⚠ schwach (unter 3:1)." : ", ok."}`
             : ""}
       </p>
     </div>

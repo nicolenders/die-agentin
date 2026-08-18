@@ -26,7 +26,8 @@ export interface LegendData {
   contactButton: string;
   contactUrl: string;
   employer: { name: string; url: string } | null;
-  portrait: { url: string; alt: string; ai: boolean } | null;
+  // `credit` speist den Bildnachweis beim Pressefoto-Download (Audit 6.4).
+  portrait: { url: string; alt: string; ai: boolean; credit: string | null } | null;
 }
 
 export const LEGEND_DEFAULTS: Record<Locale, LegendData> = {
@@ -117,6 +118,7 @@ async function loadLegend(locale: Locale): Promise<LegendData> {
           url: assetUrl(row.portrait.blobPath),
           alt: (locale === "en" ? row.portrait.altEn : row.portrait.altDe) || row.name,
           ai: row.portrait.source === "AI",
+          credit: row.portrait.credit,
         }
       : null,
   };

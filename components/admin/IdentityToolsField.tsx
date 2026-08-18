@@ -55,7 +55,7 @@ export default function IdentityToolsField({
   return (
     <div>
       <p className="meta">
-        Werkzeuge dieser Identität. Neue Werkzeuge hier anlegen — die öffentliche Legende zeigt die
+        Werkzeuge dieser Identität. Neue Werkzeuge hier anlegen. Die öffentliche Legende zeigt die
         Vereinigung aller Identitäts-Werkzeuge (Duplikate entfernt, alphabetisch).
       </p>
 
@@ -77,7 +77,7 @@ export default function IdentityToolsField({
           })}
         </div>
       ) : (
-        <p className="meta">Noch keine Werkzeuge angelegt — unten das erste hinzufügen.</p>
+        <p className="meta">Noch keine Werkzeuge angelegt. Unten das erste hinzufügen.</p>
       )}
 
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>

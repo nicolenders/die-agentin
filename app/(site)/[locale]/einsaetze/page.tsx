@@ -4,6 +4,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getMissions } from "@/lib/queries/missions";
 import { getPublishedIdentities } from "@/lib/queries/identities";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { formatDate } from "@/lib/format";
 import MissionExplorer, {
   type ExplorerMission,
@@ -16,7 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.nav.einsaetze };
+  return {
+    title: dict.nav.einsaetze,
+    description: dict.meta.einsaetze,
+    alternates: alternatesFor(locale, "einsaetze"),
+  };
 }
 
 export default async function EinsaetzePage({
@@ -27,9 +32,10 @@ export default async function EinsaetzePage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const [allMissions, identities] = await Promise.all([
+  const [allMissions, identities, dict] = await Promise.all([
     getMissions(locale),
     getPublishedIdentities(locale),
+    getDictionary(locale),
   ]);
 
   const explorerMissions: ExplorerMission[] = allMissions.map((m) => ({
@@ -71,9 +77,14 @@ export default async function EinsaetzePage({
     <section style={{ padding: "44px 0 90px" }}>
       {/* Überschrift und „Briefings"-Button in einer Zeile — spart Höhe. */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <h1 className="eyebrow" style={{ flex: 1, margin: 0 }}>
-          {isDe ? "Einsätze vor Ort" : "Missions on site"}
-        </h1>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="eyebrow" style={{ margin: 0 }}>
+            {isDe ? "Einsätze · Weltkarte" : "Missions · world map"}
+          </p>
+          <h1 className="page-title" style={{ margin: 0 }}>
+            {isDe ? "Auftritte, nach Ort sortiert." : "Appearances, sorted by place."}
+          </h1>
+        </div>
         <Link className="btn ghost sm" href={`/${locale}/briefings`}>
           {isDe ? "Briefings" : "Briefings"} →
         </Link>
@@ -107,12 +118,14 @@ export default async function EinsaetzePage({
           onlineLocation: isDe ? "Online" : "Online",
           empty: isDe ? "Keine Einsätze für diese Auswahl." : "No missions for this selection.",
           phoneNote: isDe
-            ? "Anstehende Einsätze — heute und später."
-            : "Upcoming missions — today and later.",
+            ? "Anstehende Einsätze, heute und später."
+            : "Upcoming missions, today and later.",
           phoneEmpty: isDe
             ? "Zurzeit steht kein Einsatz an. Am größeren Bildschirm sind auch die vergangenen zu sehen."
             : "No missions coming up. The past ones are visible on a larger screen.",
           map: {
+            aiGenerated: dict.common.aiGenerated,
+            aiGeneratedImage: dict.common.aiGeneratedImage,
             all: isDe ? "Alle" : "All",
             done: isDe ? "Abgeschlossener Einsatz" : "Completed mission",
             planned: isDe ? "Geplant" : "Planned",

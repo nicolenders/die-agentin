@@ -61,7 +61,7 @@ export default async function EinsaetzeAdminPage({
           + Neuer Einsatz
         </Link>
       </div>
-      <p className="muted">Vorträge, Konferenzen, Auftritte — mit Ort auf der Karte und Bezug zum Briefing.</p>
+      <p className="muted">Vorträge, Konferenzen, Auftritte: mit Ort auf der Karte und Bezug zum Briefing.</p>
       <Flash ok={ok} err={err} />
 
       <form method="get" className="list-filter" role="search">
@@ -103,7 +103,7 @@ export default async function EinsaetzeAdminPage({
           ) : (
             <>
               <p className="eyebrow">Noch keine Einsätze</p>
-              <p className="muted">Trag deinen ersten Auftritt nach — er gehört auf die Karte.</p>
+              <p className="muted">Trag deinen ersten Auftritt nach. Er gehört auf die Karte.</p>
             </>
           )}
         </div>

@@ -62,7 +62,7 @@ export default async function LegendeAdminPage({
           </div>
         </div>
       </div>
-      <p className="muted">Die „Über mich“-Seite — Texte, Säulen, Werkzeuge, Kontakt und Porträt. Du bearbeitest gerade: <b>{locale === "de" ? "Deutsch" : "English"}</b> (die andere Sprache: <Link href={`/admin/legende?locale=${other}`}>{other.toUpperCase()}</Link>).</p>
+      <p className="muted">Die „Über mich“-Seite: Texte, Säulen, Werkzeuge, Kontakt und Porträt. Du bearbeitest gerade: <b>{locale === "de" ? "Deutsch" : "English"}</b> (die andere Sprache: <Link href={`/admin/legende?locale=${other}`}>{other.toUpperCase()}</Link>).</p>
 
       <form action={saveLegend} id="legend-form">
         <input type="hidden" name="locale" value={locale} />

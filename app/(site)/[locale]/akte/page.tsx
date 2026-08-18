@@ -1,26 +1,32 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n";
+import { alternatesFor } from "@/lib/seo/alternates";
 import { getBios, getContactInfo, getSocialLinks } from "@/lib/queries/settings";
 import { getHomeStats } from "@/lib/queries/home";
 import { getPublishedIdentities } from "@/lib/queries/identities";
+import { getBriefingList } from "@/lib/queries/briefings";
+import { getLegend } from "@/lib/queries/legend";
+import { talkFormats } from "@/lib/briefings/formats";
+import { formatDuration } from "@/lib/format";
 import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
 import CopyButton from "@/components/CopyButton";
 
 export const dynamic = "force-dynamic";
 
-// Speaker-Kit „Akte" (Anhang A). Namensvorschlag „Akte" (alt: „Ausrüstung") —
-// TODO(nicole): finalen Namen bestätigen. Route /[locale]/akte (lokalisierter
-// EN-Slug /kit folgt in Phase 13).
+// Speaker-Kit „Akte" (Anhang A). Der Name ist gesetzt. Der englische Slug
+// (/kit) ist bewusst noch offen und gehört in einen eigenen Umbau (Audit 6.7).
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const isDe = locale === "de";
+  const dict = await getDictionary(locale);
   return {
-    title: isDe ? "Akte · Speaker-Kit" : "Speaker kit",
-    description: isDe
-      ? "Alles für Veranstalter in einem Zug: Bios in drei Längen, Fachgebiete, Formate und Kontakt."
-      : "Everything organisers need in one place: bios in three lengths, topics, formats and contact.",
+    // DE und EN im Gleichlauf (Audit 6.9).
+    title: isDe ? "Akte · Speaker-Kit" : "File · Speaker kit",
+    description: dict.meta.akte,
+    alternates: alternatesFor(locale, "akte"),
   };
 }
 
@@ -28,13 +34,21 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const [bios, stats, identities, contact, social] = await Promise.all([
+  const [bios, stats, identities, contact, social, dict, briefings, legend] = await Promise.all([
     getBios(locale),
     getHomeStats(),
     getPublishedIdentities(locale),
     getContactInfo(),
     getSocialLinks(),
+    getDictionary(locale),
+    getBriefingList(locale),
+    getLegend(locale),
   ]);
+
+  // Formate entstehen aus den Dauern der gepflegten Briefings (Audit 6.4) —
+  // keine zweite Liste, die getrennt veralten kann.
+  const formats = talkFormats(briefings.map((b) => b.durationMin));
+  const portrait = legend.portrait;
 
   const bioBlocks = [
     { key: "short", label: isDe ? "Kurz (ca. 50 Wörter)" : "Short (~50 words)", text: bios.short },
@@ -44,12 +58,15 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <p className="eyebrow">{isDe ? "Akte · Speaker-Kit" : "Speaker kit"}</p>
-      <h2>{isDe ? "Für Veranstalter" : "For organisers"}</h2>
+      <p className="eyebrow">{isDe ? "Akte · Speaker-Kit" : "File · Speaker kit"}</p>
+      {/* Audit 6.2: echte H1 statt H2 — die Seite sieht dabei unverändert aus. */}
+      <h1 className="as-h2">{isDe ? "Für Veranstalter" : "For organisers"}</h1>
+      {/* „in einem Zug" ist als Idiom schief, und die Seite versprach Formate,
+          die es nicht gab (Audit 6.4). */}
       <p className="lead">
         {isDe
-          ? "Alles in einem Zug: Bios zum Kopieren, Fachgebiete, Formate und der schnellste Kontaktweg."
-          : "Everything in one place: copy-ready bios, topics, formats and the fastest way to reach me."}
+          ? "Alles an einem Ort: Bios zum Kopieren, Pressefoto, Vortragsformate, Themen und der schnellste Kontaktweg."
+          : "Everything in one place: copy-ready bios, press photo, talk formats, topics and the fastest way to reach me."}
       </p>
 
       {/* Harte Fakten als Text (auch für KI-Systeme, Phase 13.4). */}
@@ -62,7 +79,7 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
           <li>{isDe ? `${identities.length} Identitäten (Fachgebiete).` : `${identities.length} identities (areas).`}</li>
         </ul>
         <p className="meta" style={{ marginTop: 8 }}>
-          {isDe ? "Zahlen aus dem laufenden Bestand — sie veralten nicht mit der Bio." : "Numbers pulled live — they don't go stale with the bio."}
+          {isDe ? "Zahlen aus dem laufenden Bestand. Sie veralten nicht mit der Bio." : "Numbers pulled live. They don't go stale with the bio."}
         </p>
       </div>
 
@@ -90,6 +107,59 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
           <p className="muted" style={{ margin: 0 }}>{isDe ? "Bios werden gerade gepflegt." : "Bios are being maintained."}</p>
         </div>
       )}
+
+      {formats.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 40 }}>{dict.briefing.formatsHeading}</p>
+          <p className="meta" style={{ marginTop: -6 }}>{dict.briefing.formatsLead}</p>
+          <table style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th scope="col">{dict.briefing.formatsHeading}</th>
+                <th scope="col">{isDe ? "Dauer" : "Duration"}</th>
+                <th scope="col">{dict.common.language}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {formats.map((f) => (
+                <tr key={f.format}>
+                  <td data-primary="">{dict.briefing.formats[f.format]}</td>
+                  <td className="meta">
+                    {f.minutes.map((m) => formatDuration(m, locale)).join(" · ")}
+                  </td>
+                  <td className="meta">DE · EN</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
+
+      {portrait ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 40 }}>{dict.briefing.pressPhoto}</p>
+          <div className="card bracket" style={{ marginTop: 12, padding: 20 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Pressefoto
+                wird zum Herunterladen angeboten, nicht optimiert ausgeliefert. */}
+            <img
+              src={portrait.url}
+              alt={portrait.alt}
+              width={180}
+              style={{ maxWidth: 180, height: "auto", borderRadius: "var(--r)" }}
+            />
+            <p style={{ marginTop: 14, marginBottom: 0 }}>
+              <a className="btn" href={portrait.url} download>
+                {dict.briefing.pressPhotoDownload}
+              </a>
+            </p>
+            {portrait.credit ? (
+              <p className="meta" style={{ marginBottom: 0 }}>
+                {dict.briefing.pressPhotoCredit}: {portrait.credit}
+              </p>
+            ) : null}
+          </div>
+        </>
+      ) : null}
 
       {identities.length > 0 ? (
         <>

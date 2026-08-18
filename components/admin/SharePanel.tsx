@@ -51,7 +51,7 @@ export default function SharePanel({
       showToast(lang === "de" ? "Text kopiert." : "Text copied.");
       setMsg(null);
     } catch {
-      setMsg(lang === "de" ? "Kopieren nicht möglich — Text manuell markieren." : "Copy failed — select the text manually.");
+      setMsg(lang === "de" ? "Kopieren nicht möglich. Text manuell markieren." : "Copy failed. Select the text manually.");
     }
   }
 
@@ -141,8 +141,8 @@ export default function SharePanel({
                   ? "Profil öffnen und Text einfügen:"
                   : "Open a profile and paste:"
                 : lang === "de"
-                  ? "Noch keine teilbaren Profile gepflegt — unter „Kanäle“ ergänzen."
-                  : "No shareable profiles yet — add them under “Kanäle”."}
+                  ? "Noch keine teilbaren Profile gepflegt. Unter „Kanäle“ ergänzen."
+                  : "No shareable profiles yet. Add them under “Kanäle”."}
             </p>
             {profiles.length > 0 ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

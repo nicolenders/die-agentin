@@ -173,7 +173,7 @@ export default function PostEditor({ initial }: { initial: PostEditorInitial }) 
       {preview ? (
         <div>
           <div className="preview-bar" style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 12 }}>
-            <span className="meta">◉ LESERVORSCHAU — nicht veröffentlicht</span>
+            <span className="meta">◉ LESERVORSCHAU: nicht veröffentlicht</span>
             <span className="device" style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
               {(["desktop", "tablet", "smartphone"] as const).map((d) => (
                 <button key={d} className="btn ghost sm" aria-pressed={device === d} onClick={() => setDevice(d)}>

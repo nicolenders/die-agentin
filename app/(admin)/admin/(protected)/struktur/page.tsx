@@ -98,7 +98,7 @@ export default async function StrukturPage({
   return (
     <section>
       <h1>Struktur</h1>
-      <p className="muted">Kategorien, Schlagworte und Weiterleitungen — die Ordnung hinter den Inhalten.</p>
+      <p className="muted">Kategorien, Schlagworte und Weiterleitungen: die Ordnung hinter den Inhalten.</p>
       <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 

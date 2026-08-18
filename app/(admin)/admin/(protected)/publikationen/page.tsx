@@ -105,7 +105,7 @@ export default async function PublikationenAdminPage({
     <form action={createPublication}>
       <input type="hidden" name="type" value={type} />
       {type === "ARTICLE" ? (
-        <p className="meta" style={{ marginTop: 0 }}>Auch Gastbeiträge in fremden Blogs (z. B. MVP-Treff, Microsoft) — Medium und Link angeben.</p>
+        <p className="meta" style={{ marginTop: 0 }}>Auch Gastbeiträge in fremden Blogs (z. B. MVP-Treff, Microsoft): Medium und Link angeben.</p>
       ) : null}
       {type === "COURSE" ? (
         <p className="meta" style={{ marginTop: 0 }}>Eigene Trainings, z. B. auf LinkedIn Learning. Plattform und Link zum Kurs angeben; Thumbnail optional.</p>
@@ -179,7 +179,7 @@ export default async function PublikationenAdminPage({
   return (
     <section>
       <h1>Publikationen</h1>
-      <p className="muted">Bücher, Fachartikel, Whitepaper und Kurse — je Art links anlegen, rechts verwalten.</p>
+      <p className="muted">Bücher, Fachartikel, Whitepaper und Kurse: je Art links anlegen, rechts verwalten.</p>
       <Flash ok={ok} err={err} />
       {dbError ? <p className="st sched" style={{ display: "inline-block" }}>Datenbank wird geweckt …</p> : null}
 

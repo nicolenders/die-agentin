@@ -7,6 +7,8 @@ import { getDispatchBySlug } from "@/lib/queries/dispatches";
 import { formatDate } from "@/lib/format";
 import { siteOrigin } from "@/lib/site";
 import { blogPostingNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
+import { alternatesFor } from "@/lib/seo/alternates";
+import { metaDescription } from "@/lib/seo/description";
 import ContentArticle from "@/components/content/ContentArticle";
 import JsonLd from "@/components/JsonLd";
 
@@ -21,10 +23,12 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   const d = await getDispatchBySlug(locale, slug);
   if (!d) return {};
+  const description = metaDescription(d.summary);
   return {
     title: d.title,
-    description: d.summary ?? undefined,
-    openGraph: { title: d.title, description: d.summary ?? undefined },
+    description,
+    alternates: alternatesFor(locale, `depeschen/${d.slug}`),
+    openGraph: { title: d.title, description },
   };
 }
 

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { cachedQuery, tags } from "@/lib/cache";
 import { assetUrl } from "@/lib/media/url";
 import { getDictionary } from "@/lib/i18n";
+import { countVisitedCountries } from "@/lib/missions";
 import type { Locale } from "@/lib/i18n/config";
 
 // Startseiten-Hero (SPEC §5). Im Admin pflegbar (Model HomeContent), mit Rückfall
@@ -122,10 +123,10 @@ export interface HomeStats {
 // Kategorie „MVP" gepflegt. Der Zähler summiert alle solchen Einträge — je ein
 // Eintrag pro Jahr ergibt so automatisch die Zahl (statt einer festen 7).
 async function loadHomeStats(): Promise<HomeStats> {
-  const [missions, countryGroups, briefings, books, mvpAwards, certifications, identities, salesAgg] =
+  const [missions, countryRows, briefings, books, mvpAwards, certifications, identities, salesAgg] =
     await Promise.all([
       db.mission.count(),
-      db.mission.groupBy({ by: ["countryCode"] }),
+      db.mission.findMany({ select: { countryCode: true, isOnline: true } }),
       db.talk.count({ where: { active: true } }),
       db.publication.count({ where: { type: "BOOK" } }),
       db.certification.count({ where: { kind: "MVP" } }),
@@ -143,7 +144,7 @@ async function loadHomeStats(): Promise<HomeStats> {
     2 * (salesAgg._sum.bundleCount ?? 0);
   return {
     missions,
-    countries: countryGroups.length,
+    countries: countVisitedCountries(countryRows),
     briefings,
     books,
     mvpAwards,

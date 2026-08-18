@@ -24,7 +24,7 @@ const INFO_SECTIONS = [
   },
   {
     heading: "Sprachen",
-    text: "Deutsch (Standard) und Englisch. Fehlt eine Übersetzung, wird auf Deutsch zurückgefallen — mit sichtbarem Hinweis.",
+    text: "Deutsch (Standard) und Englisch. Fehlt eine Übersetzung, wird auf Deutsch zurückgefallen, mit sichtbarem Hinweis.",
   },
   {
     heading: "Consent",
@@ -120,7 +120,7 @@ export default async function EinstellungenPage({
       <div className="card bracket" style={{ marginTop: 20 }}>
         <p className="eyebrow">Kontaktinformationen</p>
         <p className="meta" style={{ marginTop: 0 }}>
-          E-Mail und Anschrift werden hier an EINER Stelle gepflegt — die Legende und das Impressum lesen sie aus.
+          E-Mail und Anschrift werden hier an EINER Stelle gepflegt: die Legende und das Impressum lesen sie aus.
           {!contact.email || !contact.postalAddress ? (
             <span style={{ color: "var(--warn)" }}> ⚠ Ohne E-Mail und Anschrift darf das Impressum nicht öffentlich gehen.</span>
           ) : null}
@@ -236,7 +236,7 @@ export default async function EinstellungenPage({
       {active === "recht" ? (
       <>
       <p className="eyebrow" style={{ marginTop: 20 }}>Rechtliche Seiten</p>
-      <p className="meta">Bereits gespeicherter Text wird angezeigt und kann bearbeitet werden — je Sprache getrennt.</p>
+      <p className="meta">Bereits gespeicherter Text wird angezeigt und kann bearbeitet werden, je Sprache getrennt.</p>
       {LEGAL_KEYS.map((key) => (
         <div className="card bracket" key={key} style={{ marginBottom: 16 }}>
           <p className="eyebrow" style={{ margin: 0 }}>{LEGAL_LABEL[key]}</p>

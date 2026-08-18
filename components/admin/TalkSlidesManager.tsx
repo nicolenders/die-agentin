@@ -63,7 +63,7 @@ export default function TalkSlidesManager({
                 ) : (
                   <>
                     Noch keine Folien auf {LABEL[locale]}. Eine Vorlage ist ebenfalls nicht
-                    hinterlegt — unter{" "}
+                    hinterlegt. Unter{" "}
                     <a href="/admin/medien?tab=vorlagen" target="_blank" rel="noopener noreferrer">
                       Medien → Vorlagen
                     </a>{" "}
@@ -73,7 +73,7 @@ export default function TalkSlidesManager({
               }
               upload={(file, onProgress) => uploadTalkSlides(file, talkId ?? "", locale, onProgress)}
               disabled={!talkId}
-              disabledHint="Erst das Briefing anlegen — danach lassen sich hier Folien hinterlegen."
+              disabledHint="Erst das Briefing anlegen, danach lassen sich hier Folien hinterlegen."
               removeAction={
                 <form action={onRemove} style={{ display: "inline" }}>
                   <input type="hidden" name="talkId" value={talkId ?? ""} />

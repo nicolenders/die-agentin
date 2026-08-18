@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getPublications } from "@/lib/queries/records";
+import { alternatesFor } from "@/lib/seo/alternates";
 import PublicationSections from "@/components/records/PublicationSections";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
-  return { title: dict.nav.publikationen };
+  return {
+    title: dict.nav.publikationen,
+    description: dict.meta.publikationen,
+    alternates: alternatesFor(locale, "publikationen"),
+  };
 }
 
 export default async function PublikationenPage({
@@ -25,7 +30,8 @@ export default async function PublikationenPage({
 
   return (
     <section style={{ padding: "44px 0 90px" }}>
-      <h1 className="eyebrow">{isDe ? "Publikationen" : "Publications"}</h1>
+      <p className="eyebrow">{isDe ? "Publikationen · Bücher & Kurse" : "Publications · books & courses"}</p>
+      <h1 className="page-title">{isDe ? "Geschrieben, nicht nur gehalten." : "Written, not just delivered."}</h1>
 
       <PublicationSections items={all} locale={locale} />
 

@@ -6,6 +6,7 @@ import { computeGeo, project } from "@/lib/map/geo";
 import { availableViews, inBounds } from "@/lib/map/views";
 import AssetImage from "@/components/media/AssetImage";
 import { talkLanguageLabel } from "@/lib/mission-language";
+import { formatDuration } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
 
 const W = 1000;
@@ -64,6 +65,8 @@ export default function WorldMap({
     openFile: string;
     online: string;
     duration: string;
+    aiGenerated: string;
+    aiGeneratedImage: string;
   };
 }) {
   const [viewId, setViewId] = useState("welt");
@@ -185,6 +188,8 @@ export default function WorldMap({
                       alt={selected.bannerAlt}
                       ai={selected.bannerAi}
                       className="popup-banner"
+                      aiLabel={labels.aiGenerated}
+                      aiTitle={labels.aiGeneratedImage}
                       style={{ display: "block", margin: "0 0 10px" }}
                       imgStyle={{ width: "100%", maxHeight: 132, objectFit: "cover", borderRadius: 4, display: "block" }}
                     />
@@ -207,7 +212,7 @@ export default function WorldMap({
                         </Link>
                         {language ? <span className="popup-chip">{language}</span> : null}
                         {selected.durationMin ? (
-                          <span className="popup-chip">{selected.durationMin} min</span>
+                          <span className="popup-chip">{formatDuration(selected.durationMin, locale)}</span>
                         ) : null}
                       </span>
                     </div>
@@ -217,7 +222,7 @@ export default function WorldMap({
                       <span className="popup-label">{labels.language}</span>
                       <span className="popup-value">
                         {language ?? "—"}
-                        {selected.durationMin ? <span className="popup-chip">{selected.durationMin} min</span> : null}
+                        {selected.durationMin ? <span className="popup-chip">{formatDuration(selected.durationMin, locale)}</span> : null}
                       </span>
                     </div>
                   ) : null}

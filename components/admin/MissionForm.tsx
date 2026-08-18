@@ -359,7 +359,7 @@ export default function MissionForm({
               <div className="card bracket">
                 <p className="eyebrow">Ort</p>
                 <p className="muted" style={{ marginTop: 6 }}>
-                  Online-Einsatz — kein fester Ort. Auf der Karte erscheint er in der Antarktis;
+                  Online-Einsatz, kein fester Ort. Auf der Karte erscheint er in der Antarktis;
                   dort findet sonst nichts statt, der Punkt ist also als „ortlos“ erkennbar.
                 </p>
                 <p className="meta" style={{ marginBottom: 0 }}>
@@ -389,7 +389,7 @@ export default function MissionForm({
               </svg>
               <div style={{ padding: "12px 16px", borderTop: "1px solid var(--line-soft)" }}>
                 <p className="meta" style={{ marginTop: 0 }}>
-                  Klick auf die Karte grob setzen — oder exakte Koordinaten eintragen (z. B. aus
+                  Klick auf die Karte grob setzen oder exakte Koordinaten eintragen (z. B. aus
                   Google/Bing Maps: Rechtsklick auf den Ort → Koordinaten kopieren).
                 </p>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -469,10 +469,10 @@ export default function MissionForm({
                 Zeigt nur Briefings, die es auf {language === "de" ? "Deutsch" : "Englisch"} gibt und die
                 zum Einsatzdatum noch gehalten wurden.
                 {talksForLanguage.length === 0 && talkList.length > 0
-                  ? " Für diese Sprache ist noch keines hinterlegt — Titel im Briefing ergänzen."
+                  ? " Für diese Sprache ist noch keines hinterlegt: Titel im Briefing ergänzen."
                   : ""}
                 {hiddenByArchive > 0
-                  ? ` ${hiddenByArchive} archivierte${hiddenByArchive === 1 ? "s" : ""} ausgeblendet — mit einem früheren Datum tauchen sie wieder auf.`
+                  ? ` ${hiddenByArchive} archivierte${hiddenByArchive === 1 ? "s" : ""} ausgeblendet, mit einem früheren Datum tauchen sie wieder auf.`
                   : ""}
               </p>
 
@@ -532,7 +532,7 @@ export default function MissionForm({
 
               <label className="f" style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 6px" }}>
                 <input type="checkbox" checked={isOnline} onChange={(e) => toggleOnline(e.target.checked)} style={{ width: "auto" }} />
-                Online-/Remote-Event (ohne festen Ort — erscheint auf der Karte in der Antarktis)
+                Online-/Remote-Event (ohne festen Ort, erscheint auf der Karte in der Antarktis)
               </label>
               <label className="f">Stadt</label>
               <input className="f" value={city} onChange={(e) => setCity(e.target.value)} placeholder={isOnline ? "z. B. Online" : ""} />
@@ -564,7 +564,7 @@ export default function MissionForm({
 
               <label className="f" style={{ marginTop: 10 }}>Werkzeuge</label>
               <p className="meta" style={{ marginTop: 0 }}>
-                Beim Wählen eines Briefings übernommen — hier anpassbar (an-/abwählen).
+                Beim Wählen eines Briefings übernommen, hier anpassbar (an-/abwählen).
               </p>
               {allTools.length === 0 ? (
                 <p className="meta" style={{ margin: 0 }}>Noch keine Werkzeuge angelegt (bei den Identitäten pflegen).</p>
@@ -725,14 +725,14 @@ export default function MissionForm({
               </p>
               {!talkId ? (
                 <p className="meta" style={{ marginTop: 0 }}>
-                  Erst ein Briefing wählen — die Folien hängen am Briefing, nicht am einzelnen Einsatz.
+                  Erst ein Briefing wählen: die Folien hängen am Briefing, nicht am einzelnen Einsatz.
                 </p>
               ) : deck ? (
                 <>
                   <p className="meta" style={{ marginTop: 0 }}>
                     {deck.matchesLanguage
                       ? "Der am Briefing hinterlegte Foliensatz in der gewählten Vortragssprache."
-                      : `Auf ${LANGUAGE_LABEL[language] ?? "dieser Sprache"} ist am Briefing noch kein Foliensatz hinterlegt — hier steht die ${LANGUAGE_LABEL[deck.item.locale] ?? deck.item.locale}-Fassung.`}
+                      : `Auf ${LANGUAGE_LABEL[language] ?? "dieser Sprache"} ist am Briefing noch kein Foliensatz hinterlegt, hier steht die ${LANGUAGE_LABEL[deck.item.locale] ?? deck.item.locale}-Fassung.`}
                   </p>
                   <a className="btn ghost sm" href={deckUrl(deck.item)} download={deck.item.fileName}>
                     ⬇ {deck.item.fileName}
@@ -745,7 +745,7 @@ export default function MissionForm({
                   <a href={`/admin/briefings/bearbeiten?id=${talkId}`} target="_blank" rel="noopener noreferrer">
                     Im Briefing hinterlegen
                   </a>{" "}
-                  — dort steht auch die Vorlage zum Anfangen bereit.
+                  dort steht auch die Vorlage zum Anfangen bereit.
                 </p>
               )}
             </div>
@@ -753,7 +753,7 @@ export default function MissionForm({
             <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
               <p className="eyebrow" style={{ marginTop: 0 }}>Folien als PDF</p>
               <p className="meta" style={{ marginTop: 0 }}>
-                PDF hochladen (max. 20 MB) — wird auf der öffentlichen Einsatzseite zum Download angeboten.
+                PDF hochladen (max. 20 MB), wird auf der öffentlichen Einsatzseite zum Download angeboten.
               </p>
               <input
                 ref={slidesInputRef}

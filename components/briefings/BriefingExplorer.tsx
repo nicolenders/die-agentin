@@ -22,11 +22,20 @@ export interface ExplorerItem {
   identitySlugs: string[];
   level: string | null;
   durationMin: number | null;
+  /** Serverseitig formatierte Dauer („45 Min.", „7 Std.") — null ohne Angabe. */
+  durationLabel: string | null;
+  /** Ab 180 Minuten: Workshop statt Session (Audit 4.7). */
+  isWorkshop: boolean;
   deCount: number;
   enCount: number;
   total: number;
   missions: ExplorerMissionRow[];
   abstractNode: ReactNode; // serverseitig gerenderter Rich-Text
+}
+
+export interface ExplorerLabels {
+  newInRepertoire: string;
+  workshop: string;
 }
 
 export interface ExplorerIdentity {
@@ -44,11 +53,13 @@ export default function BriefingExplorer({
   categories,
   identities = [],
   locale,
+  labels,
 }: {
   items: ExplorerItem[];
   categories: string[];
   identities?: ExplorerIdentity[];
   locale: string;
+  labels: ExplorerLabels;
 }) {
   const isDe = locale === "de";
   const [q, setQ] = useState("");
@@ -163,13 +174,18 @@ export default function BriefingExplorer({
                 >
                   <span className="acc-chevron" aria-hidden>{open ? "−" : "+"}</span>
                   <span className="acc-title">{it.title}</span>
+                  {/* Alle zugeordneten Kategorien zeigen (Audit 4.5, Schritt 1):
+                      vorher waren es nur die ersten zwei, sodass die Kategorie,
+                      nach der gerade gefiltert wurde, unsichtbar bleiben konnte. */}
                   <span className="acc-tags">
-                    {it.categories.slice(0, 2).map((cat) => (
-                      <span key={cat} className="tag">{cat}</span>
+                    {it.categories.map((cat) => (
+                      <span key={cat} className={`tag${selected.includes(cat) ? " on" : ""}`}>{cat}</span>
                     ))}
+                    {it.isWorkshop ? <span className="tag">{labels.workshop}</span> : null}
                   </span>
                   <span className="acc-count meta">
-                    {it.total}×{it.durationMin ? ` · ${it.durationMin}′` : ""}
+                    {it.total > 0 ? `${it.total}×` : labels.newInRepertoire}
+                    {it.durationLabel ? ` · ${it.durationLabel}` : ""}
                   </span>
                 </button>
                 {open ? (

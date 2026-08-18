@@ -4,11 +4,14 @@ import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getMissionBySlug } from "@/lib/queries/missions";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDuration } from "@/lib/format";
 import { extractYouTubeId } from "@/lib/video";
 import { siteOrigin } from "@/lib/site";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import { eventNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
+import { alternatesFor } from "@/lib/seo/alternates";
+import { firstSentence, metaDescription } from "@/lib/seo/description";
+import { richValueToPlain } from "@/lib/content/rich";
 import Gallery from "@/components/content/Gallery";
 import RichText from "@/components/content/RichText";
 import VideoConsent from "@/components/content/VideoConsent";
@@ -25,7 +28,14 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   const mission = await getMissionBySlug(locale, slug);
   if (!mission) return {};
-  return { title: `${mission.eventName} · ${mission.city}` };
+  // Eigene Description je Einsatzakte (Audit 1.2): Fakten zuerst, danach der
+  // Anfang des Veranstaltungstexts, hart auf 155 Zeichen gekürzt.
+  const facts = `${mission.eventName}, ${mission.city}, ${formatDate(mission.startDate, locale)}.`;
+  return {
+    title: `${mission.eventName} · ${mission.city}`,
+    description: metaDescription(facts, firstSentence(richValueToPlain(mission.eventText))),
+    alternates: alternatesFor(locale, `einsaetze/${mission.slug}`),
+  };
 }
 
 export default async function EinsatzaktePage({
@@ -45,7 +55,7 @@ export default async function EinsatzaktePage({
   const facts = [
     mission.sessionType ? { KEYNOTE: "Keynote", SESSION: "Session", WORKSHOP: "Workshop", PANEL: "Panel" }[mission.sessionType] ?? mission.sessionType : null,
     talkLanguageLabel(mission.sessionLanguage, locale),
-    mission.durationMin ? `${mission.durationMin} ${isDe ? "Minuten" : "minutes"}` : null,
+    mission.durationMin ? formatDuration(mission.durationMin, locale) : null,
     mission.attendeeCount ? `${mission.attendeeCount} ${isDe ? "Teilnehmende" : "attendees"}` : null,
     mission.feedbackScore != null ? `${isDe ? "Feedback" : "Feedback"} ${mission.feedbackScore}${mission.feedbackSource ? ` (${mission.feedbackSource})` : ""}` : null,
   ].filter(Boolean);
@@ -178,6 +188,8 @@ export default async function EinsatzaktePage({
                 <Gallery
                   images={mission.photos.map((p) => ({ url: p.url, alt: p.decorative ? "" : p.alt, ai: p.ai }))}
                   label={isDe ? "Fotos vom Einsatz" : "Mission photos"}
+                  aiLabel={dict.common.aiGenerated}
+                  aiTitle={dict.common.aiGeneratedImage}
                 />
               </div>
             ) : null}

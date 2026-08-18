@@ -180,7 +180,7 @@ export default function DossierEditor({
 
             {locale === "en" && enIsDraft ? (
               <div className="lang-fallback" role="note" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span>KI-Entwurf — nicht automatisch veröffentlichbar. Erst nach Bestätigung.</span>
+                <span>KI-Entwurf: nicht automatisch veröffentlichbar. Erst nach Bestätigung.</span>
                 <button className="btn ghost sm" onClick={() => { setEnIsDraft(false); setEnConfirmed(true); setStatus("EN bestätigt (REVIEWED)."); }}>
                   EN bestätigen
                 </button>

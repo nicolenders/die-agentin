@@ -4,7 +4,7 @@ import { getBriefingRanking } from "@/lib/queries/briefings";
 import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { identityDisplayName } from "@/lib/identities";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDuration } from "@/lib/format";
 import { talkArchiveState } from "@/lib/briefings/archive";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
@@ -23,6 +23,8 @@ import {
   toggleTalkVisibility,
   toggleTalkArchive,
   reorderTalk,
+  mergeTalks,
+  mergeTalkCategory,
 } from "./actions";
 
 export const metadata = { title: "Briefings · Zentrale" };
@@ -207,7 +209,7 @@ export default async function BriefingsAdminPage({
                           <button className="btn ghost sm" type="submit" aria-label="Nach unten" disabled={i === talks.length - 1}>↓</button>
                         </form>
                       </td>
-                      <td><b>{t.title}</b>{t.level || t.durationMin ? <div className="meta">{[t.level ? `Level ${t.level}` : null, t.durationMin ? `${t.durationMin} min` : null].filter(Boolean).join(" · ")}</div> : null}</td>
+                      <td><b>{t.title}</b>{t.level || t.durationMin ? <div className="meta">{[t.level ? `Level ${t.level}` : null, t.durationMin ? formatDuration(t.durationMin, "de") : null].filter(Boolean).join(" · ")}</div> : null}</td>
                       <td className="meta">{t.category}</td>
                       <td className="meta">{t.audience}</td>
                       <td>{t.deliveries}</td>
@@ -249,6 +251,37 @@ export default async function BriefingsAdminPage({
                 </tbody>
               </table>
             )}
+
+            {/* Dubletten entstehen beim Import immer wieder: derselbe Titel mit
+                geschütztem Bindestrich (Audit 4.2) oder dieselbe Session je
+                Sprache als eigenes Briefing (Audit 4.3). */}
+            <div style={{ marginTop: 24, borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+              <p className="eyebrow" style={{ marginTop: 0 }}>Briefings zusammenführen</p>
+              <p className="meta" style={{ marginTop: -6 }}>
+                Das erste gibt seine Einsätze, fehlende Sprachfassungen und Verknüpfungen an das
+                zweite ab und wandert danach ins Archiv. Ein gepflegter Titel des Ziels bleibt
+                stehen. Behalte das Briefing mit den meisten Einsätzen.
+              </p>
+              <form action={mergeTalks} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <label className="meta" htmlFor="talk-merge-source">Von</label>
+                <select className="f" id="talk-merge-source" name="sourceId" style={{ maxWidth: 320 }} required>
+                  <option value="">— wählen —</option>
+                  {talks.map((t) => (
+                    <option key={t.id} value={t.id}>{t.title} ({t.deliveries}×)</option>
+                  ))}
+                </select>
+                <label className="meta" htmlFor="talk-merge-target">nach</label>
+                <select className="f" id="talk-merge-target" name="targetId" style={{ maxWidth: 320 }} required>
+                  <option value="">— wählen —</option>
+                  {talks.map((t) => (
+                    <option key={t.id} value={t.id}>{t.title} ({t.deliveries}×)</option>
+                  ))}
+                </select>
+                <ConfirmButton confirmText="Briefings zusammenführen? Das erste wandert danach ins Archiv.">
+                  Zusammenführen
+                </ConfirmButton>
+              </form>
+            </div>
           </div>
         ) : null}
 
@@ -265,7 +298,7 @@ export default async function BriefingsAdminPage({
               <label className="f">Kategorien (Mehrfachauswahl)</label>
               <CategoryMultiSelect name="categoryIds" options={categories.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Erst eine Kategorie anlegen (Tab „Kategorien“)." />
               <label className="f">Zielgruppe (Mehrfachauswahl)</label>
-              <CategoryMultiSelect name="audienceIds" options={audienceTags.map((a) => ({ id: a.id, name: a.nameDe }))} emptyHint="Optional — erst eine Zielgruppe anlegen (Tab „Zielgruppen“)." />
+              <CategoryMultiSelect name="audienceIds" options={audienceTags.map((a) => ({ id: a.id, name: a.nameDe }))} emptyHint="Optional: erst eine Zielgruppe anlegen (Tab „Zielgruppen“)." />
               <label className="f">Level</label>
               <input className="f" name="level" placeholder="300" />
               <label className="f">Dauer (Minuten)</label>
@@ -305,13 +338,40 @@ export default async function BriefingsAdminPage({
               <input className="f" name="name" placeholder="Neue Kategorie" style={{ maxWidth: 220 }} />
               <button className="btn ghost sm" type="submit">+ Kategorie anlegen</button>
             </form>
+
+            {/* Belegte Kategorien lassen sich nicht löschen. Zum Aufräumen der
+                Taxonomie (Audit 4.5) braucht es deshalb das Überführen. */}
+            <div style={{ marginTop: 24, borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+              <p className="eyebrow" style={{ marginTop: 0 }}>Kategorie überführen</p>
+              <p className="meta" style={{ marginTop: -6 }}>
+                Alle Briefings der ersten Kategorie bekommen die zweite, danach wird die erste
+                gelöscht. Nichts geht verloren.
+              </p>
+              <form action={mergeTalkCategory} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <label className="meta" htmlFor="cat-merge-source">Von</label>
+                <select className="f" id="cat-merge-source" name="sourceId" style={{ maxWidth: 240 }} required>
+                  <option value="">— wählen —</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nameDe} ({c.count})</option>
+                  ))}
+                </select>
+                <label className="meta" htmlFor="cat-merge-target">nach</label>
+                <select className="f" id="cat-merge-target" name="targetId" style={{ maxWidth: 240 }} required>
+                  <option value="">— wählen —</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nameDe} ({c.count})</option>
+                  ))}
+                </select>
+                <ConfirmButton confirmText="Kategorie überführen und die alte löschen?">Überführen</ConfirmButton>
+              </form>
+            </div>
           </div>
         ) : null}
 
         {active === "zielgruppen" ? (
           <div className="card bracket">
             <p className="eyebrow">Zielgruppen</p>
-            <p className="meta" style={{ marginTop: 0 }}>Wiederverwendbare Tags — einmal anlegen, an beliebig vielen Briefings nutzen.</p>
+            <p className="meta" style={{ marginTop: 0 }}>Wiederverwendbare Tags: einmal anlegen, an beliebig vielen Briefings nutzen.</p>
             <table>
               <tbody>
                 {audienceTags.map((a) => (

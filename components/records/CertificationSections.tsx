@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
+import { aiImageLabels } from "@/lib/media/ai-labels";
 import type { CertificationRecord, FocusTopicItem } from "@/lib/queries/records";
 import {
   CERT_KINDS,
@@ -42,6 +43,7 @@ export default function CertificationSections({
   locale: Locale;
 }) {
   const isDe = locale === "de";
+  const aiLabels = aiImageLabels(locale);
   const kindLabel = (k: (typeof CERT_KINDS)[number]) => (isDe ? CERT_KIND_LABEL[k] : CERT_KIND_LABEL_EN[k]);
   const familyLabel = (f: (typeof CERT_FAMILIES)[number]) => (isDe ? CERT_FAMILY_LABEL[f] : CERT_FAMILY_LABEL_EN[f]);
 
@@ -102,6 +104,8 @@ export default function CertificationSections({
                       src={c.logoUrl}
                       alt={c.logoAlt}
                       ai={c.logoAi}
+                      aiLabel={aiLabels.aiGenerated}
+                      aiTitle={aiLabels.aiGeneratedImage}
                       imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
                     />
                   ) : (

@@ -21,8 +21,8 @@ export const DEFAULT_SHARE_TEMPLATES: Record<ShareType, Record<Locale, string>> 
     en: "🛰️ New mission: “{title}” in {city}. On site as {identities}. What I'm bringing and where to find me:\n{url}",
   },
   briefing: {
-    de: "🎙️ Aus meinem Repertoire: „{title}“. Ein Briefing als {identities} — kompakt, praxisnah, direkt einsetzbar. Alle Details:\n{url}",
-    en: "🎙️ From my repertoire: “{title}”. A briefing as {identities} — compact, hands-on, ready to use. All details:\n{url}",
+    de: "🎙️ Aus meinem Repertoire: „{title}“. Ein Briefing als {identities}: kompakt, praxisnah, direkt einsetzbar. Alle Details:\n{url}",
+    en: "🎙️ From my repertoire: “{title}”. A briefing as {identities}: compact, hands-on, ready to use. All details:\n{url}",
   },
   dispatch: {
     de: "📡 Neue Depesche: „{title}“. Meldung aus dem Feld als {identities}. Reinlesen:\n{url}",

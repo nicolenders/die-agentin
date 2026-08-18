@@ -19,7 +19,7 @@ export async function GET() {
     guid: `${d.id}-en`,
   }));
   const xml = buildRssFeed({
-    title: `${dict.brand.name} — ${dict.dispatch.namePlural}`,
+    title: `${dict.brand.name} · ${dict.dispatch.namePlural}`,
     description: dict.dispatch.lead,
     siteUrl: `${SITE}/en`,
     feedUrl: `${SITE}/feed.en.xml`,

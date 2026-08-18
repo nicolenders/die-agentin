@@ -89,6 +89,8 @@ const de = {
     // Fallback für die Rollenzeile, wenn im Admin keine Rollen gepflegt sind
     // (`lib/queries/home.ts`). Kein toter Key.
     roles: ["ARCHITECT", "ADVISOR", "DEVELOPER", "TRAINER", "SPEAKER"],
+    focusHeading: "Woran ich gerade arbeite",
+    focusLead: "Die Werkzeuge und Themen, die mich zurzeit am meisten beschäftigen.",
     nextMission: "Nächster Einsatz",
     recent: "Zuletzt eingegangen",
     countMissions: "Einsätze",
@@ -142,11 +144,10 @@ const de = {
     newInRepertoire: "Neu im Repertoire",
     workshop: "Workshop",
     deliveredCount: "gehalten",
-    // Vortragsformate der Akte (Audit 6.4), gespeist aus den Dauern der
-    // gepflegten Briefings.
+    // Vortragsformate der Akte. Sie werden in der Redaktion gepflegt; ist dort
+    // nichts hinterlegt, entstehen sie aus den Dauern der gepflegten Briefings.
     formatsHeading: "Formate",
-    formatsLead:
-      "Was ich anbiete, mit den Dauern aus dem laufenden Repertoire. Alle Formate auf Deutsch und auf Englisch.",
+    formatsLead: "Was ich anbiete, mit Dauer und Sprache.",
     formats: {
       LIGHTNING: "Lightning Talk",
       SESSION: "Session",
@@ -167,6 +168,19 @@ const de = {
     focusLabel: "Aktueller Fokus",
     coverage: "Belege",
     languagesLabel: "Sprachen",
+  },
+  // Der RSS-Feed trägt Depeschen, Einsätze und Briefings. Die Kategorien
+  // erscheinen im Reader neben dem Eintrag und lassen sich dort filtern.
+  feed: {
+    name: "Depeschen, Einsätze und Briefings",
+    description:
+      "Neue Depeschen, angekündigte Einsätze und neue Briefings der Agentin, alles in einem Feed. Einzeln abrufbar über den Zusatz ?art=depeschen, ?art=einsaetze oder ?art=briefings.",
+    categoryDispatch: "Depesche",
+    categoryMission: "Einsatz",
+    categoryBriefing: "Briefing",
+    missionOn: "Einsatz am",
+    online: "Online",
+    briefingFallback: "Neu im Vortragsrepertoire.",
   },
   footer: {
     contentHeading: "Inhalte",

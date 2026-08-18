@@ -59,9 +59,9 @@ const en: Dictionary = {
     openEventSite: "Event website",
     emptyTitle: "Nothing here yet",
     loading: "Loading …",
-    aiGenerated: "AI-generated",
+    aiGenerated: "AI generated",
     aiGeneratedShort: "AI",
-    aiGeneratedImage: "AI-generated image",
+    aiGeneratedImage: "AI generated image",
   },
   langNotice: {
     // „bisher" fehlte hier und änderte damit die Aussage (Audit 2.5).
@@ -75,6 +75,8 @@ const en: Dictionary = {
     titleHighlight: "intelligent solutions",
     lead: "Nicole Enders, Microsoft MVP since 2020, seven years running. I design, build and explain solutions around Microsoft AI and Modern Work. Missions, identities and dispatches all come together here.",
     roles: ["ARCHITECT", "ADVISOR", "DEVELOPER", "TRAINER", "SPEAKER"],
+    focusHeading: "What I am working on right now",
+    focusLead: "The tools and topics I am spending the most time with at the moment.",
     nextMission: "Next mission",
     recent: "Latest intake",
     countMissions: "Missions",
@@ -121,8 +123,7 @@ const en: Dictionary = {
     workshop: "Workshop",
     deliveredCount: "delivered",
     formatsHeading: "Formats",
-    formatsLead:
-      "What I offer, with the durations from the current repertoire. Every format in German and in English.",
+    formatsLead: "What I offer, with duration and language.",
     formats: {
       LIGHTNING: "Lightning talk",
       SESSION: "Session",
@@ -142,6 +143,17 @@ const en: Dictionary = {
     focusLabel: "Current focus",
     coverage: "Track record",
     languagesLabel: "Languages",
+  },
+  feed: {
+    name: "Dispatches, missions and briefings",
+    description:
+      "New dispatches, announced missions and new briefings from the agent, all in one feed. Available separately via ?art=depeschen, ?art=einsaetze or ?art=briefings.",
+    categoryDispatch: "Dispatch",
+    categoryMission: "Mission",
+    categoryBriefing: "Briefing",
+    missionOn: "Mission on",
+    online: "Online",
+    briefingFallback: "New in the talk repertoire.",
   },
   footer: {
     contentHeading: "Content",

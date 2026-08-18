@@ -11,6 +11,8 @@ import {
   CONTACT_EMAIL_KEY,
   CONTACT_ADDRESS_KEY,
 } from "@/lib/queries/settings";
+import { SPEAKER_FORMATS_TAG } from "@/lib/queries/speaker-formats";
+import { locales } from "@/lib/i18n/config";
 import { serializeRichValue } from "@/lib/content/rich";
 
 /** Zurück auf das Register, aus dem gespeichert wurde — nicht auf das erste. */
@@ -91,4 +93,97 @@ export async function saveBios(formData: FormData): Promise<void> {
   }
   if (failed) redirect(`${back}&err=failed`);
   redirect(`${back}&ok=bios`);
+}
+
+// ------------------------------------------------- Speaker-Kit-Formate
+
+// Die Vortragsformate der Akte. Dauer als Minutenbereich, damit sie in beiden
+// Sprachen richtig formatiert wird, ohne doppelt gepflegt zu werden.
+
+function optionalInt(value: FormDataEntryValue | null): number | null {
+  const n = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function formatFields(formData: FormData) {
+  return {
+    titleDe: String(formData.get("titleDe") ?? "").trim(),
+    titleEn: String(formData.get("titleEn") ?? "").trim() || null,
+    noteDe: String(formData.get("noteDe") ?? "").trim() || null,
+    noteEn: String(formData.get("noteEn") ?? "").trim() || null,
+    minutesMin: optionalInt(formData.get("minutesMin")),
+    minutesMax: optionalInt(formData.get("minutesMax")),
+    // Je Sprache eine Checkbox; ohne Auswahl bleibt die Spalte in der Akte leer.
+    languages: locales.filter((l) => formData.get(`lang-${l}`) === "on").join(","),
+    active: formData.get("active") === "on",
+  };
+}
+
+function afterFormatChange() {
+  invalidateTags([SPEAKER_FORMATS_TAG]);
+  revalidatePath("/de/akte");
+  revalidatePath("/en/akte");
+}
+
+export async function createSpeakerFormat(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const back = tabPath("formate");
+  const fields = formatFields(formData);
+  if (!fields.titleDe) redirect(`${back}&err=missing-fields`);
+
+  let failed = false;
+  try {
+    const last = await db.speakerFormat.findFirst({
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    await db.speakerFormat.create({
+      data: { ...fields, sortOrder: (last?.sortOrder ?? 0) + 10 },
+    });
+    afterFormatChange();
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${back}&err=failed`);
+  redirect(`${back}&ok=created`);
+}
+
+export async function saveSpeakerFormat(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const back = tabPath("formate");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) redirect(`${back}&err=not-found`);
+  const fields = formatFields(formData);
+  if (!fields.titleDe) redirect(`${back}&err=missing-fields`);
+  const sortOrder = Number.parseInt(String(formData.get("sortOrder") ?? ""), 10);
+
+  let failed = false;
+  try {
+    await db.speakerFormat.update({
+      where: { id },
+      data: { ...fields, ...(Number.isFinite(sortOrder) ? { sortOrder } : {}) },
+    });
+    afterFormatChange();
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${back}&err=failed`);
+  redirect(`${back}&ok=saved`);
+}
+
+export async function deleteSpeakerFormat(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const back = tabPath("formate");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) redirect(`${back}&err=not-found`);
+
+  let failed = false;
+  try {
+    await db.speakerFormat.delete({ where: { id } });
+    afterFormatChange();
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${back}&err=failed`);
+  redirect(`${back}&ok=deleted`);
 }

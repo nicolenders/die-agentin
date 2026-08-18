@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { IdentityCard as IdentityCardData } from "@/lib/queries/identities";
+import { aiImageLabels } from "@/lib/media/ai-labels";
 import styles from "./IdentityCard.module.scss";
 
 // Zwei Darstellungen derselben Identitätskarte:
@@ -16,10 +17,11 @@ function href(locale: string, slug: string) {
 }
 
 // Hängt bei KI-generierten Bildern den Hinweis an den Alt-Text an, statt ihn
-// sichtbar einzublenden.
+// sichtbar einzublenden. Der Wortlaut kommt aus dem Wörterbuch: zwei Fassungen
+// desselben Hinweises im Code laufen sonst auseinander.
 function altWithAi(alt: string, ai: boolean, locale: string): string {
   if (!ai) return alt;
-  const note = locale === "en" ? "AI-generated" : "KI-generiert";
+  const note = aiImageLabels(locale).aiGenerated;
   return alt ? `${alt} (${note})` : note;
 }
 

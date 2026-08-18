@@ -123,8 +123,7 @@ const en: Dictionary = {
     workshop: "Workshop",
     deliveredCount: "delivered",
     formatsHeading: "Formats",
-    formatsLead:
-      "What I offer, with the durations from the current repertoire. Every format in German and in English.",
+    formatsLead: "What I offer, with duration and language.",
     formats: {
       LIGHTNING: "Lightning talk",
       SESSION: "Session",

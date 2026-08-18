@@ -11,7 +11,17 @@ import { SHARE_TYPES, SHARE_TYPE_LABEL, shareTemplateKey } from "@/lib/share";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import InfoPopover from "@/components/admin/InfoPopover";
-import { saveLegalDoc, saveContactInfo, saveBios } from "./actions";
+import {
+  saveLegalDoc,
+  saveContactInfo,
+  saveBios,
+  createSpeakerFormat,
+  saveSpeakerFormat,
+  deleteSpeakerFormat,
+} from "./actions";
+import { getSpeakerFormatsRaw } from "@/lib/queries/speaker-formats";
+import { parseFormatLanguages } from "@/lib/briefings/speaker-formats";
+import ConfirmButton from "@/components/admin/ConfirmButton";
 import { saveSocialLinks, saveShareTemplates } from "./channel-actions";
 
 export const metadata = { title: "Einstellungen · Zentrale" };
@@ -63,6 +73,7 @@ const TABS = [
   { id: "kontakt", label: "Kontakt" },
   { id: "kanaele", label: "Kanäle" },
   { id: "bios", label: "Speaker-Kit-Bios" },
+  { id: "formate", label: "Speaker-Kit-Formate" },
   { id: "recht", label: "Rechtliche Seiten" },
 ] as const;
 
@@ -84,11 +95,12 @@ export default async function EinstellungenPage({
   const find = (key: string, locale: string) => docs.find((d) => d.docKey === key && d.locale === locale);
 
   const contact = await getContactInfo();
-  const [biosDe, biosEn, social, templates] = await Promise.all([
+  const [biosDe, biosEn, social, templates, speakerFormats] = await Promise.all([
     getBios("de"),
     getBios("en"),
     getSocialLinks(),
     getShareTemplates(),
+    getSpeakerFormatsRaw(),
   ]);
 
   return (
@@ -229,6 +241,147 @@ export default async function EinstellungenPage({
             );
           })}
         </div>
+      </div>
+      </>
+      ) : null}
+
+      {active === "formate" ? (
+      <>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Speaker-Kit-Formate</p>
+      <p className="meta">
+        Was du Veranstaltern anbietest. Diese Liste steht in der Akte unter „Formate“.
+        Solange sie leer ist, leitet die Akte die Formate aus den Dauern deiner Briefings
+        ab. Die Dauer wird als Minutenbereich gepflegt und in beiden Sprachen richtig
+        geschrieben; nur die Untergrenze auszufüllen ergibt eine feste Dauer.
+      </p>
+
+      {speakerFormats.map((f) => {
+        const langs = parseFormatLanguages(f.languages);
+        return (
+          <div className="card bracket" key={f.id} style={{ marginBottom: 14 }}>
+            <form action={saveSpeakerFormat}>
+              <input type="hidden" name="id" value={f.id} />
+              <div className="grid g2" style={{ alignItems: "start" }}>
+                <div>
+                  <label className="f" htmlFor={`fmt-titleDe-${f.id}`}>Format (DE)</label>
+                  <input className="f" id={`fmt-titleDe-${f.id}`} name="titleDe" defaultValue={f.titleDe} required />
+                  <label className="f" htmlFor={`fmt-noteDe-${f.id}`}>Beschreibung (DE, optional)</label>
+                  <textarea className="f" id={`fmt-noteDe-${f.id}`} name="noteDe" rows={2} defaultValue={f.noteDe ?? ""} />
+                </div>
+                <div>
+                  <label className="f" htmlFor={`fmt-titleEn-${f.id}`}>Format (EN, optional)</label>
+                  <input className="f" id={`fmt-titleEn-${f.id}`} name="titleEn" defaultValue={f.titleEn ?? ""} />
+                  <label className="f" htmlFor={`fmt-noteEn-${f.id}`}>Beschreibung (EN, optional)</label>
+                  <textarea className="f" id={`fmt-noteEn-${f.id}`} name="noteEn" rows={2} defaultValue={f.noteEn ?? ""} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-end", marginTop: 12 }}>
+                <span>
+                  <label className="f" htmlFor={`fmt-min-${f.id}`}>Dauer von (Min.)</label>
+                  <input
+                    className="f"
+                    id={`fmt-min-${f.id}`}
+                    name="minutesMin"
+                    type="number"
+                    min={1}
+                    defaultValue={f.minutesMin ?? ""}
+                    style={{ width: 120 }}
+                  />
+                </span>
+                <span>
+                  <label className="f" htmlFor={`fmt-max-${f.id}`}>bis (Min., optional)</label>
+                  <input
+                    className="f"
+                    id={`fmt-max-${f.id}`}
+                    name="minutesMax"
+                    type="number"
+                    min={1}
+                    defaultValue={f.minutesMax ?? ""}
+                    style={{ width: 120 }}
+                  />
+                </span>
+                <span>
+                  <label className="f" htmlFor={`fmt-sort-${f.id}`}>Reihenfolge</label>
+                  <input
+                    className="f"
+                    id={`fmt-sort-${f.id}`}
+                    name="sortOrder"
+                    type="number"
+                    defaultValue={f.sortOrder}
+                    style={{ width: 100 }}
+                  />
+                </span>
+                <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+                  <legend className="f" style={{ padding: 0 }}>Angeboten auf</legend>
+                  {LOCALES.map(({ code, label }) => (
+                    <label key={code} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginRight: 14 }}>
+                      <input type="checkbox" name={`lang-${code}`} defaultChecked={langs.includes(code)} />
+                      {label}
+                    </label>
+                  ))}
+                </fieldset>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <input type="checkbox" name="active" defaultChecked={f.active} />
+                  In der Akte zeigen
+                </label>
+                <button className="btn solid sm" type="submit" style={{ marginLeft: "auto" }}>
+                  Speichern
+                </button>
+              </div>
+            </form>
+            <form action={deleteSpeakerFormat} style={{ marginTop: 10 }}>
+              <input type="hidden" name="id" value={f.id} />
+              <ConfirmButton confirmText={`Format „${f.titleDe}" löschen?`}>Löschen</ConfirmButton>
+            </form>
+          </div>
+        );
+      })}
+
+      <div className="card bracket">
+        <p className="eyebrow" style={{ marginTop: 0 }}>Neues Format</p>
+        <form action={createSpeakerFormat}>
+          <div className="grid g2" style={{ alignItems: "start" }}>
+            <div>
+              <label className="f" htmlFor="fmt-new-titleDe">Format (DE)</label>
+              <input className="f" id="fmt-new-titleDe" name="titleDe" placeholder="z. B. Keynote" required />
+              <label className="f" htmlFor="fmt-new-noteDe">Beschreibung (DE, optional)</label>
+              <textarea className="f" id="fmt-new-noteDe" name="noteDe" rows={2} />
+            </div>
+            <div>
+              <label className="f" htmlFor="fmt-new-titleEn">Format (EN, optional)</label>
+              <input className="f" id="fmt-new-titleEn" name="titleEn" />
+              <label className="f" htmlFor="fmt-new-noteEn">Beschreibung (EN, optional)</label>
+              <textarea className="f" id="fmt-new-noteEn" name="noteEn" rows={2} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-end", marginTop: 12 }}>
+            <span>
+              <label className="f" htmlFor="fmt-new-min">Dauer von (Min.)</label>
+              <input className="f" id="fmt-new-min" name="minutesMin" type="number" min={1} style={{ width: 120 }} />
+            </span>
+            <span>
+              <label className="f" htmlFor="fmt-new-max">bis (Min., optional)</label>
+              <input className="f" id="fmt-new-max" name="minutesMax" type="number" min={1} style={{ width: 120 }} />
+            </span>
+            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend className="f" style={{ padding: 0 }}>Angeboten auf</legend>
+              {LOCALES.map(({ code, label }) => (
+                <label key={code} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginRight: 14 }}>
+                  <input type="checkbox" name={`lang-${code}`} defaultChecked />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <input type="checkbox" name="active" defaultChecked />
+              In der Akte zeigen
+            </label>
+            <button className="btn solid sm" type="submit" style={{ marginLeft: "auto" }}>
+              + Format anlegen
+            </button>
+          </div>
+        </form>
       </div>
       </>
       ) : null}

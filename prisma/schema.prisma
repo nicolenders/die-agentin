@@ -781,6 +781,34 @@ model MediaDocument {
 }
 
 // ---------------------------------------------------------------------------
+// Vortragsformate der Akte (Speaker-Kit). Bis hierher entstanden sie aus den
+// Dauern der gepflegten Briefings; das blieb richtig, ließ Nicole aber nicht
+// sagen, was sie tatsächlich anbietet (etwa einen Workshop, den es als Briefing
+// noch nicht gibt). Gepflegte Formate haben Vorrang; ist die Liste leer, greift
+// weiterhin die Ableitung aus den Briefing-Dauern (`lib/briefings/formats.ts`).
+//
+// Dauer als Minutenbereich statt als Text: so wird sie in beiden Sprachen
+// richtig formatiert, ohne dass jemand „45 Minuten"/„45 minutes" doppelt pflegt.
+// ---------------------------------------------------------------------------
+model SpeakerFormat {
+  id         String   @id @default(cuid())
+  titleDe    String
+  titleEn    String?
+  noteDe     String?  @db.NVarChar(Max)
+  noteEn     String?  @db.NVarChar(Max)
+  minutesMin Int?
+  minutesMax Int?
+  // Sprachen, in denen das Format angeboten wird, als Kürzelliste („de,en").
+  languages  String   @default("de,en")
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+// ---------------------------------------------------------------------------
 // „Woran ich gerade arbeite" auf der Startseite: die Werkzeuge und Themen, mit
 // denen Nicole sich aktuell besonders beschäftigt. Je Eintrag ein kleines Logo
 // aus der Mediathek und ein Satz. Bewusst getrennt von `Tool` (das ist der

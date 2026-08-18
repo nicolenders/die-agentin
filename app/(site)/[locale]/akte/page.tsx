@@ -9,6 +9,7 @@ import { getPublishedIdentities } from "@/lib/queries/identities";
 import { getBriefingList } from "@/lib/queries/briefings";
 import { getLegend } from "@/lib/queries/legend";
 import { talkFormats } from "@/lib/briefings/formats";
+import { getSpeakerFormats, type SpeakerFormatRow } from "@/lib/queries/speaker-formats";
 import { formatDuration } from "@/lib/format";
 import { IdentityCompactGrid } from "@/components/identities/IdentityCard";
 import CopyButton from "@/components/CopyButton";
@@ -34,7 +35,7 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const isDe = locale === "de";
-  const [bios, stats, identities, contact, social, dict, briefings, legend] = await Promise.all([
+  const [bios, stats, identities, contact, social, dict, briefings, legend, maintainedFormats] = await Promise.all([
     getBios(locale),
     getHomeStats(),
     getPublishedIdentities(locale),
@@ -43,11 +44,23 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
     getDictionary(locale),
     getBriefingList(locale),
     getLegend(locale),
+    getSpeakerFormats(locale),
   ]);
 
-  // Formate entstehen aus den Dauern der gepflegten Briefings (Audit 6.4) —
-  // keine zweite Liste, die getrennt veralten kann.
-  const formats = talkFormats(briefings.map((b) => b.durationMin));
+  // Gepflegte Formate haben Vorrang: Nicole legt sie in der Redaktion selbst an.
+  // Ist dort nichts hinterlegt, entstehen die Formate wie bisher aus den Dauern
+  // der gepflegten Briefings (Audit 6.4) — keine zweite Liste, die veraltet.
+  const derivedFormats = talkFormats(briefings.map((b) => b.durationMin));
+  const formats: SpeakerFormatRow[] =
+    maintainedFormats.length > 0
+      ? maintainedFormats
+      : derivedFormats.map((f) => ({
+          id: f.format,
+          title: dict.briefing.formats[f.format],
+          duration: f.minutes.map((m) => formatDuration(m, locale)).join(" · "),
+          languages: "DE · EN",
+          note: "",
+        }));
   const portrait = legend.portrait;
 
   const bioBlocks = [
@@ -122,12 +135,13 @@ export default async function AktePage({ params }: { params: Promise<{ locale: s
             </thead>
             <tbody>
               {formats.map((f) => (
-                <tr key={f.format}>
-                  <td data-primary="">{dict.briefing.formats[f.format]}</td>
-                  <td className="meta">
-                    {f.minutes.map((m) => formatDuration(m, locale)).join(" · ")}
+                <tr key={f.id}>
+                  <td data-primary="">
+                    {f.title}
+                    {f.note ? <div className="meta">{f.note}</div> : null}
                   </td>
-                  <td className="meta">DE · EN</td>
+                  <td className="meta">{f.duration}</td>
+                  <td className="meta">{f.languages}</td>
                 </tr>
               ))}
             </tbody>

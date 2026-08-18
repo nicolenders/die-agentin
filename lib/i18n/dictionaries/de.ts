@@ -144,11 +144,10 @@ const de = {
     newInRepertoire: "Neu im Repertoire",
     workshop: "Workshop",
     deliveredCount: "gehalten",
-    // Vortragsformate der Akte (Audit 6.4), gespeist aus den Dauern der
-    // gepflegten Briefings.
+    // Vortragsformate der Akte. Sie werden in der Redaktion gepflegt; ist dort
+    // nichts hinterlegt, entstehen sie aus den Dauern der gepflegten Briefings.
     formatsHeading: "Formate",
-    formatsLead:
-      "Was ich anbiete, mit den Dauern aus dem laufenden Repertoire. Alle Formate auf Deutsch und auf Englisch.",
+    formatsLead: "Was ich anbiete, mit Dauer und Sprache.",
     formats: {
       LIGHTNING: "Lightning Talk",
       SESSION: "Session",

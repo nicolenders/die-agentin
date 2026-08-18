@@ -46,7 +46,15 @@ export async function GET() {
     }
   }
 
-  lines.push("", `## Feeds`, `- ${SITE}/feed.xml`, `- ${SITE}/feed.en.xml`, "");
+  lines.push(
+    "",
+    `## Feeds`,
+    `- ${SITE}/feed.xml`,
+    `- ${SITE}/feed.en.xml`,
+    // Der Feed führt Depeschen, Einsätze und Briefings; `?art=` grenzt ein.
+    `- Filter: ?art=depeschen | ?art=einsaetze | ?art=briefings`,
+    "",
+  );
 
   return new Response(lines.join("\n"), {
     headers: {

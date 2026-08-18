@@ -143,6 +143,17 @@ const en: Dictionary = {
     coverage: "Track record",
     languagesLabel: "Languages",
   },
+  feed: {
+    name: "Dispatches, missions and briefings",
+    description:
+      "New dispatches, announced missions and new briefings from the agent, all in one feed. Available separately via ?art=depeschen, ?art=einsaetze or ?art=briefings.",
+    categoryDispatch: "Dispatch",
+    categoryMission: "Mission",
+    categoryBriefing: "Briefing",
+    missionOn: "Mission on",
+    online: "Online",
+    briefingFallback: "New in the talk repertoire.",
+  },
   footer: {
     contentHeading: "Content",
     aboutHeading: "The agent herself",

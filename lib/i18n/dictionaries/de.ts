@@ -168,6 +168,19 @@ const de = {
     coverage: "Belege",
     languagesLabel: "Sprachen",
   },
+  // Der RSS-Feed trägt Depeschen, Einsätze und Briefings. Die Kategorien
+  // erscheinen im Reader neben dem Eintrag und lassen sich dort filtern.
+  feed: {
+    name: "Depeschen, Einsätze und Briefings",
+    description:
+      "Neue Depeschen, angekündigte Einsätze und neue Briefings der Agentin, alles in einem Feed. Einzeln abrufbar über den Zusatz ?art=depeschen, ?art=einsaetze oder ?art=briefings.",
+    categoryDispatch: "Depesche",
+    categoryMission: "Einsatz",
+    categoryBriefing: "Briefing",
+    missionOn: "Einsatz am",
+    online: "Online",
+    briefingFallback: "Neu im Vortragsrepertoire.",
+  },
   footer: {
     contentHeading: "Inhalte",
     aboutHeading: "Die Agentin selbst",

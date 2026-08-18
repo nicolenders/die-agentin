@@ -52,7 +52,7 @@ export async function generateMetadata({
         "application/rss+xml": [
           {
             url: locale === "en" ? "/feed.en.xml" : "/feed.xml",
-            title: `${dict.brand.name} · ${dict.dispatch.namePlural}`,
+            title: `${dict.brand.name} · ${dict.feed.name}`,
           },
         ],
       },

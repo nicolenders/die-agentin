@@ -9,6 +9,9 @@ export interface FeedItem {
   description: string;
   pubDate: Date | null;
   guid: string;
+  /** Art des Eintrags im Klartext („Depesche", „Einsatz", „Briefing"). Reader
+   *  zeigen sie als Kategorie und lassen danach filtern. */
+  category?: string;
 }
 
 export interface FeedInput {
@@ -40,8 +43,8 @@ export function buildRssFeed(input: FeedInput): string {
       <link>${escapeXml(item.link)}</link>
       <guid isPermaLink="false">${escapeXml(item.guid)}</guid>
       <description>${escapeXml(item.description)}</description>${
-        date ? `\n      <pubDate>${date}</pubDate>` : ""
-      }
+        item.category ? `\n      <category>${escapeXml(item.category)}</category>` : ""
+      }${date ? `\n      <pubDate>${date}</pubDate>` : ""}
     </item>`;
     })
     .join("\n");
@@ -66,4 +69,47 @@ export function buildRssFeed(input: FeedInput): string {
 ${items}
   </channel>
 </rss>`;
+}
+
+// ---------------------------------------------------------------------------
+// Feed-Arten. Der Feed trägt nicht mehr nur Depeschen, sondern auch neue
+// Einsätze und neue Briefings. Wer nur einen Teil abonnieren will, hängt
+// `?art=` an die Feed-Adresse (`/feed.xml?art=einsaetze,briefings`).
+// ---------------------------------------------------------------------------
+
+export const FEED_KINDS = ["dispatch", "mission", "briefing"] as const;
+export type FeedKind = (typeof FEED_KINDS)[number];
+
+// Erlaubte Schreibweisen im Query-Parameter. Deutsch wie die Routen, Englisch
+// als Bequemlichkeit — beides ohne Umlaut-Zwang.
+const KIND_ALIASES: Record<string, FeedKind> = {
+  depeschen: "dispatch",
+  depesche: "dispatch",
+  dispatches: "dispatch",
+  dispatch: "dispatch",
+  einsaetze: "mission",
+  einsätze: "mission",
+  einsatz: "mission",
+  missions: "mission",
+  mission: "mission",
+  briefings: "briefing",
+  briefing: "briefing",
+  talks: "briefing",
+  talk: "briefing",
+};
+
+/**
+ * Liest den Filter `?art=` aus. Ohne Angabe (oder bei unbekannten Werten)
+ * enthält der Feed alles: ein Tippfehler soll keinen leeren Feed ergeben.
+ * Die Reihenfolge folgt immer `FEED_KINDS`, nicht der Eingabe.
+ */
+export function parseFeedKinds(value: string | null | undefined): FeedKind[] {
+  if (!value) return [...FEED_KINDS];
+  const picked = new Set<FeedKind>();
+  for (const part of value.split(",")) {
+    const kind = KIND_ALIASES[part.trim().toLowerCase()];
+    if (kind) picked.add(kind);
+  }
+  if (picked.size === 0) return [...FEED_KINDS];
+  return FEED_KINDS.filter((k) => picked.has(k));
 }

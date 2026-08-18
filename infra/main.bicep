@@ -34,6 +34,13 @@ param containerImage string
 @description('Öffentliche Site-URL. Nach dem ersten Deployment auf die ausgegebene webUrl (oder eigene Domain) setzen.')
 param siteUrl string = ''
 
+@description('''Kanonischer Hostname OHNE Schema, z. B. "nicolenders.com". Steuert zwei
+Dinge in der App: die canonical-/OG-Basis der Metadaten und die noindex-Entscheidung
+in proxy.ts — jeder andere Host bekommt X-Robots-Tag: noindex, nofollow.
+Leer lassen, solange die eigene Domain noch nicht auf der Container App liegt:
+dann leitet die App den Host aus siteUrl ab (bisheriges Verhalten).''')
+param publicSiteHost string = ''
+
 // --- Secrets (sichere Parameter) --------------------------------------------
 @description('SQL-Admin-Login.')
 param sqlAdminLogin string = 'nicoleadmin'
@@ -246,6 +253,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             { name: 'NODE_ENV', value: 'production' }
             { name: 'NEXT_PUBLIC_SITE_URL', value: siteUrl }
+            { name: 'PUBLIC_SITE_HOST', value: publicSiteHost }
             { name: 'DATABASE_URL', secretRef: 'database-url' }
             { name: 'AUTH_SECRET', secretRef: 'auth-secret' }
             { name: 'JOB_SHARED_SECRET', secretRef: 'job-shared-secret' }

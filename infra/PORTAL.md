@@ -147,6 +147,12 @@ Damit Feeds/Sitemap/Anmeldung die richtige Adresse nutzen:
 3. Variable **`NEXT_PUBLIC_SITE_URL`** auf die **webUrl** aus Schritt 5 setzen.
 4. **Save** → **Create** (legt eine neue Revision an).
 
+Sobald eine eigene Domain gebunden ist, im selben Formular zusätzlich
+**`PUBLIC_SITE_HOST`** auf den reinen Hostnamen setzen (z. B.
+`nicolenders.com`, ohne `https://`). Das steuert canonical, hreflang und
+og:image — und schickt jeden anderen Host mit `noindex` weg. Deshalb erst
+setzen, wenn die Domain wirklich auf die Container App zeigt.
+
 **Fertig.** Öffne die webUrl im Browser.
 
 ---

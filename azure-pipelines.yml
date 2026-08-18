@@ -99,6 +99,14 @@ stages:
                       TAG="$(imageTag)"
                       IMAGE="$ACR.azurecr.io/web:$TAG"
 
+                      # Kanonischer Host (PUBLIC_SITE_HOST). Fehlt die Variable in
+                      # der Gruppe, ersetzt Azure DevOps sie NICHT — dann stünde hier
+                      # der Platzhalter selbst und jeder Host bekäme ein noindex.
+                      # Deshalb in dem Fall bewusst leeren: die App leitet den Host
+                      # dann wie bisher aus siteUrl ab.
+                      SITE_HOST="$(publicSiteHost)"
+                      if [ "$SITE_HOST" = '$(publicSiteHost)' ]; then SITE_HOST=""; fi
+
                       echo "== 1/5 Ressourcengruppe & Registry (idempotent) =="
                       az group create -n "$RG" -l "$LOC" -o none
                       az acr create -n "$ACR" -g "$RG" --sku Basic --admin-enabled false -o none
@@ -119,6 +127,7 @@ stages:
                           jobSharedSecret="$(jobSharedSecret)" \
                           adminObjectIds="$(adminObjectIds)" \
                           siteUrl="$(siteUrl)" \
+                          publicSiteHost="$SITE_HOST" \
                           entraClientId="$(entraClientId)" \
                           entraClientSecret="$(entraClientSecret)" \
                           entraIssuer="$(entraIssuer)" \
@@ -144,3 +153,10 @@ stages:
                       echo "Website: $WEB_URL"
                       echo "Falls die Variable siteUrl noch leer ist: einmalig in der"
                       echo "Variablengruppe auf $WEB_URL setzen (für Feeds/OAuth)."
+                      if [ -z "$SITE_HOST" ]; then
+                        echo "Hinweis: publicSiteHost ist nicht gesetzt. Sobald die eigene"
+                        echo "Domain auf der Container App gebunden ist, in der"
+                        echo "Variablengruppe auf den reinen Hostnamen setzen"
+                        echo "(z. B. nicolenders.com) — sonst zeigen canonical, hreflang"
+                        echo "und og:image weiter auf diese Container-App-URL."
+                      fi

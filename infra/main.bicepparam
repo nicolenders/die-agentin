@@ -15,6 +15,11 @@ param containerImage = 'nicolendersacr.azurecr.io/web:latest'
 // Nach dem ersten Deployment auf die ausgegebene webUrl setzen.
 param siteUrl = ''
 
+// Kanonischer Hostname ohne Schema, z. B. 'nicolenders.com'. Erst setzen, wenn
+// die Domain auf der Container App gebunden ist — sonst bekommt die erreichbare
+// URL ein noindex. Leer = Host wird aus siteUrl abgeleitet.
+param publicSiteHost = ''
+
 // Secrets: beim Aufruf per --parameters überschreiben, nicht hier eintragen.
 param sqlAdminPassword = ''
 param authSecret = ''

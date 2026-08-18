@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "6986294784699123810"
+      "templateHash": "13438357379120109690"
     }
   },
   "parameters": {
@@ -47,6 +47,13 @@
       "defaultValue": "",
       "metadata": {
         "description": "Öffentliche Site-URL. Nach dem ersten Deployment auf die ausgegebene webUrl (oder eigene Domain) setzen."
+      }
+    },
+    "publicSiteHost": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Kanonischer Hostname OHNE Schema, z. B. \"nicolenders.com\". Steuert zwei\nDinge in der App: die canonical-/OG-Basis der Metadaten und die noindex-Entscheidung\nin proxy.ts — jeder andere Host bekommt X-Robots-Tag: noindex, nofollow.\nLeer lassen, solange die eigene Domain noch nicht auf der Container App liegt:\ndann leitet die App den Host aus siteUrl ab (bisheriges Verhalten)."
       }
     },
     "sqlAdminLogin": {
@@ -369,6 +376,10 @@
                 {
                   "name": "NEXT_PUBLIC_SITE_URL",
                   "value": "[parameters('siteUrl')]"
+                },
+                {
+                  "name": "PUBLIC_SITE_HOST",
+                  "value": "[parameters('publicSiteHost')]"
                 },
                 {
                   "name": "DATABASE_URL",

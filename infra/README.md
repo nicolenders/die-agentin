@@ -108,6 +108,7 @@ Azure DevOps → Pipelines → **Library** → **+ Variable group** → Name exa
 | `jobSharedSecret` | *(aus Schritt 3)* | **ja** |
 | `adminObjectIds` | *(deine Object ID)* | nein |
 | `siteUrl` | *(leer lassen — nach 1. Lauf setzen)* | nein |
+| `publicSiteHost` | *(leer lassen — erst mit eigener Domain setzen)* | nein |
 | `entraClientId` | *(leer oder später)* | nein |
 | `entraClientSecret` | *(leer oder später)* | **ja** |
 | `entraIssuer` | *(leer oder später)* | nein |
@@ -181,7 +182,23 @@ az containerapp hostname add   -n nicolenders-prod-web -g nicolenders-rg --hostn
 az containerapp hostname bind  -n nicolenders-prod-web -g nicolenders-rg \
   --hostname www.deine-domain.de --environment nicolenders-prod-env --validation-method CNAME
 ```
-Danach `siteUrl` auf die eigene Domain setzen.
+Danach in der Variablengruppe **beide** Variablen setzen und die Pipeline erneut
+starten:
+
+| Variable | Wert | Wirkung |
+|---|---|---|
+| `siteUrl` | `https://deine-domain.de` | Feeds, Sitemap, OAuth-Redirects |
+| `publicSiteHost` | `deine-domain.de` (ohne Schema) | canonical, hreflang, og:image — und die noindex-Entscheidung |
+
+**Reihenfolge beachten:** `publicSiteHost` erst setzen, wenn die Domain wirklich
+gebunden ist. `proxy.ts` schickt jeden anderen Host mit
+`X-Robots-Tag: noindex, nofollow` weg — steht dort eine Domain, die noch nicht
+auf die Container App zeigt, ist gar nichts mehr indexierbar.
+
+Solange `publicSiteHost` leer ist, leitet die App den kanonischen Host aus
+`siteUrl` ab. Das funktioniert, macht aber die Container-App-URL zum
+kanonischen Host, solange `siteUrl` darauf zeigt — dann stehen
+`azurecontainerapps.io`-Adressen in `canonical`, `hreflang` und `og:image`.
 
 ## Rollback
 

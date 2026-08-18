@@ -143,6 +143,22 @@ Damit Feeds, Sitemap und OAuth die richtige Adresse nutzen:
 az containerapp update -n nicolenders-prod-web -g $RG --set-env-vars NEXT_PUBLIC_SITE_URL=<webUrl aus Schritt 5>
 ```
 
+Sobald eine eigene Domain auf der Container App gebunden ist, zusätzlich den
+kanonischen Host setzen — er steuert canonical, hreflang, og:image und die
+noindex-Entscheidung:
+
+```bash
+az containerapp update -n nicolenders-prod-web -g $RG --set-env-vars PUBLIC_SITE_HOST=deine-domain.de
+```
+
+Vorher nicht: Jeder Host, der nicht der kanonische ist, bekommt
+`X-Robots-Tag: noindex, nofollow`.
+
+> **Achtung:** Bicep schreibt die Umgebungsvariablen deklarativ. Ein späteres
+> `az deployment group create` ohne `publicSiteHost=…` entfernt den hier
+> gesetzten Wert wieder. Den Parameter deshalb ab jetzt bei jedem Deployment
+> mitgeben (siehe unten).
+
 **Fertig.** Öffne die webUrl im Browser.
 
 ---
@@ -155,7 +171,7 @@ wiederholen:
 ```bash
 TAG=v2
 az acr build -r $ACR -t web:$TAG .
-az deployment group create -g $RG -n deploy-$TAG --template-file infra/main.bicep --parameters location=$LOC acrName=$ACR containerImage=$ACR.azurecr.io/web:$TAG sqlAdminPassword=$SQL_PWD authSecret=$AUTH_SECRET jobSharedSecret=$JOB_SECRET adminObjectIds=$ADMIN_OID siteUrl=<webUrl>
+az deployment group create -g $RG -n deploy-$TAG --template-file infra/main.bicep --parameters location=$LOC acrName=$ACR containerImage=$ACR.azurecr.io/web:$TAG sqlAdminPassword=$SQL_PWD authSecret=$AUTH_SECRET jobSharedSecret=$JOB_SECRET adminObjectIds=$ADMIN_OID siteUrl=<webUrl> publicSiteHost=<hostname oder leer lassen>
 ```
 
 ## Wenn etwas klemmt

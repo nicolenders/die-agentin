@@ -12,6 +12,27 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>();
 
+// Obergrenze und Aufräumen. Ohne beides wüchse die Map unbegrenzt: seit
+// `/api/track` je Absender einen Schlüssel anlegt, kann sie ein Angreifer mit
+// wechselnden IPs beliebig füllen — aus der Bremse gegen zu viele Anfragen
+// würde ein Speicherleck. Abgelaufene Einträge tragen keine Information mehr,
+// ihr Wegfall ändert am Verhalten nichts.
+const MAX_BUCKETS = 10_000;
+
+/** Entfernt abgelaufene Einträge; bei anhaltendem Andrang notfalls die ältesten. */
+function evict(now: number): void {
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) buckets.delete(key);
+  }
+  if (buckets.size <= MAX_BUCKETS) return;
+  // Immer noch zu voll: die am frühesten ablaufenden zuerst verwerfen. Das
+  // verliert im schlimmsten Fall eine Zählung, nie die Erreichbarkeit.
+  const byExpiry = [...buckets.entries()].sort((a, b) => a[1].resetAt - b[1].resetAt);
+  for (const [key] of byExpiry.slice(0, buckets.size - MAX_BUCKETS)) {
+    buckets.delete(key);
+  }
+}
+
 export interface RateLimitResult {
   ok: boolean;
   remaining: number;
@@ -30,6 +51,7 @@ export function rateLimit(
 ): RateLimitResult {
   const existing = buckets.get(key);
   if (!existing || existing.resetAt <= now) {
+    if (buckets.size >= MAX_BUCKETS) evict(now);
     buckets.set(key, { count: 1, resetAt: now + windowMs });
     return { ok: true, remaining: limit - 1, retryAfterSeconds: 0 };
   }
@@ -42,6 +64,11 @@ export function rateLimit(
   }
   existing.count += 1;
   return { ok: true, remaining: limit - existing.count, retryAfterSeconds: 0 };
+}
+
+/** Nur für Tests: aktuelle Zahl der Einträge. */
+export function __bucketCount(): number {
+  return buckets.size;
 }
 
 /** Nur für Tests: setzt den Zustand zurück. */

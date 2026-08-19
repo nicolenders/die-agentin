@@ -50,6 +50,7 @@ const de = {
     menu: "Menü",
     skipToContent: "Zum Inhalt springen",
     selectLanguage: "Sprache wählen",
+    mainNavigation: "Hauptnavigation",
     viewSite: "Website ansehen",
   },
   common: {
@@ -71,6 +72,16 @@ const de = {
     aiGenerated: "KI-generiert",
     aiGeneratedShort: "KI",
     aiGeneratedImage: "KI-generiertes Bild",
+    // Zwei-Klick-Lösung für YouTube (SPEC §8, §12.2). Stand fest auf Deutsch
+    // und erschien so auch auf /en — ausgerechnet bei einem Einwilligungstext.
+    videoExternal: "Externes Video · YouTube",
+    videoConsentNotice:
+      "Beim Abspielen wird eine Verbindung zu YouTube hergestellt und Daten werden an Google übertragen. Erst nach deiner Zustimmung wird das Video geladen.",
+    videoLoad: "Video laden",
+    videoAlternative: "Alternativ:",
+    videoWatchOnYoutube: "direkt bei YouTube ansehen",
+    videoFallbackTitle: "YouTube-Video",
+    imageGallery: "Bildergalerie",
   },
   langNotice: {
     // Fallback-Hinweis, wenn EN fehlt (SPEC §8)
@@ -208,6 +219,16 @@ const de = {
     // Fließtext (Audit 2.5, 6.6).
     notFoundHint: "Entweder wurde sie verlegt, oder sie war nie angelegt.",
     backToHq: "Zurück zum HQ",
+    // Wer aus einem alten Blogbeitrag kommt, sucht Inhalte — nicht die
+    // Startseite. Deshalb ein zweites, näherliegendes Ziel (Audit E11).
+    toDispatches: "Zu den Depeschen",
+    // Endgültig entfernte Alt-Adressen (410). Der WordPress-Blog wurde
+    // vollständig gelöscht — Seiten, Beiträge, Bilder —, das Abo gekündigt.
+    // Was hier ankommt, kommt aus einem alten Suchtreffer oder Lesezeichen.
+    goneTitle: "Dieser Beitrag wurde eingezogen.",
+    goneHint:
+      "Die Adresse stammt aus dem früheren Blog unter dieser Domain. Der Beitrag wurde zusammen mit dem alten Blog gelöscht und kehrt nicht zurück.",
+    goneOffer: "Was hier heute steht:",
   },
 } as const;
 

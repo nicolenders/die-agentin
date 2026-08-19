@@ -43,6 +43,7 @@ const en: Dictionary = {
     menu: "Menu",
     skipToContent: "Skip to content",
     selectLanguage: "Select language",
+    mainNavigation: "Main navigation",
     viewSite: "View site",
   },
   common: {
@@ -62,6 +63,14 @@ const en: Dictionary = {
     aiGenerated: "AI generated",
     aiGeneratedShort: "AI",
     aiGeneratedImage: "AI generated image",
+    videoExternal: "External video · YouTube",
+    videoConsentNotice:
+      "Playing this video connects to YouTube and transfers data to Google. The video only loads after you agree.",
+    videoLoad: "Load video",
+    videoAlternative: "Alternatively:",
+    videoWatchOnYoutube: "watch directly on YouTube",
+    videoFallbackTitle: "YouTube video",
+    imageGallery: "Image gallery",
   },
   langNotice: {
     // „bisher" fehlte hier und änderte damit die Aussage (Audit 2.5).
@@ -177,6 +186,11 @@ const en: Dictionary = {
     notFound: "This file does not exist.",
     notFoundHint: "Either it was moved, or it never existed.",
     backToHq: "Back to HQ",
+    toDispatches: "Browse the dispatches",
+    goneTitle: "This article has been withdrawn.",
+    goneHint:
+      "The address comes from the former blog on this domain. The article was deleted along with the old blog and will not return.",
+    goneOffer: "What you will find here today:",
   },
 };
 

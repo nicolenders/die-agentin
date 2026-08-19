@@ -19,9 +19,16 @@ export default async function ProtectedAdminLayout({
 
   return (
     <div className="app">
+      {/* Ohne Sprungmarke muss man sich auf jeder Seite der Zentrale erst durch
+          achtzehn Navigationspunkte tabben, bevor der Inhalt erreichbar ist. */}
+      <a className="skip-link" href="#admin-content">
+        Zum Inhalt springen
+      </a>
       <AdminSidebar />
-      <main className="adminMain">
-        <div className="topbar">
+      <div className="adminMain">
+        {/* Kopfzeile als eigenes Landmark: sie stand bisher innerhalb von
+            <main> und wurde damit auf jeder Seite als Inhalt mitgelesen. */}
+        <header className="topbar">
           <strong className="crumb">ZENTRALE</strong>
           <AdminSearchBox />
           <span className="st live topbar-optional">Angemeldet via Entra ID</span>
@@ -33,17 +40,24 @@ export default async function ProtectedAdminLayout({
             target="_blank"
             rel="noopener"
           >
-            Website ansehen ↗
+            Website ansehen
+            {/* Der Pfeil ist Dekoration; ohne aria-hidden liest ein Screenreader
+                „Pfeil nach rechts oben" mit. Dass ein neues Fenster aufgeht,
+                gehört dagegen angesagt. */}
+            <span aria-hidden="true"> ↗</span>
+            <span className="visually-hidden"> (öffnet in neuem Tab)</span>
           </a>
           <form action={signOutAction}>
             <button className="btn ghost sm" type="submit">
               Abmelden
             </button>
           </form>
-        </div>
-        <div className="content">{children}</div>
+        </header>
+        <main id="admin-content" className="content" tabIndex={-1}>
+          {children}
+        </main>
         <Toaster />
-      </main>
+      </div>
     </div>
   );
 }

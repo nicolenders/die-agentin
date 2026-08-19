@@ -1,5 +1,10 @@
 # 0018 — Anteile im Feed, Kartenansicht als Filter, Suche in den Depeschen
 
+**Datum:** 18.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Drei Beobachtungen aus dem laufenden Betrieb, die dieselbe Wurzel haben: Eine

@@ -1,4 +1,14 @@
-# 0015 — Feed mit Einsätzen und Briefings, Fokus auf der Startseite, Umbau der Akte
+# 0020 — Feed mit Einsätzen und Briefings, Fokus auf der Startseite, Umbau der Akte
+
+**Datum:** 17.08.2026
+**Status:** angenommen
+
+> Hinweis: Dieser Eintrag lief zunächst unter der Nummer 0015 und teilte sie sich
+> mit „Deployment über GitHub Actions". Zwei Entscheidungen unter einer Nummer
+> lassen sich nicht zitieren — deshalb hier neu vergeben. Der Inhalt ist
+> unverändert.
+
+---
 
 ## Kontext
 

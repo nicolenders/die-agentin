@@ -41,22 +41,34 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test
+      # Mit Abdeckung statt ohne. Die Schwelle steht seit jeher in
+      # vitest.config.ts (SPEC §17), wurde aber nie geprüft: `npm run test`
+      # wertet sie nicht aus. Damit war die Zahl eine Absichtserklärung, keine
+      # Zusicherung — und die tatsächliche Abdeckung lag darunter.
+      - run: npm run test:coverage
       - run: npm run build
 
-      # SPEC §17 fordert „PR blockiert bei High". Das ist heute nicht
-      # einhaltbar: die High-Findings stecken in `postcss` und `sharp`
-      # unterhalb von `next@16.2.12`, und `npm audit fix --force` würde auf
-      # `next@16.3.1` heben — eine Stack-Änderung, die nicht nebenbei passiert
-      # (CLAUDE.md: „Stack — nicht ohne Rückfrage ändern"). Deshalb sichtbar,
-      # aber vorerst nicht blockierend.
-      - name: npm audit (nicht blockierend, siehe Kommentar)
+      # SPEC §17 fordert „PR blockiert bei High". Weiterhin nicht blockierend,
+      # aber die Begründung ist jetzt eine andere und wird nachgehalten:
+      # Die verbliebenen High-Findings hängen an Paketen, deren Behebung einen
+      # Major-Sprung verlangt (`prisma` → 6.12 major, `geoip-lite` → 1.2 major).
+      # Beides sind Stack-Änderungen (CLAUDE.md: „Stack — nicht ohne Rückfrage
+      # ändern") und gehören in eine eigene, bewusste Entscheidung.
+      # Nachgehalten in docs/decisions/0021-abhaengigkeiten-und-audit.md.
+      - name: npm audit (nicht blockierend, siehe ADR 0021)
         run: npm audit --audit-level=high
         continue-on-error: true
 
   browser:
     name: e2e · a11y
     runs-on: ubuntu-latest
+    # In CI gibt es keine Datenbank. Ohne diesen Schalter versucht
+    # `instrumentation.ts` beim Start achtmal `prisma migrate deploy` gegen einen
+    # Host, den es nicht gibt — gemessen rund 37 s, bis der Server antwortet, und
+    # das zweimal je Lauf (E2E und a11y starten je einen Server). Die Migration
+    # hat hier nichts zu tun.
+    env:
+      SKIP_STARTUP_MIGRATE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,10 +77,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # Gegen den Produktionsbuild, nicht gegen `next dev`: der Entwicklungsserver
+      # rendert anders (keine Minifizierung, andere Fehlerbehandlung, eigenes
+      # Overlay). Ein grüner Lauf gegen `dev` sagt wenig über das aus, was
+      # ausgeliefert wird.
+      - name: Produktionsbuild für die Browsertests
+        run: npm run build
       - name: E2E-Rauchtest
         run: npx playwright test
+        env:
+          PLAYWRIGHT_WEB_SERVER: start
       - name: axe über die Hauptrouten
         run: npx playwright test --config=playwright.a11y.config.ts
+        env:
+          PLAYWRIGHT_WEB_SERVER: start
       - name: Bericht bei Fehlschlag sichern
         if: failure()
         uses: actions/upload-artifact@v4

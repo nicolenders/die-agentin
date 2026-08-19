@@ -5,8 +5,13 @@ import { PrismaClient } from "@prisma/client";
 // 30–60 s tolerieren. Deshalb ein erhöhtes Verbindungs-Timeout und ein Retry
 // für den ersten Verbindungsversuch (siehe `connectWithRetry`).
 //
-// Öffentliche Seiten sprechen die DB NICHT direkt an — sie werden statisch bzw.
-// per ISR ausgeliefert. Nur Admin und Jobs verwenden diesen Client.
+// Zum Zugriffsmuster: Alle Routen sind dynamisch (`ƒ` im Build) — auch die
+// öffentlichen. Was sie schont, ist nicht statisches Rendern, sondern der
+// getaggte Cache: jeder öffentliche Lesezugriff läuft über `cachedQuery`
+// (lib/cache.ts), sodass ein normaler Seitenaufruf die Datenbank nicht berührt.
+// Erst der erste Aufruf nach einer Invalidierung erreicht sie wieder.
+// (Der Kommentar behauptete hier vorher „statisch bzw. per ISR" — das stimmte
+// nicht und führte bei der Fehlersuche in die falsche Richtung.)
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

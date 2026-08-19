@@ -62,7 +62,7 @@ a {
   left: -9999px;
   top: 0;
   z-index: 999;
-  background: var(--violet);
+  background: var(--violet-solid);
   color: #fff;
   padding: 10px 16px;
   font-family: var(--mono);
@@ -823,7 +823,7 @@ p {
   text-decoration: none;
 }
 .btn:hover {
-  background: var(--violet);
+  background: var(--violet-solid);
   color: #fff;
 }
 .btn.ghost {
@@ -836,7 +836,7 @@ p {
   color: var(--text);
 }
 .btn.solid {
-  background: var(--violet);
+  background: var(--violet-solid);
   color: #fff;
 }
 .btn:disabled {
@@ -860,8 +860,8 @@ p {
 }
 .chip[aria-pressed="true"],
 .chip[aria-current="true"] {
-  background: var(--violet);
-  border-color: var(--violet);
+  background: var(--violet-solid);
+  border-color: var(--violet-solid);
   color: #fff;
 }
 
@@ -892,7 +892,7 @@ p {
   text-decoration: none;
 }
 .lang .lang-btn[aria-current="true"] {
-  background: var(--violet);
+  background: var(--violet-solid);
   color: #fff;
 }
 

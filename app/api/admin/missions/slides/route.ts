@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { storeFile } from "@/lib/media/storage";
 import { assetUrl } from "@/lib/media/url";
 import { rateLimit } from "@/lib/rate-limit";
+import { isSameOrigin } from "@/lib/http/same-origin";
 
 export const runtime = "nodejs";
 
@@ -15,20 +16,6 @@ export const runtime = "nodejs";
 // Datei zum Download an. Verarbeitet/serialisiert wird nichts am PDF selbst.
 
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB — passt zur Angabe im Formular.
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    const originHost = new URL(origin).host;
-    if (originHost === request.headers.get("host")) return true;
-    const site = process.env.NEXT_PUBLIC_SITE_URL;
-    if (site && new URL(site).host === originHost) return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
 
 /** Sicherer, kurzer Anzeigename aus dem Originaldateinamen (kein Pfad, .pdf). */
 function safeName(raw: string): string {
@@ -42,7 +29,7 @@ export async function POST(request: Request) {
   if (!user?.isAdmin) {
     return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
   }
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Ungültiger Ursprung." }, { status: 403 });
   }
   const limit = rateLimit(`slides:${user.oid ?? "admin"}`, 30, 5 * 60 * 1000);

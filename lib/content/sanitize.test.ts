@@ -123,3 +123,57 @@ describe("content/sanitize", () => {
     expect(result.content[0]?.content?.[0]?.type).toBe("listItem");
   });
 });
+
+describe("Link-Schemata", () => {
+  function linkDoc(href: string) {
+    return {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "x", marks: [{ type: "link", attrs: { href } }] }] },
+      ],
+    };
+  }
+  function hrefOf(href: string): string | undefined {
+    const doc = sanitizeDocument(linkDoc(href), "post");
+    const marks = doc.content[0]?.content?.[0]?.marks;
+    return marks?.[0]?.attrs?.href as string | undefined;
+  }
+
+  it("erlaubt http, https, mailto, tel, relativ und Anker", () => {
+    for (const href of [
+      "https://example.org/x",
+      "http://example.org",
+      "mailto:nicole@example.org",
+      "tel:+4912345",
+      "/de/depeschen",
+      "#abschnitt",
+      "unterseite",
+    ]) {
+      expect(hrefOf(href), href).toBe(href);
+    }
+  });
+
+  it("verwirft javascript:, data:, vbscript: und blob:", () => {
+    for (const href of [
+      "javascript:alert(1)",
+      "JavaScript:alert(1)",
+      "  javascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "vbscript:msgbox(1)",
+      "blob:https://example.org/abc",
+      "file:///etc/passwd",
+    ]) {
+      expect(hrefOf(href), href).toBeUndefined();
+    }
+  });
+
+  it("erkennt Steuerzeichen im Schema — Browser ignorieren sie beim Auflösen", () => {
+    for (const href of ["ja\tvascript:alert(1)", "java\nscript:alert(1)", "\u0000javascript:alert(1)"]) {
+      expect(hrefOf(href), JSON.stringify(href)).toBeUndefined();
+    }
+  });
+
+  it("speichert die bereinigte Fassung, nicht die Rohform", () => {
+    expect(hrefOf("https://example.org/x\u0007")).toBe("https://example.org/x");
+  });
+});

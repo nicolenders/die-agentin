@@ -105,6 +105,7 @@ export default async function LocaleLayout({
           labels={{
             menu: dict.nav.menu,
             selectLanguage: dict.nav.selectLanguage,
+            mainNavigation: dict.nav.mainNavigation,
           }}
         />
         <main id="main-content" className="wrap" tabIndex={-1}>

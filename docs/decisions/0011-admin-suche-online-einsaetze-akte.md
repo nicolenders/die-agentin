@@ -1,5 +1,10 @@
 # 0011 — Adminsuche, Online-Einsätze, Einsatzakte-Freigabe und Kanäle ohne Direktpost
 
+**Datum:** 16.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Ein Bündel von Anpassungen aus dem laufenden Betrieb. Vier davon brauchten eine

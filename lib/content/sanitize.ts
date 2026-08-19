@@ -14,14 +14,33 @@ import {
 // Marks werden auf die Allow-List reduziert; Attribute werden validiert. So kann
 // der Renderer ohne dangerouslySetInnerHTML arbeiten.
 
-function isSafeHref(href: unknown): href is string {
-  if (typeof href !== "string" || href.length === 0) return false;
-  const trimmed = href.trim().toLowerCase();
-  // Kein javascript:, data: o. Ä. Erlaubt: http(s), mailto, relative/anchor.
-  if (trimmed.startsWith("javascript:") || trimmed.startsWith("data:")) {
-    return false;
+/** Schemata, die ein Link tragen darf. Alles andere fliegt raus. */
+const ALLOWED_SCHEMES = new Set(["http:", "https:", "mailto:", "tel:"]);
+
+/**
+ * Gibt die bereinigte URL zurück, wenn sie erlaubt ist, sonst `null`.
+ * Gespeichert wird die bereinigte Fassung — sonst stünde im Dokument weiter
+ * die Rohform mit Steuerzeichen, die der Browser anders liest als die Prüfung.
+ */
+function safeHref(href: unknown): string | null {
+  if (typeof href !== "string" || href.length === 0) return null;
+
+  // Steuerzeichen entfernen, bevor irgendetwas geprüft wird: Browser
+  // ignorieren Tabs und Zeilenumbrüche innerhalb eines Schemas, `ja&#9;vascript:`
+  // wird also ausgeführt. Eine Prüfung auf der rohen Zeichenkette sähe das nicht.
+  const cleaned = href.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  if (cleaned.length === 0) return null;
+
+  // Relativ oder Anker — kein Schema, also nichts Ausführbares.
+  if (cleaned.startsWith("/") || cleaned.startsWith("#") || cleaned.startsWith("?")) {
+    return cleaned;
   }
-  return true;
+
+  // Erlaubnisliste statt Verbotsliste: eine Verbotsliste vergisst `vbscript:`,
+  // `blob:` und was als Nächstes kommt, eine Erlaubnisliste nicht.
+  const scheme = /^([a-z][a-z0-9+.-]*:)/i.exec(cleaned)?.[1]?.toLowerCase();
+  if (!scheme) return cleaned; // schemalos, z. B. "seite/unterseite"
+  return ALLOWED_SCHEMES.has(scheme) ? cleaned : null;
 }
 
 function isExternal(href: string): boolean {
@@ -31,8 +50,8 @@ function isExternal(href: string): boolean {
 function sanitizeMark(mark: TiptapMark): TiptapMark | null {
   if (!ALLOWED_MARKS.has(mark.type)) return null;
   if (mark.type === "link") {
-    const href = mark.attrs?.href;
-    if (!isSafeHref(href)) return null;
+    const href = safeHref(mark.attrs?.href);
+    if (!href) return null;
     const external = isExternal(href);
     return {
       type: "link",
@@ -113,8 +132,8 @@ function sanitizeAttrs(node: TiptapNode): Record<string, unknown> | undefined {
       return { videos };
     }
     case "linkCard": {
-      const url = node.attrs?.url;
-      if (!isSafeHref(url)) return undefined;
+      const url = safeHref(node.attrs?.url);
+      if (!url) return undefined;
       return {
         url,
         title: str(node.attrs?.title),

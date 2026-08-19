@@ -6,6 +6,7 @@ import Gallery, { type GalleryImage } from "./Gallery";
 import VideoConsent from "./VideoConsent";
 import AssetImage from "@/components/media/AssetImage";
 import { aiImageLabels } from "@/lib/media/ai-labels";
+import { embedLabels } from "@/lib/content/embed-labels";
 
 // Renderer (SPEC §4). Bildet TipTap-Node-Typen auf React-Komponenten ab. KEIN
 // dangerouslySetInnerHTML. Reine Funktion — dieselbe Ausgabe in der
@@ -206,7 +207,7 @@ function renderNode(
         <Gallery
           key={key}
           images={images}
-          label="Bildergalerie"
+          label={embedLabels(ctx.locale).imageGallery}
           aiLabel={aiImageLabels(ctx.locale).aiGenerated}
           aiTitle={aiImageLabels(ctx.locale).aiGeneratedImage}
           caption={typeof node.attrs?.caption === "string" ? node.attrs.caption : undefined}
@@ -219,6 +220,7 @@ function renderNode(
           key={key}
           videoId={String(node.attrs?.videoId ?? "")}
           title={typeof node.attrs?.title === "string" ? node.attrs.title : undefined}
+          labels={embedLabels(ctx.locale)}
         />
       );
     case "videoGallery": {
@@ -228,7 +230,12 @@ function renderNode(
       return (
         <div key={key} style={{ display: "grid", gap: 14 }}>
           {videos.map((v, i) => (
-            <VideoConsent key={i} videoId={String(v.videoId ?? "")} title={v.title} />
+            <VideoConsent
+              key={i}
+              videoId={String(v.videoId ?? "")}
+              title={v.title}
+              labels={embedLabels(ctx.locale)}
+            />
           ))}
         </div>
       );

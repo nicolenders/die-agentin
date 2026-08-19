@@ -1,5 +1,12 @@
 from,to,statusCode,note
-# Redirect-Map (Phase 14.2). REVIEW = vor Aktivierung von Nicole prüfen.
-# Bereits aktiv in proxy.ts (nicht aus dieser CSV): /de/signale* -> /de/depeschen*, /de/dossiers* -> /de/depeschen*
-/about-me/,/de/legende,301,ok
-/blog/,/de/depeschen,301,REVIEW
+# Arbeitsliste, KEINE Laufzeitquelle. Umgesetzt ist die getestete Tabelle in
+# lib/seo/legacy-redirects.ts (docs/CUTOVER.md §14.2) — eine CSV, die kein Code
+# liest, bewirkt nichts.
+#
+# Hier stehen nur Adressen, die spaeter ausnahmsweise ein EIGENES Ziel bekommen
+# sollen. Der Weg dahin: Eintrag in EXACT in lib/seo/legacy-redirects.ts plus
+# eine Testzeile.
+#
+# Bereits abgedeckt und deshalb nicht hier: /blog/, /about-me/, /tag/*,
+# /category/*, /page/N, Datumsarchive, /author/*, /feed/, /wp-sitemap*.xml (301)
+# sowie Beitrags-Permalinks und technische WordPress-Pfade (410).

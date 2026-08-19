@@ -1,5 +1,10 @@
 # 0017 — Das Titelbild einer Depesche wird auch angezeigt
 
+**Datum:** 18.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Eine Depesche konnte in der Redaktion schon immer ein Titelbild bekommen

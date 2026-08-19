@@ -1,6 +1,7 @@
 url,typ,titel,datum
-# Vorlage (Phase 14.1). Aus WordPress.com-Sitemap + Search-Console-Export füllen.
-# typ: post | page | category | tag | attachment
-# Beispielzeilen (durch echte ersetzen):
-https://nicolenders.com/about-me/,page,About me,
-https://nicolenders.com/blog/,page,Blog,
+# ENTFÄLLT (19.08.2026). Sollte aus der WordPress.com-Sitemap gefüllt werden.
+# Die Site ist gelöscht, das Abo gekündigt — es gibt keine Sitemap mehr.
+# Was an Alt-Adressen bekannt ist, stammt aus dem Suchindex und steht als
+# Testfixture in lib/seo/legacy-redirects.test.ts.
+# Nützlich bliebe ein Search-Console-Export: er zeigt, welche Alt-URLs noch
+# Impressionen bekommen. Siehe docs/CUTOVER.md §14.1.

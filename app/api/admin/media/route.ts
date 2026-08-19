@@ -9,26 +9,9 @@ import { storeFile } from "@/lib/media/storage";
 import { rateLimit } from "@/lib/rate-limit";
 import { withDbRetry } from "@/lib/db-retry";
 import { toMediaSource } from "@/lib/media/source";
+import { isSameOrigin } from "@/lib/http/same-origin";
 
 export const runtime = "nodejs";
-
-// Prüft, dass ein zustandsändernder Request vom eigenen Ursprung kommt
-// (Defense-in-Depth gegen CSRF, zusätzlich zu SameSite=Lax des Session-Cookies).
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return true; // Same-Origin-fetch sendet i. d. R. Origin; Nicht-Browser-Clients ohne Origin durchlassen
-  try {
-    const originHost = new URL(origin).host;
-    const host = request.headers.get("host");
-    if (originHost === host) return true;
-    // Robust hinter einem Proxy: auch die konfigurierte Site-URL akzeptieren.
-    const site = process.env.NEXT_PUBLIC_SITE_URL;
-    if (site && new URL(site).host === originHost) return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
 
 // Medienbibliothek-API (SPEC M2). Nur Admin. Upload validiert den echten Typ
 // (Magic Bytes), entfernt Metadaten, erzeugt WebP-Varianten und verlangt einen
@@ -67,7 +50,7 @@ export async function POST(request: Request) {
   if (!user?.isAdmin) {
     return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
   }
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Ungültiger Ursprung." }, { status: 403 });
   }
   // Rate Limiting der Upload-Route (SPEC §13): 30 Uploads / 5 Min. je Nutzer.
@@ -182,10 +165,15 @@ export async function POST(request: Request) {
       createdAt: asset.createdAt.toISOString(),
     });
   } catch (error) {
+    // Details nur ins Log: Prisma-Fehlermeldungen tragen Verbindungsdaten und
+    // Tabellennamen und gehören nicht in eine Antwort (CLAUDE.md: keine Secrets
+    // in Fehlermeldungen).
     console.error("[media] Datenbanksatz konnte nicht angelegt werden:", error);
-    const detail = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: `Eintrag konnte nicht gespeichert werden: ${detail}` },
+      {
+        error:
+          "Das Bild wurde abgelegt, der Eintrag konnte aber nicht gespeichert werden. Bitte erneut versuchen; bleibt es dabei, steht die Ursache im Serverprotokoll.",
+      },
       { status: 500 },
     );
   }

@@ -44,3 +44,26 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/struktur", label: "Stammdaten", icon: "structure" },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: "settings" },
 ];
+
+export interface AdminNavGroup {
+  /** Überschrift der Gruppe; fehlt bei der ersten (die Einsatzzentrale steht allein). */
+  section?: string;
+  items: AdminNavItem[];
+}
+
+/**
+ * Fasst die flache Liste in ihre Gruppen. `section` markiert im Datenmodell den
+ * ERSTEN Eintrag einer Gruppe; die Navigation braucht aber die Gruppe als
+ * Ganzes, um sie als Liste mit Überschrift auszugeben.
+ */
+export function groupAdminNav(items: AdminNavItem[] = adminNav): AdminNavGroup[] {
+  const groups: AdminNavGroup[] = [];
+  for (const item of items) {
+    if (item.section || groups.length === 0) {
+      groups.push({ section: item.section, items: [item] });
+    } else {
+      groups[groups.length - 1]!.items.push(item);
+    }
+  }
+  return groups;
+}

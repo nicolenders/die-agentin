@@ -1,5 +1,10 @@
 # 0019 — Der KI-Hinweis sitzt überall an derselben Stelle
 
+**Datum:** 18.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Der Transparenzhinweis „KI-generiert" erscheint an sieben verschiedenen Arten

@@ -15,6 +15,7 @@ import { richValueToPlain } from "@/lib/content/rich";
 import Gallery from "@/components/content/Gallery";
 import RichText from "@/components/content/RichText";
 import VideoConsent from "@/components/content/VideoConsent";
+import { embedLabels } from "@/lib/content/embed-labels";
 import JsonLd from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
@@ -180,7 +181,7 @@ export default async function EinsatzaktePage({
             ) : null}
             {videoId ? (
               <div style={{ marginTop: 12 }}>
-                <VideoConsent videoId={videoId} title={mission.eventName} />
+                <VideoConsent videoId={videoId} title={mission.eventName} labels={embedLabels(locale)} />
               </div>
             ) : null}
             {mission.photos.length > 0 ? (

@@ -4,19 +4,41 @@
       "startServerCommand": "npm run start",
       "url": [
         "http://localhost:3000/de",
-        "http://localhost:3000/de/signale",
+        "http://localhost:3000/de/depeschen",
         "http://localhost:3000/de/einsaetze"
       ],
       "numberOfRuns": 3
     },
     "assert": {
       "assertions": {
-        "largest-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
-        "cumulative-layout-shift": ["warn", { "maxNumericValue": 0.1 }],
-        "total-byte-weight": ["warn", { "maxNumericValue": 1000000 }],
-        "resource-summary:script:size": ["warn", { "maxNumericValue": 184320 }]
+        "largest-contentful-paint": [
+          "warn",
+          {
+            "maxNumericValue": 2000
+          }
+        ],
+        "cumulative-layout-shift": [
+          "warn",
+          {
+            "maxNumericValue": 0.1
+          }
+        ],
+        "total-byte-weight": [
+          "warn",
+          {
+            "maxNumericValue": 1000000
+          }
+        ],
+        "resource-summary:script:size": [
+          "warn",
+          {
+            "maxNumericValue": 184320
+          }
+        ]
       }
     },
-    "upload": { "target": "temporary-public-storage" }
+    "upload": {
+      "target": "temporary-public-storage"
+    }
   }
 }

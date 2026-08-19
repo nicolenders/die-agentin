@@ -1,5 +1,10 @@
 # 0010 — First-Party-Reichweitenmessung (Besucher & Seitenaufrufe)
 
+**Datum:** 14.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Nicole möchte im Adminbereich sehen, wie oft die öffentliche Website und ihre

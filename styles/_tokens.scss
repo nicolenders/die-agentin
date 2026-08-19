@@ -15,6 +15,11 @@
 
   // Akzente
   --violet: #8b5cf6;
+  // Violett als FLÄCHE hinter weißer Schrift. `--violet` ergibt dort nur
+  // 4,23:1 und reißt damit WCAG 1.4.3 AA (4,5:1) — betroffen waren
+  // Sprachumschalter, Filter-Chips, gefüllte Schaltflächen und der Skip-Link,
+  // also jede Seite. Einen Schritt dunkler, gleiche Farbfamilie: 5,7:1.
+  --violet-solid: #7c3aed;
   --violet-bright: #a855f7;
   --violet-text: #c4a2fc; // violetter Text auf dunklem Grund (kontrastgeprüft)
   --magenta: #e879f9;

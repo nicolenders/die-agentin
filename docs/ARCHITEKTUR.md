@@ -46,6 +46,7 @@ Priorität 1 = geht vor, wenn zwei Ziele sich widersprechen.
 | Q5 | Betriebsfestigkeit | 2 | Die pausierte Datenbank braucht 30–60 s zum Aufwachen; die öffentliche Seite bleibt in dieser Zeit bedienbar. | `cachedQuery` vor jedem öffentlichen Zugriff; `withDbRetry` für Schreibpfade; Ausfall führt zu leeren Listen mit erklärendem Leerzustand — **außer** bei `sitemap.xml`, die dann lieber gar nichts ausliefert (siehe 6.2) |
 | Q6 | Datensparsamkeit | 2 | Ein Besucher wird gezählt, ohne dass IP oder Cookie gespeichert werden. | `lib/analytics/track.ts` — Tages-Salt, SHA-256, DNT/GPC respektiert |
 | Q7 | Leistung | 3 | Die Startseite ist auf einem Mobilgerät in unter 2 s sichtbar. | `lighthouserc.json` (LCP ≤ 2 s, CLS ≤ 0,1) |
+| Q8 | Darstellung am Telefon | 1 | Jede öffentliche Route ist bei 380, 768 und 1440 px vollständig lesbar und lässt sich nicht seitlich schieben. | `tests/e2e/responsive.spec.ts`; axe läuft zusätzlich in Mobilbreite (`playwright.a11y.config.ts`, Projekt `mobil`) |
 
 Widersprüche werden bewusst zugunsten der kleineren Nummer aufgelöst. Beispiel:
 Die Zwei-Klick-Lösung für YouTube (Q6) kostet Leistung und einen Klick (Q7) —
@@ -175,6 +176,22 @@ Adresse schneller aus dem Index. Slug-Umbenennungen innerhalb der neuen Seite
 laufen dagegen über die Tabelle `Redirect`, gepflegt in der Zentrale und
 eingelöst von der jeweiligen Detailseite.
 
+Zwei Regeln, die dabei leicht falsch gemacht werden:
+
+**Der 301 kommt zuerst.** Läge er hinter der Sprachweiche, zeigte der erste
+Sprung auf eine Adresse, die selbst noch eine Regel braucht. Der signaltragende
+Sprung gehört an den Anfang der Kette.
+
+**Der 301 ist sprachneutral.** Trug die Alt-URL kein Sprachpräfix, trägt das Ziel
+auch keines — die vorhandene Sprachweiche verhandelt danach, wie bei jeder
+sprachlosen Adresse einschließlich `/`. Das hat zwei Gründe. Inhaltlich: der alte
+Blog war englischsprachig, ein hart auf `/de/…` gesetztes Ziel hätte sein
+Publikum auf deutsche Seiten geschickt. Technisch: ein 301, dessen Ziel von
+`Accept-Language` abhängt, ist nicht sicher cachebar — ein geteilter Cache
+lieferte sonst die Sprache des ersten Besuchers an alle weiteren aus. So bleibt
+der dauerhafte Sprung sprachunabhängig und die sprachabhängige Entscheidung
+steckt im temporären 307 dahinter, wo sie hingehört.
+
 ---
 
 ## 7. Entwurfsentscheidungen
@@ -192,7 +209,8 @@ vergeben war.
 | Statisch | ESLint, `tsc --noEmit` (strict, `noUncheckedIndexedAccess`) | `npm run lint`, `npm run typecheck` |
 | Unit | `lib/**` mit Abdeckungsschwelle | `npm run test:coverage` |
 | E2E | Öffentliche Routen, Metadaten, Alt-URLs | `npm run test:e2e` |
-| Barrierefreiheit | axe über die Hauptrouten, DE und EN | `npm run test:a11y` |
+| Barrierefreiheit | axe über die Hauptrouten, DE und EN, Desktop **und** Mobil | `npm run test:a11y` |
+| Darstellung | 380 / 768 / 1440 px, kein Querscrollen, Mobilmenü | `npm run test:e2e` |
 | Abhängigkeiten | `npm audit --audit-level=high` (sichtbar, siehe ADR 0021) | CI |
 
 Die Browsertests laufen in CI gegen den Produktionsbuild, nicht gegen den
@@ -204,6 +222,7 @@ Entwicklungsserver — sonst prüfen sie eine Ausgabe, die so nie ausgeliefert w
 
 | Risiko | Wirkung | Umgang |
 |---|---|---|
+| Alt-Beitrags-URLs zeigen auf Slugs, die es (noch) nicht gibt | `301` endet im `404`, solange die WordPress-Beiträge nicht migriert sind | Bewusst: der Slug ist das beste Signal, das wir haben, und stimmt, sobald ein Beitrag mit gleichem Slug erscheint. Für den umgekehrten Fall steht die `Redirect`-Tabelle in der Zentrale bereit. Die 404-Seite bietet inzwischen die Depeschenliste an. Nicoles Entscheidung, siehe unten. |
 | Testabdeckung unter der Schwelle aus SPEC §17 | Regressionen in ungeprüften `lib/queries/*` | Schwelle steht jetzt in CI und wirkt als Sperrklinke: sie darf nur steigen. Ziel 70 % bleibt. |
 | `script-src 'unsafe-inline'` in der CSP | XSS wäre nicht durch die CSP gebremst | Bewusst, weil die nonce-basierte Variante dynamisches Rendering aller Seiten erzwingt (ADR 0007). Ausgeglichen durch Erlaubnislisten und den Verzicht auf `dangerouslySetInnerHTML`. |
 | Rate Limit nur je Instanz (im Speicher) | Kein globales Limit bei mehreren Replicas | Bewusst: ein geteilter Speicher (Redis) wäre ein weiterer Dienst zum Pflegen. Bremst entlaufene Clients, nicht verteilte Angriffe. |

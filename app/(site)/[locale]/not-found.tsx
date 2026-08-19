@@ -18,9 +18,18 @@ export default async function NotFound() {
       <h1>{dict.errors.notFound}</h1>
       <p className="lead">{dict.errors.notFoundHint}</p>
       {/* Der Markenname war hier eine Handlungsaufforderung, die keine war. */}
-      <Link className="btn" href={`/${active}`} style={{ marginTop: 20 }}>
-        {dict.errors.backToHq}
-      </Link>
+      {/* Zwei Ziele statt eines: Ein großer Teil der 404 kommt aus dem
+          WordPress-Altbestand — sechs Jahre englischsprachige Fachbeiträge, deren
+          Adressen weiter im Index stehen. Wer von dort kommt, sucht Inhalte. Die
+          Startseite allein anzubieten schickt ihn an der Antwort vorbei. */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }}>
+        <Link className="btn solid" href={`/${active}/depeschen`}>
+          {dict.errors.toDispatches}
+        </Link>
+        <Link className="btn" href={`/${active}`}>
+          {dict.errors.backToHq}
+        </Link>
+      </div>
     </section>
   );
 }

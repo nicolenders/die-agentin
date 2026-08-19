@@ -219,6 +219,9 @@ const de = {
     // Fließtext (Audit 2.5, 6.6).
     notFoundHint: "Entweder wurde sie verlegt, oder sie war nie angelegt.",
     backToHq: "Zurück zum HQ",
+    // Wer aus einem alten Blogbeitrag kommt, sucht Inhalte — nicht die
+    // Startseite. Deshalb ein zweites, näherliegendes Ziel (Audit E11).
+    toDispatches: "Zu den Depeschen",
   },
 } as const;
 

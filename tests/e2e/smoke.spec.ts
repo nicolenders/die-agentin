@@ -84,10 +84,15 @@ test("Skip-Link ist als erstes fokussierbares Element vorhanden", async ({ page 
 // Der Altbestand des WordPress-Blogs (docs/CUTOVER.md §14.2). Diese URLs stehen
 // im Index von Google und tragen die Backlinks; sie liefen vor dieser Änderung
 // über drei Sprünge in einen 404.
+// Die Playwright-Konfiguration setzt Accept-Language auf de-DE, deshalb endet
+// die Kette hier auf `/de/…`; ein englischer Browser landet über dieselbe
+// Sprachweiche auf `/en/…`.
 const LEGACY_TO_TARGET: Array<[string, RegExp]> = [
   ["/blog/", /\/de\/depeschen$/],
   ["/about-me/", /\/de\/legende$/],
   ["/tag/pnp/", /\/de\/depeschen$/],
+  ["/tag/modernworkplace/", /\/de\/depeschen$/],
+  ["/category/collaboration/", /\/de\/depeschen$/],
   ["/category/microsoft-365/", /\/de\/depeschen$/],
   ["/author/nicole/", /\/de\/legende$/],
 ];
@@ -115,8 +120,32 @@ test("Technische WordPress-Pfade melden 410, nicht 404", async ({ request }) => 
   }
 });
 
-test("Alt-Route /signale erreicht die Depeschen in einem Sprung", async ({ request }) => {
+test("Alt-Route /signale setzt den 301 an den Anfang, nicht hinter die Sprachweiche", async ({
+  request,
+}) => {
+  // Vorher: 307 auf `/de/signale` (eine Adresse, die selbst noch eine Regel
+  // braucht), erst danach der 301. Jetzt trägt der erste Sprung das Signal und
+  // zeigt auf einen Pfad, den es wirklich gibt.
   const res = await request.get("/signale", { maxRedirects: 0 });
   expect(res.status()).toBe(301);
-  expect(res.headers()["location"]).toContain("/de/depeschen");
+  expect(res.headers()["location"]).toContain("/depeschen");
+});
+
+test("Der signaltragende Sprung einer Alt-URL ist ein 301, kein 307", async ({ request }) => {
+  for (const path of ["/blog", "/about-me", "/tag/pnp", "/2019/12/01/org-wide-teams-and-their-purpose"]) {
+    const res = await request.get(path, { maxRedirects: 0 });
+    expect(res.status(), path).toBe(301);
+  }
+});
+
+test("Ein englischer Browser landet über eine Alt-URL auf der englischen Seite", async ({
+  browser,
+}) => {
+  // Der alte Blog war englischsprachig. Ein hart auf `/de/…` gesetztes Ziel
+  // hätte genau dieses Publikum auf deutsche Seiten geschickt.
+  const context = await browser.newContext({ locale: "en-US" });
+  const page = await context.newPage();
+  await page.goto("/blog/");
+  await expect(page).toHaveURL(/\/en\/depeschen$/);
+  await context.close();
 });

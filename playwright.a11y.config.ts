@@ -9,7 +9,14 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Zwei Breiten. Die Prüfung lief bisher nur in Desktop-Breite — dabei sieht
+  // der DOM am Telefon anders aus: die Navigation liegt als Overlay über der
+  // Seite, der Menüschalter erscheint überhaupt erst dort. Genau dieser Zustand
+  // war nie geprüft.
+  projects: [
+    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "mobil", use: { ...devices["Pixel 7"] } },
+  ],
   // In CI gegen den Produktionsbuild (`npm run start`), lokal weiter gegen den
   // Entwicklungsserver. Sonst prüft die Pipeline eine Ausgabe, die so nie
   // ausgeliefert wird.

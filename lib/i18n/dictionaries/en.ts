@@ -186,6 +186,7 @@ const en: Dictionary = {
     notFound: "This file does not exist.",
     notFoundHint: "Either it was moved, or it never existed.",
     backToHq: "Back to HQ",
+    toDispatches: "Browse the dispatches",
   },
 };
 

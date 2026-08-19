@@ -22,8 +22,19 @@ import { legacyTarget } from "./lib/seo/legacy-redirects";
 // sitemap.xml und die Feeds. Das verhindert eine zweite indexierte Domain mit
 // Duplicate Content, die beim Cutover gegen nicolenders.com konkurrieren würde.
 
-/** Sprache, unter der sprachlose Alt-URLs weiterleiten (der Blog war einsprachig). */
+/** Sprache, mit der eine sprachlose Alt-URL probeweise aufgelöst wird. */
 const DEFAULT_LOCALE_FOR_LEGACY = "de";
+
+/** Nimmt das Hilfs-Präfix wieder weg, mit dem die Alt-URL aufgelöst wurde. */
+function stripLocale(
+  target: { path: string; search: string } | null,
+): { path: string; search: string } | null {
+  if (!target) return null;
+  return {
+    ...target,
+    path: target.path.replace(new RegExp(`^/${DEFAULT_LOCALE_FOR_LEGACY}(?=/|$)`), ""),
+  };
+}
 
 /** Host der Anfrage (bevorzugt X-Forwarded-Host hinter dem Container-Apps-Proxy). */
 function requestHost(request: NextRequest): string {
@@ -54,11 +65,13 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Alt-URLs Signale/Dossiers → Depeschen (301). Logik in lib/routing (getestet).
-  // Auch ohne Sprachpräfix, sonst entstünde eine Kette: erst die Sprachweiche
-  // auf `/de/signale`, dann von dort der 301 auf die Depeschen.
+  // Auch ohne Sprachpräfix: sonst käme erst die Sprachweiche auf `/de/signale`
+  // und von dort der 301 — der signaltragende Sprung läge hinter einem
+  // Zwischenziel, das selbst noch eine Regel braucht. Trug die Quelle kein
+  // Präfix, trägt das Ziel auch keines; die Sprachweiche verhandelt danach.
   const legacy =
     legacyDispatchTarget(pathname) ??
-    legacyDispatchTarget(`/${DEFAULT_LOCALE_FOR_LEGACY}${pathname}`);
+    stripLocale(legacyDispatchTarget(`/${DEFAULT_LOCALE_FOR_LEGACY}${pathname}`));
   if (legacy) {
     const url = request.nextUrl.clone();
     url.pathname = legacy.path;

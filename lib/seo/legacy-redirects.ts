@@ -1,4 +1,4 @@
-import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
+import { locales, type Locale } from "@/lib/i18n/config";
 
 // Alt-URLs des WordPress-Blogs (docs/CUTOVER.md §14.2).
 //
@@ -16,6 +16,15 @@ import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
 //   * Technische WordPress-Pfade, die es nie wieder geben wird → 410 Gone.
 //     Das ist die klare Ansage „weg, hör auf zu fragen"; ein 404 lädt zum
 //     Wiederkommen ein und hält die URL länger im Index.
+//   * Das Ziel trägt KEIN Sprachpräfix, wenn die Alt-URL keines trug. Der alte
+//     Blog war englischsprachig („Use Cases for private channels in Microsoft
+//     Teams", „Org-wide teams and their purpose"; Deutsch war die Ausnahme und
+//     eigens als `/tag/deutsch/` ausgezeichnet). Ein hart auf `/de/…` gesetztes
+//     Ziel schickte dieses Publikum auf deutsche Seiten. Stattdessen führt der
+//     301 auf den sprachlosen Pfad, und die vorhandene Sprachweiche verhandelt
+//     wie bei jeder anderen sprachlosen Adresse — auch bei `/` selbst. Der 301
+//     bleibt damit sprachunabhängig und cachebar; die sprachabhängige
+//     Entscheidung steckt im temporären 307 dahinter, wo sie hingehört.
 //
 // Die Tabelle ist bewusst Code und keine CSV: sie ist getestet, versioniert und
 // gilt in genau einer Reihenfolge. `data/redirects.csv` bleibt die Arbeitsliste
@@ -36,17 +45,20 @@ function normalize(pathname: string): string {
 }
 
 /**
- * Sprache eines Alt-Pfades. Der WordPress-Blog war einsprachig und hatte kein
- * Präfix; wer aus dem Index kommt, landet deshalb auf der Standardsprache.
- * Trug der Alt-Pfad doch schon ein Präfix (Umzug innerhalb der neuen Seite),
- * bleibt es erhalten.
+ * Sprachpräfix des Alt-Pfades, falls vorhanden. `null` heißt: die Alt-URL trug
+ * keines — dann trägt das Ziel auch keines und die Sprachweiche entscheidet.
  */
-function localeOf(segments: string[]): { locale: Locale; rest: string[] } {
+function localeOf(segments: string[]): { locale: Locale | null; rest: string[] } {
   const head = segments[0];
   if (head && (locales as readonly string[]).includes(head)) {
     return { locale: head as Locale, rest: segments.slice(1) };
   }
-  return { locale: defaultLocale, rest: segments };
+  return { locale: null, rest: segments };
+}
+
+/** Zielpfad bauen — mit Sprachpräfix nur, wenn die Quelle eines trug. */
+function to(locale: Locale | null, segment: string): string {
+  return locale ? `/${locale}/${segment}` : `/${segment}`;
 }
 
 /** Feste Eins-zu-eins-Zuordnungen (ohne Sprachpräfix, ohne Trailing Slash). */
@@ -123,20 +135,20 @@ export function legacyTarget(pathname: string): LegacyResolution | null {
   const bare = `/${rest.join("/")}`;
 
   const exact = EXACT[bare];
-  if (exact) return { path: `/${locale}/${exact}`, status: 301 };
+  if (exact) return { path: to(locale, exact), status: 301 };
 
   const head = rest[0];
   if (!head) return null;
 
   // Autorenarchiv — es gab genau eine Autorin.
-  if (head === "author") return { path: `/${locale}/legende`, status: 301 };
+  if (head === "author") return { path: to(locale, "legende"), status: 301 };
 
   if (LIST_PREFIXES.includes(head)) {
-    return { path: `/${locale}/depeschen`, status: 301 };
+    return { path: to(locale, "depeschen"), status: 301 };
   }
 
   const slug = datedPermalinkSlug(rest);
-  if (slug) return { path: `/${locale}/depeschen/${slug}`, status: 301 };
+  if (slug) return { path: to(locale, `depeschen/${slug}`), status: 301 };
 
   return null;
 }

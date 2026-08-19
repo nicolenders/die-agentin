@@ -1,5 +1,10 @@
 # 0008 — Kategorien als Mehrfachauswahl
 
+**Datum:** 09.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Bisher hatte jede kategorisierbare Entität (Dossier, Briefing/Talk, Zertifizierung)

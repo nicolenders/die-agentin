@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
@@ -14,6 +14,8 @@ import JsonLd from "@/components/JsonLd";
 import AssetImage from "@/components/media/AssetImage";
 import { absoluteAssetUrl } from "@/lib/media/hero";
 import { aiImageLabels } from "@/lib/media/ai-labels";
+import { getRedirectTarget } from "@/lib/queries/redirects";
+
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +64,14 @@ export default async function DispatchDetailPage({
   if (!isLocale(locale)) notFound();
   const dict = await getDictionary(locale);
   const d = await getDispatchBySlug(locale, slug);
-  if (!d) notFound();
+  if (!d) {
+    // Ein umbenannter Slug darf die alte Adresse nicht fallen lassen. Die
+    // Weiterleitungen aus den Stammdaten werden hier eingelöst — bisher wurden
+    // sie gepflegt, aber nie angewendet.
+    const target = await getRedirectTarget(locale, slug, ["post", "dossier"]);
+    if (target && target !== slug) permanentRedirect(`/${locale}/depeschen/${target}`);
+    notFound();
+  }
 
   const aiLabels = aiImageLabels(locale);
 

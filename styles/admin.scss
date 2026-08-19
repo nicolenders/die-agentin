@@ -111,13 +111,28 @@
 .aside nav a[aria-current="page"] svg {
   opacity: 1;
 }
+// Gruppenüberschrift der Navigation. Seit sie semantisch ein h2 ist, müssen
+// Gewicht und Abstände ausdrücklich gesetzt werden — sonst zieht der
+// Browser-Standard für Überschriften und die Leiste sieht anders aus als vorher.
 .aside .sec {
   font-family: var(--mono);
   font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.4;
   letter-spacing: 0.18em;
   color: #6b5d8c;
   text-transform: uppercase;
   margin: 20px 0 8px 12px;
+}
+// Die Navigationspunkte stehen in Listen (Screenreader-Gliederung); optisch
+// bleiben sie eine schlichte Spalte.
+.aside nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .adminMain {
@@ -593,7 +608,11 @@
   color: var(--text);
 }
 .chip-toggle.on {
-  color: #fff;
+  // Dunkle Schrift auf der hellen Verlaufsfläche. Weiß ergab hier 3,96:1 am
+  // violetten und rund 2,2:1 am magentafarbenen Ende — beides unter den 4,5:1,
+  // die WCAG 1.4.3 AA für Text dieser Größe verlangt. Der Verlauf bleibt, was
+  // er war; nur die Schrift wechselt die Seite.
+  color: var(--ink);
   border-color: transparent;
   background: linear-gradient(92deg, var(--violet-bright), var(--magenta));
 }
@@ -619,7 +638,9 @@
     border-right: 0;
     border-bottom: 1px solid var(--line-soft);
   }
-  .aside nav {
+  // Am Telefon läuft die Navigation als umbrechende Leiste. Die Gruppen bleiben
+  // untereinander, ihre Punkte fließen in Reihen.
+  .aside nav ul {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 6px;

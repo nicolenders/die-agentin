@@ -145,6 +145,9 @@ export async function createRedirect(formData: FormData): Promise<void> {
   let failed = false;
   try {
     await db.redirect.create({ data: { locale, fromSlug, toSlug, entity } });
+    // Die Detailseiten lesen die Weiterleitungen gecacht — ohne diese Zeile
+    // griffe eine frisch angelegte Weiterleitung bis zu einer Stunde nicht.
+    invalidateTags([tags.redirects()]);
   } catch {
     failed = true;
   }
@@ -160,6 +163,7 @@ export async function deleteRedirect(formData: FormData): Promise<void> {
   let failed = false;
   try {
     await db.redirect.delete({ where: { id } });
+    invalidateTags([tags.redirects()]);
   } catch {
     failed = true;
   }

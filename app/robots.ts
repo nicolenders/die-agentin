@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { siteOrigin } from "@/lib/site";
+import { canonicalHost, siteOrigin } from "@/lib/site";
 
 const SITE = siteOrigin();
 
@@ -16,6 +16,9 @@ export default function robots(): MetadataRoute.Robots {
       ...aiBots.map((userAgent) => ({ userAgent, allow: "/", disallow: "/admin" })),
     ],
     sitemap: `${SITE}/sitemap.xml`,
-    host: SITE,
+    // `Host:` erwartet einen nackten Hostnamen. Mit Schema davor ist die Zeile
+    // syntaktisch falsch und wird von den Crawlern, die sie überhaupt lesen,
+    // verworfen.
+    host: canonicalHost() || undefined,
   };
 }

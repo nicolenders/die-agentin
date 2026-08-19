@@ -50,6 +50,7 @@ const de = {
     menu: "Menü",
     skipToContent: "Zum Inhalt springen",
     selectLanguage: "Sprache wählen",
+    mainNavigation: "Hauptnavigation",
     viewSite: "Website ansehen",
   },
   common: {
@@ -71,6 +72,16 @@ const de = {
     aiGenerated: "KI-generiert",
     aiGeneratedShort: "KI",
     aiGeneratedImage: "KI-generiertes Bild",
+    // Zwei-Klick-Lösung für YouTube (SPEC §8, §12.2). Stand fest auf Deutsch
+    // und erschien so auch auf /en — ausgerechnet bei einem Einwilligungstext.
+    videoExternal: "Externes Video · YouTube",
+    videoConsentNotice:
+      "Beim Abspielen wird eine Verbindung zu YouTube hergestellt und Daten werden an Google übertragen. Erst nach deiner Zustimmung wird das Video geladen.",
+    videoLoad: "Video laden",
+    videoAlternative: "Alternativ:",
+    videoWatchOnYoutube: "direkt bei YouTube ansehen",
+    videoFallbackTitle: "YouTube-Video",
+    imageGallery: "Bildergalerie",
   },
   langNotice: {
     // Fallback-Hinweis, wenn EN fehlt (SPEC §8)

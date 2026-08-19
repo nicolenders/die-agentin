@@ -1,5 +1,10 @@
 # 0012 — Bildmarke als Erkennungszeichen: Favicon, Kopfzeile, Zentrale
 
+**Datum:** 16.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Das Logo-Kit liegt seit Kurzem unter `docs/die-agentin-logo-kit`. Bisher stand in

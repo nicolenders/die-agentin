@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/guard";
 import { rateLimit } from "@/lib/rate-limit";
+import { isSameOrigin } from "@/lib/http/same-origin";
 import {
   ARCHIVE_PROBE_BYTES,
   MAX_PART_BYTES,
@@ -23,7 +24,7 @@ export async function guardUpload(request: Request, bucket: string): Promise<Res
   if (!user?.isAdmin) {
     return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
   }
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Ungültiger Ursprung." }, { status: 403 });
   }
   // Großzügig: eine 42-MB-Datei sind rund elf Teile, und ein misslungener
@@ -36,20 +37,6 @@ export async function guardUpload(request: Request, bucket: string): Promise<Res
     );
   }
   return null;
-}
-
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    const originHost = new URL(origin).host;
-    if (originHost === request.headers.get("host")) return true;
-    const site = process.env.NEXT_PUBLIC_SITE_URL;
-    if (site && new URL(site).host === originHost) return true;
-    return false;
-  } catch {
-    return false;
-  }
 }
 
 /** Ein Teilstück entgegennehmen und in der Ablage zwischenlegen. */

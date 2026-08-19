@@ -17,12 +17,24 @@ export async function GET() {
     getHomeStats(),
   ]);
 
+  // Zahlen aus der Datenbank statt hartkodiert (Audit 6.9). Ist die Datenbank
+  // leer oder nicht erreichbar, stehen dort Nullen — und die Datei behauptete
+  // dann „MVP seit 2020 (0-mal in Folge)" und „Autorin von null Fachbüchern".
+  // Genau diese Datei lesen KI-Systeme als Kurzprofil. Fehlt eine Zahl, fällt
+  // die Teilaussage weg, statt falsch zu werden.
+  const mvp =
+    stats.mvpAwards > 0
+      ? `Microsoft MVP seit 2020 (${spellOutTimes(stats.mvpAwards)} in Folge)`
+      : "Microsoft MVP seit 2020";
+  const author =
+    stats.books > 0
+      ? `Autorin von ${spellOutCount(stats.books)} Fachbüchern`
+      : "Fachautorin";
+
   const lines: string[] = [
     "# Die Agentin · Nicole Enders",
     "",
-    // Buchzahl aus der Datenbank statt hartkodiert (Audit 6.9) — der Rest der
-    // Seite zieht sie ohnehin aus `getHomeStats`.
-    `> Microsoft MVP seit 2020 (${spellOutTimes(stats.mvpAwards)} in Folge), Speakerin und Autorin von ${spellOutCount(stats.books)} Fachbüchern.`,
+    `> ${mvp}, Speakerin und ${author}.`,
     "> Arbeitet an der Grenze zwischen Konfiguration und Entwicklung, von Information",
     "> Architecture in SharePoint bis zu Agents mit Copilot Studio und Microsoft Foundry.",
     "",

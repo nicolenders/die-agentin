@@ -1,5 +1,10 @@
 # 0009 — Kurse als Publikationstyp, ohne Drittanbieter-Video
 
+**Datum:** 10.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Nicole bietet eigene Trainings auf LinkedIn Learning an und möchte diese bei den

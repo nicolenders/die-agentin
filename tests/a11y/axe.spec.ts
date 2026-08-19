@@ -25,23 +25,28 @@ for (const locale of LOCALES) {
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();
-      const critical = results.violations.filter((v) => v.impact === "critical");
-      expect(critical, JSON.stringify(critical, null, 2)).toEqual([]);
+      // `serious` gehört mit ins Gate. Vorher fiel nur `critical` durch — und
+      // damit rutschten fehlende Namen, zu schwache Kontraste und kaputte
+      // Beschriftungen glatt durch, obwohl genau die den Screenreader
+      // unbrauchbar machen.
+      const blocking = results.violations.filter(
+        (v) => v.impact === "critical" || v.impact === "serious",
+      );
+      expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
     });
 
     // Audit 6.1: Fast alle Unterseiten hatten ihre H1 als Eyebrow gesetzt —
     // 10,5px Mono-Versalie. Diese Regeln liegen außerhalb der WCAG-Tags oben
     // und werden deshalb eigens geprüft, zusammen mit der Anzahl.
     //
-    // `heading-order` ist bewusst NICHT dabei: die Fußzeile setzt ihre
-    // Spaltenüberschriften als <h4>, was auf jeder Seite eine Verletzung dieser
-    // Best-Practice-Regel erzeugt — auch vor diesem Umbau und auch auf der
-    // unveränderten Startseite. Das gehört in einen eigenen Schritt, sonst
-    // stünde hier ein Test, der Altlasten als neue Schuld ausweist.
+    // `heading-order` ist jetzt dabei: die Fußzeile setzte ihre
+    // Spaltenüberschriften als <h4>, wodurch die Gliederung auf JEDER Seite von
+    // h1 auf h4 sprang. Ursache behoben (SiteFooter), Regel scharf gestellt —
+    // damit die Altlast nicht stillschweigend zurückkommt.
     test(`Überschriftenstruktur: ${path}`, async ({ page }) => {
       await page.goto(path);
       const results = await new AxeBuilder({ page })
-        .withRules(["page-has-heading-one", "empty-heading"])
+        .withRules(["page-has-heading-one", "empty-heading", "heading-order"])
         .analyze();
       expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
       await expect(page.locator("main h1")).toHaveCount(1);

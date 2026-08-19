@@ -12,7 +12,14 @@ interface SiteFooterProps {
   dict: Dictionary;
 }
 
-/** Fußzeile mit Inhalts-, Über- und Rechts-Links (SPEC §12: Footer-Pflichtlinks). */
+/**
+ * Fußzeile mit Inhalts-, Über- und Rechts-Links (SPEC §12: Footer-Pflichtlinks).
+ *
+ * Die drei Spalten sind `nav`-Bereiche mit Listen, nicht lose Links in einem
+ * `div`: Screenreader kündigen so „Liste mit 4 Einträgen" an und können die
+ * Gruppen anspringen. Die Spaltenüberschriften sind `h2` — vorher standen dort
+ * `h4` und damit sprang die Gliederung auf JEDER Seite von h1 auf h4.
+ */
 export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
   // Kein hartkodiertes Jahr: eine Website, die im Januar noch das Vorjahr
   // ausweist, wirkt verwaist (Audit 1.5).
@@ -41,31 +48,37 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
           <SocialLinks social={social} className={styles.socials} />
         </div>
 
-        <div>
-          <h4>{dict.footer.contentHeading}</h4>
-          <Link href={l("einsaetze")}>{dict.nav.einsaetze}</Link>
-          <Link href={l("identitaeten")}>{dict.nav.identitaeten}</Link>
-          <Link href={l("depeschen")}>{dict.dispatch.namePlural}</Link>
-          <Link href={l("briefings")}>{dict.nav.briefings}</Link>
-        </div>
+        <nav aria-labelledby="footer-content" className={styles.col}>
+          <h2 id="footer-content">{dict.footer.contentHeading}</h2>
+          <ul>
+            <li><Link href={l("einsaetze")}>{dict.nav.einsaetze}</Link></li>
+            <li><Link href={l("identitaeten")}>{dict.nav.identitaeten}</Link></li>
+            <li><Link href={l("depeschen")}>{dict.dispatch.namePlural}</Link></li>
+            <li><Link href={l("briefings")}>{dict.nav.briefings}</Link></li>
+          </ul>
+        </nav>
 
-        <div>
-          <h4>{dict.footer.aboutHeading}</h4>
-          <Link href={l("legende")}>{dict.nav.legende}</Link>
-          <Link href={l("akte")}>{dict.nav.akte}</Link>
-          <Link href={l("publikationen")}>{dict.nav.publikationen}</Link>
-          <Link href={l("ausbildung")}>{dict.nav.ausbildung}</Link>
-          {dispatches.length > 0 ? (
-            <a href={`/feed${locale === "en" ? ".en" : ""}.xml`}>{dict.footer.rss}</a>
-          ) : null}
-        </div>
+        <nav aria-labelledby="footer-about" className={styles.col}>
+          <h2 id="footer-about">{dict.footer.aboutHeading}</h2>
+          <ul>
+            <li><Link href={l("legende")}>{dict.nav.legende}</Link></li>
+            <li><Link href={l("akte")}>{dict.nav.akte}</Link></li>
+            <li><Link href={l("publikationen")}>{dict.nav.publikationen}</Link></li>
+            <li><Link href={l("ausbildung")}>{dict.nav.ausbildung}</Link></li>
+            {dispatches.length > 0 ? (
+              <li><a href={`/feed${locale === "en" ? ".en" : ""}.xml`}>{dict.footer.rss}</a></li>
+            ) : null}
+          </ul>
+        </nav>
 
-        <div>
-          <h4>{dict.footer.legalHeading}</h4>
-          <Link href={l("impressum")}>{dict.footer.imprint}</Link>
-          <Link href={l("datenschutz")}>{dict.footer.privacy}</Link>
-          <Link href={l("barrierefreiheit")}>{dict.footer.accessibility}</Link>
-        </div>
+        <nav aria-labelledby="footer-legal" className={styles.col}>
+          <h2 id="footer-legal">{dict.footer.legalHeading}</h2>
+          <ul>
+            <li><Link href={l("impressum")}>{dict.footer.imprint}</Link></li>
+            <li><Link href={l("datenschutz")}>{dict.footer.privacy}</Link></li>
+            <li><Link href={l("barrierefreiheit")}>{dict.footer.accessibility}</Link></li>
+          </ul>
+        </nav>
       </div>
       <div className="wrap">
         <p className={styles.note}>

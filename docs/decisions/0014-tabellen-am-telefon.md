@@ -1,5 +1,10 @@
 # 0014 — Am Telefon: Tabellenzeile wird Karte, Einsätze zeigen Anstehendes
 
+**Datum:** 17.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Am PC und am Tablet passt die öffentliche Seite. Am Telefon (380 px) nicht: Die

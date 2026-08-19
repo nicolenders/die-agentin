@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import styles from "./SiteHeader.module.scss";
 import BrandMark from "@/components/BrandMark";
 import { locales, type Locale } from "@/lib/i18n/config";
@@ -17,7 +17,7 @@ interface SiteHeaderProps {
   locale: Locale;
   brand: { name: string; domain: string };
   navItems: HeaderNavItem[];
-  labels: { menu: string; selectLanguage: string };
+  labels: { menu: string; selectLanguage: string; mainNavigation: string };
 }
 
 /**
@@ -33,12 +33,31 @@ export default function SiteHeader({
 }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname() ?? `/${locale}`;
+  const searchParams = useSearchParams();
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   const currentSegment = pathname.replace(new RegExp(`^/(de|en)`), "").replace(/^\//, "");
 
+  // Escape schließt das Mobilmenü und gibt den Fokus an den Schalter zurück.
+  // Ohne das saß man im geöffneten Menü fest: Tastaturnutzer mussten sich durch
+  // alle Punkte arbeiten, um wieder herauszukommen.
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      toggleRef.current?.focus();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   function switchLocalePath(target: Locale): string {
     const rest = pathname.replace(new RegExp(`^/(de|en)`), "");
-    return `/${target}${rest || ""}` || `/${target}`;
+    // Query mitnehmen: sonst warf der Sprachwechsel jede gesetzte Auswahl weg —
+    // Filter der Depeschen, gewählte Kartenansicht, Suchbegriff.
+    const query = searchParams?.toString();
+    return `/${target}${rest || ""}${query ? `?${query}` : ""}`;
   }
 
   return (
@@ -53,6 +72,8 @@ export default function SiteHeader({
         </Link>
 
         <button
+          ref={toggleRef}
+          type="button"
           className={`btn ghost ${styles.menuToggle}`}
           aria-expanded={open}
           aria-controls="main-nav"
@@ -64,7 +85,7 @@ export default function SiteHeader({
         <nav
           id="main-nav"
           className={`${styles.nav} ${open ? styles.open : ""}`}
-          aria-label={brand.name}
+          aria-label={labels.mainNavigation}
         >
           {navItems.map((item) => {
             const isActive =

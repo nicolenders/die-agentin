@@ -80,3 +80,43 @@ test("Skip-Link ist als erstes fokussierbares Element vorhanden", async ({ page 
   const focused = page.locator(":focus");
   await expect(focused).toContainText(/Zum Inhalt springen|Skip to content/);
 });
+
+// Der Altbestand des WordPress-Blogs (docs/CUTOVER.md §14.2). Diese URLs stehen
+// im Index von Google und tragen die Backlinks; sie liefen vor dieser Änderung
+// über drei Sprünge in einen 404.
+const LEGACY_TO_TARGET: Array<[string, RegExp]> = [
+  ["/blog/", /\/de\/depeschen$/],
+  ["/about-me/", /\/de\/legende$/],
+  ["/tag/pnp/", /\/de\/depeschen$/],
+  ["/category/microsoft-365/", /\/de\/depeschen$/],
+  ["/author/nicole/", /\/de\/legende$/],
+];
+
+for (const [from, target] of LEGACY_TO_TARGET) {
+  test(`Alt-URL ${from} landet nicht im 404`, async ({ page }) => {
+    const res = await page.goto(from);
+    expect(res?.status(), `${from} antwortet mit ${res?.status()}`).toBeLessThan(400);
+    await expect(page).toHaveURL(target);
+  });
+}
+
+test("WordPress-Feed führt auf den neuen Feed", async ({ request }) => {
+  const res = await request.get("/feed/");
+  expect(res.status()).toBeLessThan(400);
+  expect(res.url()).toContain("/feed.xml");
+});
+
+test("Technische WordPress-Pfade melden 410, nicht 404", async ({ request }) => {
+  // Mit Umleitungen: Next normalisiert einen abschließenden Slash vorab per 308.
+  // Entscheidend ist, worauf die Kette endet — 410 („endgültig weg") statt 404.
+  for (const path of ["/wp-admin/", "/wp-login.php", "/xmlrpc.php", "/wp-content/uploads/x.png"]) {
+    const res = await request.get(path);
+    expect(res.status(), path).toBe(410);
+  }
+});
+
+test("Alt-Route /signale erreicht die Depeschen in einem Sprung", async ({ request }) => {
+  const res = await request.get("/signale", { maxRedirects: 0 });
+  expect(res.status()).toBe(301);
+  expect(res.headers()["location"]).toContain("/de/depeschen");
+});

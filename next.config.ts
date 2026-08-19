@@ -101,6 +101,27 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
+      {
+        // Medienauslieferung bekommt eine eigene, harte Policy — sie MUSS hier
+        // stehen und nicht im Route Handler: Header aus dieser Konfiguration
+        // überschreiben, was der Handler setzt.
+        //
+        // Grund: Die Seiten-Policy oben erlaubt `script-src 'self'
+        // 'unsafe-inline'`. Eine direkt aufgerufene SVG-Datei wäre damit ein
+        // Same-Origin-Dokument mit erlaubtem Inline-Skript. Bilder brauchen
+        // weder Skripte noch Einbettung; `default-src 'none'` plus `sandbox`
+        // nimmt ihnen beides. (Uploads lassen ohnehin nur JPEG/PNG/WebP/AVIF
+        // durch — das hier ist die zweite Reihe, falls je etwas anderes in der
+        // Ablage landet.)
+        source: "/media/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+      },
     ];
   },
 };

@@ -2,6 +2,7 @@
 
 Dieses Projekt ist die persönliche Website von Nicole Enders („Die Agentin"), nicolenders.com.
 Die vollständige Spezifikation steht in `docs/SPEC.md`. **Lies sie, bevor du etwas änderst.**
+Wie das Ganze gebaut ist und woran die Qualitätsziele gemessen werden, steht in `docs/ARCHITEKTUR.md`.
 Die visuelle Referenz liegt als klickbares Mockup in `docs/mockups/`.
 
 ## Kontext in einem Satz

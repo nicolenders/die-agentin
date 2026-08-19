@@ -1,16 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import type { EmbedLabels } from "@/lib/content/embed-labels";
 
 // YouTube-Einbindung mit Zwei-Klick-Lösung (SPEC §8, §12.2). Erst nach
 // Zustimmung wird eine Verbindung zu youtube-nocookie.com hergestellt. Das
 // Overlay liegt auf dem jeweiligen Video, kein seitenweites Banner.
+//
+// Die Texte kommen als Props herein (`embedLabels`), sie standen vorher fest auf
+// Deutsch im Bauteil — auch auf den englischen Seiten.
 export default function VideoConsent({
   videoId,
   title,
+  labels,
 }: {
   videoId: string;
   title?: string;
+  labels: EmbedLabels;
 }) {
   const [loaded, setLoaded] = useState(false);
   const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
@@ -20,7 +26,7 @@ export default function VideoConsent({
       <div className="video-embed">
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?autoplay=1`}
-          title={title ?? "YouTube-Video"}
+          title={title ?? labels.videoFallbackTitle}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
@@ -32,21 +38,17 @@ export default function VideoConsent({
     <div className="video-consent">
       <div>
         <p className="eyebrow" style={{ justifyContent: "center" }}>
-          Externes Video · YouTube
+          {labels.videoExternal}
         </p>
         {title ? <p style={{ color: "var(--text)" }}>{title}</p> : null}
-        <p>
-          Beim Abspielen wird eine Verbindung zu YouTube hergestellt und Daten
-          werden an Google übertragen. Erst nach deiner Zustimmung wird das Video
-          geladen.
-        </p>
+        <p>{labels.videoConsentNotice}</p>
         <button type="button" className="btn" onClick={() => setLoaded(true)}>
-          Video laden
+          {labels.videoLoad}
         </button>
         <p className="meta" style={{ marginTop: 12 }}>
-          Alternativ:{" "}
+          {labels.videoAlternative}{" "}
           <a href={watchUrl} target="_blank" rel="noopener noreferrer">
-            direkt bei YouTube ansehen
+            {labels.videoWatchOnYoutube}
           </a>
         </p>
       </div>

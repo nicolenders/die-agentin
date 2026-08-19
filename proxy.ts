@@ -8,6 +8,7 @@ import {
   localeFromPath,
   LOCALE_HEADER,
 } from "./lib/routing";
+import { legacyTarget } from "./lib/seo/legacy-redirects";
 
 // Locale-Routing (SPEC §5) UND Host-basiertes noindex (Phase 1.2a).
 //
@@ -20,6 +21,9 @@ import {
 // Antwort mit `X-Robots-Tag: noindex, nofollow` versehen — auch robots.txt,
 // sitemap.xml und die Feeds. Das verhindert eine zweite indexierte Domain mit
 // Duplicate Content, die beim Cutover gegen nicolenders.com konkurrieren würde.
+
+/** Sprache, unter der sprachlose Alt-URLs weiterleiten (der Blog war einsprachig). */
+const DEFAULT_LOCALE_FOR_LEGACY = "de";
 
 /** Host der Anfrage (bevorzugt X-Forwarded-Host hinter dem Container-Apps-Proxy). */
 function requestHost(request: NextRequest): string {
@@ -50,11 +54,35 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Alt-URLs Signale/Dossiers → Depeschen (301). Logik in lib/routing (getestet).
-  const legacy = legacyDispatchTarget(pathname);
+  // Auch ohne Sprachpräfix, sonst entstünde eine Kette: erst die Sprachweiche
+  // auf `/de/signale`, dann von dort der 301 auf die Depeschen.
+  const legacy =
+    legacyDispatchTarget(pathname) ??
+    legacyDispatchTarget(`/${DEFAULT_LOCALE_FOR_LEGACY}${pathname}`);
   if (legacy) {
     const url = request.nextUrl.clone();
     url.pathname = legacy.path;
     url.search = legacy.search;
+    return withRobots(request, NextResponse.redirect(url, 301));
+  }
+
+  // Alt-URLs des WordPress-Blogs (docs/CUTOVER.md §14.2). Muss VOR der
+  // Sprachweiche stehen: sonst schiebt die `/blog` erst auf `/de/blog` und die
+  // Alt-URL endet nach drei Sprüngen im 404 statt beim Nachfolgeinhalt.
+  const wordpress = legacyTarget(pathname);
+  if (wordpress) {
+    if (wordpress.status === 410 || !wordpress.path) {
+      // Endgültig weg: 410 nimmt die URL schneller aus dem Index als ein 404.
+      return withRobots(
+        request,
+        new NextResponse("410 Gone — diese Adresse gibt es nicht mehr.", {
+          status: 410,
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        }),
+      );
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = wordpress.path;
     return withRobots(request, NextResponse.redirect(url, 301));
   }
 

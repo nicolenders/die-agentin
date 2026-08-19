@@ -54,6 +54,9 @@ export async function GET(
   return new NextResponse(Readable.toWeb(media.stream) as ReadableStream<Uint8Array>, {
     headers: {
       "Content-Type": contentType(name),
+      // Die harte Policy für diesen Pfad (`default-src 'none'; sandbox`) und
+      // `nosniff` stehen in next.config.ts: Header aus der Konfiguration
+      // überschreiben, was hier gesetzt wird — hier stünden sie wirkungslos.
       "Cache-Control": "public, max-age=31536000, immutable",
       ...(media.size != null ? { "Content-Length": String(media.size) } : {}),
       ...(download ? { "Content-Disposition": contentDisposition(download) } : {}),

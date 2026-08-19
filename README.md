@@ -14,7 +14,8 @@ Microsoft AI & Modern Work.
 | `lib/` | Geschäftslogik, i18n, DB-Zugriff (Testabdeckung) |
 | `styles/` | Design-Tokens und globales Design-System (SCSS) |
 | `prisma/` | Schema, Migrationen, Seed |
-| `docs/SPEC.md` | Vollständige Spezifikation |
+| `docs/SPEC.md` | Vollständige Spezifikation (was) |
+| `docs/ARCHITEKTUR.md` | Architekturüberblick nach arc42, mit Qualitätsszenarien (wie und warum) |
 | `docs/mockups/` | Klickbare HTML-Mockups (verbindliche visuelle Referenz) |
 | `docs/decisions/` | Architekturentscheidungen (ADRs) |
 | `docs/PROGRESS.md` | Fortschritt je Meilenstein |

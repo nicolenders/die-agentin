@@ -1,5 +1,10 @@
 # 0016 — Die Dauer eines Vortragsformats bekommt ihre eigene Einheit
 
+**Datum:** 18.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Die Vortragsformate der Akte (Entscheidung 0015) speicherten ihre Dauer als

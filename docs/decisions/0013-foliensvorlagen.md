@@ -1,5 +1,10 @@
 # 0013 — Foliensvorlagen für Einsätze: eine je Sprache, als Seiteneinstellung
 
+**Datum:** 17.08.2026
+**Status:** angenommen
+
+---
+
 ## Kontext
 
 Zu einem Einsatz gehören Folien. Der Weg dorthin ist immer derselbe: Vorlage

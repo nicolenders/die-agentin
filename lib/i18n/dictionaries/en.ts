@@ -187,6 +187,10 @@ const en: Dictionary = {
     notFoundHint: "Either it was moved, or it never existed.",
     backToHq: "Back to HQ",
     toDispatches: "Browse the dispatches",
+    goneTitle: "This article has been withdrawn.",
+    goneHint:
+      "The address comes from the former blog on this domain. The article was deleted along with the old blog and will not return.",
+    goneOffer: "What you will find here today:",
   },
 };
 

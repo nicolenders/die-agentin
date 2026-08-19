@@ -222,6 +222,13 @@ const de = {
     // Wer aus einem alten Blogbeitrag kommt, sucht Inhalte — nicht die
     // Startseite. Deshalb ein zweites, näherliegendes Ziel (Audit E11).
     toDispatches: "Zu den Depeschen",
+    // Endgültig entfernte Alt-Adressen (410). Der WordPress-Blog wurde
+    // vollständig gelöscht — Seiten, Beiträge, Bilder —, das Abo gekündigt.
+    // Was hier ankommt, kommt aus einem alten Suchtreffer oder Lesezeichen.
+    goneTitle: "Dieser Beitrag wurde eingezogen.",
+    goneHint:
+      "Die Adresse stammt aus dem früheren Blog unter dieser Domain. Der Beitrag wurde zusammen mit dem alten Blog gelöscht und kehrt nicht zurück.",
+    goneOffer: "Was hier heute steht:",
   },
 } as const;
 

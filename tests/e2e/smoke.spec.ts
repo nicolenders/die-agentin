@@ -120,6 +120,44 @@ test("Technische WordPress-Pfade melden 410, nicht 404", async ({ request }) => 
   }
 });
 
+// Der alte Blog ist vollständig gelöscht, es wird nichts migriert. Für die
+// Beiträge gibt es deshalb kein Ziel — nur die Wahrheit.
+const GELOESCHTE_BEITRAEGE = [
+  "/2019/11/10/use-cases-for-private-channels-in-microsoft-teams/",
+  "/2019/12/01/org-wide-teams-and-their-purpose/",
+  "/2021/01/10/channel-calendar-app-in-microsoft-teams/comment-page-1/",
+];
+
+test("Gelöschte Beiträge melden 410 statt in einen 404 weiterzuleiten", async ({ request }) => {
+  for (const path of GELOESCHTE_BEITRAEGE) {
+    const res = await request.get(path);
+    expect(res.status(), path).toBe(410);
+  }
+});
+
+test("Die 410-Seite bietet einen Weg weiter und ist keine nackte Fehlerzeile", async ({ page }) => {
+  const res = await page.goto(GELOESCHTE_BEITRAEGE[0]!);
+  expect(res?.status()).toBe(410);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Depeschen/i })).toBeVisible();
+  // Der Weg muss auch funktionieren, nicht nur dastehen.
+  await page.getByRole("link", { name: /Depeschen/i }).click();
+  await expect(page).toHaveURL(/\/de\/depeschen$/);
+});
+
+test("Die 410-Seite spricht die Sprache des Besuchers", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "en-US" });
+  const page = await context.newPage();
+  await page.goto(GELOESCHTE_BEITRAEGE[1]!);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await context.close();
+});
+
+test("Datumsarchive bleiben Übersichten und führen auf die Liste", async ({ page }) => {
+  await page.goto("/2021/05/");
+  await expect(page).toHaveURL(/\/de\/depeschen$/);
+});
+
 test("Alt-Route /signale setzt den 301 an den Anfang, nicht hinter die Sprachweiche", async ({
   request,
 }) => {
@@ -132,7 +170,11 @@ test("Alt-Route /signale setzt den 301 an den Anfang, nicht hinter die Sprachwei
 });
 
 test("Der signaltragende Sprung einer Alt-URL ist ein 301, kein 307", async ({ request }) => {
-  for (const path of ["/blog", "/about-me", "/tag/pnp", "/2019/12/01/org-wide-teams-and-their-purpose"]) {
+  // Nur die Adressen, deren Funktion fortbesteht. Die gelöschten Beiträge
+  // gehören nicht dazu — die bekommen 410.
+  // Ohne abschließenden Schrägstrich: den normalisiert Next vorab per 308 weg,
+  // und geprüft werden soll der Sprung danach.
+  for (const path of ["/blog", "/about-me", "/tag/pnp", "/category/collaboration", "/2019/12"]) {
     const res = await request.get(path, { maxRedirects: 0 });
     expect(res.status(), path).toBe(301);
   }

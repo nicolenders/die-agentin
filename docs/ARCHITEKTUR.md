@@ -41,7 +41,7 @@ Priorität 1 = geht vor, wenn zwei Ziele sich widersprechen.
 |---|---|---|---|---|
 | Q1 | Barrierefreiheit | 1 | Eine Screenreader-Nutzerin ruft eine beliebige öffentliche Route auf und erreicht den Inhalt über Sprungmarke, Landmarks und eine lückenlose Überschriftenfolge. | `tests/a11y/axe.spec.ts` — 0 Verstöße mit Wirkung `critical` **oder** `serious`, plus `heading-order`, `page-has-heading-one` |
 | Q2 | Sicherheit | 1 | Ein Angreifer ohne Anmeldung findet keinen Weg, Daten zu schreiben, fremdes Skript einzuschleusen oder Kosten zu verursachen. | Rollenprüfung als erste Zeile jeder Server Action; `lib/content/sanitize.ts` (Erlaubnisliste); Rate Limit auf `/api/track` und den Uploads; CSP je Antwort |
-| Q3 | Auffindbarkeit | 1 | Eine seit Jahren indexierte WordPress-URL wird aufgerufen und landet in höchstens zwei Sprüngen beim Nachfolgeinhalt — nie im 404. | `lib/seo/legacy-redirects.test.ts` + Alt-URL-Tests in `tests/e2e/smoke.spec.ts` |
+| Q3 | Auffindbarkeit | 1 | Eine seit Jahren indexierte WordPress-URL wird aufgerufen und bekommt eine eindeutige Antwort: 301 auf die Nachfolgeseite, wenn ihre Funktion fortbesteht, sonst 410 — nie einen 404 und nie eine Kette in den 404. | `lib/seo/legacy-redirects.test.ts`, `lib/seo/gone-page.test.ts` + Alt-URL-Tests in `tests/e2e/smoke.spec.ts` |
 | Q4 | Wartbarkeit | 1 | Nicole ändert einen Inhalt in der Zentrale; die öffentliche Seite zeigt ihn ohne Deployment. | Server Actions + gezielte Cache-Invalidierung (`lib/cache.ts`) |
 | Q5 | Betriebsfestigkeit | 2 | Die pausierte Datenbank braucht 30–60 s zum Aufwachen; die öffentliche Seite bleibt in dieser Zeit bedienbar. | `cachedQuery` vor jedem öffentlichen Zugriff; `withDbRetry` für Schreibpfade; Ausfall führt zu leeren Listen mit erklärendem Leerzustand — **außer** bei `sitemap.xml`, die dann lieber gar nichts ausliefert (siehe 6.2) |
 | Q6 | Datensparsamkeit | 2 | Ein Besucher wird gezählt, ohne dass IP oder Cookie gespeichert werden. | `lib/analytics/track.ts` — Tages-Salt, SHA-256, DNT/GPC respektiert |
@@ -182,6 +182,15 @@ Zwei Regeln, die dabei leicht falsch gemacht werden:
 Sprung auf eine Adresse, die selbst noch eine Regel braucht. Der signaltragende
 Sprung gehört an den Anfang der Kette.
 
+**Gelöscht heißt 410, nicht Redirect.** Der alte Blog ist vollständig gelöscht
+(Entscheidung vom 19.08.2026), es wird nichts migriert. Deshalb bekommen
+Beitrags-Permalinks einen 410: ein Redirect auf `/depeschen/<slug>` wäre ein
+Versprechen auf einen Inhalt, den es nie geben wird, und alle Beiträge auf die
+Listenseite zu bündeln wertet Google als Soft-404. Adressen, deren *Funktion*
+fortbesteht — Übersichten, Über-mich, Feed —, behalten ihren 301; das sind echte
+Entsprechungen. Der 410 liefert dabei eine lokalisierte Seite
+(`lib/seo/gone-page.ts`), weil dort auch Menschen mit alten Lesezeichen landen.
+
 **Der 301 ist sprachneutral.** Trug die Alt-URL kein Sprachpräfix, trägt das Ziel
 auch keines — die vorhandene Sprachweiche verhandelt danach, wie bei jeder
 sprachlosen Adresse einschließlich `/`. Das hat zwei Gründe. Inhaltlich: der alte
@@ -222,7 +231,6 @@ Entwicklungsserver — sonst prüfen sie eine Ausgabe, die so nie ausgeliefert w
 
 | Risiko | Wirkung | Umgang |
 |---|---|---|
-| Alt-Beitrags-URLs zeigen auf Slugs, die es (noch) nicht gibt | `301` endet im `404`, solange die WordPress-Beiträge nicht migriert sind | Bewusst: der Slug ist das beste Signal, das wir haben, und stimmt, sobald ein Beitrag mit gleichem Slug erscheint. Für den umgekehrten Fall steht die `Redirect`-Tabelle in der Zentrale bereit. Die 404-Seite bietet inzwischen die Depeschenliste an. Nicoles Entscheidung, siehe unten. |
 | Testabdeckung unter der Schwelle aus SPEC §17 | Regressionen in ungeprüften `lib/queries/*` | Schwelle steht jetzt in CI und wirkt als Sperrklinke: sie darf nur steigen. Ziel 70 % bleibt. |
 | `script-src 'unsafe-inline'` in der CSP | XSS wäre nicht durch die CSP gebremst | Bewusst, weil die nonce-basierte Variante dynamisches Rendering aller Seiten erzwingt (ADR 0007). Ausgeglichen durch Erlaubnislisten und den Verzicht auf `dangerouslySetInnerHTML`. |
 | Rate Limit nur je Instanz (im Speicher) | Kein globales Limit bei mehreren Replicas | Bewusst: ein geteilter Speicher (Redis) wäre ein weiterer Dienst zum Pflegen. Bremst entlaufene Clients, nicht verteilte Angriffe. |

@@ -3,19 +3,36 @@ import { locales, type Locale } from "@/lib/i18n/config";
 // Alt-URLs des WordPress-Blogs (docs/CUTOVER.md §14.2).
 //
 // Die Domain war jahrelang „Nicole's Microsoft 365 & Azure Playground" auf
-// WordPress.com. Deren URLs stehen weiter im Index von Google & Co. und tragen
-// die Backlinks. Ohne diese Tabelle laufen sie ins Leere: `/blog/` wurde vom
-// Trailing-Slash-Handling auf `/blog` normalisiert, von der Sprachweiche auf
-// `/de/blog` geschoben und endete dort als 404 — drei Sprünge, am Ende nichts.
+// WordPress.com. Deren URLs stehen weiter im Index von Google & Co. Ohne diese
+// Tabelle laufen sie ins Leere: `/blog/` wurde vom Trailing-Slash-Handling auf
+// `/blog` normalisiert, von der Sprachweiche auf `/de/blog` geschoben und
+// endete dort als 404 — drei Sprünge, am Ende nichts.
+//
+// AUSGANGSLAGE (Nicoles Entscheidung, 19.08.2026): Der alte Blog ist
+// vollständig gelöscht — Seiten, Beiträge, Bilder —, das Abo gekündigt. Es wird
+// NICHTS migriert. Die Domain trägt künftig allein die neue Seite.
+//
+// Das entscheidet die Behandlung der Beiträge. Ein Redirect auf
+// `/depeschen/<slug>` wäre ein Versprechen auf einen Inhalt, den es nie geben
+// wird: der 301 endete dauerhaft im 404 — für Google dasselbe wie ein 404, nur
+// mit einem zusätzlichen Aufruf davor. Und alle Beiträge stattdessen auf die
+// Depeschenliste zu bündeln, wäre ein Umzug, der keiner ist; Google wertet
+// Weiterleitungen auf einen erkennbar anderen Inhalt als Soft-404.
+//
+// Also die ehrliche Antwort: 410. Sie sagt „gelöscht, endgültig" und ist genau
+// das Werkzeug, das die veralteten Einträge am schnellsten aus dem Index nimmt
+// — das erklärte Ziel bei diesem Domainwechsel.
 //
 // Regeln:
-//   * Ein Ziel, das den Inhalt fortführt → 301 (der Rang wandert mit).
-//   * Kein sinnvolles Ziel, aber der Pfad war öffentlich → 301 auf die nächste
-//     passende Übersicht, nicht auf die Startseite (sonst wertet Google es als
-//     Soft-404).
+//   * Eine Seite, deren FUNKTION fortbesteht → 301. Das gilt für die
+//     Übersichten: `/blog/`, `/tag/…`, `/category/…` und `/page/N` waren
+//     Listen ihrer Beiträge, `/depeschen` ist die Liste ihrer Beiträge.
+//     `/about-me/` war die Über-mich-Seite, `/legende` ist sie. `/feed/` war
+//     der Feed, `/feed.xml` ist er. Das sind echte Entsprechungen, keine
+//     Notlösungen.
+//   * Ein gelöschter EINZELBEITRAG → 410. Für ihn gibt es keine Entsprechung,
+//     nur eine Liste — und eine Liste ist kein Artikel.
 //   * Technische WordPress-Pfade, die es nie wieder geben wird → 410 Gone.
-//     Das ist die klare Ansage „weg, hör auf zu fragen"; ein 404 lädt zum
-//     Wiederkommen ein und hält die URL länger im Index.
 //   * Das Ziel trägt KEIN Sprachpräfix, wenn die Alt-URL keines trug. Der alte
 //     Blog war englischsprachig („Use Cases for private channels in Microsoft
 //     Teams", „Org-wide teams and their purpose"; Deutsch war die Ausnahme und
@@ -94,15 +111,25 @@ const GONE_PREFIXES = [
 /** Übersichten, deren Alt-Pfad auf die Depeschenliste führt. */
 const LIST_PREFIXES = ["tag", "category", "kategorie", "archives", "archiv", "page"];
 
-/** WordPress-Permalink `/2021/05/12/slug` bzw. `/2021/05/slug`. */
-function datedPermalinkSlug(rest: string[]): string | null {
+/**
+ * Datumsbasierte WordPress-Adressen. Zwei Sorten, die verschieden behandelt
+ * werden müssen:
+ *
+ *   "beitrag"  `/2021/05/12/slug`, `/2021/05/slug`, auch mit angehängter
+ *              Kommentarseite (`…/slug/comment-page-2/`) → gelöschter Artikel.
+ *   "archiv"   `/2021/`, `/2021/05/`, `/2021/05/12/` → war eine Übersicht,
+ *              und eine Übersicht gibt es weiterhin.
+ *
+ * `null` heißt: hat mit Datumsadressen nichts zu tun.
+ */
+function datedKind(rest: string[]): "beitrag" | "archiv" | null {
   const [year, month, ...tail] = rest;
   if (!year || !/^(19|20)\d{2}$/.test(year)) return null;
-  if (!month || !/^\d{1,2}$/.test(month)) return null;
+  if (!month) return "archiv"; // reines Jahresarchiv
+  if (!/^\d{1,2}$/.test(month)) return null;
   // Tagessegment ist optional — beide Permalink-Varianten kommen vor.
   const withoutDay = tail[0] && /^\d{1,2}$/.test(tail[0]) ? tail.slice(1) : tail;
-  const slug = withoutDay[0];
-  return slug && slug.length > 0 ? slug : null;
+  return (withoutDay[0]?.length ?? 0) > 0 ? "beitrag" : "archiv";
 }
 
 /**
@@ -147,8 +174,11 @@ export function legacyTarget(pathname: string): LegacyResolution | null {
     return { path: to(locale, "depeschen"), status: 301 };
   }
 
-  const slug = datedPermalinkSlug(rest);
-  if (slug) return { path: to(locale, `depeschen/${slug}`), status: 301 };
+  // Datumsadressen: der gelöschte Beitrag bekommt die Wahrheit, das Archiv
+  // die Liste, die seine Aufgabe übernommen hat.
+  const dated = datedKind(rest);
+  if (dated === "beitrag") return { status: 410 };
+  if (dated === "archiv") return { path: to(locale, "depeschen"), status: 301 };
 
   return null;
 }

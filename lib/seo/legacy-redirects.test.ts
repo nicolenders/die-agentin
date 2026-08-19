@@ -27,16 +27,21 @@ describe("legacyTarget", () => {
     expect(legacyTarget("/author/nicole/")).toEqual({ path: "/legende", status: 301 });
   });
 
-  it("übernimmt den Slug aus Datums-Permalinks", () => {
-    expect(legacyTarget("/2021/05/12/teams-live-events/")).toEqual({
-      path: "/depeschen/teams-live-events",
-      status: 301,
-    });
+  it("meldet gelöschte Beiträge als endgültig weg", () => {
+    // Der Blog ist vollständig gelöscht, nichts wird migriert. Ein Redirect auf
+    // `/depeschen/<slug>` wäre ein Versprechen auf einen Inhalt, den es nie
+    // geben wird.
+    expect(legacyTarget("/2021/05/12/teams-live-events/")).toEqual({ status: 410 });
     // Variante ohne Tagessegment.
-    expect(legacyTarget("/2019/11/sharepoint-suche/")).toEqual({
-      path: "/depeschen/sharepoint-suche",
-      status: 301,
-    });
+    expect(legacyTarget("/2019/11/sharepoint-suche/")).toEqual({ status: 410 });
+    // Mit angehängter Kommentarseite.
+    expect(legacyTarget("/2021/01/10/channel-calendar/comment-page-2/")).toEqual({ status: 410 });
+  });
+
+  it("führt Datumsarchive weiterhin auf die Liste — sie waren Übersichten", () => {
+    for (const p of ["/2021/", "/2021/05/", "/2021/05/12/"]) {
+      expect(legacyTarget(p), p).toEqual({ path: "/depeschen", status: 301 });
+    }
   });
 
   it("führt WordPress-Feeds und -Sitemaps auf die neuen Pfade", () => {
@@ -70,7 +75,7 @@ describe("legacyTarget", () => {
 
   it("erzeugt keine Weiterleitung auf sich selbst", () => {
     // Sonst entstünde eine Schleife: Ziel und Quelle müssen sich unterscheiden.
-    for (const p of ["/blog", "/tag/x", "/about-me", "/2020/01/01/x"]) {
+    for (const p of ["/blog", "/tag/x", "/about-me", "/2020/01/"]) {
       const target = legacyTarget(p);
       expect(target?.path).not.toBe(p);
     }
@@ -96,27 +101,27 @@ describe("Belegte Adressen aus dem Index", () => {
     ["/tag/pnp/", "/depeschen"],
     ["/tag/intranet/", "/depeschen"],
     ["/tag/community/", "/depeschen"],
-    [
-      "/2019/11/10/use-cases-for-private-channels-in-microsoft-teams/",
-      "/depeschen/use-cases-for-private-channels-in-microsoft-teams",
-    ],
-    ["/2019/12/01/org-wide-teams-and-their-purpose/", "/depeschen/org-wide-teams-and-their-purpose"],
-    [
-      "/2020/01/02/improve-your-teamwork-with-a-collaboration-platform-my-checklist-for-a-tool-service-selection/",
-      "/depeschen/improve-your-teamwork-with-a-collaboration-platform-my-checklist-for-a-tool-service-selection",
-    ],
-    // WordPress hängt an Beiträge mit vielen Kommentaren eigene Seiten an. Die
-    // stehen mit im Index und dürfen nicht auf einem Slug „comment-page-1"
-    // landen.
-    [
-      "/2021/01/10/channel-calendar-app-in-microsoft-teams/comment-page-1/",
-      "/depeschen/channel-calendar-app-in-microsoft-teams",
-    ],
   ];
 
   for (const [from, to] of BELEGT) {
     it(`${from} → ${to}`, () => {
       expect(legacyTarget(from)).toEqual({ path: to, status: 301 });
+    });
+  }
+
+  // Dieselbe Herkunft, andere Behandlung: Diese Beiträge sind gelöscht.
+  const BELEGT_GELOESCHT = [
+    "/2019/11/10/use-cases-for-private-channels-in-microsoft-teams/",
+    "/2019/12/01/org-wide-teams-and-their-purpose/",
+    "/2020/01/02/improve-your-teamwork-with-a-collaboration-platform-my-checklist-for-a-tool-service-selection/",
+    // WordPress hängt an Beiträge mit vielen Kommentaren eigene Seiten an; auch
+    // die stehen im Index.
+    "/2021/01/10/channel-calendar-app-in-microsoft-teams/comment-page-1/",
+  ];
+
+  for (const from of BELEGT_GELOESCHT) {
+    it(`${from} → 410`, () => {
+      expect(legacyTarget(from)).toEqual({ status: 410 });
     });
   }
 });

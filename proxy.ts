@@ -9,6 +9,7 @@ import {
   LOCALE_HEADER,
 } from "./lib/routing";
 import { legacyTarget } from "./lib/seo/legacy-redirects";
+import { gonePage, goneLocale } from "./lib/seo/gone-page";
 
 // Locale-Routing (SPEC §5) UND Host-basiertes noindex (Phase 1.2a).
 //
@@ -86,11 +87,21 @@ export function proxy(request: NextRequest) {
   if (wordpress) {
     if (wordpress.status === 410 || !wordpress.path) {
       // Endgültig weg: 410 nimmt die URL schneller aus dem Index als ein 404.
+      //
+      // Mit gerenderter Seite, nicht nur mit dem Statuscode: Für Suchmaschinen
+      // zählt allein die 410, hier landet aber auch ein Mensch mit einem alten
+      // Lesezeichen oder einem Suchtreffer von 2019. Der sucht Inhalte — und es
+      // gibt welche.
+      const locale = goneLocale(request.headers.get("accept-language"));
       return withRobots(
         request,
-        new NextResponse("410 Gone — diese Adresse gibt es nicht mehr.", {
+        new NextResponse(gonePage(locale), {
           status: 410,
-          headers: { "Content-Type": "text/plain; charset=utf-8" },
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            // Der 410 ist die Aussage, der Header wiederholt sie unmissverständlich.
+            "X-Robots-Tag": "noindex",
+          },
         }),
       );
     }

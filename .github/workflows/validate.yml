@@ -62,6 +62,13 @@ jobs:
   browser:
     name: e2e · a11y
     runs-on: ubuntu-latest
+    # In CI gibt es keine Datenbank. Ohne diesen Schalter versucht
+    # `instrumentation.ts` beim Start achtmal `prisma migrate deploy` gegen einen
+    # Host, den es nicht gibt — gemessen rund 37 s, bis der Server antwortet, und
+    # das zweimal je Lauf (E2E und a11y starten je einen Server). Die Migration
+    # hat hier nichts zu tun.
+    env:
+      SKIP_STARTUP_MIGRATE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

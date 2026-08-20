@@ -9,10 +9,22 @@ export const dynamic = "force-dynamic";
 // und ohne Nebenwirkung (SELECT 1) — das Abfragen weckt zugleich die pausierte
 // Azure-SQL-Serverless-Instanz, hält sie also bei aktiver Nutzung warm.
 //
-// Zusätzlich zum Verbindungstest der Migrationsstand: Sind die Migrationen beim
-// Start gescheitert, arbeitet die Anwendung womöglich gegen ein altes Schema.
-// `SELECT 1` merkt davon nichts und meldete bisher fröhlich „in Ordnung" — das
-// ist genau die Auskunft, die man bei der Fehlersuche nicht brauchen kann.
+// Zwei Auskünfte, ZWEI Felder — und das ist der Punkt:
+//
+//   `ok`         Antwortet die Datenbank? Nur davon hängt ab, ob die Zentrale
+//                das Bearbeiten sperrt.
+//   `migrations` Sind die Migrationen beim Start durchgelaufen? Eine
+//                betriebliche Auskunft, die niemanden aussperren darf.
+//
+// Vorher waren beide in `ok` zusammengefasst: Eine gescheiterte Startmigration
+// ergab 503, und die Zentrale legte daraufhin dauerhaft das Overlay „Datenbank
+// wird geweckt" über die Oberfläche — obwohl die Datenbank erreichbar war und
+// Inhalte sichtbar und bearbeitbar blieben. Zwei verschiedene Lagen in einem
+// Signal führen zu genau dieser Art von Widerspruch: Die Anzeige sagt das eine,
+// die Anwendung tut das andere.
+//
+// Eine fehlgeschlagene Migration bleibt ein ernster Hinweis — sie gehört ins
+// Protokoll und als ruhige Warnung in die Kopfzeile, nicht in eine Sperre.
 export async function GET() {
   const headers = { "Cache-Control": "no-store" };
   const migrations = migrationState();
@@ -20,18 +32,6 @@ export async function GET() {
     await db.$queryRaw`SELECT 1`;
   } catch {
     return NextResponse.json({ ok: false, migrations }, { status: 503, headers });
-  }
-  if (migrations === "failed") {
-    return NextResponse.json(
-      {
-        ok: false,
-        migrations,
-        // Kein Fehlertext: der kann Verbindungsdaten enthalten und steht ohnehin
-        // im Serverprotokoll.
-        hint: "Datenbank erreichbar, aber die Migrationen sind beim Start fehlgeschlagen. Serverprotokoll prüfen und die Instanz neu starten.",
-      },
-      { status: 503, headers },
-    );
   }
   return NextResponse.json({ ok: true, migrations }, { headers });
 }

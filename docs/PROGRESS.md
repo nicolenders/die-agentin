@@ -375,6 +375,32 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 - `/media/…?dl=<Dateiname>` setzt `Content-Disposition`, damit der Download
   nicht als UUID landet (`lib/media/url.ts`, unit-getestet).
 
+**Prompt-Werkstatt im Adminbereich** (ADR `docs/decisions/0022-prompt-werkstatt.md`)
+- Neuer Bereich `/admin/prompts`: Vorlage wählen, Einsatz/Briefing/Depesche/
+  Identität dazu wählen, Identität(en) ankreuzen, fertigen Prompt kopieren.
+  Auswahl steht in der Adresse, damit sie sich verlinken lässt; ohne
+  JavaScript vollständig bedienbar (Auswahl per GET-Formular, nur der
+  Kopierknopf ist ein Client-Baustein).
+- Verwaltung unter `/admin/prompts/vorlagen`: Vorlagen anlegen, ändern,
+  duplizieren, aus-/einblenden, sortieren; dazu Bausteine, die mehrere
+  Vorlagen gemeinsam nutzen (der Stil-Baustein steht damit an einer Stelle).
+- Zwei neue Modelle `PromptTemplate` und `PromptSnippet` (Migration
+  `20260821120000_prompt_workbench`, rein additiv und wiederholbar
+  geschrieben). Der erzeugte Prompt wird nicht gespeichert.
+- Vorlagensprache: `{{platzhalter}}`, `{{baustein.x}}` und `[[Wahlteil]]`, der
+  wegfällt, wenn eine Angabe fehlt. Was weggefallen ist, benennt die Werkbank
+  und verlinkt den Eintrag, in dem die Angabe nachzutragen ist.
+- Mitgelieferter Standardsatz (`lib/prompts/defaults.ts`, per Knopfdruck
+  einspielbar, ergänzt nur Fehlendes): acht Bildvorlagen (Einsatz, Briefing,
+  Depeschen-Hero, Porträt im Markenstil, Identitäts-Umschlag und -Porträt,
+  Folien-Trennmotiv, Teilen-Karte) und acht Textvorlagen (LinkedIn-Post,
+  Ankündigung, Nachbericht, Call-for-Papers-Einreichung, zwei Foliengerüste,
+  englische Fassung, Alt-Texte).
+- Logik unter Unit-Tests (`lib/prompts/*.test.ts`, 61 Fälle): Ersetzung,
+  Wahlteile, Bausteinauflösung mit Zyklusabbruch, Aufzählungen und
+  Ortsangaben — sowie die Prüfung, dass jede mitgelieferte Vorlage nur
+  Platzhalter anspricht, die es im Katalog gibt.
+
 ## 14.5 — Abschlussliste (Stand dieser Sitzung)
 
 **`TODO(nicole)`-Marker (grep):**

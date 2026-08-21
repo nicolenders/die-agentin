@@ -24,6 +24,7 @@ export type EntityIconName =
   | "stats"
   | "archive"
   | "structure"
+  | "prompt"
   | "settings";
 
 const PATHS: Record<EntityIconName, React.ReactNode> = {
@@ -151,6 +152,15 @@ const PATHS: Record<EntityIconName, React.ReactNode> = {
       <circle cx="18" cy="6.6" r="2.4" />
       <circle cx="12" cy="17.6" r="2.4" />
       <path d="M8.4 6.6h7.2M7.2 8.8l3.6 6.9M16.8 8.8l-3.6 6.9" />
+    </>
+  ),
+  // Prompt — geschweifte Klammern um einen Platzhalter, die Schreibweise der
+  // Vorlagen selbst.
+  prompt: (
+    <>
+      <path d="M9.6 4.4C7.6 4.4 8.6 10 6.1 12c2.5 2 1.5 7.6 3.5 7.6" />
+      <path d="M14.4 4.4c2 0 1 5.6 3.5 7.6-2.5 2-1.5 7.6-3.5 7.6" />
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
     </>
   ),
   settings: (

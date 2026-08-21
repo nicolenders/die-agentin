@@ -8,6 +8,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import type { Locale } from "../lib/i18n/config";
+import { DEFAULT_SNIPPETS, DEFAULT_TEMPLATES } from "../lib/prompts/defaults";
 
 const db = new PrismaClient();
 
@@ -51,6 +52,8 @@ async function reset() {
   await db.mediaAsset.deleteMany();
   await db.redirect.deleteMany();
   await db.auditLog.deleteMany();
+  await db.promptTemplate.deleteMany();
+  await db.promptSnippet.deleteMany();
 }
 
 async function main() {
@@ -696,6 +699,37 @@ async function main() {
   };
   for (const [key, value] of Object.entries(bios)) {
     await db.siteSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+  }
+
+  // --- Prompt-Werkstatt -----------------------------------------------------
+  // Derselbe Standardsatz, den der Adminbereich per Knopfdruck einspielt. Hier
+  // liegt er direkt bereit, damit eine frische Entwicklungsdatenbank sofort
+  // etwas zum Ausprobieren hat.
+  for (const [index, snippet] of DEFAULT_SNIPPETS.entries()) {
+    await db.promptSnippet.create({
+      data: {
+        key: snippet.key,
+        title: snippet.title,
+        body: snippet.body,
+        note: snippet.note ?? null,
+        sortOrder: index,
+      },
+    });
+  }
+  for (const [index, template] of DEFAULT_TEMPLATES.entries()) {
+    await db.promptTemplate.create({
+      data: {
+        key: template.key,
+        title: template.title,
+        kind: template.kind,
+        subject: template.subject,
+        purpose: template.purpose,
+        body: template.body,
+        withIdentities: template.withIdentities,
+        aspect: template.aspect ?? null,
+        sortOrder: index,
+      },
+    });
   }
 
   console.log("Seed abgeschlossen.");

@@ -26,6 +26,7 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/briefings", label: "Briefings", icon: "briefing" },
   { href: "/admin/depeschen", label: "Depeschen", icon: "dispatch" },
   { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "radar" },
+  { href: "/admin/prompts", label: "Prompts", icon: "prompt" },
 
   // Statische Seiten — Inhalte, die selten wechseln.
   { href: "/admin/startseite", label: "Startseite", icon: "home", section: "Statische Seiten" },

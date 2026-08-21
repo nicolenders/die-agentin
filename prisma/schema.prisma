@@ -906,3 +906,62 @@ model ResumeEntry {
 
   @@index([section, sortOrder])
 }
+
+// ---------------------------------------------------------------------------
+// Prompt-Werkstatt. Vorlagen für Bild- und Textprompts, die in der Redaktion
+// mit den echten Daten eines Einsatzes, Briefings, einer Depesche oder einer
+// Identität gefüllt werden. Der Prompt selbst wird nicht gespeichert — er
+// entsteht bei jedem Aufruf neu aus Vorlage plus Daten und ist damit immer so
+// aktuell wie der Eintrag, auf den er sich bezieht.
+//
+// Nichts davon ist öffentlich: die Tabellen werden ausschließlich im
+// Adminbereich gelesen und geschrieben.
+// ---------------------------------------------------------------------------
+
+model PromptTemplate {
+  id      String  @id @default(cuid())
+  // Stabiler Schlüssel („bild-einsatz"). Über ihn wird der mitgelieferte
+  // Standardsatz erkannt und aktualisiert, statt ihn doppelt anzulegen.
+  key     String  @unique
+  title   String
+  kind    String  @default("IMAGE") // PromptKind: IMAGE | TEXT
+  subject String  @default("NONE") // PromptSubject: MISSION | TALK | DISPATCH | IDENTITY | NONE
+  // Wofür die Vorlage gedacht ist. Steht in der Werkbank als Hilfetext unter
+  // dem Namen — damit man beim Auswählen nicht raten muss.
+  purpose String? @db.NVarChar(Max)
+  body    String  @db.NVarChar(Max) // Vorlagentext mit {{platzhaltern}}
+
+  // Bietet die Werkbank zusätzlich die Identitätsauswahl an? Unabhängig vom
+  // Bezug: auch ein Einsatzmotiv wird „unter einer Identität" gebaut.
+  withIdentities Boolean @default(false)
+  // Seitenverhältnis als Anzeige- und Platzhalterwert („4:5"), rein textlich.
+  aspect         String?
+  // Beschriftung eines freien Eingabefelds in der Werkbank. Gesetzt heißt: Die
+  // Vorlage braucht etwas, das in keinem Datensatz steht — ein Thema, einen
+  // Rohentwurf, eine Frage. Der eingegebene Text füllt {{eingabe}}. Leer heißt:
+  // kein Feld anbieten.
+  inputLabel     String?
+
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+// Wiederverwendbarer Textbaustein, in Vorlagen als {{baustein.<key>}}
+// referenziert. Der Stil-Baustein steht damit an EINER Stelle: ändert er sich,
+// ändern sich alle Bildprompts mit.
+model PromptSnippet {
+  id        String   @id @default(cuid())
+  key       String   @unique // sprachneutral, klein geschrieben („stil")
+  title     String
+  body      String   @db.NVarChar(Max)
+  note      String?  @db.NVarChar(Max)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}

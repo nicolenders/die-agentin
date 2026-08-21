@@ -375,6 +375,85 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 - `/media/…?dl=<Dateiname>` setzt `Content-Disposition`, damit der Download
   nicht als UUID landet (`lib/media/url.ts`, unit-getestet).
 
+**Prompt-Werkstatt im Adminbereich** (ADR `docs/decisions/0022-prompt-werkstatt.md`)
+- Neuer Bereich `/admin/prompts`: Vorlage wählen, Einsatz/Briefing/Depesche/
+  Identität dazu wählen, Identität(en) ankreuzen, fertigen Prompt kopieren.
+  Auswahl steht in der Adresse, damit sie sich verlinken lässt; ohne
+  JavaScript vollständig bedienbar (Auswahl per GET-Formular, nur der
+  Kopierknopf ist ein Client-Baustein).
+- Verwaltung unter `/admin/prompts/vorlagen`: Vorlagen anlegen, ändern,
+  duplizieren, aus-/einblenden, sortieren; dazu Bausteine, die mehrere
+  Vorlagen gemeinsam nutzen (der Stil-Baustein steht damit an einer Stelle).
+- Zwei neue Modelle `PromptTemplate` und `PromptSnippet` (Migration
+  `20260821120000_prompt_workbench`, rein additiv und wiederholbar
+  geschrieben). Der erzeugte Prompt wird nicht gespeichert.
+- Vorlagensprache: `{{platzhalter}}`, `{{baustein.x}}` und `[[Wahlteil]]`, der
+  wegfällt, wenn eine Angabe fehlt. Was weggefallen ist, benennt die Werkbank
+  und verlinkt den Eintrag, in dem die Angabe nachzutragen ist.
+- Vorlagen, die eine Angabe brauchen, die in keinem Datensatz steht (ein Thema,
+  ein Rohentwurf, Notizen von vor Ort), tragen eine Beschriftung in
+  `inputLabel`; die Werkbank bietet dann ein Textfeld an, dessen Inhalt
+  `{{eingabe}}` füllt.
+- Mitgelieferter Standardsatz (`lib/prompts/defaults.ts`, per Knopfdruck
+  einspielbar, ergänzt nur Fehlendes): **10 Bausteine, 14 Bildvorlagen und
+  18 Textvorlagen**, fertig formuliert. Der Inhalt ist nicht neu erfunden,
+  sondern zusammengezogen aus dem, was ohnehin schon galt: der 70er-Bildstil
+  der Depeschen-Heros, die Umschlagserie der Identitäten aus
+  `docs/BILDPROMPTS.md`, Nicoles Schreibstimme, die Liste der KI-Marker und die
+  LinkedIn-Faustregeln. Das lag bisher über Skills und Markdown-Dateien
+  verteilt und ist jetzt an einer Stelle pflegbar.
+- Bild: Depeschen-Hero, Einsatz, Briefing-Thema, Identitäts-Umschlag und
+  -Porträt, Marken-Porträt, Startseiten-Hero, Folien-Titel und -Trenner,
+  LinkedIn-Schlüsselbild, Carousel-Cover, Architektur-Schaubild, Teilen-Karte,
+  Cover-Mockup.
+- Text: Bildidee finden, neue Depesche schreiben, LinkedIn-Post und -Serie,
+  Anriss und Meta-Angaben, Einordnung vorschlagen, englische Fassung,
+  Ankündigung, Nachbericht, Post von der Bühne, zwei Foliengerüste,
+  Call-for-Papers-Einreichung, englisches Briefing, Dokument-Carousel,
+  Identität vorstellen, Sprecherbio, Alternativtexte.
+- Logik und Inhalt unter Unit-Tests (`lib/prompts/*.test.ts`): Ersetzung,
+  Wahlteile, Bausteinauflösung mit Zyklusabbruch, Aufzählungen und
+  Ortsangaben — sowie die Prüfung, dass jede mitgelieferte Vorlage nur
+  Platzhalter anspricht, die es im Katalog gibt, dass jede Bildvorlage genau
+  einen Stilbaustein und die Verbotsliste trägt, dass Eingabefeld und
+  `{{eingabe}}` zusammenpassen und dass im deutschen Vorlagentext kein
+  Geviertstrich steht (er zieht das Modell dazu, im Ergebnis selbst welche zu
+  setzen).
+
+**Fachgebiete und Radar-Themen aus der Depeschen-Maske heraus anlegen**
+- In der Depeschen-Maske sitzt unter beiden Auswahlen ein Feld „Fehlt eins?
+  Hier anlegen". Der Eintrag entsteht an Ort und Stelle und ist sofort
+  ausgewählt; das Formular wird dabei weder abgeschickt noch verlassen (Server
+  Action mit Rückgabewert, aufgerufen aus dem Client-Baustein — ein Formular im
+  Formular ist in HTML nicht erlaubt).
+- Gutmütig gegen Doppeleingaben: Gibt es den Namen schon, wird der vorhandene
+  Eintrag ausgewählt statt ein zweiter angelegt. Der Vergleich ignoriert
+  Groß-/Kleinschreibung und überzählige Leerzeichen (`lib/admin/inline-create.ts`,
+  unit-getestet) — sonst stünden „Copilot Studio" und „copilot studio"
+  nebeneinander und die öffentliche Filterung zerfiele in zwei Hälften.
+- Ein hier angelegtes Radar-Thema übernimmt die in der Maske gewählten
+  Identitäten und damit seine Farbe; ohne Zuordnung bliebe es global.
+- Die Eingabetaste im Anlegefeld legt an, statt das ganze Formular
+  abzuschicken.
+
+**Stammdaten: „Dossier-Kategorien" heißen jetzt Fachgebiete**
+- Seit Phase 3 sind Signale und Dossiers zu Depeschen zusammengeführt. Die
+  Karte hieß aber weiter „Dossier-Kategorien" und zählte Dossiers — deshalb
+  stand überall 0, obwohl die Kategorien an Depeschen hängen. Sie heißt jetzt
+  „Fachgebiete" und zählt Depeschen.
+- Die Löschsperre zählte ebenfalls nur Dossiers: Ein Fachgebiet ließ sich
+  löschen, obwohl noch Depeschen daran hingen. Sie zählt jetzt beides.
+- `deleteCategory` invalidierte gar keinen Cache; eine gelöschte Kategorie
+  blieb in den öffentlichen Filterlisten stehen. Jetzt invalidieren Anlegen,
+  Umbenennen und Löschen die Depeschen- und Dossier-Listen.
+- Die Art heißt in der Datenbank weiterhin `DOSSIER`. Der gespeicherte Wert
+  bleibt, weil eine Umbenennung nur eine Migration wäre, ohne dass jemand etwas
+  davon hätte; sichtbar heißt er überall „Fachgebiete".
+- Bei den Weiterleitungen führte der Typ „Dossier" in die Irre: Beide Altwerte
+  (`post`, `dossier`) werden beim Auflösen einer Depeschen-Adresse ohnehin
+  geprüft. Neue Einträge wählen deshalb nur noch zwischen „Depesche" und
+  „Einsatz".
+
 ## 14.5 — Abschlussliste (Stand dieser Sitzung)
 
 **`TODO(nicole)`-Marker (grep):**

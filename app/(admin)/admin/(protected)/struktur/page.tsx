@@ -22,15 +22,19 @@ function CategoryCard({
   kind,
   cats,
   usageLabel,
+  hint,
 }: {
   title: string;
   kind: "DOSSIER" | "CERTIFICATION";
   cats: Cat[];
   usageLabel: string;
+  /** Ein Satz darüber, wofür diese Kategorien da sind. */
+  hint?: string;
 }) {
   return (
     <div className="card bracket">
       <p className="eyebrow">{title}</p>
+      {hint ? <p className="meta" style={{ marginTop: -4 }}>{hint}</p> : null}
       {cats.length === 0 ? (
         <p className="muted">Noch keine Kategorien.</p>
       ) : (
@@ -75,19 +79,19 @@ export default async function StrukturPage({
 }) {
   const { ok, err } = await searchParams;
 
-  let dossierCats: Cat[] = [];
+  let topicCats: Cat[] = [];
   let certCats: Cat[] = [];
   let tagRows: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
   let redirects: { id: string; locale: string; fromSlug: string; toSlug: string; entity: string; createdAt: Date }[] = [];
   let dbError = false;
   try {
-    const [dcats, ccats, trows, rrows] = await Promise.all([
-      db.taxonomy.findMany({ where: { kind: "DOSSIER" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { dossierMulti: true } } } }),
+    const [tcats, ccats, trows, rrows] = await Promise.all([
+      db.taxonomy.findMany({ where: { kind: "DOSSIER" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { dispatchTopics: true } } } }),
       db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { certMulti: true } } } }),
       db.tag.findMany({ orderBy: { nameDe: "asc" }, include: { _count: { select: { posts: true } } } }),
       db.redirect.findMany({ orderBy: { createdAt: "desc" }, take: 200 }),
     ]);
-    dossierCats = dcats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.dossierMulti }));
+    topicCats = tcats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.dispatchTopics }));
     certCats = ccats.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.certMulti }));
     tagRows = trows.map((t) => ({ id: t.id, nameDe: t.nameDe, nameEn: t.nameEn, count: t._count.posts }));
     redirects = rrows;
@@ -104,10 +108,16 @@ export default async function StrukturPage({
 
       <p className="eyebrow" style={{ marginTop: 24 }}>Kategorien</p>
       <div className="grid g2">
-        <CategoryCard title="Dossier-Kategorien" kind="DOSSIER" cats={dossierCats} usageLabel="Dossiers" />
+        <CategoryCard
+          title="Fachgebiete"
+          kind="DOSSIER"
+          cats={topicCats}
+          usageLabel="Depeschen"
+          hint="Werkzeuge und Produkte, die du Depeschen zuordnest — Copilot Studio, Purview, Governance. Anlegen geht auch direkt in der Depeschen-Maske."
+        />
         <CategoryCard title="Zertifizierungs-Kategorien" kind="CERTIFICATION" cats={certCats} usageLabel="Einträge" />
       </div>
-      <p className="meta" style={{ marginTop: 8 }}>Briefing-Kategorien pflegst du direkt unter „Briefings“.</p>
+      <p className="meta" style={{ marginTop: 8 }}>Briefing-Kategorien pflegst du direkt unter „Briefings“, Radar-Themen unter „Aufklärung (Radar)“ oder in der Depeschen-Maske.</p>
 
       <p className="eyebrow" style={{ marginTop: 28 }}>Schlagworte</p>
       <div className="card bracket">
@@ -191,8 +201,7 @@ export default async function StrukturPage({
           <span>
             <label className="f">Typ</label>
             <select className="f" name="entity" style={{ maxWidth: 130 }}>
-              <option value="post">Beitrag</option>
-              <option value="dossier">Dossier</option>
+              <option value="post">Depesche</option>
               <option value="mission">Einsatz</option>
             </select>
           </span>

@@ -1,5 +1,16 @@
 # Bild-Prompts für „Die Agentin"
 
+> **Gepflegt werden Prompts im Adminbereich unter „Prompts".** Dort wählst du
+> eine Vorlage und den Eintrag dazu — Einsatz, Briefing, Depesche oder
+> Identität — und bekommst den fertigen Prompt mit allen Daten zum Kopieren.
+> Der Stil-Baustein steht dort als Baustein und wirkt auf jedes Motiv; änderst
+> du ihn, ändert sich die ganze Serie.
+>
+> Diese Datei bleibt die Erklärung des Bildstils und die Anleitung fürs
+> Ablegen der fertigen Bilder. Die Prompt-Texte darin sind der Ausgangspunkt,
+> den der Adminbereich als Standardsatz mitbringt — die gepflegte Fassung
+> steht in der Datenbank, nicht hier.
+
 Fertige Prompts für ChatGPT (Bildgenerierung), damit alle Bilder zur Marke
 passen. **So gehst du vor:**
 

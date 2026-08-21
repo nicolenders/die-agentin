@@ -67,3 +67,12 @@ export function isOneOf<T extends readonly string[]>(
 ): value is T[number] {
   return typeof value === "string" && (allowed as readonly string[]).includes(value);
 }
+
+// Prompt-Werkstatt (Adminbereich): Art des Ergebnisses und der Bezug, aus dem
+// die Werkbank die Daten zieht. NONE = Vorlage ohne Bezug, die nur die
+// allgemeinen Platzhalter kennt.
+export const PROMPT_KINDS = ["IMAGE", "TEXT"] as const;
+export type PromptKind = (typeof PROMPT_KINDS)[number];
+
+export const PROMPT_SUBJECTS = ["MISSION", "TALK", "DISPATCH", "IDENTITY", "NONE"] as const;
+export type PromptSubject = (typeof PROMPT_SUBJECTS)[number];

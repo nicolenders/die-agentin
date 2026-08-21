@@ -25,6 +25,8 @@ export const FLASH_MESSAGES: Record<string, string> = {
   archived: "Ins Archiv gelegt. Bei neuen Einsätzen ab heute nicht mehr wählbar.",
   unarchived: "Aus dem Archiv geholt.",
   uploaded: "Hochgeladen.",
+  installed: "Standardvorlagen eingespielt. Du kannst jede davon ändern oder ausblenden.",
+  "nothing-new": "Alle Standardvorlagen sind schon da. Nichts wurde geändert.",
   merged: "Zusammengeführt. Einsätze, Sprachfassungen und Verknüpfungen sind übernommen.",
   "has-links": "Identität hat verknüpfte Einträge: erst umhängen oder zurückziehen statt löschen.",
   "cannot-publish": "Nicht veröffentlichbar: Rolle (DE) und gültige Akzentfarbe sind Pflicht.",
@@ -40,6 +42,8 @@ export const FLASH_MESSAGES: Record<string, string> = {
   "document-in-use": "Datei ist noch einem Einsatz zugeordnet: dort erst entfernen.",
   "audience-in-use": "Zielgruppe ist noch zugeordnet: erst umhängen oder Briefings ändern.",
   "merge-self": "Quelle und Ziel sind dasselbe. Nichts wurde geändert.",
+  "key-taken": "Diesen Schlüssel gibt es schon. Wähl einen anderen Namen oder Schlüssel.",
+  "snippet-in-use": "Baustein wird noch von einer Vorlage angesprochen: dort erst entfernen.",
   "merge-failed": "Zusammenführen fehlgeschlagen. Nichts wurde geändert.",
   failed: "Speichern fehlgeschlagen. Bitte erneut versuchen.",
 };

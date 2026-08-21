@@ -8,6 +8,7 @@ import { slugify } from "@/lib/slug";
 import { berlinLocalToUtc } from "@/lib/time";
 import { DISPATCH_FORMATS, CONTENT_STATUSES, isOneOf } from "@/lib/domain";
 import { FOCUS_TAG } from "@/lib/queries/records";
+import { checkName, findByName, type InlineCreateResult } from "@/lib/admin/inline-create";
 
 const LIST = "/admin/depeschen";
 const EDIT = `${LIST}/bearbeiten`;
@@ -157,4 +158,110 @@ export async function deleteDispatch(formData: FormData): Promise<void> {
   if (failed) redirect(`${LIST}?err=failed`);
   invalidate();
   redirect(`${LIST}?ok=deleted`);
+}
+
+// ---------------------------------------------------------------------------
+// Anlegen aus der Maske heraus
+//
+// Beim Schreiben einer Depesche fällt einem das passende Fachgebiet oder
+// Radar-Thema ein — und bis hierher hieß das: Formular verlassen, unter
+// Stammdaten bzw. Aufklärung anlegen, zurückkommen, alles neu eintippen.
+// Diese beiden Aktionen legen den Eintrag an Ort und Stelle an und geben ihn
+// zurück, damit die Auswahl ihn sofort anbieten kann. Sie leiten deshalb NICHT
+// um: das Formular soll stehen bleiben, wie es ist.
+//
+// Beide sind gutmütig gegenüber Doppeleingaben: Gibt es den Namen schon, wird
+// der vorhandene Eintrag zurückgegeben und ausgewählt, statt einen zweiten
+// anzulegen. Bei Radar-Themen läuft die Wiedererkennung ohnehin über den
+// exakten deutschen Titel.
+// ---------------------------------------------------------------------------
+
+/** Legt ein Fachgebiet an (Taxonomy, kind = DOSSIER) und gibt es zurück. */
+export async function createTopicInline(rawName: string): Promise<InlineCreateResult> {
+  await requireAdmin();
+  const checked = checkName(rawName);
+  if (!checked.ok) return checked;
+  const name = checked.name;
+
+  try {
+    const existing = await db.taxonomy.findMany({
+      where: { kind: "DOSSIER" },
+      select: { id: true, nameDe: true },
+    });
+    const match = findByName(
+      existing.map((t) => ({ id: t.id, name: t.nameDe })),
+      name,
+    );
+    if (match) return { ok: true, option: match, existed: true };
+
+    // Der Slug ist je Art eindeutig. Kollidiert er (zwei Namen, ein Slug),
+    // wird durchnummeriert, statt die Eingabe abzulehnen.
+    const base = slugify(name) || "fachgebiet";
+    let slug = base;
+    for (let n = 2; await db.taxonomy.findUnique({ where: { kind_slug: { kind: "DOSSIER", slug } } }); n += 1) {
+      slug = `${base}-${n}`;
+    }
+    const last = await db.taxonomy.findFirst({
+      where: { kind: "DOSSIER" },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    const created = await db.taxonomy.create({
+      data: {
+        kind: "DOSSIER",
+        nameDe: name,
+        // Englisch bleibt zunächst gleich; gepflegt wird es unter Stammdaten.
+        nameEn: name,
+        slug,
+        sortOrder: (last?.sortOrder ?? 0) + 1,
+      },
+      select: { id: true, nameDe: true },
+    });
+    invalidateTags([tags.dossierList("de"), tags.dossierList("en")]);
+    return { ok: true, option: { id: created.id, name: created.nameDe }, existed: false };
+  } catch {
+    return { ok: false, error: "Anlegen fehlgeschlagen. Bitte erneut versuchen." };
+  }
+}
+
+/**
+ * Legt ein Radar-Thema an (FocusTopic) und gibt es zurück. `identityIds` sind
+ * die in der Maske gerade gewählten Identitäten: Ein Radar-Thema ohne
+ * Zuordnung bleibt global und hat keine Farbe, deshalb erbt es hier die
+ * Identitäten der Depesche, aus der heraus es entsteht.
+ */
+export async function createFocusTopicInline(
+  rawName: string,
+  identityIds: string[],
+): Promise<InlineCreateResult> {
+  await requireAdmin();
+  const checked = checkName(rawName);
+  if (!checked.ok) return checked;
+  const name = checked.name;
+
+  try {
+    const existing = await db.focusTopic.findMany({ select: { id: true, titleDe: true } });
+    const match = findByName(
+      existing.map((t) => ({ id: t.id, name: t.titleDe })),
+      name,
+    );
+    if (match) return { ok: true, option: match, existed: true };
+
+    const last = await db.focusTopic.findFirst({
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    const created = await db.focusTopic.create({
+      data: {
+        titleDe: name,
+        sortOrder: (last?.sortOrder ?? 0) + 1,
+        identities: { connect: identityIds.map((id) => ({ id })) },
+      },
+      select: { id: true, titleDe: true },
+    });
+    invalidateTags([FOCUS_TAG]);
+    return { ok: true, option: { id: created.id, name: created.titleDe }, existed: false };
+  } catch {
+    return { ok: false, error: "Anlegen fehlgeschlagen. Bitte erneut versuchen." };
+  }
 }

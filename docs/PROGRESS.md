@@ -420,6 +420,40 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
   Geviertstrich steht (er zieht das Modell dazu, im Ergebnis selbst welche zu
   setzen).
 
+**Fachgebiete und Radar-Themen aus der Depeschen-Maske heraus anlegen**
+- In der Depeschen-Maske sitzt unter beiden Auswahlen ein Feld „Fehlt eins?
+  Hier anlegen". Der Eintrag entsteht an Ort und Stelle und ist sofort
+  ausgewählt; das Formular wird dabei weder abgeschickt noch verlassen (Server
+  Action mit Rückgabewert, aufgerufen aus dem Client-Baustein — ein Formular im
+  Formular ist in HTML nicht erlaubt).
+- Gutmütig gegen Doppeleingaben: Gibt es den Namen schon, wird der vorhandene
+  Eintrag ausgewählt statt ein zweiter angelegt. Der Vergleich ignoriert
+  Groß-/Kleinschreibung und überzählige Leerzeichen (`lib/admin/inline-create.ts`,
+  unit-getestet) — sonst stünden „Copilot Studio" und „copilot studio"
+  nebeneinander und die öffentliche Filterung zerfiele in zwei Hälften.
+- Ein hier angelegtes Radar-Thema übernimmt die in der Maske gewählten
+  Identitäten und damit seine Farbe; ohne Zuordnung bliebe es global.
+- Die Eingabetaste im Anlegefeld legt an, statt das ganze Formular
+  abzuschicken.
+
+**Stammdaten: „Dossier-Kategorien" heißen jetzt Fachgebiete**
+- Seit Phase 3 sind Signale und Dossiers zu Depeschen zusammengeführt. Die
+  Karte hieß aber weiter „Dossier-Kategorien" und zählte Dossiers — deshalb
+  stand überall 0, obwohl die Kategorien an Depeschen hängen. Sie heißt jetzt
+  „Fachgebiete" und zählt Depeschen.
+- Die Löschsperre zählte ebenfalls nur Dossiers: Ein Fachgebiet ließ sich
+  löschen, obwohl noch Depeschen daran hingen. Sie zählt jetzt beides.
+- `deleteCategory` invalidierte gar keinen Cache; eine gelöschte Kategorie
+  blieb in den öffentlichen Filterlisten stehen. Jetzt invalidieren Anlegen,
+  Umbenennen und Löschen die Depeschen- und Dossier-Listen.
+- Die Art heißt in der Datenbank weiterhin `DOSSIER`. Der gespeicherte Wert
+  bleibt, weil eine Umbenennung nur eine Migration wäre, ohne dass jemand etwas
+  davon hätte; sichtbar heißt er überall „Fachgebiete".
+- Bei den Weiterleitungen führte der Typ „Dossier" in die Irre: Beide Altwerte
+  (`post`, `dossier`) werden beim Auflösen einer Depeschen-Adresse ohnehin
+  geprüft. Neue Einträge wählen deshalb nur noch zwischen „Depesche" und
+  „Einsatz".
+
 ## 14.5 — Abschlussliste (Stand dieser Sitzung)
 
 **`TODO(nicole)`-Marker (grep):**

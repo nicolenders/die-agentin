@@ -6,9 +6,15 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
 
-// Verwaltung der „strukturgebenden" Daten: Kategorien (für Dossiers und
-// Zertifizierungen), Schlagworte und Weiterleitungen. Briefing-Kategorien
-// werden weiterhin direkt unter „Briefings" gepflegt.
+// Verwaltung der „strukturgebenden" Daten: Kategorien, Schlagworte und
+// Weiterleitungen. Briefing-Kategorien werden weiterhin direkt unter
+// „Briefings" gepflegt, Radar-Themen unter „Aufklärung".
+//
+// Zur Benennung: Die Art `DOSSIER` heißt in der Datenbank so, seit Signale und
+// Dossiers zu Depeschen zusammengeführt wurden (Phase 3) aber sind es die
+// Fachgebiete der Depeschen. Der gespeicherte Wert bleibt, weil ihn eine
+// Umbenennung nur in eine Migration verwandeln würde, ohne dass jemand etwas
+// davon hätte; sichtbar heißt er überall „Fachgebiete".
 
 const LIST = "/admin/struktur";
 const CATEGORY_KINDS = ["DOSSIER", "CERTIFICATION"] as const;
@@ -18,12 +24,33 @@ function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
+/** Fachgebiete erscheinen an Depeschen und an den Altbestands-Dossiers. */
+function invalidateCategoryTags(): void {
+  invalidateTags([
+    tags.dispatchList("de"),
+    tags.dispatchList("en"),
+    tags.dossierList("de"),
+    tags.dossierList("en"),
+  ]);
+}
+
 function asKind(value: string): CategoryKind | null {
   return (CATEGORY_KINDS as readonly string[]).includes(value) ? (value as CategoryKind) : null;
 }
 
 async function categoryInUse(kind: CategoryKind, id: string): Promise<boolean> {
-  if (kind === "DOSSIER") return (await db.dossier.count({ where: { categories: { some: { id } } } })) > 0;
+  if (kind === "DOSSIER") {
+    // Die Art heißt in der Datenbank weiterhin DOSSIER; seit der
+    // Zusammenführung von Signalen und Dossiers zu Depeschen (Phase 3) hängen
+    // diese Kategorien aber an Depeschen. Beides wird gezählt: Altbestand an
+    // Dossiers darf beim Löschen genauso wenig stillschweigend die Zuordnung
+    // verlieren.
+    const [dispatches, dossiers] = await Promise.all([
+      db.dispatch.count({ where: { topics: { some: { id } } } }),
+      db.dossier.count({ where: { categories: { some: { id } } } }),
+    ]);
+    return dispatches + dossiers > 0;
+  }
   return (await db.certification.count({ where: { categories: { some: { id } } } })) > 0;
 }
 
@@ -42,7 +69,7 @@ export async function createCategory(formData: FormData): Promise<void> {
     failed = true;
   }
   if (failed) redirect(`${LIST}?err=failed`);
-  invalidateTags([tags.dossierList("de"), tags.dossierList("en")]);
+  invalidateCategoryTags();
   redirect(`${LIST}?ok=created`);
 }
 
@@ -60,7 +87,7 @@ export async function renameCategory(formData: FormData): Promise<void> {
     failed = true;
   }
   if (failed) redirect(`${LIST}?err=failed`);
-  invalidateTags([tags.dossierList("de"), tags.dossierList("en")]);
+  invalidateCategoryTags();
   redirect(`${LIST}?ok=updated`);
 }
 
@@ -78,6 +105,9 @@ export async function deleteCategory(formData: FormData): Promise<void> {
     failed = true;
   }
   if (failed) redirect(`${LIST}?err=failed`);
+  // Eine gelöschte Kategorie verschwindet aus den öffentlichen Filterlisten;
+  // ohne diese Zeile blieb sie dort bis zum nächsten Cache-Ablauf stehen.
+  invalidateCategoryTags();
   redirect(`${LIST}?ok=deleted`);
 }
 

@@ -10,7 +10,12 @@ import { assetUrl } from "@/lib/media/url";
 import { identityDisplayName } from "@/lib/identities";
 import { utcToBerlinLocal } from "@/lib/time";
 import { DISPATCH_FORMATS, CONTENT_STATUSES } from "@/lib/domain";
-import { createDispatch, updateDispatch } from "../actions";
+import {
+  createDispatch,
+  createFocusTopicInline,
+  createTopicInline,
+  updateDispatch,
+} from "../actions";
 
 export const metadata = { title: "Depesche bearbeiten · Zentrale" };
 
@@ -70,22 +75,41 @@ export default async function DispatchEditPage({
       </div>
       <div>
         <label className="f">Identität(en)</label>
-        <CategoryMultiSelect options={identityOpts} name="identityIds" defaultSelected={dispatch?.identities.map((i) => i.id) ?? []} emptyHint="Keine Identitäten." />
+        <CategoryMultiSelect options={identityOpts} name="identityIds" groupLabel="Identitäten" defaultSelected={dispatch?.identities.map((i) => i.id) ?? []} emptyHint="Keine Identitäten." />
       </div>
       <div>
-        <label className="f">Fachgebiete (Topics)</label>
-        <CategoryMultiSelect options={topicOpts} name="topicIds" defaultSelected={dispatch?.topics.map((t) => t.id) ?? []} emptyHint="Keine Fachgebiete." />
+        <label className="f">Fachgebiete</label>
+        <CategoryMultiSelect
+          options={topicOpts}
+          name="topicIds"
+          groupLabel="Fachgebiete"
+          defaultSelected={dispatch?.topics.map((t) => t.id) ?? []}
+          emptyHint="Noch keine Fachgebiete angelegt. Das erste legst du gleich hier an."
+          create={createTopicInline}
+          createLabel="Fehlt eins? Hier anlegen"
+        />
+        <p className="meta" style={{ marginTop: 6 }}>
+          Werkzeuge und Produkte, etwa Copilot Studio oder Purview. Hier angelegte Fachgebiete
+          stehen danach überall zur Verfügung; die englische Bezeichnung trägst du bei Gelegenheit
+          unter Stammdaten nach.
+        </p>
       </div>
       <div>
         <label className="f">Radar-Themen (Aufklärung)</label>
         <CategoryMultiSelect
           options={focusOpts}
           name="focusTopicIds"
+          groupLabel="Radar-Themen"
           defaultSelected={dispatch?.focusTopics.map((t) => t.id) ?? []}
-          emptyHint="Noch keine Themen unter „Aufklärung (Radar)“ angelegt."
+          emptyHint="Noch kein Radar-Thema angelegt. Das erste legst du gleich hier an."
+          create={createFocusTopicInline}
+          createLabel="Fehlt eins? Hier anlegen"
+          relatedField="identityIds"
         />
         <p className="meta" style={{ marginTop: 6 }}>
-          Öffentlich wird der Radar-Punkt dadurch anklickbar und filtert die Depeschenliste auf dieses Thema.
+          Öffentlich wird der Radar-Punkt dadurch anklickbar und filtert die Depeschenliste auf dieses
+          Thema. Ein hier angelegtes Thema übernimmt die oben gewählten Identitäten und damit seine
+          Farbe. Sparsam bleiben: ein Radar mit zwanzig Punkten sagt nichts mehr aus.
         </p>
       </div>
       <div className="grid g3" style={{ gap: 14, alignItems: "start" }}>

@@ -390,16 +390,35 @@ Admin-Pflege der Bios (aktuell Seed/SiteSetting).
 - Vorlagensprache: `{{platzhalter}}`, `{{baustein.x}}` und `[[Wahlteil]]`, der
   wegfällt, wenn eine Angabe fehlt. Was weggefallen ist, benennt die Werkbank
   und verlinkt den Eintrag, in dem die Angabe nachzutragen ist.
+- Vorlagen, die eine Angabe brauchen, die in keinem Datensatz steht (ein Thema,
+  ein Rohentwurf, Notizen von vor Ort), tragen eine Beschriftung in
+  `inputLabel`; die Werkbank bietet dann ein Textfeld an, dessen Inhalt
+  `{{eingabe}}` füllt.
 - Mitgelieferter Standardsatz (`lib/prompts/defaults.ts`, per Knopfdruck
-  einspielbar, ergänzt nur Fehlendes): acht Bildvorlagen (Einsatz, Briefing,
-  Depeschen-Hero, Porträt im Markenstil, Identitäts-Umschlag und -Porträt,
-  Folien-Trennmotiv, Teilen-Karte) und acht Textvorlagen (LinkedIn-Post,
-  Ankündigung, Nachbericht, Call-for-Papers-Einreichung, zwei Foliengerüste,
-  englische Fassung, Alt-Texte).
-- Logik unter Unit-Tests (`lib/prompts/*.test.ts`, 61 Fälle): Ersetzung,
+  einspielbar, ergänzt nur Fehlendes): **10 Bausteine, 14 Bildvorlagen und
+  18 Textvorlagen**, fertig formuliert. Der Inhalt ist nicht neu erfunden,
+  sondern zusammengezogen aus dem, was ohnehin schon galt: der 70er-Bildstil
+  der Depeschen-Heros, die Umschlagserie der Identitäten aus
+  `docs/BILDPROMPTS.md`, Nicoles Schreibstimme, die Liste der KI-Marker und die
+  LinkedIn-Faustregeln. Das lag bisher über Skills und Markdown-Dateien
+  verteilt und ist jetzt an einer Stelle pflegbar.
+- Bild: Depeschen-Hero, Einsatz, Briefing-Thema, Identitäts-Umschlag und
+  -Porträt, Marken-Porträt, Startseiten-Hero, Folien-Titel und -Trenner,
+  LinkedIn-Schlüsselbild, Carousel-Cover, Architektur-Schaubild, Teilen-Karte,
+  Cover-Mockup.
+- Text: Bildidee finden, neue Depesche schreiben, LinkedIn-Post und -Serie,
+  Anriss und Meta-Angaben, Einordnung vorschlagen, englische Fassung,
+  Ankündigung, Nachbericht, Post von der Bühne, zwei Foliengerüste,
+  Call-for-Papers-Einreichung, englisches Briefing, Dokument-Carousel,
+  Identität vorstellen, Sprecherbio, Alternativtexte.
+- Logik und Inhalt unter Unit-Tests (`lib/prompts/*.test.ts`): Ersetzung,
   Wahlteile, Bausteinauflösung mit Zyklusabbruch, Aufzählungen und
   Ortsangaben — sowie die Prüfung, dass jede mitgelieferte Vorlage nur
-  Platzhalter anspricht, die es im Katalog gibt.
+  Platzhalter anspricht, die es im Katalog gibt, dass jede Bildvorlage genau
+  einen Stilbaustein und die Verbotsliste trägt, dass Eingabefeld und
+  `{{eingabe}}` zusammenpassen und dass im deutschen Vorlagentext kein
+  Geviertstrich steht (er zieht das Modell dazu, im Ergebnis selbst welche zu
+  setzen).
 
 ## 14.5 — Abschlussliste (Stand dieser Sitzung)
 

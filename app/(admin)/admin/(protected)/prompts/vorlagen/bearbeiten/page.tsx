@@ -28,6 +28,7 @@ const EMPTY: PromptTemplateRow = {
   body: "",
   withIdentities: false,
   aspect: "",
+  inputLabel: "",
   active: true,
   sortOrder: 0,
 };
@@ -52,6 +53,9 @@ export default async function PromptTemplateEditPage({
   // Die Prüfung läuft bei jedem Aufruf neu: sie hängt am gespeicherten Stand
   // und bleibt sichtbar, bis der Platzhalter stimmt.
   const problems = checkBody(data.body, data.subject, data.withIdentities, snippets.map((s) => s.key));
+  // {{eingabe}} ohne Beschriftung bekommt nie einen Wert: die Werkbank bietet
+  // dann kein Feld an, in das sich etwas schreiben ließe.
+  const inputWithoutField = data.body.includes("{{eingabe}}") && !data.inputLabel;
 
   // Nur die Platzhalter des eigenen Bezugs — die allgemeinen und die der
   // Identität stehen darunter in eigenen Gruppen.
@@ -65,7 +69,7 @@ export default async function PromptTemplateEditPage({
       <h1>{isNew ? "Neue Vorlage" : data.title}</h1>
       <Flash ok={ok} err={err} />
 
-      {problems.unknownPlaceholders.length > 0 || problems.unknownSnippets.length > 0 ? (
+      {problems.unknownPlaceholders.length > 0 || problems.unknownSnippets.length > 0 || inputWithoutField ? (
         <div className="card bracket" style={{ marginTop: 12, borderColor: "var(--magenta)" }}>
           <p className="eyebrow" style={{ color: "var(--magenta)" }}>Zeigt ins Leere</p>
           {problems.unknownPlaceholders.length > 0 ? (
@@ -73,6 +77,13 @@ export default async function PromptTemplateEditPage({
               Diese Platzhalter gibt es beim Bezug „{SUBJECT_LABELS[data.subject]}“ nicht:{" "}
               <span style={{ fontFamily: "var(--mono)" }}>{problems.unknownPlaceholders.join(", ")}</span>.
               Sie bleiben im Prompt leer. Schreibweise prüfen oder Bezug ändern.
+            </p>
+          ) : null}
+          {inputWithoutField ? (
+            <p className="meta">
+              Die Vorlage nutzt <span style={{ fontFamily: "var(--mono)" }}>{"{{eingabe}}"}</span>, hat
+              aber keine Beschriftung für das freie Eingabefeld. Ohne sie bietet die Werkbank kein Feld
+              an und die Stelle bleibt leer.
             </p>
           ) : null}
           {problems.unknownSnippets.length > 0 ? (
@@ -132,6 +143,19 @@ export default async function PromptTemplateEditPage({
             <label className="f">
               Zweck
               <input className="f" name="purpose" defaultValue={data.purpose} placeholder="Ein Satz: wofür diese Vorlage da ist" />
+            </label>
+            <label className="f" style={{ gridColumn: "1 / -1" }}>
+              Freies Eingabefeld
+              <input
+                className="f"
+                name="inputLabel"
+                defaultValue={data.inputLabel}
+                placeholder="z. B. „Worum soll es gehen?“ — leer lassen, wenn die Vorlage keins braucht"
+              />
+              <span className="meta">
+                Gesetzt zeigt die Werkbank ein Textfeld mit dieser Beschriftung. Was du dort
+                schreibst, steht im Prompt als <code>{"{{eingabe}}"}</code>.
+              </span>
             </label>
           </div>
 

@@ -26,6 +26,8 @@ export interface PromptTemplateRow {
   body: string;
   withIdentities: boolean;
   aspect: string;
+  /** Beschriftung des freien Eingabefelds; leer = kein Feld anbieten. */
+  inputLabel: string;
   active: boolean;
   sortOrder: number;
 }
@@ -69,6 +71,7 @@ function toTemplate(row: {
   body: string;
   withIdentities: boolean;
   aspect: string | null;
+  inputLabel: string | null;
   active: boolean;
   sortOrder: number;
 }): PromptTemplateRow {
@@ -82,6 +85,7 @@ function toTemplate(row: {
     body: row.body,
     withIdentities: row.withIdentities,
     aspect: row.aspect ?? "",
+    inputLabel: row.inputLabel ?? "",
     active: row.active,
     sortOrder: row.sortOrder,
   };
@@ -311,6 +315,8 @@ export interface PromptValuesInput {
   subjectId: string;
   identityIds: string[];
   aspect: string;
+  /** Freie Eingabe aus der Werkbank; füllt {{eingabe}}. */
+  input: string;
   now: Date;
 }
 
@@ -335,6 +341,7 @@ export async function buildPromptValues(input: PromptValuesInput): Promise<Promp
 
   return {
     ...commonValues({ now: input.now, siteUrl: siteOrigin(), aspect: input.aspect }),
+    eingabe: input.input,
     ...identityValues(identities),
     ...subjectValues,
   };

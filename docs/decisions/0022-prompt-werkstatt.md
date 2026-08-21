@@ -30,6 +30,11 @@ zusammengesetzt. Kein Modellaufruf.
   neu aus Vorlage plus aktuellen Daten.
 - Der mitgelieferte Standardsatz liegt in `lib/prompts/defaults.ts` und wird im
   Adminbereich per Knopfdruck eingespielt. Er ergänzt nur, was fehlt.
+- Der Satz kommt **fertig formuliert**: 10 Bausteine, 14 Bild- und 18
+  Textvorlagen. Sein Inhalt ist nicht neu erfunden, sondern zusammengezogen aus
+  dem, was für die Website ohnehin schon galt — Bildstile, Schreibstimme,
+  Verbotslisten, Plattformregeln —, das bisher über Skills und
+  Markdown-Dateien verteilt lag.
 
 Gegen die Alternative, den Prompt von Microsoft Foundry ausformulieren zu
 lassen (die Anbindung gibt es für Übersetzungen bereits).

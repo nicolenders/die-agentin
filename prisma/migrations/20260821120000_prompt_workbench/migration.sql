@@ -23,6 +23,7 @@ BEGIN
             [body] NVARCHAR(Max) NOT NULL,
             [withIdentities] BIT NOT NULL CONSTRAINT [PromptTemplate_withIdentities_df] DEFAULT 0,
             [aspect] NVARCHAR(1000),
+            [inputLabel] NVARCHAR(1000),
             [active] BIT NOT NULL CONSTRAINT [PromptTemplate_active_df] DEFAULT 1,
             [sortOrder] INT NOT NULL CONSTRAINT [PromptTemplate_sortOrder_df] DEFAULT 0,
             [createdAt] DATETIME2 NOT NULL CONSTRAINT [PromptTemplate_createdAt_df] DEFAULT CURRENT_TIMESTAMP,

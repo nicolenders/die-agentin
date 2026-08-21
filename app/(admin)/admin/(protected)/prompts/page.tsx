@@ -43,9 +43,17 @@ function asList(value: string | string[] | undefined): string[] {
 export default async function PromptsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ v?: string; e?: string; i?: string | string[]; ok?: string; err?: string }>;
+  searchParams: Promise<{
+    v?: string;
+    e?: string;
+    i?: string | string[];
+    t?: string;
+    ok?: string;
+    err?: string;
+  }>;
 }) {
-  const { v, e, i, ok, err } = await searchParams;
+  const { v, e, i, t, ok, err } = await searchParams;
+  const freeInput = (t ?? "").trim();
 
   let templates: PromptTemplateRow[] = [];
   let dbError = false;
@@ -81,6 +89,7 @@ export default async function PromptsPage({
         subjectId,
         identityIds,
         aspect: selected.aspect,
+        input: freeInput,
         now: new Date(),
       });
       const snippets = await getPromptSnippets();
@@ -91,6 +100,7 @@ export default async function PromptsPage({
   }
 
   const needsSubject = selected !== null && selected.subject !== "NONE" && !subjectId;
+  const needsInput = selected !== null && selected.inputLabel !== "" && freeInput === "";
   const labels = selected
     ? new Map(
         placeholdersFor(selected.subject, selected.withIdentities).map((p) => [p.key, p.label]),
@@ -198,6 +208,13 @@ export default async function PromptsPage({
               </fieldset>
             ) : null}
 
+            {selected.inputLabel ? (
+              <label className="f" style={{ marginTop: 14 }}>
+                {selected.inputLabel}
+                <textarea className="f" name="t" defaultValue={freeInput} rows={3} />
+              </label>
+            ) : null}
+
             <div style={{ marginTop: 14, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <button className="btn solid" type="submit">Prompt erzeugen</button>
               {selected.purpose ? <span className="meta">{selected.purpose}</span> : null}
@@ -216,6 +233,12 @@ export default async function PromptsPage({
                 <p className="meta" style={{ marginBottom: 10 }}>
                   Noch kein {SUBJECT_LABELS[selected.subject]} gewählt — unten steht nur der feste Teil
                   der Vorlage. Wähl oben einen aus, dann füllen sich die Angaben.
+                </p>
+              ) : null}
+              {needsInput ? (
+                <p className="meta" style={{ marginBottom: 10 }}>
+                  Diese Vorlage erwartet noch eine Eingabe: „{selected.inputLabel}“. Ohne sie fehlt dem
+                  Prompt der eigentliche Auftrag.
                 </p>
               ) : null}
 

@@ -35,6 +35,7 @@ function templateData(formData: FormData) {
     body: String(formData.get("body") ?? "").trim(),
     withIdentities: bool(formData, "withIdentities"),
     aspect: str(formData, "aspect") || null,
+    inputLabel: str(formData, "inputLabel") || null,
     active: bool(formData, "active"),
   };
 }
@@ -85,6 +86,7 @@ export async function installDefaultPrompts(): Promise<void> {
           body: template.body,
           withIdentities: template.withIdentities,
           aspect: template.aspect ?? null,
+          inputLabel: template.inputLabel ?? null,
           sortOrder: index,
         },
       });
@@ -199,6 +201,7 @@ export async function duplicatePromptTemplate(formData: FormData): Promise<void>
           body: source.body,
           withIdentities: source.withIdentities,
           aspect: source.aspect,
+          inputLabel: source.inputLabel,
           // Die Kopie startet ausgeblendet: erst ändern, dann in der Werkbank
           // anbieten.
           active: false,

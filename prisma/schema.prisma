@@ -936,6 +936,11 @@ model PromptTemplate {
   withIdentities Boolean @default(false)
   // Seitenverhältnis als Anzeige- und Platzhalterwert („4:5"), rein textlich.
   aspect         String?
+  // Beschriftung eines freien Eingabefelds in der Werkbank. Gesetzt heißt: Die
+  // Vorlage braucht etwas, das in keinem Datensatz steht — ein Thema, einen
+  // Rohentwurf, eine Frage. Der eingegebene Text füllt {{eingabe}}. Leer heißt:
+  // kein Feld anbieten.
+  inputLabel     String?
 
   active    Boolean  @default(true)
   sortOrder Int      @default(0)

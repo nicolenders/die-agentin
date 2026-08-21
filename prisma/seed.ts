@@ -727,6 +727,7 @@ async function main() {
         body: template.body,
         withIdentities: template.withIdentities,
         aspect: template.aspect ?? null,
+        inputLabel: template.inputLabel ?? null,
         sortOrder: index,
       },
     });

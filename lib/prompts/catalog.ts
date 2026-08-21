@@ -21,6 +21,10 @@ export const COMMON_PLACEHOLDERS: PlaceholderDef[] = [
   { key: "heute", label: "Heutiges Datum" },
   { key: "jahr", label: "Laufendes Jahr" },
   { key: "format", label: "Seitenverhältnis der Vorlage („4:5“)" },
+  {
+    key: "eingabe",
+    label: "Was du in der Werkbank ins freie Feld schreibst (nur mit Beschriftung)",
+  },
 ];
 
 /** Angeboten, sobald die Vorlage Identitäten einbezieht. Mehrere Identitäten

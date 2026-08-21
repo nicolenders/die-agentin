@@ -28,9 +28,62 @@ describe("Standardsatz", () => {
     }
   });
 
-  it("hängt an jede Bildvorlage den Stil-Baustein", () => {
+  it("gibt jeder Bildvorlage genau einen Stil-Baustein und die Verbotsliste", () => {
+    const styles = snippetKeys.filter((k) => k.startsWith("stil-"));
+    // Das Porträt zeigt bewusst ein Gesicht und kann die gemeinsame
+    // Verbotsliste deshalb nicht anhängen; die übrigen Verbote stehen dort
+    // ausgeschrieben im Vorlagentext.
+    const ohneVerbotsliste = ["bild-portrait-marke"];
     for (const t of DEFAULT_TEMPLATES.filter((x) => x.kind === "IMAGE")) {
-      expect(t.body, t.key).toContain("{{baustein.stil}}");
+      const used = styles.filter((k) => t.body.includes(`{{baustein.${k}}}`));
+      expect(used, `${t.key} braucht genau einen Stil-Baustein`).toHaveLength(1);
+      if (ohneVerbotsliste.includes(t.key)) {
+        expect(t.body, `${t.key} braucht wenigstens das Textverbot`).toContain("No text");
+        continue;
+      }
+      expect(t.body, `${t.key} braucht die Verbotsliste`).toContain("{{baustein.verbote-bild}}");
+    }
+  });
+
+  it("gibt jeder Textvorlage die Schreibstimme oder einen Grund, sie wegzulassen", () => {
+    // Ausnahmen: Vorlagen, deren Ergebnis kein Fließtext in Nicoles Stimme ist,
+    // sondern eine Zuordnung, eine Übertragung oder ein Alternativtext.
+    const ohneStimme = [
+      // Dritte Person: Veranstalter übernehmen Bios so, die Ich-Stimme passt nicht.
+      "text-speaker-bio",
+      "text-depesche-bildidee",
+      "text-depesche-metadaten",
+      "text-depesche-englisch",
+      "text-briefing-englisch",
+      "text-alternativtext",
+    ];
+    for (const t of DEFAULT_TEMPLATES.filter((x) => x.kind === "TEXT")) {
+      if (ohneStimme.includes(t.key)) continue;
+      expect(t.body, `${t.key} ohne Schreibstimme`).toContain("{{baustein.stimme}}");
+    }
+  });
+
+  it("setzt im deutschen Vorlagentext keine Geviertstriche", () => {
+    // Nicoles Stilregel gilt für ihre Texte — und ein Anweisungstext voller
+    // Geviertstriche zieht das Modell dazu, im Ergebnis selbst welche zu
+    // setzen. Bildprompts sind englisch und davon nicht betroffen.
+    const deutsch = [
+      ...DEFAULT_TEMPLATES.filter((t) => t.kind === "TEXT").map((t) => [t.key, t.body] as const),
+      ...DEFAULT_SNIPPETS.filter((s) => !s.key.startsWith("stil-") && s.key !== "verbote-bild").map(
+        (s) => [s.key, s.body] as const,
+      ),
+    ];
+    for (const [key, body] of deutsch) {
+      expect(body, `${key} enthält einen Geviertstrich`).not.toContain("—");
+    }
+  });
+
+  it("bietet ein freies Eingabefeld genau dann an, wenn die Vorlage es nutzt", () => {
+    for (const t of DEFAULT_TEMPLATES) {
+      const usesInput = t.body.includes("{{eingabe}}");
+      expect(Boolean(t.inputLabel), `${t.key}: Beschriftung und Nutzung passen nicht zusammen`).toBe(
+        usesInput,
+      );
     }
   });
 

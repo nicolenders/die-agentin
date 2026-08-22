@@ -945,3 +945,26 @@ ergänzt zwei Spalten und legt die fehlenden Aufgaben an. Manuelle Ausführung:
 - `/einsaetze` am Telefon: wieder mit Filtern und allen Einsätzen, voreingestellt
   auf das laufende Jahr. Vorher zeigte das Telefon nur Anstehendes und bot
   keinen Filter an.
+
+## Material am Briefing (12.09.2026)
+
+Zu einem Briefing gehört mehr als der Foliensatz: die Anleitung für die Demo,
+die eigenen Notizen, die Beispieldateien, die Aufzeichnung. Das lag bisher
+nirgends — jetzt hängt es am Briefing.
+
+- Neues Modell `TalkAttachment` (Migration `20260912120000_talk_attachments`,
+  rein additiv). Beliebig viele Dateien je Briefing, mit Titel, Art
+  (Anleitung/Notizen/Demo-Datei/Video/Sonstiges), Notiz und Reihenfolge.
+- Upload über denselben mehrteiligen Weg wie die Foliensätze
+  (`lib/media/chunked-upload.ts`, jetzt mit `assembleAndMeasure` für Dateien,
+  deren Inneres sich nicht prüfen lässt). Bis 500 MB je Datei, Stücke von 4 MB.
+- Zugelassen wird über die **Endung**, nicht über den vom Browser gemeldeten
+  Typ (`lib/briefings/attachments.ts`, unit-getestet). Dokumente, Bilder, Video,
+  Ton und ZIP; ohne SVG und ohne Ausführbares.
+- Ausgeliefert wird über `/api/admin/briefings/files/[id]` mit Rollenprüfung,
+  nicht über den öffentlichen Medien-Proxy: Notizen und Demo-Dateien sind
+  interne Ablage, und eine schwer zu erratende Adresse ist kein Zugriffsschutz.
+  Immer als Download; nur Bilder dürfen für die Vorschau inline erscheinen.
+- Adminsuche findet das Material über Titel, Notiz, Dateiname und den Titel des
+  Briefings — „wo lag noch mal die Demo zu X?" ist genau die Frage dafür.
+- Nichts davon erscheint auf der öffentlichen Website.

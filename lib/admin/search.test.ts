@@ -8,6 +8,7 @@ import {
   countByEntity,
   type SearchHit,
   previewForFile,
+  previewForAttachment,
 } from "./search";
 
 describe("normalizeQuery", () => {
@@ -104,5 +105,32 @@ describe("previewForFile", () => {
 
   it("behandelt Unbekanntes als Foliensatz, statt zu raten", () => {
     expect(previewForFile("ohne-endung").kind).toBe("slides");
+  });
+});
+
+describe("previewForAttachment", () => {
+  it("zeigt Bilder als Bild", () => {
+    expect(previewForAttachment("screenshot.png", "image/png").kind).toBe("image");
+    expect(previewForAttachment("demo.webp", "image/webp").kind).toBe("image");
+  });
+
+  it("erkennt PDF und PowerPoint", () => {
+    expect(previewForAttachment("anleitung.pdf", "application/pdf")).toEqual({
+      kind: "pdf",
+      label: "PDF",
+    });
+    expect(previewForAttachment("deck.pptx", "application/octet-stream").label).toBe("PPTX");
+  });
+
+  it("rät bei allem anderen nicht, sondern nennt die Endung", () => {
+    expect(previewForAttachment("demo.mp4", "video/mp4")).toEqual({ kind: "file", label: "MP4" });
+    expect(previewForAttachment("material.zip", "application/zip").label).toBe("ZIP");
+  });
+
+  it("kommt ohne Endung aus, ohne eine zu erfinden", () => {
+    expect(previewForAttachment("liesmich", "application/octet-stream")).toEqual({
+      kind: "file",
+      label: "DATEI",
+    });
   });
 });

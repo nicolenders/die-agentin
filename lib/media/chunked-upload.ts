@@ -39,15 +39,22 @@ export async function guardUpload(request: Request, bucket: string): Promise<Res
   return null;
 }
 
-/** Ein Teilstück entgegennehmen und in der Ablage zwischenlegen. */
+/**
+ * Ein Teilstück entgegennehmen und in der Ablage zwischenlegen.
+ *
+ * `maxParts` hängt an der Obergrenze der jeweiligen Datei: Eine Foliensvorlage
+ * darf 100 MB haben, ein Demo-Video 500 — beides mit derselben Teilgröße, also
+ * mit unterschiedlich vielen Teilen.
+ */
 export async function receivePart(
   request: Request,
   target: string,
   uploadId: string,
   rawIndex: string | null,
+  maxParts: number = MAX_PARTS,
 ): Promise<Response> {
   const index = Number(rawIndex);
-  if (!Number.isInteger(index) || index < 0 || index >= MAX_PARTS) {
+  if (!Number.isInteger(index) || index < 0 || index >= maxParts) {
     return NextResponse.json({ error: "Teilnummer fehlt oder ist ungültig." }, { status: 400 });
   }
 
@@ -89,6 +96,72 @@ export async function receivePart(
 export type AssembleResult =
   | { ok: true; path: string; size: number }
   | { ok: false; status: number; error: string };
+
+/**
+ * Setzt die Teile zusammen und prüft NUR die Größe der abgelegten Datei gegen
+ * die angekündigte. Für Dateien, deren Inneres sich nicht sinnvoll prüfen lässt
+ * — ein Video, ein ZIP, eine Textdatei.
+ *
+ * Was diese Prüfung leistet: Sie erkennt einen abgerissenen Upload. Was sie
+ * nicht leistet: eine Aussage darüber, ob der Inhalt zur Endung passt. Deshalb
+ * ist die Endungsliste die eigentliche Sperre, und ausgeliefert wird
+ * ausschließlich als Download mit Rollenprüfung.
+ */
+export async function assembleAndMeasure(options: {
+  target: string;
+  uploadId: string;
+  parts: number;
+  expectedSize: number;
+  contentType: string;
+  maxParts: number;
+  maxBytes: number;
+  tooLarge: string;
+}): Promise<AssembleResult> {
+  const { target, uploadId, parts, expectedSize, contentType, maxParts, maxBytes, tooLarge } = options;
+  if (!Number.isInteger(parts) || parts < 1 || parts > maxParts) {
+    return { ok: false, status: 400, error: "Anzahl der Teile fehlt oder ist ungültig." };
+  }
+  if (!Number.isInteger(expectedSize) || expectedSize < 1) {
+    return { ok: false, status: 400, error: "Dateigröße fehlt oder ist ungültig." };
+  }
+  if (expectedSize > maxBytes) {
+    return { ok: false, status: 413, error: tooLarge };
+  }
+
+  let storedPath: string;
+  try {
+    const stored = await commitParts(target, uploadId, parts, contentType);
+    storedPath = stored.path;
+  } catch (error) {
+    console.error("[upload] Teile konnten nicht zusammengesetzt werden:", error);
+    await discardParts(uploadId);
+    return {
+      ok: false,
+      status: 502,
+      error: "Die Teile konnten nicht zusammengesetzt werden. Bitte erneut hochladen.",
+    };
+  }
+
+  const size = await mediaSize(storedPath);
+  if (size == null) {
+    await deleteMedia(storedPath);
+    return {
+      ok: false,
+      status: 502,
+      error: "Die abgelegte Datei ist nicht auffindbar. Bitte erneut hochladen.",
+    };
+  }
+  if (size !== expectedSize) {
+    // Eine halbe Datei ist schlimmer als gar keine.
+    await deleteMedia(storedPath);
+    return {
+      ok: false,
+      status: 400,
+      error: `Unvollständig angekommen (${size} statt ${expectedSize} Bytes). Bitte erneut hochladen.`,
+    };
+  }
+  return { ok: true, path: storedPath, size };
+}
 
 /**
  * Setzt die Teile zusammen und prüft **die abgelegte Datei**: Größe gegen die

@@ -34,7 +34,7 @@ export const ENTITY_LABEL: Record<SearchEntity, string> = {
  * sähe man den Inhalt.
  */
 export interface SearchPreview {
-  kind: "image" | "pdf" | "slides";
+  kind: "image" | "pdf" | "slides" | "file";
   /** Nur bei Bildern gesetzt. */
   url: string | null;
   alt: string;
@@ -63,6 +63,26 @@ export function previewForFile(fileName: string): { kind: "pdf" | "slides"; labe
   if (ext === "pdf") return { kind: "pdf", label: "PDF" };
   if (ext === "ppt") return { kind: "slides", label: "PPT" };
   return { kind: "slides", label: "PPTX" };
+}
+
+/**
+ * Vorschau für das Material an einem Briefing. Anders als bei Folien kann hier
+ * alles Mögliche liegen — ein Video, ein ZIP, eine Textdatei. Bilder bekommen
+ * ihr Vorschaubild, alles andere sein Dateikürzel; „PPTX" für ein MP4 zu raten
+ * wäre schlimmer als gar kein Hinweis.
+ */
+export function previewForAttachment(
+  fileName: string,
+  mime: string,
+): { kind: SearchPreview["kind"]; label: string } {
+  if (mime.startsWith("image/")) return { kind: "image", label: "BILD" };
+  // Ohne Punkt gibt es keine Endung — dann lieber „DATEI" als die ersten vier
+  // Buchstaben des Namens, die nach einem Kürzel aussähen und keines sind.
+  const parts = fileName.toLowerCase().split(".");
+  const ext = parts.length > 1 ? (parts.pop() ?? "").slice(0, 4) : "";
+  if (ext === "pdf") return { kind: "pdf", label: "PDF" };
+  if (ext === "ppt" || ext === "pptx") return { kind: "slides", label: ext.toUpperCase() };
+  return { kind: "file", label: ext ? ext.toUpperCase() : "DATEI" };
 }
 
 /** Kleinschreibung + gestutzte Ränder — die Basis jedes Vergleichs. */

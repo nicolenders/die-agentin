@@ -31,6 +31,10 @@ Alle vier verschwinden — Tabellen, Masken und Lesestellen. Übrig bleiben die
 Fachgebiete, und die ziehen aus den Stammdaten in die Einstellungen um
 (Register „Fachgebiete"). `/admin/struktur` bleibt als Weiterleitung stehen.
 
+Nicole hat den Wegfall am 22.08.2026 ausdrücklich bestätigt, nachdem der
+Bestand vor dem Merge noch einmal zur Prüfung stand — auch für die
+Weiterleitungen, die als Einzige eine öffentliche Wirkung hätten haben können.
+
 ## Begründung
 
 Jede dieser Listen kostete Pflegezeit und Aufmerksamkeit in der Navigation,

@@ -70,7 +70,7 @@ const PATHS: Record<EntityIconName, React.ReactNode> = {
       <circle cx="17.4" cy="7.2" r="1.3" fill="currentColor" stroke="none" />
     </>
   ),
-  // Redaktionsplan — Kalenderraster.
+  // Terminkalender — Kalenderraster.
   plan: (
     <>
       <rect x="3.5" y="5" width="17" height="15.5" rx="2" />

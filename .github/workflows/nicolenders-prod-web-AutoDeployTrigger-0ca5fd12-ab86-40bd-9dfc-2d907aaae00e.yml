@@ -65,6 +65,11 @@ jobs:
       # abgeleitet. Erst setzen, wenn die Domain auf der Container App
       # gebunden ist — sonst bekommt die einzige erreichbare Adresse ein
       # noindex.
+      #
+      # SMTP_* speist die Erinnerungsmail an nahende Veröffentlichungsdaten
+      # (ADR 0023). Host, Port und Absender stehen als Repository-Variablen,
+      # Benutzer und Passwort als Secrets. Ohne SMTP_HOST/SMTP_FROM wird nichts
+      # verschickt — die Einstellungen sagen das in der Oberfläche.
       - name: Apply application configuration
         env:
           SITE_URL: ${{ vars.SITE_URL || 'https://nicolenders-prod-web.wittybush-b6a6f63e.westeurope.azurecontainerapps.io' }}
@@ -76,7 +81,8 @@ jobs:
             --secrets \
               auth-secret="${{ secrets.AUTH_SECRET }}" \
               entra-client-secret="${{ secrets.ENTRA_CLIENT_SECRET }}" \
-              linkedin-client-secret="${{ secrets.LINKEDIN_CLIENT_SECRET }}"
+              linkedin-client-secret="${{ secrets.LINKEDIN_CLIENT_SECRET }}" \
+              smtp-password="${{ secrets.SMTP_PASSWORD }}"
 
           az containerapp update \
             --name nicolenders-prod-web \
@@ -91,4 +97,9 @@ jobs:
               "AUTH_MICROSOFT_ENTRA_ID_SECRET=secretref:entra-client-secret" \
               "ADMIN_OBJECT_IDS=${{ secrets.ADMIN_OBJECT_IDS }}" \
               "LINKEDIN_CLIENT_ID=${{ secrets.LINKEDIN_CLIENT_ID }}" \
-              "LINKEDIN_CLIENT_SECRET=secretref:linkedin-client-secret"
+              "LINKEDIN_CLIENT_SECRET=secretref:linkedin-client-secret" \
+              "SMTP_HOST=${{ vars.SMTP_HOST }}" \
+              "SMTP_PORT=${{ vars.SMTP_PORT }}" \
+              "SMTP_FROM=${{ vars.SMTP_FROM }}" \
+              "SMTP_USER=${{ secrets.SMTP_USER }}" \
+              "SMTP_PASSWORD=secretref:smtp-password"

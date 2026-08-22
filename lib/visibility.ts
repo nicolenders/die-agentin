@@ -22,14 +22,3 @@ export function isPublic(
 export function publishedWhere(now: Date = new Date()) {
   return { status: "PUBLISHED", publishedAt: { lte: now } } as const;
 }
-
-/** Gehört ein Eintrag in den Redaktionsplan? (Entwurf, terminiert oder zukünftig live) */
-export function isPlanned(
-  status: string,
-  publishedAt: Date | null | undefined,
-  now: Date = new Date(),
-): boolean {
-  if (status === "DRAFT" || status === "SCHEDULED") return true;
-  if (status === "PUBLISHED" && publishedAt != null && publishedAt.getTime() > now.getTime()) return true;
-  return false;
-}

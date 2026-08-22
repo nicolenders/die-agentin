@@ -13,15 +13,15 @@ export interface AdminNavItem {
 
 // Vier Gruppen, sortiert nach Pflegehäufigkeit: das laufende Geschäft unter
 // „Neuigkeiten" ganz oben, die selten geänderten Seiten darunter, dann alles
-// über Nicole selbst, zuletzt die Technik. „Kanäle" ist kein eigener Punkt mehr,
-// sondern ein Register in den Einstellungen — dort wird ohnehin nur gelegentlich
-// etwas nachgetragen.
+// über Nicole selbst, zuletzt die Technik. „Kanäle" und „Stammdaten" sind keine
+// eigenen Punkte mehr, sondern Register in den Einstellungen — dort wird ohnehin
+// nur gelegentlich etwas nachgetragen.
 export const adminNav: AdminNavItem[] = [
   { href: "/admin", label: "Einsatzzentrale", icon: "dashboard" },
 
-  // Neuigkeiten — was laufend gepflegt wird. Der Redaktionsplan steht vorn: er
+  // Neuigkeiten — was laufend gepflegt wird. Der Terminkalender steht vorn: er
   // ist der Einstieg in die Woche, nicht das Nachschlagewerk.
-  { href: "/admin/redaktionsplan", label: "Redaktionsplan", icon: "plan", section: "Neuigkeiten" },
+  { href: "/admin/terminkalender", label: "Terminkalender", icon: "plan", section: "Neuigkeiten" },
   { href: "/admin/einsaetze", label: "Einsätze", icon: "mission" },
   { href: "/admin/briefings", label: "Briefings", icon: "briefing" },
   { href: "/admin/depeschen", label: "Depeschen", icon: "dispatch" },
@@ -42,7 +42,6 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/statistik", label: "Auswertung", icon: "stats", section: "System" },
   { href: "/admin/medien", label: "Medien", icon: "media" },
   { href: "/admin/archiv", label: "Archiv", icon: "archive" },
-  { href: "/admin/struktur", label: "Stammdaten", icon: "structure" },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: "settings" },
 ];
 

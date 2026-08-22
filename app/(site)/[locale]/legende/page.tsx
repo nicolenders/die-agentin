@@ -149,15 +149,6 @@ export default async function LegendePage({
                 )
               ) : null}
             </div>
-            <a
-              className="btn ghost sm"
-              href={`/${locale}/cv`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ flexShrink: 0, marginTop: 4 }}
-            >
-              {isDe ? "CV abrufen" : "Get CV"} ↗
-            </a>
           </div>
           <p className="lead" style={{ marginTop: 16 }}>{renderInlineFieldContent(parseRichValue(legend.lead))}</p>
           {Object.keys(social).length > 0 || contact.email ? (

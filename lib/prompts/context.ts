@@ -138,11 +138,19 @@ export interface MissionInput {
   /** Bereits auf „Deutsch“/„Englisch“ gebrachte Vortragssprache. */
   languageLabel: string;
   durationMin: number | null;
-  attendeeCount: number | null;
+  /** Publikum: vor Ort und zugeschaltet. Der Platzhalter nennt die Summe. */
+  attendeesOnsite: number | null;
+  attendeesRemote: number | null;
   eventUrl: string | null;
   talkTitles: string[];
   eventTextDe: string;
   talkTextDe: string;
+}
+
+/** Publikum als eine Zahl: vor Ort plus zugeschaltet. Ohne Angaben leer. */
+function audienceTotal(mission: MissionInput): string {
+  const total = (mission.attendeesOnsite ?? 0) + (mission.attendeesRemote ?? 0);
+  return total > 0 ? String(total) : "";
 }
 
 export function missionValues(mission: MissionInput): PromptValues {
@@ -161,7 +169,7 @@ export function missionValues(mission: MissionInput): PromptValues {
     "einsatz.art": SESSION_TYPE_LABELS[type as SessionType] ?? type,
     "einsatz.sprache": mission.languageLabel,
     "einsatz.dauer": mission.durationMin ? String(mission.durationMin) : "",
-    "einsatz.publikum": mission.attendeeCount ? String(mission.attendeeCount) : "",
+    "einsatz.publikum": audienceTotal(mission),
     "einsatz.briefing": joinAnd(mission.talkTitles),
     "einsatz.beschreibung": shorten(richValueToPlain(mission.eventTextDe), 900),
     "einsatz.vortragstext": shorten(richValueToPlain(mission.talkTextDe), 900),
@@ -212,7 +220,6 @@ export interface DispatchInput {
   bodyDe: string;
   bodyEn: string;
   topics: string[];
-  tags: string[];
   sourceTitle: string | null;
   sourceUrl: string | null;
   publishedAt: Date | null;
@@ -233,7 +240,6 @@ export function dispatchValues(dispatch: DispatchInput): PromptValues {
     "depesche.art":
       DISPATCH_FORMAT_LABELS[dispatch.format as DispatchFormat] ?? dispatch.format.trim(),
     "depesche.themen": joinList(dispatch.topics),
-    "depesche.schlagworte": joinList(dispatch.tags),
     "depesche.text": shorten(richValueToPlain(dispatch.bodyDe), 4000),
     "depesche.text_en": shorten(richValueToPlain(dispatch.bodyEn), 4000),
     "depesche.quelle": source,

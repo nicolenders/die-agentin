@@ -123,6 +123,16 @@ export async function updateDispatch(formData: FormData): Promise<void> {
   const trans = translations(formData, c.format);
   if (trans.length === 0 || trans[0]!.locale !== "de") redirect(`${EDIT}?id=${id}&err=missing-fields`);
 
+  // Wird der Termin verschoben, gilt die Erinnerung als verbraucht: sie wird
+  // zurückgesetzt, damit der NEUE Termin wieder erinnert wird.
+  let resetReminder = false;
+  try {
+    const before = await db.dispatch.findUnique({ where: { id }, select: { publishAt: true } });
+    resetReminder = (before?.publishAt?.getTime() ?? null) !== (c.publishedAt?.getTime() ?? null);
+  } catch {
+    // Kann der Vorzustand nicht gelesen werden, bleibt die Erinnerung stehen.
+  }
+
   try {
     await db.$transaction([
       db.dispatch.update({
@@ -130,6 +140,7 @@ export async function updateDispatch(formData: FormData): Promise<void> {
         data: {
           ...c,
           publishAt: c.publishedAt,
+          ...(resetReminder ? { reminderSentAt: null } : {}),
           identities: { set: ids(formData, "identityIds").map((x) => ({ id: x })) },
           topics: { set: ids(formData, "topicIds").map((x) => ({ id: x })) },
           focusTopics: { set: ids(formData, "focusTopicIds").map((x) => ({ id: x })) },

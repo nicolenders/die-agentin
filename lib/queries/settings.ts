@@ -8,6 +8,14 @@ import {
   type SlideTemplateSet,
 } from "@/lib/slide-templates";
 import { locales } from "@/lib/i18n/config";
+import {
+  DEFAULT_REMINDER_EMAIL,
+  DEFAULT_REMINDER_LEAD_DAYS,
+  REMINDER_EMAIL_KEY,
+  REMINDER_ENABLED_KEY,
+  REMINDER_LEAD_DAYS_KEY,
+  parseLeadDays,
+} from "@/lib/dispatches/reminder";
 
 // Seiteneinstellungen als Schlüssel/Wert. Aktuell die Social-Media-Profile im
 // Footer — von Nicole in den Einstellungen pflegbar, ohne Deployment.
@@ -60,6 +68,32 @@ export async function getContactInfo(): Promise<ContactInfo> {
     return await loadContactInfo();
   } catch {
     return { email: "", postalAddress: "" };
+  }
+}
+
+// Erinnerung an nahende Veröffentlichungsdaten von Depeschen (SiteSettings).
+// Vorlaufzeit und Empfängeradresse sind in den Einstellungen pflegbar; ohne
+// Pflege gelten die Standardwerte aus lib/dispatches/reminder.
+export interface ReminderSettings {
+  enabled: boolean;
+  leadDays: number;
+  email: string;
+}
+
+export async function getReminderSettings(): Promise<ReminderSettings> {
+  const keys = [REMINDER_ENABLED_KEY, REMINDER_LEAD_DAYS_KEY, REMINDER_EMAIL_KEY];
+  try {
+    const rows = await db.siteSetting.findMany({ where: { key: { in: keys } }, select: { key: true, value: true } });
+    const map = new Map(rows.map((r) => [r.key, r.value.trim()]));
+    const enabledRaw = map.get(REMINDER_ENABLED_KEY);
+    return {
+      // Ohne Eintrag ist die Erinnerung an: sie ist der Zweck der Funktion.
+      enabled: enabledRaw == null ? true : enabledRaw === "true",
+      leadDays: parseLeadDays(map.get(REMINDER_LEAD_DAYS_KEY)),
+      email: map.get(REMINDER_EMAIL_KEY) || DEFAULT_REMINDER_EMAIL,
+    };
+  } catch {
+    return { enabled: true, leadDays: DEFAULT_REMINDER_LEAD_DAYS, email: DEFAULT_REMINDER_EMAIL };
   }
 }
 

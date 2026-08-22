@@ -15,6 +15,15 @@ import { SPEAKER_FORMATS_TAG } from "@/lib/queries/speaker-formats";
 import { toDurationUnit } from "@/lib/briefings/speaker-formats";
 import { locales } from "@/lib/i18n/config";
 import { serializeRichValue } from "@/lib/content/rich";
+import { slugify } from "@/lib/slug";
+import { tags } from "@/lib/cache";
+import {
+  MAX_REMINDER_LEAD_DAYS,
+  MIN_REMINDER_LEAD_DAYS,
+  REMINDER_EMAIL_KEY,
+  REMINDER_ENABLED_KEY,
+  REMINDER_LEAD_DAYS_KEY,
+} from "@/lib/dispatches/reminder";
 
 /** Zurück auf das Register, aus dem gespeichert wurde — nicht auf das erste. */
 function tabPath(tab: string): string {
@@ -190,4 +199,122 @@ export async function deleteSpeakerFormat(formData: FormData): Promise<void> {
   }
   if (failed) redirect(`${back}&err=failed`);
   redirect(`${back}&ok=deleted`);
+}
+
+// ---------------------------------------------------------------- Fachgebiete
+
+// Die Stammdaten sind in die Einstellungen gewandert; übrig geblieben ist das
+// Einzige, was dort wirklich gepflegt wird: die Fachgebiete der Depeschen.
+//
+// Zur Benennung: Die Art heißt in der Datenbank weiterhin `DOSSIER`, seit
+// Signale und Dossiers zu Depeschen zusammengeführt wurden (Phase 3). Der
+// gespeicherte Wert bleibt, weil eine Umbenennung nur eine Migration wäre, von
+// der niemand etwas hätte; sichtbar heißt er überall „Fachgebiet".
+
+function invalidateCategoryTags(): void {
+  invalidateTags([
+    tags.dispatchList("de"),
+    tags.dispatchList("en"),
+    tags.dossierList("de"),
+    tags.dossierList("en"),
+  ]);
+}
+
+export async function createCategory(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const back = tabPath("fachgebiete");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) redirect(`${back}&err=missing-fields`);
+
+  let failed = false;
+  try {
+    await db.taxonomy.create({ data: { kind: "DOSSIER", nameDe: name, nameEn: name, slug: slugify(name) } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${back}&err=failed`);
+  invalidateCategoryTags();
+  redirect(`${back}&ok=created`);
+}
+
+export async function renameCategory(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const back = tabPath("fachgebiete");
+  const id = String(formData.get("id") ?? "").trim();
+  const nameDe = String(formData.get("nameDe") ?? "").trim();
+  const nameEn = String(formData.get("nameEn") ?? "").trim() || nameDe;
+  if (!id || !nameDe) redirect(`${back}&err=missing-fields`);
+
+  let failed = false;
+  try {
+    await db.taxonomy.update({ where: { id }, data: { nameDe, nameEn } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${back}&err=failed`);
+  invalidateCategoryTags();
+  redirect(`${back}&ok=updated`);
+}
+
+export async function deleteCategory(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const back = tabPath("fachgebiete");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) redirect(`${back}&err=not-found`);
+
+  // Ein benutztes Fachgebiet wird nicht stillschweigend aus Depeschen entfernt.
+  let inUse = false;
+  try {
+    const [dispatches, dossiers] = await Promise.all([
+      db.dispatch.count({ where: { topics: { some: { id } } } }),
+      db.dossier.count({ where: { categories: { some: { id } } } }),
+    ]);
+    inUse = dispatches + dossiers > 0;
+  } catch {
+    redirect(`${back}&err=failed`);
+  }
+  if (inUse) redirect(`${back}&err=category-in-use`);
+
+  let failed = false;
+  try {
+    await db.taxonomy.delete({ where: { id } });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${back}&err=failed`);
+  invalidateCategoryTags();
+  redirect(`${back}&ok=deleted`);
+}
+
+// -------------------------------------------------------------- Erinnerungen
+
+// Erinnerung an nahende Veröffentlichungsdaten von Depeschen: Vorlaufzeit und
+// Empfängeradresse. Der Versand selbst läuft im Job-Takt (lib/publish/reminders).
+export async function saveReminderSettings(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const back = tabPath("erinnerungen");
+  const email = String(formData.get("reminderEmail") ?? "").trim();
+  const leadRaw = Number.parseInt(String(formData.get("reminderLeadDays") ?? ""), 10);
+  const enabled = formData.get("reminderEnabled") === "on";
+
+  if (enabled && !email) redirect(`${back}&err=missing-fields`);
+  if (!Number.isFinite(leadRaw) || leadRaw < MIN_REMINDER_LEAD_DAYS || leadRaw > MAX_REMINDER_LEAD_DAYS) {
+    redirect(`${back}&err=lead-days-range`);
+  }
+
+  let failed = false;
+  try {
+    for (const [key, value] of [
+      [REMINDER_ENABLED_KEY, String(enabled)],
+      [REMINDER_LEAD_DAYS_KEY, String(leadRaw)],
+      [REMINDER_EMAIL_KEY, email],
+    ] as const) {
+      await db.siteSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+    }
+    invalidateTags([SITE_SETTINGS_TAG]);
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${back}&err=failed`);
+  redirect(`${back}&ok=saved`);
 }

@@ -108,6 +108,35 @@
       "type": "securestring",
       "defaultValue": ""
     },
+    "smtpHost": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SMTP-Server für die Erinnerungsmail. Leer = kein Mailversand."
+      }
+    },
+    "smtpPort": {
+      "type": "string",
+      "defaultValue": "587",
+      "metadata": {
+        "description": "SMTP-Port. 587 = STARTTLS, 465 = direkt verschlüsselt."
+      }
+    },
+    "smtpFrom": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Absender, z. B. \"Die Agentin <zentrale@nicolenders.com>\"."
+      }
+    },
+    "smtpUser": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "smtpPassword": {
+      "type": "securestring",
+      "defaultValue": ""
+    },
     "budgetContactEmail": {
       "type": "string",
       "defaultValue": "",
@@ -356,6 +385,10 @@
             {
               "name": "linkedin-secret",
               "value": "[if(empty(parameters('linkedinClientSecret')), 'unused', parameters('linkedinClientSecret'))]"
+            },
+            {
+              "name": "smtp-password",
+              "value": "[if(empty(parameters('smtpPassword')), 'unused', parameters('smtpPassword'))]"
             }
           ]
         },
@@ -428,6 +461,26 @@
                 {
                   "name": "AZURE_CLIENT_ID",
                   "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-{1}-id', parameters('baseName'), parameters('environmentName'))), '2023-01-31').clientId]"
+                },
+                {
+                  "name": "SMTP_HOST",
+                  "value": "[parameters('smtpHost')]"
+                },
+                {
+                  "name": "SMTP_PORT",
+                  "value": "[parameters('smtpPort')]"
+                },
+                {
+                  "name": "SMTP_FROM",
+                  "value": "[parameters('smtpFrom')]"
+                },
+                {
+                  "name": "SMTP_USER",
+                  "value": "[parameters('smtpUser')]"
+                },
+                {
+                  "name": "SMTP_PASSWORD",
+                  "secretRef": "smtp-password"
                 }
               ]
             }

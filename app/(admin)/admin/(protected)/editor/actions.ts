@@ -24,7 +24,6 @@ export interface SavePostInput {
   postId?: string;
   type: string;
   publishAtLocal?: string;
-  tags?: string;
   missionId?: string | null;
   dossierId?: string | null;
   de: TranslationInput;
@@ -207,7 +206,6 @@ export async function savePost(input: SavePostInput): Promise<SavePostResult> {
       }
     }
 
-    await syncTags(post.id, input.tags ?? "");
 
     await db.auditLog.create({
       data: {
@@ -285,19 +283,3 @@ async function upsertTranslation(
   });
 }
 
-async function syncTags(postId: string, raw: string): Promise<void> {
-  const names = raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  await db.postTag.deleteMany({ where: { postId } });
-  for (const name of names) {
-    const slug = slugify(name);
-    const tag = await db.tag.upsert({
-      where: { slug },
-      create: { slug, nameDe: name, nameEn: name },
-      update: {},
-    });
-    await db.postTag.create({ data: { postId, tagId: tag.id } });
-  }
-}

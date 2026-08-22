@@ -21,9 +21,6 @@ export const tags = {
   identityList: (locale: string) => `list:identities:${locale}`,
   dispatch: (id: string) => `dispatch:${id}`,
   dispatchList: (locale: string) => `list:dispatches:${locale}`,
-  // Slug-Weiterleitungen aus den Stammdaten. Ein Tag genügt: die Tabelle ist
-  // klein und wird selten geändert.
-  redirects: () => `redirects`,
 };
 
 // Vollständiger ISO-8601-Zeitstempel (so serialisiert Prisma `DateTime`).

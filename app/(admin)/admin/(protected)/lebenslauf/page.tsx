@@ -1,5 +1,7 @@
 import Flash from "@/components/admin/Flash";
 import { getResumeForEdit } from "@/lib/queries/resume";
+import { SKILL_LEVELS, SKILL_LEVEL_LABEL } from "@/lib/domain";
+import { computeSkillYears } from "@/lib/resume/skills";
 import {
   saveResumeProfile,
   createResumeEntry,
@@ -16,8 +18,8 @@ type Entry = Awaited<ReturnType<typeof getResumeForEdit>>["entries"][number];
 const SECTIONS: { key: string; label: string; hint: string }[] = [
   { key: "CAREER", label: "Beruflicher Werdegang", hint: "Neueste Station zuerst (kleinste Reihenfolge oben)." },
   { key: "EDUCATION", label: "Ausbildung", hint: "" },
-  { key: "SKILL", label: "Fähigkeiten", hint: "Titel = Kategorie, Beschreibung = Liste der Fähigkeiten." },
-  { key: "PROJECT", label: "Projektreferenzen", hint: "Kunde als Untertitel, Technologien als Tags (Komma-getrennt)." },
+  { key: "SKILL", label: "Fähigkeiten", hint: "Titel = Kategorie, Beschreibung = Liste der Fähigkeiten. Die Jahre rechnen sich aus „von“/„bis“, wenn beides lesbar ist (z. B. 03/2018 – heute)." },
+  { key: "PROJECT", label: "Projektreferenzen", hint: "„Von“/„Bis“ ist DEIN Einsatz im Projekt; die Laufzeit des Projekts steht daneben. Anonyme Kunden erscheinen im Export nur mit ihrer Branche." },
 ];
 
 function tagsToText(json: string | null): string {
@@ -30,6 +32,12 @@ function tagsToText(json: string | null): string {
 }
 
 function EntryFields({ e, section }: { e?: Entry; section: string }) {
+  // Bei Fähigkeiten zeigt das Formular die berechneten Jahre an, sobald sich
+  // der Zeitraum lesen lässt — sonst bleibt das Feld eine freie Eingabe.
+  const derivedYears = section === "SKILL" ? computeSkillYears(e?.periodFrom, e?.periodTo) : null;
+  // Je Eintrag eine eigene id: der Hinweis steht in jeder Zeile einmal, und
+  // doppelte ids würden aria-describedby auf den falschen Text zeigen lassen.
+  const yearsHintId = `skill-years-hint-${e?.id ?? `neu-${section}`}`;
   return (
     <>
       <input type="hidden" name="section" value={section} />
@@ -40,15 +48,17 @@ function EntryFields({ e, section }: { e?: Entry; section: string }) {
           <input className="f" name="title" defaultValue={e?.title ?? ""} required />
         </span>
         <span style={{ flex: "2 1 220px" }}>
-          <label className="f">Untertitel {section === "PROJECT" ? "(Kunde)" : section === "CAREER" ? "(Arbeitgeber)" : ""}</label>
+          <label className="f">
+            {section === "PROJECT" ? "Kunde" : section === "CAREER" ? "Untertitel (Arbeitgeber)" : "Untertitel"}
+          </label>
           <input className="f" name="subtitle" defaultValue={e?.subtitle ?? ""} />
         </span>
-        <span style={{ flex: "0 1 90px" }}>
-          <label className="f">Von</label>
+        <span style={{ flex: "0 1 110px" }}>
+          <label className="f">{section === "PROJECT" ? "Einsatz von" : "Von"}</label>
           <input className="f" name="periodFrom" defaultValue={e?.periodFrom ?? ""} placeholder="03/2018" />
         </span>
-        <span style={{ flex: "0 1 90px" }}>
-          <label className="f">Bis</label>
+        <span style={{ flex: "0 1 110px" }}>
+          <label className="f">{section === "PROJECT" ? "Einsatz bis" : "Bis"}</label>
           <input className="f" name="periodTo" defaultValue={e?.periodTo ?? ""} placeholder="heute" />
         </span>
         <span style={{ flex: "0 1 70px" }}>
@@ -56,6 +66,63 @@ function EntryFields({ e, section }: { e?: Entry; section: string }) {
           <input className="f" name="sortOrder" type="number" defaultValue={e?.sortOrder ?? 0} />
         </span>
       </div>
+
+      {section === "PROJECT" ? (
+        <>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+            <span style={{ flex: "0 1 130px" }}>
+              <label className="f">Projekt von</label>
+              <input className="f" name="projectFrom" defaultValue={e?.projectFrom ?? ""} placeholder="01/2018" />
+            </span>
+            <span style={{ flex: "0 1 130px" }}>
+              <label className="f">Projekt bis</label>
+              <input className="f" name="projectTo" defaultValue={e?.projectTo ?? ""} placeholder="12/2020" />
+            </span>
+            <span style={{ flex: "0 1 150px" }}>
+              <label className="f">Aufwand (PT, ungefähr)</label>
+              <input className="f" name="personDays" type="number" min={0} defaultValue={e?.personDays ?? ""} placeholder="120" />
+            </span>
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+            <input type="checkbox" name="clientAnonymous" defaultChecked={e?.clientAnonymous ?? false} />
+            Kunde anonym — Name erscheint nicht im Export
+          </label>
+          <label className="f">Branche statt Kundenname (bei anonym)</label>
+          <input className="f" name="clientSector" defaultValue={e?.clientSector ?? ""} placeholder="z. B. Energieversorger" />
+        </>
+      ) : null}
+
+      {section === "SKILL" ? (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+          <span style={{ flex: "0 1 150px" }}>
+            <label className="f">Jahre Erfahrung</label>
+            <input
+              className="f"
+              name="skillYears"
+              type="number"
+              min={0}
+              defaultValue={derivedYears ?? e?.skillYears ?? ""}
+              readOnly={derivedYears != null}
+              aria-describedby={yearsHintId}
+            />
+          </span>
+          <span style={{ flex: "1 1 200px" }}>
+            <label className="f">Können</label>
+            <select className="f" name="skillLevel" defaultValue={e?.skillLevel ?? ""}>
+              <option value="">— keine Angabe —</option>
+              {SKILL_LEVELS.map((level) => (
+                <option key={level} value={level}>{SKILL_LEVEL_LABEL[level].de}</option>
+              ))}
+            </select>
+          </span>
+          <p className="meta" id={yearsHintId} style={{ flexBasis: "100%", margin: "4px 0 0" }}>
+            {derivedYears != null
+              ? `Aus „von“/„bis“ berechnet: ${derivedYears} ${derivedYears === 1 ? "Jahr" : "Jahre"}. Zum Ändern den Zeitraum anpassen.`
+              : "Ohne lesbaren Zeitraum gilt diese Eingabe. Lesbar sind z. B. 03/2018, 2018-03, 2018 und „heute“."}
+          </p>
+        </div>
+      ) : null}
+
       {section !== "SKILL" ? (
         <>
           <label className="f">Ort (optional)</label>
@@ -85,8 +152,9 @@ export default async function ResumeAdminPage({
       <h1>Lebenslauf</h1>
       <Flash ok={ok} err={err} />
       <p className="muted">
-        Der klassische Bewerbungs-Lebenslauf. Öffentlich abrufbar über die Legende (Button „CV
-        abrufen“) und druckbar als A4.
+        Der klassische Bewerbungs-Lebenslauf. Er liegt unter <code>/de/cv</code> bzw.
+        <code>/en/cv</code>, wird aber von der Website nicht mehr verlinkt: Du gibst die Adresse
+        gezielt weiter. Druckbar als A4.
       </p>
 
       {/* Export: öffnet einen druckfertigen A4-Auszug in einem neuen Tab

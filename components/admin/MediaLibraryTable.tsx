@@ -68,9 +68,12 @@ export default function MediaLibraryTable({ rows }: { rows: MediaRow[] }) {
         <table className="media-table">
           <thead>
             <tr>
-              <th>Bild</th>
+              {/* Feste Breiten für Bild und Herkunft: Das Vorschaubild braucht
+                  Platz für Querformate, und „KI-generiert" darf im Auswahlfeld
+                  nicht dreizeilig umbrechen. */}
+              <th style={{ width: 176 }}>Bild</th>
               <th>Alt-Text</th>
-              <th>Herkunft</th>
+              <th style={{ width: 170 }}>Herkunft</th>
               <th>Größe</th>
               <th>Hochgeladen</th>
               <th>Verwendet in</th>
@@ -80,7 +83,7 @@ export default function MediaLibraryTable({ rows }: { rows: MediaRow[] }) {
           <tbody>
             {filtered.map((r) => (
               <tr key={r.id}>
-                <td>{r.thumb}</td>
+                <td style={{ width: 176 }}>{r.thumb}</td>
                 <td style={{ minWidth: 220 }}>
                   <input className="f" form={`asset-${r.id}`} name="altDe" defaultValue={r.defaults.altDe} placeholder="Alt-Text (DE)" aria-label="Alt-Text DE" />
                   <input className="f" form={`asset-${r.id}`} name="altEn" defaultValue={r.defaults.altEn} placeholder="Alt-Text (EN)" aria-label="Alt-Text EN" style={{ marginTop: 4 }} />
@@ -88,8 +91,8 @@ export default function MediaLibraryTable({ rows }: { rows: MediaRow[] }) {
                     <input type="checkbox" form={`asset-${r.id}`} name="decorative" value="true" defaultChecked={r.defaults.decorative} /> Dekorativ
                   </label>
                 </td>
-                <td>
-                  <select className="f" form={`asset-${r.id}`} name="source" defaultValue={r.source} aria-label="Herkunft">
+                <td style={{ width: 170 }}>
+                  <select className="f" form={`asset-${r.id}`} name="source" defaultValue={r.source} aria-label="Herkunft" style={{ minWidth: 150 }}>
                     {MEDIA_SOURCES.map((s) => (
                       <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
                     ))}

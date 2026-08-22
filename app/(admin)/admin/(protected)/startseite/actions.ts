@@ -24,8 +24,6 @@ export async function saveHomeHero(formData: FormData): Promise<void> {
     .split(/[\n,]/)
     .map((r) => r.trim())
     .filter(Boolean);
-  const heroAssetId = String(formData.get("heroAssetId") ?? "").trim() || null;
-
   let failed = false;
   try {
     const data = {
@@ -33,7 +31,6 @@ export async function saveHomeHero(formData: FormData): Promise<void> {
       headline: headline || null,
       lead: lead || null,
       roles: roles.length > 0 ? JSON.stringify(roles) : null,
-      heroAssetId,
     };
     // Auf eine ggf. pausierte serverlose DB warten, statt sofort zu scheitern.
     await withDbRetry(() =>
@@ -49,8 +46,41 @@ export async function saveHomeHero(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`/admin/startseite?err=failed`);
-  redirect(`/admin/startseite?ok=saved`);
+  if (failed) redirect(`/admin/startseite?err=failed&tab=texte-${locale}`);
+  redirect(`/admin/startseite?ok=saved&tab=texte-${locale}`);
+}
+
+// ------------------------------------------------------------- Hero-Bild
+
+/**
+ * Das Bild der Startseite ist sprachunabhängig: dasselbe Motiv steht auf der
+ * deutschen wie auf der englischen Seite. Es wird deshalb EINMAL gepflegt und
+ * auf beide Sprachzeilen geschrieben — sonst müsste man dieselbe Auswahl
+ * zweimal treffen und könnte sie auseinanderlaufen lassen.
+ */
+export async function saveHomeImage(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const heroAssetId = String(formData.get("heroAssetId") ?? "").trim() || null;
+
+  let failed = false;
+  try {
+    for (const locale of ["de", "en"] as const) {
+      await withDbRetry(() =>
+        db.homeContent.upsert({
+          where: { locale },
+          create: { locale, heroAssetId },
+          update: { heroAssetId },
+        }),
+      );
+    }
+    invalidateTags([HOME_TAG]);
+    revalidatePath("/de");
+    revalidatePath("/en");
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect("/admin/startseite?err=failed&tab=bild");
+  redirect("/admin/startseite?ok=saved&tab=bild");
 }
 
 // --------------------------------------------- Woran ich gerade arbeite
@@ -78,7 +108,7 @@ function afterFocusChange() {
 export async function createHomeFocus(formData: FormData): Promise<void> {
   await requireAdmin();
   const fields = focusFields(formData);
-  if (!fields.titleDe || !fields.textDe) redirect("/admin/startseite?err=missing-fields");
+  if (!fields.titleDe || !fields.textDe) redirect("/admin/startseite?err=missing-fields&tab=fokus");
 
   let error: string | null = null;
   try {
@@ -98,16 +128,16 @@ export async function createHomeFocus(formData: FormData): Promise<void> {
   } catch {
     error = "failed";
   }
-  if (error) redirect(`/admin/startseite?err=${error}`);
-  redirect("/admin/startseite?ok=created");
+  if (error) redirect(`/admin/startseite?err=${error}&tab=fokus`);
+  redirect("/admin/startseite?ok=created&tab=fokus");
 }
 
 export async function saveHomeFocus(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "").trim();
-  if (!id) redirect("/admin/startseite?err=not-found");
+  if (!id) redirect("/admin/startseite?err=not-found&tab=fokus");
   const fields = focusFields(formData);
-  if (!fields.titleDe || !fields.textDe) redirect("/admin/startseite?err=missing-fields");
+  if (!fields.titleDe || !fields.textDe) redirect("/admin/startseite?err=missing-fields&tab=fokus");
   const sortOrder = Number.parseInt(String(formData.get("sortOrder") ?? ""), 10);
 
   let error: string | null = null;
@@ -130,14 +160,14 @@ export async function saveHomeFocus(formData: FormData): Promise<void> {
   } catch {
     error = "failed";
   }
-  if (error) redirect(`/admin/startseite?err=${error}`);
-  redirect("/admin/startseite?ok=saved");
+  if (error) redirect(`/admin/startseite?err=${error}&tab=fokus`);
+  redirect("/admin/startseite?ok=saved&tab=fokus");
 }
 
 export async function deleteHomeFocus(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "").trim();
-  if (!id) redirect("/admin/startseite?err=not-found");
+  if (!id) redirect("/admin/startseite?err=not-found&tab=fokus");
 
   let failed = false;
   try {
@@ -146,6 +176,6 @@ export async function deleteHomeFocus(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect("/admin/startseite?err=failed");
-  redirect("/admin/startseite?ok=deleted");
+  if (failed) redirect("/admin/startseite?err=failed&tab=fokus");
+  redirect("/admin/startseite?ok=deleted&tab=fokus");
 }

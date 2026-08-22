@@ -240,7 +240,8 @@ async function missionInputValues(id: string): Promise<PromptValues> {
     sessionType: row.sessionType,
     languageLabel: talkLanguageLabel(language, "de") ?? "",
     durationMin: row.durationMin,
-    attendeeCount: row.attendeeCount,
+    attendeesOnsite: row.attendeesOnsite,
+    attendeesRemote: row.attendeesRemote,
     eventUrl: row.eventUrl,
     talkTitles: row.deliveries
       .map((d) => german(d.talk.translations)?.title ?? "")
@@ -284,7 +285,6 @@ async function dispatchInputValues(id: string): Promise<PromptValues> {
     include: {
       translations: true,
       topics: { orderBy: { sortOrder: "asc" } },
-      tags: true,
       focusTopics: true,
     },
   });
@@ -300,7 +300,6 @@ async function dispatchInputValues(id: string): Promise<PromptValues> {
     bodyDe: de?.bodyJson ?? "",
     bodyEn: en?.bodyJson ?? "",
     topics: [...row.topics.map((t) => t.nameDe), ...row.focusTopics.map((t) => t.titleDe)],
-    tags: row.tags.map((t) => t.nameDe),
     sourceTitle: row.sourceTitle,
     sourceUrl: row.sourceUrl,
     publishedAt: row.publishedAt,

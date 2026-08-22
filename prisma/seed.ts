@@ -24,15 +24,13 @@ function doc(...blocks: Array<{ h?: string; p?: string }>): string {
 
 async function reset() {
   // Reihenfolge beachtet Fremdschlüssel.
-  // Identitäten zuerst (referenzieren MediaAsset mit NoAction; Join-Tabellen
-  // und Attribute hängen per Cascade an der Identität).
-  await db.identityAttribute.deleteMany();
+  // Identitäten zuerst (referenzieren MediaAsset mit NoAction; die
+  // Join-Tabellen hängen per Cascade an der Identität).
   await db.channelTask.deleteMany();
   await db.dispatchTranslation.deleteMany();
   await db.dispatch.deleteMany();
   await db.identity.deleteMany();
   await db.tool.deleteMany();
-  await db.postTag.deleteMany();
   await db.postTranslation.deleteMany();
   await db.post.deleteMany();
   await db.talkDelivery.deleteMany();
@@ -44,13 +42,11 @@ async function reset() {
   await db.publicationTranslation.deleteMany();
   await db.publication.deleteMany();
   await db.certification.deleteMany();
-  await db.tag.deleteMany();
   await db.dossierTranslation.deleteMany();
   await db.dossier.deleteMany();
   await db.taxonomy.deleteMany();
   await db.channelAccount.deleteMany();
   await db.mediaAsset.deleteMany();
-  await db.redirect.deleteMany();
   await db.auditLog.deleteMany();
   await db.promptTemplate.deleteMany();
   await db.promptSnippet.deleteMany();
@@ -73,27 +69,10 @@ async function main() {
     { id: "tax-tk-modern", nameDe: "Modern Work", nameEn: "Modern Work", slug: "modern-work" },
     { id: "tax-tk-dev", nameDe: "Development", nameEn: "Development", slug: "development" },
   ];
-  const certCats = [
-    { id: "tax-ce-awards", nameDe: "Auszeichnungen", nameEn: "Awards", slug: "auszeichnungen" },
-    { id: "tax-ce-azure", nameDe: "Microsoft Azure & KI", nameEn: "Microsoft Azure & AI", slug: "azure-ki" },
-    { id: "tax-ce-modern", nameDe: "Modern Work & Security", nameEn: "Modern Work & Security", slug: "modern-work-security" },
-    { id: "tax-ce-power", nameDe: "Power Platform", nameEn: "Power Platform", slug: "power-platform" },
-  ];
   await db.taxonomy.createMany({
     data: [
       ...dossierCats.map((c, i) => ({ ...c, kind: "DOSSIER", sortOrder: i })),
       ...talkCats.map((c, i) => ({ ...c, kind: "TALK", sortOrder: i })),
-      ...certCats.map((c, i) => ({ ...c, kind: "CERTIFICATION", sortOrder: i })),
-    ],
-  });
-
-  // --- Tags -----------------------------------------------------------------
-  await db.tag.createMany({
-    data: [
-      { id: "tag-microsoft", nameDe: "Microsoft", nameEn: "Microsoft", slug: "microsoft" },
-      { id: "tag-ki", nameDe: "KI", nameEn: "AI", slug: "ki" },
-      { id: "tag-dev", nameDe: "Software Development", nameEn: "Software Development", slug: "software-development" },
-      { id: "tag-purview", nameDe: "Purview", nameEn: "Purview", slug: "purview" },
     ],
   });
 
@@ -252,7 +231,6 @@ async function main() {
       sourceSite: "techcommunity.microsoft.com",
       de: { slug: "foundry-agent-tracing", title: "Microsoft Foundry bekommt Agent-Tracing", summary: "Warum das für Produktions-Agents mehr verändert als das Feature-Listing vermuten lässt." },
       en: { slug: "foundry-agent-tracing-en", title: "Microsoft Foundry gets agent tracing", summary: "Why this changes more for production agents than the feature listing suggests." },
-      tags: ["tag-microsoft", "tag-ki"],
     },
     {
       id: "post-labels",
@@ -261,7 +239,6 @@ async function main() {
       publishedAt: "2026-07-26T08:05:00Z",
       de: { slug: "sensitivity-labels-auto-labeling-grenzen", title: "Sensitivity Labels: Neue Grenzen beim Auto-Labeling", summary: "Was sich in Purview zum 1. August ändert — und was du vorher prüfen solltest." },
       en: { slug: "sensitivity-labels-auto-labeling-limits", title: "Sensitivity Labels: new auto-labeling limits", summary: "What changes in Purview on August 1 — and what to check beforehand." },
-      tags: ["tag-microsoft", "tag-purview"],
     },
     {
       id: "post-backstage-wien",
@@ -318,7 +295,6 @@ async function main() {
               : []),
           ],
         },
-        tags: { create: p.tags.map((tagId) => ({ tagId })) },
       },
     });
   }
@@ -396,20 +372,17 @@ async function main() {
   // --- Zertifizierungen / Auszeichnungen ------------------------------------
   // Einzeln (statt createMany), damit die Mehrfach-Kategorie mitverknüpft wird.
   const certs = [
-    { name: "Microsoft MVP — M365 Apps & Services", categoryId: "tax-ce-awards", acquiredOn: new Date("2020-07-01T00:00:00Z"), series: "MVP", sortOrder: 0 },
-    { name: "Azure AI Engineer Associate", shortCode: "AI-102", categoryId: "tax-ce-azure", acquiredOn: new Date("2025-03-01T00:00:00Z"), sortOrder: 0 },
-    { name: "Azure Administrator Associate", shortCode: "AZ-104", categoryId: "tax-ce-azure", acquiredOn: new Date("2023-11-01T00:00:00Z"), validUntil: new Date("2027-10-01T00:00:00Z"), sortOrder: 1 },
-    { name: "Microsoft 365 Administrator Expert", shortCode: "MS-102", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-06-01T00:00:00Z"), sortOrder: 0 },
-    { name: "Information Protection Administrator", shortCode: "SC-400", categoryId: "tax-ce-modern", acquiredOn: new Date("2024-02-01T00:00:00Z"), sortOrder: 1 },
-    { name: "Power Platform Solution Architect Expert", shortCode: "PL-600", categoryId: "tax-ce-power", acquiredOn: new Date("2023-09-01T00:00:00Z"), sortOrder: 0 },
+    { name: "Microsoft MVP — M365 Apps & Services", acquiredOn: new Date("2020-07-01T00:00:00Z"), series: "MVP", sortOrder: 0 },
+    { name: "Azure AI Engineer Associate", shortCode: "AI-102", acquiredOn: new Date("2025-03-01T00:00:00Z"), sortOrder: 0 },
+    { name: "Azure Administrator Associate", shortCode: "AZ-104", acquiredOn: new Date("2023-11-01T00:00:00Z"), validUntil: new Date("2027-10-01T00:00:00Z"), sortOrder: 1 },
+    { name: "Microsoft 365 Administrator Expert", shortCode: "MS-102", acquiredOn: new Date("2024-06-01T00:00:00Z"), sortOrder: 0 },
+    { name: "Information Protection Administrator", shortCode: "SC-400", acquiredOn: new Date("2024-02-01T00:00:00Z"), sortOrder: 1 },
+    { name: "Power Platform Solution Architect Expert", shortCode: "PL-600", acquiredOn: new Date("2023-09-01T00:00:00Z"), sortOrder: 0 },
     // In Ausbildung (Phase 5.3): geplant, ohne Erwerbsdatum-Anzeige.
-    { name: "Designing and Implementing a Microsoft Azure AI Solution (Renewal)", shortCode: "AI-102", categoryId: "tax-ce-azure", acquiredOn: new Date("2026-08-01T00:00:00Z"), status: "PLANNED", plannedFor: "Q4 2026", sortOrder: 2 },
+    { name: "Designing and Implementing a Microsoft Azure AI Solution (Renewal)", shortCode: "AI-102", acquiredOn: new Date("2026-08-01T00:00:00Z"), status: "PLANNED", plannedFor: "Q4 2026", sortOrder: 2 },
   ];
   for (const c of certs) {
-    const { categoryId, ...rest } = c;
-    await db.certification.create({
-      data: { ...rest, categoryId, categories: { connect: [{ id: categoryId }] } },
-    });
+    await db.certification.create({ data: c });
   }
 
   // --- Identitäten (Decknamen) — Phase 2.5 ----------------------------------

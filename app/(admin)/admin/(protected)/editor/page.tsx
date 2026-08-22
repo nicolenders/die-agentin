@@ -28,7 +28,6 @@ export default async function EditorPage({
   let initial: PostEditorInitial = {
     type: "NOTE",
     publishAtLocal: "",
-    tags: "",
     de: { title: "", summary: "", social: "", doc: emptyDoc() },
     en: null,
   };
@@ -37,7 +36,7 @@ export default async function EditorPage({
     try {
       const post = await db.post.findUnique({
         where: { id },
-        include: { translations: true, tags: { include: { tag: true } } },
+        include: { translations: true },
       });
       if (post) {
         const de = post.translations.find((t) => t.locale === "de");
@@ -46,7 +45,6 @@ export default async function EditorPage({
           postId: post.id,
           type: post.type as PostType,
           publishAtLocal: utcToBerlinLocal(post.publishAt),
-          tags: post.tags.map((pt) => pt.tag.nameDe).join(", "),
           de: {
             title: de?.title ?? "",
             summary: de?.summary ?? "",

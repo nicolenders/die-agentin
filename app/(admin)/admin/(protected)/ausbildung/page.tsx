@@ -4,7 +4,6 @@ import { assetUrl } from "@/lib/media/url";
 import { formatDate } from "@/lib/format";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import AssetPickerField from "@/components/admin/AssetPickerField";
-import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import AssetImage from "@/components/media/AssetImage";
 import Flash from "@/components/admin/Flash";
 import Tabs, { type TabDef } from "@/components/admin/Tabs";
@@ -31,13 +30,12 @@ export default async function AusbildungAdminPage({
   const { ok, err } = await searchParams;
 
   let certs: CertRow[] = [];
-  let certCats: { id: string; nameDe: string }[] = [];
   let dbError = false;
   try {
-    const [certRows, cats] = await Promise.all([
-      db.certification.findMany({ orderBy: [{ sortOrder: "asc" }, { acquiredOn: "desc" }], include: { categories: true, logo: true } }),
-      db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
-    ]);
+    const certRows = await db.certification.findMany({
+      orderBy: [{ sortOrder: "asc" }, { acquiredOn: "desc" }],
+      include: { logo: true },
+    });
     certs = certRows.map((c) => ({
       id: c.id,
       name: c.name,
@@ -46,13 +44,11 @@ export default async function AusbildungAdminPage({
       meta: [
         c.kind === "CERTIFICATION" ? CERT_FAMILY_SHORT[c.family === "METHODICAL" ? "METHODICAL" : "MICROSOFT"] : null,
         c.shortCode,
-        c.categories.map((x) => x.nameDe).join(", ") || null,
         formatDate(c.acquiredOn, "de"),
       ].filter(Boolean).join(" · "),
       logoUrl: c.logo ? assetUrl(c.logo.blobPath) : null,
       logoAi: c.logo?.source === "AI",
     }));
-    certCats = cats.map((c) => ({ id: c.id, nameDe: c.nameDe }));
   } catch {
     dbError = true;
   }
@@ -125,8 +121,6 @@ export default async function AusbildungAdminPage({
       ) : (
         <input type="hidden" name="family" value="MICROSOFT" />
       )}
-      <label className="f">Kategorien (optional, Mehrfachauswahl)</label>
-      <CategoryMultiSelect name="categoryIds" options={certCats.map((c) => ({ id: c.id, name: c.nameDe }))} emptyHint="Optional: Kategorien unter „Kategorien & Tags“ anlegen." />
       <label className="f">Bezeichnung</label>
       <input className="f" name="name" placeholder="z. B. Azure AI Engineer Associate" required />
       <label className="f">Kürzel</label>

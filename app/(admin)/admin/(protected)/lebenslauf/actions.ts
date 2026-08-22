@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { invalidateTags } from "@/lib/cache";
 import { RESUME_TAG } from "@/lib/queries/resume";
 import { RESUME_PROFILE_SEED, RESUME_ENTRIES_SEED } from "@/lib/resume-seed";
+import { SKILL_LEVELS, isOneOf } from "@/lib/domain";
+import { computeSkillYears } from "@/lib/resume/skills";
 
 const PAGE = "/admin/lebenslauf";
 const SECTIONS = new Set(["CAREER", "EDUCATION", "SKILL", "PROJECT"]);
@@ -22,6 +24,56 @@ function tagsJson(raw: string): string | null {
 }
 function invalidate(): void {
   invalidateTags([RESUME_TAG]);
+}
+
+function num(formData: FormData, key: string): number | null {
+  const parsed = Number.parseInt(String(formData.get(key) ?? "").trim(), 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+/**
+ * Die Felder, die nur eine Rubrik betreffen. Sie werden für JEDE Rubrik
+ * geschrieben — was nicht im Formular stand, kommt als leer zurück und
+ * überschreibt einen alten Wert bewusst, statt Reste stehen zu lassen.
+ *
+ * Jahre bei Fähigkeiten: Lässt sich der Zeitraum lesen, gilt die Rechnung;
+ * sonst die Eingabe. So bleibt „seit 03/2018" ohne Nachpflege richtig.
+ */
+function sectionFields(formData: FormData, section: string) {
+  const periodFrom = str(formData, "periodFrom") || null;
+  const periodTo = str(formData, "periodTo") || null;
+  if (section === "PROJECT") {
+    return {
+      projectFrom: str(formData, "projectFrom") || null,
+      projectTo: str(formData, "projectTo") || null,
+      personDays: num(formData, "personDays"),
+      clientAnonymous: formData.get("clientAnonymous") === "on",
+      clientSector: str(formData, "clientSector") || null,
+      skillYears: null,
+      skillLevel: null,
+    };
+  }
+  if (section === "SKILL") {
+    const level = str(formData, "skillLevel");
+    return {
+      projectFrom: null,
+      projectTo: null,
+      personDays: null,
+      clientAnonymous: false,
+      clientSector: null,
+      skillYears: computeSkillYears(periodFrom, periodTo) ?? num(formData, "skillYears"),
+      skillLevel: isOneOf(SKILL_LEVELS, level) ? level : null,
+    };
+  }
+  return {
+    projectFrom: null,
+    projectTo: null,
+    personDays: null,
+    clientAnonymous: false,
+    clientSector: null,
+    skillYears: null,
+    skillLevel: null,
+  };
 }
 
 export async function saveResumeProfile(formData: FormData): Promise<void> {
@@ -62,6 +114,7 @@ export async function createResumeEntry(formData: FormData): Promise<void> {
         description: str(formData, "description") || null,
         tags: tagsJson(str(formData, "tags")),
         sortOrder: Number.isFinite(sortRaw) ? Math.trunc(sortRaw) : 0,
+        ...sectionFields(formData, section),
       },
     });
   } catch {
@@ -75,6 +128,7 @@ export async function updateResumeEntry(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
   if (!id) redirect(`${PAGE}?err=not-found`);
+  const section = str(formData, "section");
   const sortRaw = Number(formData.get("sortOrder") ?? 0);
   try {
     await db.resumeEntry.update({
@@ -88,13 +142,14 @@ export async function updateResumeEntry(formData: FormData): Promise<void> {
         description: str(formData, "description") || null,
         tags: tagsJson(str(formData, "tags")),
         sortOrder: Number.isFinite(sortRaw) ? Math.trunc(sortRaw) : 0,
+        ...sectionFields(formData, section),
       },
     });
   } catch {
     redirect(`${PAGE}?err=failed`);
   }
   invalidate();
-  redirect(`${PAGE}?ok=saved#${str(formData, "section")}`);
+  redirect(`${PAGE}?ok=saved#${section}`);
 }
 
 export async function deleteResumeEntry(formData: FormData): Promise<void> {

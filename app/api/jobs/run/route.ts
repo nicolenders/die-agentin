@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { runScheduledPublish } from "@/lib/publish/publish";
+import { runDispatchReminders } from "@/lib/publish/reminders";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Interner Job-Endpunkt (SPEC §2, §6). Der Container Apps Job „scheduler" ruft
 // diesen Endpunkt alle 5 Minuten mit einem Shared Secret auf und weckt so die
-// Web-Instanz. Verarbeitet fällige terminierte Beiträge.
+// Web-Instanz. Verarbeitet fällige terminierte Beiträge und verschickt die
+// Erinnerungen an nahende Veröffentlichungsdaten von Depeschen.
 
 function authorized(request: Request): boolean {
   const secret = process.env.JOB_SHARED_SECRET;
@@ -27,10 +29,20 @@ export async function POST(request: Request) {
   }
   try {
     const result = await runScheduledPublish();
+    // Der Erinnerungslauf darf die Veröffentlichung nicht kippen: schlägt der
+    // Mailversand fehl, steht das im Ergebnis, der Job bleibt aber erfolgreich.
+    let reminders: Awaited<ReturnType<typeof runDispatchReminders>>;
+    try {
+      reminders = await runDispatchReminders();
+    } catch (error) {
+      reminders = { reminded: [], skipped: error instanceof Error ? error.message : "Erinnerungslauf fehlgeschlagen." };
+    }
     return NextResponse.json({
       ok: true,
       published: result.published,
       publishedDispatches: result.publishedDispatches,
+      remindedDispatches: reminders.reminded,
+      ...(reminders.skipped ? { remindersSkipped: reminders.skipped } : {}),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Job fehlgeschlagen.";

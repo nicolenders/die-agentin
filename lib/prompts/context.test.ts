@@ -124,7 +124,8 @@ describe("missionValues", () => {
     sessionType: "KEYNOTE",
     languageLabel: "Deutsch",
     durationMin: 45,
-    attendeeCount: 300,
+    attendeesOnsite: 300,
+    attendeesRemote: 120,
     eventUrl: "https://example.org",
     talkTitles: ["Agenten in Produktion"],
     eventTextDe: "",
@@ -146,8 +147,12 @@ describe("missionValues", () => {
     expect(missionValues(base)["einsatz.art"]).toBe("Keynote");
   });
 
+  it("zählt das Publikum vor Ort und zugeschaltet zusammen", () => {
+    expect(missionValues(base)["einsatz.publikum"]).toBe("420");
+  });
+
   it("lässt Zahlen leer, wenn sie nicht gepflegt sind", () => {
-    const v = missionValues({ ...base, durationMin: null, attendeeCount: null });
+    const v = missionValues({ ...base, durationMin: null, attendeesOnsite: null, attendeesRemote: null });
     expect(v["einsatz.dauer"]).toBe("");
     expect(v["einsatz.publikum"]).toBe("");
   });
@@ -193,7 +198,6 @@ describe("dispatchValues", () => {
     bodyDe: "",
     bodyEn: "",
     topics: ["Governance"],
-    tags: ["Copilot"],
     sourceTitle: "Microsoft Learn",
     sourceUrl: "https://learn.microsoft.com",
     publishedAt: new Date("2026-03-02T08:00:00Z"),

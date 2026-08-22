@@ -54,21 +54,20 @@ export interface MissionFormInitial {
 }
 
 export interface MissionMaterialForm {
-  slidesUrl: string;
-  slidesPlatform: string;
   slidesFilePath: string;
   slidesFileName: string;
   recordingUrl: string;
   sessionType: string;
-  attendeeCount: string;
-  feedbackScore: string;
-  feedbackSource: string;
+  /** Publikum in drei Zahlen; als Text, weil sie aus Eingabefeldern kommen. */
+  attendeesOnsite: string;
+  attendeesRemote: string;
+  onDemandViews: string;
   coSpeakers: string;
 }
 
 export const EMPTY_MATERIAL: MissionMaterialForm = {
-  slidesUrl: "", slidesPlatform: "", slidesFilePath: "", slidesFileName: "", recordingUrl: "",
-  sessionType: "", attendeeCount: "", feedbackScore: "", feedbackSource: "", coSpeakers: "",
+  slidesFilePath: "", slidesFileName: "", recordingUrl: "",
+  sessionType: "", attendeesOnsite: "", attendeesRemote: "", onDemandViews: "", coSpeakers: "",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -271,15 +270,13 @@ export default function MissionForm({
       photoAssetIds: photos.map((p) => p.id),
       toolIds,
       material: {
-        slidesUrl: material.slidesUrl,
-        slidesPlatform: material.slidesPlatform,
         slidesFilePath: material.slidesFilePath || null,
         slidesFileName: material.slidesFileName || null,
         recordingUrl: material.recordingUrl,
         sessionType: material.sessionType || null,
-        attendeeCount: material.attendeeCount ? Number(material.attendeeCount) : null,
-        feedbackScore: material.feedbackScore ? Number(material.feedbackScore) : null,
-        feedbackSource: material.feedbackSource,
+        attendeesOnsite: material.attendeesOnsite ? Number(material.attendeesOnsite) : null,
+        attendeesRemote: material.attendeesRemote ? Number(material.attendeesRemote) : null,
+        onDemandViews: material.onDemandViews ? Number(material.onDemandViews) : null,
         coSpeakers: material.coSpeakers,
       },
       intent,
@@ -516,6 +513,18 @@ export default function MissionForm({
                 </div>
               ) : null}
 
+              <label className="f" style={{ marginTop: 12 }} htmlFor="mission-cospeakers">
+                Co-Speaker (eine Zeile je Person: „Name | https://…“)
+              </label>
+              <textarea
+                className="f"
+                id="mission-cospeakers"
+                rows={2}
+                value={material.coSpeakers}
+                onChange={(e) => setMat({ coSpeakers: e.target.value })}
+                placeholder={"Max Muster | https://linkedin.com/in/…"}
+              />
+
               <label className="f" style={{ marginTop: 12 }}>Dauer (Minuten)</label>
               <input
                 className="f"
@@ -690,65 +699,36 @@ export default function MissionForm({
       content: (
         <>
           <div className="card bracket">
-            <p className="eyebrow">Belegmaterial</p>
-            <p className="meta" style={{ marginTop: 0 }}>Alles optional. Leere Angaben erscheinen öffentlich nicht.</p>
-            <div className="grid g2" style={{ gap: 12, alignItems: "start" }}>
-              <label className="f">Folien-URL
-                <input className="f" value={material.slidesUrl} onChange={(e) => setMat({ slidesUrl: e.target.value })} placeholder="https://…" />
-              </label>
-              <label className="f">Folien-Plattform
-                <input className="f" value={material.slidesPlatform} onChange={(e) => setMat({ slidesPlatform: e.target.value })} placeholder="SpeakerDeck, SlideShare …" />
-              </label>
-              <label className="f">Aufzeichnung (YouTube-URL)
-                <input className="f" value={material.recordingUrl} onChange={(e) => setMat({ recordingUrl: e.target.value })} placeholder="https://youtu.be/…" />
-              </label>
-              <label className="f">Art des Auftritts
-                <select className="f" value={material.sessionType} onChange={(e) => setMat({ sessionType: e.target.value })}>
-                  <option value="">— keine —</option>
-                  {SESSION_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </label>
-              <label className="f">Teilnehmende (Anzahl)
-                <input className="f" type="number" value={material.attendeeCount} onChange={(e) => setMat({ attendeeCount: e.target.value })} />
-              </label>
-              <label className="f">Feedback-Wert
-                <input className="f" type="number" step="0.1" value={material.feedbackScore} onChange={(e) => setMat({ feedbackScore: e.target.value })} placeholder="4.7" />
-              </label>
-              <label className="f">Feedback-Quelle
-                <input className="f" value={material.feedbackSource} onChange={(e) => setMat({ feedbackSource: e.target.value })} placeholder="Sessionize" />
-              </label>
-            </div>
-
-            <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
-              <p className="eyebrow" style={{ marginTop: 0 }}>
-                Foliensatz aus dem Briefing ({LANGUAGE_LABEL[language] ?? "Deutsch"})
+            {/* Die Folien stehen oben: sie sind das, was nach einem Auftritt
+                als Erstes gesucht wird. Alles Weitere darunter. */}
+            <p className="eyebrow" style={{ marginTop: 0 }}>
+              Foliensatz aus dem Briefing ({LANGUAGE_LABEL[language] ?? "Deutsch"})
+            </p>
+            {!talkId ? (
+              <p className="meta" style={{ marginTop: 0 }}>
+                Erst ein Briefing wählen: die Folien hängen am Briefing, nicht am einzelnen Einsatz.
               </p>
-              {!talkId ? (
+            ) : deck ? (
+              <>
                 <p className="meta" style={{ marginTop: 0 }}>
-                  Erst ein Briefing wählen: die Folien hängen am Briefing, nicht am einzelnen Einsatz.
+                  {deck.matchesLanguage
+                    ? "Der am Briefing hinterlegte Foliensatz in der gewählten Vortragssprache."
+                    : `Auf ${LANGUAGE_LABEL[language] ?? "dieser Sprache"} ist am Briefing noch kein Foliensatz hinterlegt, hier steht die ${LANGUAGE_LABEL[deck.item.locale] ?? deck.item.locale}-Fassung.`}
                 </p>
-              ) : deck ? (
-                <>
-                  <p className="meta" style={{ marginTop: 0 }}>
-                    {deck.matchesLanguage
-                      ? "Der am Briefing hinterlegte Foliensatz in der gewählten Vortragssprache."
-                      : `Auf ${LANGUAGE_LABEL[language] ?? "dieser Sprache"} ist am Briefing noch kein Foliensatz hinterlegt, hier steht die ${LANGUAGE_LABEL[deck.item.locale] ?? deck.item.locale}-Fassung.`}
-                  </p>
-                  <a className="btn ghost sm" href={deckUrl(deck.item)} download={deck.item.fileName}>
-                    ⬇ {deck.item.fileName}
-                  </a>{" "}
-                  {deck.item.bytes ? <span className="meta">{formatMb(deck.item.bytes)}</span> : null}
-                </>
-              ) : (
-                <p className="meta" style={{ marginTop: 0 }}>
-                  Für dieses Briefing ist noch keine PowerPoint hinterlegt.{" "}
-                  <a href={`/admin/briefings/bearbeiten?id=${talkId}`} target="_blank" rel="noopener noreferrer">
-                    Im Briefing hinterlegen
-                  </a>{" "}
-                  dort steht auch die Vorlage zum Anfangen bereit.
-                </p>
-              )}
-            </div>
+                <a className="btn ghost sm" href={deckUrl(deck.item)} download={deck.item.fileName}>
+                  ⬇ {deck.item.fileName}
+                </a>{" "}
+                {deck.item.bytes ? <span className="meta">{formatMb(deck.item.bytes)}</span> : null}
+              </>
+            ) : (
+              <p className="meta" style={{ marginTop: 0 }}>
+                Für dieses Briefing ist noch keine PowerPoint hinterlegt.{" "}
+                <a href={`/admin/briefings/bearbeiten?id=${talkId}`} target="_blank" rel="noopener noreferrer">
+                  Im Briefing hinterlegen
+                </a>{" "}
+                dort steht auch die Vorlage zum Anfangen bereit.
+              </p>
+            )}
 
             <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
               <p className="eyebrow" style={{ marginTop: 0 }}>Folien als PDF</p>
@@ -786,9 +766,34 @@ export default function MissionForm({
               {slidesError ? <p className="meta" style={{ marginTop: 8, color: "var(--danger)" }}>{slidesError}</p> : null}
             </div>
 
-            <label className="f" style={{ marginTop: 8 }}>Co-Speaker (eine Zeile je Person: „Name | https://…“)</label>
-            <textarea className="f" rows={2} value={material.coSpeakers} onChange={(e) => setMat({ coSpeakers: e.target.value })} placeholder={"Max Muster | https://linkedin.com/in/…"} />
-            <p className="meta">Rückblick-Text (Recap) wird im nächsten Schritt ergänzt.</p>
+            <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
+              <p className="eyebrow" style={{ marginTop: 0 }}>Aufzeichnung und Publikum</p>
+              <p className="meta" style={{ marginTop: 0 }}>Alles optional. Leere Angaben erscheinen öffentlich nicht.</p>
+              <div className="grid g2" style={{ gap: 12, alignItems: "start" }}>
+                <label className="f">Aufzeichnung (YouTube-URL)
+                  <input className="f" value={material.recordingUrl} onChange={(e) => setMat({ recordingUrl: e.target.value })} placeholder="https://youtu.be/…" />
+                </label>
+                <label className="f">Art des Auftritts
+                  <select className="f" value={material.sessionType} onChange={(e) => setMat({ sessionType: e.target.value })}>
+                    <option value="">— keine —</option>
+                    {SESSION_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </label>
+              </div>
+              {/* Drei Zahlen statt einer: ein Webinar mit 40 im Raum und 900
+                  online sieht sonst aus wie eine kleine Runde. */}
+              <div className="grid g3" style={{ gap: 12, alignItems: "start", marginTop: 4 }}>
+                <label className="f">Teilnehmende (Präsenz)
+                  <input className="f" type="number" min={0} value={material.attendeesOnsite} onChange={(e) => setMat({ attendeesOnsite: e.target.value })} />
+                </label>
+                <label className="f">Teilnehmende (Remote)
+                  <input className="f" type="number" min={0} value={material.attendeesRemote} onChange={(e) => setMat({ attendeesRemote: e.target.value })} />
+                </label>
+                <label className="f">On-Demand-Ansichten
+                  <input className="f" type="number" min={0} value={material.onDemandViews} onChange={(e) => setMat({ onDemandViews: e.target.value })} />
+                </label>
+              </div>
+            </div>
           </div>
         </>
       ),

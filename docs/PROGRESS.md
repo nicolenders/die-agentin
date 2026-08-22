@@ -847,3 +847,59 @@ Secret-Vergleich; Upload-Validierung per Magic Bytes. Die CSP-`unsafe-inline`
 (Script) bleibt der in ADR 0007 dokumentierte, bewusste Kompromiss (nonce
 erzwingt durchgängig dynamisches Rendering); primäre XSS-Abwehr ist der
 escapende Renderer.
+
+---
+
+## Adminbereich-Umbau (22.08.2026)
+
+Auf Wunsch von Nicole überarbeitete Redaktionsoberfläche. Migration:
+`prisma/migrations/20260822120000_admin_umbau`. **Vor dem Deployment ein
+Azure-SQL-Snapshot** — die Migration löscht Tabellen (siehe ADR 0024).
+
+Die Anwendung migriert beim Serverstart selbst; wer es von Hand machen will,
+folgt `docs/db/2026-08-22-admin-umbau.md` (Anleitung) mit
+`docs/db/2026-08-22-admin-umbau.sql` (Skript).
+
+**Terminkalender statt Redaktionsplan**
+- `/admin/redaktionsplan` → `/admin/terminkalender` (alte Route leitet weiter).
+  Der Kalender zeigt jetzt alle Termine, nicht nur Ungeplantes: Filter nach
+  Einsätzen, Depeschen und Einsatzberichten sowie nach Zeitraum
+  (`lib/planning/filter.ts`, unit-getestet).
+- Zu jedem Einsatz gehört eine Aufgabe „Einsatzbericht schreiben"
+  (`MissionReportTask`). Abhaken erst, wenn Veranstaltung und Vortrag Text
+  haben — geprüft in der Server Action, nicht nur im Formular
+  (`lib/missions/report-task.ts`). Für den Bestand rückwirkend angelegt; wo der
+  Bericht schon stand, gleich als erledigt.
+
+**Erinnerung an Depeschen**
+- Vorlauf, Empfängeradresse und An/Aus in den Einstellungen (Register
+  „Erinnerungen"). Versand im Job-Takt über `/api/jobs/run`.
+- Eigener SMTP-Versand ohne neue Abhängigkeit, siehe ADR 0023.
+- **Braucht Input von Nicole:** `SMTP_HOST`, `SMTP_FROM` und ggf.
+  `SMTP_USER`/`SMTP_PASSWORD` als Umgebungsvariablen (Key Vault). Ohne sie
+  wird nichts verschickt; die Einstellungen sagen das ausdrücklich.
+
+**Masken**
+- Einsatz: Belegmaterial ohne Folien-URL, Folien-Plattform und Feedback-Felder;
+  Folien (Briefing-Foliensatz, PDF) nach oben; Publikum in drei Zahlen
+  (Präsenz, Remote, On-Demand); Co-Speaker auf den ersten Tab.
+- Startseite: Register „Texte (DE)", „Texte (EN)", „Bild", „Woran ich gerade
+  arbeite". Das Hero-Bild wird einmal gepflegt und auf beide Sprachzeilen
+  geschrieben. Werkzeuge als Tabelle mit modalem Dialog. Kennzahlen als Info
+  oben rechts.
+- Legende: Register statt Endlosseite.
+- Aufklärung (Radar): Einträge lassen sich ändern.
+- Medien: größeres Vorschaubild (auch Querformat), breitere Spalte „Herkunft".
+- Lebenslauf: Projektlaufzeit, eigener Einsatz, Personentage, anonymer Kunde
+  (Name erscheint nirgends in der Ausgabe); Fähigkeiten mit Jahren — aus dem
+  Zeitraum berechnet, wo er lesbar ist — und Selbsteinschätzung.
+- Einsatzzentrale: Bereiche in Boxen neben- und untereinander, mit Auszug aus
+  der Auswertung und den nächsten Terminen.
+
+**Entfallen** (ADR 0024): Schlagworte, Weiterleitungen,
+Zertifizierungs-Kategorien, Merkmale der Identitäten. Die Stammdaten sind in
+den Einstellungen aufgegangen (Register „Fachgebiete"), `/admin/struktur`
+leitet weiter.
+
+**Öffentlich:** Der Button „CV abrufen" ist von der Legende verschwunden. Die
+Seiten `/de/cv` und `/en/cv` bleiben erreichbar und werden gezielt weitergegeben.

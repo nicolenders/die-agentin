@@ -133,19 +133,6 @@ export default async function IdentityDetailPage({
         </div>
       </div>
 
-      {i.attributes.length > 0 ? (
-        <table style={{ marginTop: 26 }}>
-          <tbody>
-            {i.attributes.map((a) => (
-              <tr key={a.label}>
-                <td className="meta" style={{ width: "34%" }}>{a.label}</td>
-                <td>{a.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : null}
-
       {/* Zweite Seite der Akte: links der Umschlag, rechts Fokus & Werkzeuge. */}
       {i.envelopeUrl ? (
         <div className={styles.spread} style={{ marginTop: 20 }}>

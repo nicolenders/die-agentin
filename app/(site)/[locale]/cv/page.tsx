@@ -7,13 +7,16 @@ import { getCertifications, getFocusTopics, getPublications } from "@/lib/querie
 import { getLegend } from "@/lib/queries/legend";
 import { getContactInfo, getSocialLinks } from "@/lib/queries/settings";
 import { getResume, type ResumeEntryData } from "@/lib/queries/resume";
+import { displayClient, formatPeriod, formatPersonDays } from "@/lib/resume/projects";
+import { effectiveSkillYears, skillLevelLabel } from "@/lib/resume/skills";
+import type { Locale } from "@/lib/i18n/config";
 import CertificationSections from "@/components/records/CertificationSections";
 import PublicationSections from "@/components/records/PublicationSections";
 import PrintButton from "@/components/PrintButton";
 
 export const dynamic = "force-dynamic";
 
-// Werdegang/Projekte: Titel · Untertitel, Zeitraum rechts, Beschreibung + Tags.
+// Werdegang: Titel · Untertitel, Zeitraum rechts, Beschreibung + Tags.
 function TimelineSection({ title, items }: { title: string; items: ResumeEntryData[] }) {
   if (items.length === 0) return null;
   return (
@@ -26,10 +29,8 @@ function TimelineSection({ title, items }: { title: string; items: ResumeEntryDa
               {e.title}
               {e.subtitle ? <span style={{ fontWeight: 400 }}> · {e.subtitle}</span> : null}
             </b>
-            {e.periodFrom || e.periodTo ? (
-              <span className="meta" style={{ whiteSpace: "nowrap" }}>
-                {[e.periodFrom, e.periodTo].filter(Boolean).join(" – ")}
-              </span>
+            {formatPeriod(e.periodFrom, e.periodTo) ? (
+              <span className="meta" style={{ whiteSpace: "nowrap" }}>{formatPeriod(e.periodFrom, e.periodTo)}</span>
             ) : null}
           </div>
           {e.location ? <p className="meta" style={{ margin: "2px 0 0" }}>{e.location}</p> : null}
@@ -41,18 +42,92 @@ function TimelineSection({ title, items }: { title: string; items: ResumeEntryDa
   );
 }
 
-// Fähigkeiten: Kategorie — Liste.
-function SkillsSection({ title, items }: { title: string; items: ResumeEntryData[] }) {
+/**
+ * Projektreferenzen: eigener Einsatz rechts, Laufzeit des Projekts und Aufwand
+ * darunter. Bei anonymen Kunden steht statt des Namens die Branche — der Name
+ * taucht hier nirgends auf, auch nicht im Titel.
+ */
+function ProjectSection({
+  title,
+  items,
+  locale,
+}: {
+  title: string;
+  items: ResumeEntryData[];
+  locale: Locale;
+}) {
   if (items.length === 0) return null;
+  const isDe = locale === "de";
   return (
     <div style={{ marginTop: 32 }}>
       <h2>{title}</h2>
-      {items.map((e) => (
-        <p key={e.id} style={{ margin: "0 0 8px", fontSize: 14, breakInside: "avoid" }}>
-          <b>{e.title}</b>
-          {e.description ? <span className="meta"> — {e.description}</span> : null}
-        </p>
-      ))}
+      {items.map((e) => {
+        const client = displayClient(e, locale);
+        const engagement = formatPeriod(e.periodFrom, e.periodTo);
+        const project = formatPeriod(e.projectFrom, e.projectTo);
+        const effort = formatPersonDays(e.personDays, locale);
+        const facts = [
+          project ? `${isDe ? "Projekt" : "Project"}: ${project}` : null,
+          effort,
+        ].filter(Boolean);
+        return (
+          <div key={e.id} style={{ marginBottom: 15, breakInside: "avoid" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <b style={{ fontSize: 15 }}>
+                {e.title}
+                {client ? <span style={{ fontWeight: 400 }}> · {client}</span> : null}
+              </b>
+              {engagement ? (
+                <span className="meta" style={{ whiteSpace: "nowrap" }}>
+                  {isDe ? "Einsatz" : "Engagement"}: {engagement}
+                </span>
+              ) : null}
+            </div>
+            {facts.length > 0 ? <p className="meta" style={{ margin: "2px 0 0" }}>{facts.join(" · ")}</p> : null}
+            {e.location ? <p className="meta" style={{ margin: "2px 0 0" }}>{e.location}</p> : null}
+            {e.description ? <p style={{ margin: "4px 0 0", fontSize: 14 }}>{e.description}</p> : null}
+            {e.tags.length > 0 ? <p className="meta" style={{ margin: "4px 0 0" }}>{e.tags.join(" · ")}</p> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Fähigkeiten: Kategorie — Liste, dazu Jahre und Selbsteinschätzung.
+function SkillsSection({
+  title,
+  items,
+  locale,
+}: {
+  title: string;
+  items: ResumeEntryData[];
+  locale: Locale;
+}) {
+  if (items.length === 0) return null;
+  const isDe = locale === "de";
+  return (
+    <div style={{ marginTop: 32 }}>
+      <h2>{title}</h2>
+      {items.map((e) => {
+        const years = effectiveSkillYears(e);
+        const level = skillLevelLabel(e.skillLevel, locale);
+        const facts = [
+          years != null && years > 0
+            ? isDe
+              ? `${years} ${years === 1 ? "Jahr" : "Jahre"}`
+              : `${years} ${years === 1 ? "year" : "years"}`
+            : null,
+          level,
+        ].filter(Boolean);
+        return (
+          <p key={e.id} style={{ margin: "0 0 8px", fontSize: 14, breakInside: "avoid" }}>
+            <b>{e.title}</b>
+            {facts.length > 0 ? <span className="meta"> ({facts.join(" · ")})</span> : null}
+            {e.description ? <span className="meta"> — {e.description}</span> : null}
+          </p>
+        );
+      })}
     </div>
   );
 }
@@ -158,8 +233,8 @@ export default async function CvPage({
       {/* Klassischer Lebenslauf — Werdegang, Ausbildung, Fähigkeiten, Projekte. */}
       <TimelineSection title={isDe ? "Beruflicher Werdegang" : "Career"} items={resume.career} />
       <TimelineSection title={isDe ? "Ausbildung" : "Education"} items={resume.education} />
-      <SkillsSection title={isDe ? "Fähigkeiten" : "Skills"} items={resume.skills} />
-      <TimelineSection title={isDe ? "Projektreferenzen" : "Selected projects"} items={resume.projects} />
+      <SkillsSection title={isDe ? "Fähigkeiten" : "Skills"} items={resume.skills} locale={locale} />
+      <ProjectSection title={isDe ? "Projektreferenzen" : "Selected projects"} items={resume.projects} locale={locale} />
 
       {/* Ausbildung, Zertifizierungen & Auszeichnungen */}
       {certs.length > 0 || focusShown.length > 0 ? (

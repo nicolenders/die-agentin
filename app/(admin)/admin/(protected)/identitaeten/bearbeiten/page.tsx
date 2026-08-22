@@ -7,7 +7,6 @@ import AssetPickerField from "@/components/admin/AssetPickerField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import IdentityToolsField from "@/components/admin/IdentityToolsField";
 import StringListField from "@/components/admin/StringListField";
-import IdentityAttributesField from "@/components/admin/IdentityAttributesField";
 import ColorField from "@/components/admin/ColorField";
 import { getIdentityForEdit, getLinkOptions, type IdentityEditData } from "@/lib/queries/identities";
 import { createIdentity, updateIdentity } from "../actions";
@@ -20,7 +19,7 @@ const EMPTY: IdentityEditData = {
   focusDe: [], focusEn: [], languages: [], color: "#8B5CF6", iconKey: "", isPrimary: false, published: false,
   metaTitleDe: "", metaTitleEn: "", metaDescriptionDe: "", metaDescriptionEn: "",
   portraitAssetId: null, portraitUrl: null, envelopeAssetId: null, envelopeUrl: null, ogAssetId: null, ogUrl: null,
-  toolIds: [], missionIds: [], talkIds: [], publicationIds: [], certificationIds: [], focusTopicIds: [], attributes: [],
+  toolIds: [], missionIds: [], talkIds: [], publicationIds: [], certificationIds: [], focusTopicIds: [],
 };
 
 function labelPair(labelDe: string) {
@@ -155,16 +154,6 @@ export default async function IdentityEditPage({
     <IdentityToolsField initialOptions={options.tools} defaultSelected={data.toolIds} />
   );
 
-  const merkmale = (
-    <div>
-      <p className="meta">Freie Merkmale (Phase 2.2): was heute nicht ins Schema passt, landet hier statt in einer Migration.</p>
-      <IdentityAttributesField
-        name="attributes"
-        initial={data.attributes.map((a) => ({ labelDe: a.labelDe, labelEn: a.labelEn, valueDe: a.valueDe, valueEn: a.valueEn, displayPublic: a.displayPublic }))}
-      />
-    </div>
-  );
-
   const verknuepft = (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div>
@@ -216,7 +205,6 @@ export default async function IdentityEditPage({
     { id: "bilder", label: "Bilder", content: bilder },
     { id: "darstellung", label: "Darstellung", content: darstellung },
     { id: "werkzeuge", label: "Werkzeuge", content: werkzeuge },
-    { id: "merkmale", label: "Merkmale", content: merkmale },
     { id: "verknuepft", label: "Verknüpftes", content: verknuepft },
     { id: "seo", label: "SEO", content: seo },
   ];

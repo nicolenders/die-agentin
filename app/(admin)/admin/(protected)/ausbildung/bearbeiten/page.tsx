@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import Flash from "@/components/admin/Flash";
 import AssetPickerField from "@/components/admin/AssetPickerField";
-import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { CERT_KINDS, CERT_KIND_LABEL, CERT_FAMILIES, CERT_FAMILY_SHORT } from "@/lib/records/kind";
 import { updateCertification } from "../../publikationen/actions";
 
@@ -30,10 +29,7 @@ export default async function CertEditPage({
     return <section>{back}<p className="muted">Kein Eintrag ausgewählt.</p></section>;
   }
 
-  const [row, cats] = await Promise.all([
-    db.certification.findUnique({ where: { id: cert }, include: { categories: true, logo: true } }),
-    db.taxonomy.findMany({ where: { kind: "CERTIFICATION" }, orderBy: { sortOrder: "asc" } }),
-  ]);
+  const row = await db.certification.findUnique({ where: { id: cert }, include: { logo: true } });
   if (!row) {
     return <section>{back}<p className="st">Eintrag nicht gefunden.</p></section>;
   }
@@ -67,8 +63,6 @@ export default async function CertEditPage({
           </select>
           <label className="f">Ziel (nur „In Ausbildung“, z. B. „Q4 2026“)</label>
           <input className="f" name="plannedFor" defaultValue={row.plannedFor ?? ""} />
-          <label className="f">Kategorien (optional, Mehrfachauswahl)</label>
-          <CategoryMultiSelect name="categoryIds" options={cats.map((c) => ({ id: c.id, name: c.nameDe }))} defaultSelected={row.categories.map((c) => c.id)} />
           <label className="f">Bezeichnung</label>
           <input className="f" name="name" defaultValue={row.name} required />
           <label className="f">Kürzel</label>

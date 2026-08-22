@@ -22,7 +22,7 @@ export interface IdentityAdminRow {
   isPrimary: boolean;
   sortOrder: number;
   portraitUrl: string | null;
-  counts: { missions: number; talks: number; publications: number; certifications: number; attributes: number };
+  counts: { missions: number; talks: number; publications: number; certifications: number };
 }
 
 export async function getIdentitiesAdmin(): Promise<IdentityAdminRow[]> {
@@ -30,7 +30,7 @@ export async function getIdentitiesAdmin(): Promise<IdentityAdminRow[]> {
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       portrait: true,
-      _count: { select: { missions: true, talks: true, publications: true, certifications: true, attributes: true } },
+      _count: { select: { missions: true, talks: true, publications: true, certifications: true } },
     },
   });
   return rows.map((r) => ({
@@ -48,7 +48,6 @@ export async function getIdentitiesAdmin(): Promise<IdentityAdminRow[]> {
       talks: r._count.talks,
       publications: r._count.publications,
       certifications: r._count.certifications,
-      attributes: r._count.attributes,
     },
   }));
 }
@@ -91,15 +90,6 @@ export interface IdentityEditData {
   publicationIds: string[];
   certificationIds: string[];
   focusTopicIds: string[];
-  attributes: {
-    id: string;
-    labelDe: string;
-    labelEn: string;
-    valueDe: string;
-    valueEn: string;
-    displayPublic: boolean;
-    sortOrder: number;
-  }[];
 }
 
 export async function getIdentityForEdit(id: string): Promise<IdentityEditData | null> {
@@ -115,7 +105,6 @@ export async function getIdentityForEdit(id: string): Promise<IdentityEditData |
       publications: { select: { id: true } },
       certifications: { select: { id: true } },
       focusTopics: { select: { id: true } },
-      attributes: { orderBy: { sortOrder: "asc" } },
     },
   });
   if (!r) return null;
@@ -157,15 +146,6 @@ export async function getIdentityForEdit(id: string): Promise<IdentityEditData |
     publicationIds: r.publications.map((p) => p.id),
     certificationIds: r.certifications.map((c) => c.id),
     focusTopicIds: r.focusTopics.map((f) => f.id),
-    attributes: r.attributes.map((a) => ({
-      id: a.id,
-      labelDe: a.labelDe,
-      labelEn: a.labelEn,
-      valueDe: a.valueDe,
-      valueEn: a.valueEn,
-      displayPublic: a.displayPublic,
-      sortOrder: a.sortOrder,
-    })),
   };
 }
 
@@ -355,7 +335,6 @@ export interface IdentityDetail extends IdentityCard {
   focus: string[];
   languages: string[];
   tools: { name: string; slug: string }[];
-  attributes: { label: string; value: string }[];
   dispatches: { slug: string; title: string; format: string }[];
   missions: {
     slug: string | null;
@@ -384,7 +363,6 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
       portrait: true,
       envelope: true,
       tools: { orderBy: { sortOrder: "asc" } },
-      attributes: { where: { displayPublic: true }, orderBy: { sortOrder: "asc" } },
       dispatches: { include: { translations: true } },
       missions: {
         // Jüngster Einsatz zuerst (Audit 4.8). Ohne diese Angabe kam die
@@ -422,10 +400,6 @@ async function loadIdentityBySlug(locale: Locale, slug: string, nowMs: number): 
     focus: parseStringList(locale === "en" ? r.focusEn : r.focusDe),
     languages: parseStringList(r.languages),
     tools: r.tools.map((t) => ({ name: t.name, slug: t.slug })),
-    attributes: r.attributes.map((a) => ({
-      label: locale === "en" && a.labelEn ? a.labelEn : a.labelDe,
-      value: locale === "en" && a.valueEn ? a.valueEn : a.valueDe,
-    })),
     dispatches: r.dispatches
       .filter((d) => d.status === "PUBLISHED" && (!d.publishedAt || d.publishedAt.getTime() <= nowMs))
       .map((d) => {

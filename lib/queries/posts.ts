@@ -13,7 +13,6 @@ export interface PostCard {
   summary: string | null;
   fallback: boolean;
   contentLocale: Locale;
-  tags: { slug: string; nameDe: string; nameEn: string }[];
 }
 
 // Alle veröffentlichten Beiträge als Karten für Feed und HQ. Gecacht und
@@ -23,10 +22,7 @@ async function loadPublishedPosts(locale: Locale): Promise<PostCard[]> {
   const posts = await db.post.findMany({
     where: { status: "PUBLISHED" },
     orderBy: { publishedAt: "desc" },
-    include: {
-      translations: true,
-      tags: { include: { tag: true } },
-    },
+    include: { translations: true },
   });
 
   const cards: PostCard[] = [];
@@ -45,7 +41,6 @@ async function loadPublishedPosts(locale: Locale): Promise<PostCard[]> {
       summary: picked.translation.summary,
       fallback: picked.fallback,
       contentLocale: picked.contentLocale,
-      tags: post.tags.map((pt) => pt.tag),
     });
   }
   return cards;

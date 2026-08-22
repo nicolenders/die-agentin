@@ -8,6 +8,7 @@ import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
 import { MISSION_STATUSES, SESSION_TYPES, isOneOf } from "@/lib/domain";
 import { serializeRichValue } from "@/lib/content/rich";
+import { reportDueDate, reportReadiness } from "@/lib/missions/report-task";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface MissionTextInput {
@@ -17,15 +18,14 @@ export interface MissionTextInput {
 
 // Belegmaterial (Phase 9.1) — alle Felder optional.
 export interface MissionMaterialInput {
-  slidesUrl?: string | null;
-  slidesPlatform?: string | null;
   slidesFilePath?: string | null; // hochgeladene PDF-Folien (Pfad in der Medienablage)
   slidesFileName?: string | null; // Originalname für den Download-Link
   recordingUrl?: string | null;
   sessionType?: string | null;
-  attendeeCount?: number | null;
-  feedbackScore?: number | null;
-  feedbackSource?: string | null;
+  // Publikum in drei Zahlen: vor Ort, zugeschaltet, später abgerufen.
+  attendeesOnsite?: number | null;
+  attendeesRemote?: number | null;
+  onDemandViews?: number | null;
   coSpeakers?: string | null; // Rohtext: eine Zeile je Person, „Name | url"
 }
 
@@ -42,17 +42,21 @@ function parseCoSpeakers(raw: string | null | undefined): string | null {
   return list.length ? JSON.stringify(list) : null;
 }
 
+/** Negative oder unlesbare Zahlen werden zu „nicht gepflegt". */
+function count(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value) || value < 0) return null;
+  return Math.trunc(value);
+}
+
 function materialData(m: MissionMaterialInput | undefined) {
   return {
-    slidesUrl: m?.slidesUrl?.trim() || null,
-    slidesPlatform: m?.slidesPlatform?.trim() || null,
     slidesFilePath: m?.slidesFilePath?.trim() || null,
     slidesFileName: m?.slidesFileName?.trim() || null,
     recordingUrl: m?.recordingUrl?.trim() || null,
     sessionType: isOneOf(SESSION_TYPES, m?.sessionType ?? "") ? m!.sessionType! : null,
-    attendeeCount: m?.attendeeCount != null && Number.isFinite(m.attendeeCount) ? Math.trunc(m.attendeeCount) : null,
-    feedbackScore: m?.feedbackScore != null && Number.isFinite(m.feedbackScore) ? m.feedbackScore : null,
-    feedbackSource: m?.feedbackSource?.trim() || null,
+    attendeesOnsite: count(m?.attendeesOnsite),
+    attendeesRemote: count(m?.attendeesRemote),
+    onDemandViews: count(m?.onDemandViews),
     coSpeakers: parseCoSpeakers(m?.coSpeakers),
   };
 }
@@ -189,6 +193,32 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
       if (assetId) {
         await db.missionPhoto.create({ data: { missionId: mission.id, assetId, sortOrder: i } });
       }
+    }
+
+    // Aufgabe „Einsatzbericht": zu jedem Einsatz gehört genau eine. Sie wird
+    // hier angelegt bzw. auf den aktuellen Stichtag gebracht. Abgehakt wird sie
+    // im Terminkalender — aber nur, wenn die Texte da sind; verschwindet der
+    // Text später wieder, geht die Aufgabe erneut auf.
+    const dueOn = reportDueDate(startDate, endDate);
+    const ready = reportReadiness({
+      eventText: input.de.eventText,
+      talkText: input.de.talkText,
+      photoCount: input.photoAssetIds.length,
+    });
+    const existingTask = await db.missionReportTask.findUnique({
+      where: { missionId: mission.id },
+      select: { id: true, status: true },
+    });
+    if (!existingTask) {
+      await db.missionReportTask.create({ data: { missionId: mission.id, dueOn, status: "OPEN" } });
+    } else {
+      await db.missionReportTask.update({
+        where: { missionId: mission.id },
+        data: {
+          dueOn,
+          ...(existingTask.status === "DONE" && !ready.complete ? { status: "OPEN", doneAt: null } : {}),
+        },
+      });
     }
 
     // Optional: gehaltenen Vortrag als TalkDelivery erfassen (für Ranking, M6).

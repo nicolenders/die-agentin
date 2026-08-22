@@ -22,12 +22,6 @@ function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
-// Mehrfachauswahl: alle gewählten Kategorie-IDs. `categoryId` (Einzelspalte)
-// wird zusätzlich mit der ersten gepflegt (Abwärtskompatibilität).
-function ids(formData: FormData, key: string): string[] {
-  return formData.getAll(key).map((v) => String(v)).filter(Boolean);
-}
-
 function invalidatePublications(): void {
   invalidateTags([tags.publicationList("de"), tags.publicationList("en")]);
 }
@@ -179,7 +173,6 @@ export async function createCertification(formData: FormData): Promise<void> {
   // Geplante Zertifizierungen brauchen kein Erwerbsdatum; als Platzhalter now.
   const acquiredOn = monthToDate(str(formData, "acquiredOn")) ?? (status === "PLANNED" ? new Date() : null);
   if (!name || !acquiredOn) redirect(`${CERT_LIST}?err=missing-fields`);
-  const categoryIds = ids(formData, "categoryIds");
 
   let failed = false;
   try {
@@ -191,8 +184,6 @@ export async function createCertification(formData: FormData): Promise<void> {
         status,
         plannedFor: str(formData, "plannedFor") || null,
         shortCode: str(formData, "shortCode") || null,
-        categoryId: categoryIds[0] ?? null,
-        categories: { connect: categoryIds.map((id) => ({ id })) },
         acquiredOn,
         validUntil: monthToDate(str(formData, "validUntil")),
         proofUrl: str(formData, "proofUrl") || null,
@@ -216,7 +207,7 @@ export async function updateCertification(formData: FormData): Promise<void> {
   const status = isOneOf(CERTIFICATION_STATUSES, str(formData, "status")) ? str(formData, "status") : "ACHIEVED";
   const acquiredOn = monthToDate(str(formData, "acquiredOn")) ?? (status === "PLANNED" ? new Date() : null);
   if (!name || !acquiredOn) redirect(`${CERT_LIST}/bearbeiten?cert=${id}&err=missing-fields`);
-  const categoryIds = ids(formData, "categoryIds");
+
 
   let failed = false;
   try {
@@ -229,8 +220,6 @@ export async function updateCertification(formData: FormData): Promise<void> {
         status,
         plannedFor: str(formData, "plannedFor") || null,
         shortCode: str(formData, "shortCode") || null,
-        categoryId: categoryIds[0] ?? null,
-        categories: { set: categoryIds.map((id) => ({ id })) },
         acquiredOn,
         validUntil: monthToDate(str(formData, "validUntil")),
         proofUrl: str(formData, "proofUrl") || null,

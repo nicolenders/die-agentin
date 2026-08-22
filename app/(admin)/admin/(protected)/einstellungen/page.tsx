@@ -1,4 +1,3 @@
-import { db } from "@/lib/db";
 import { LEGAL_KEYS, type LegalKey } from "@/lib/queries/legal";
 import {
   SOCIAL_PLATFORMS,
@@ -6,7 +5,15 @@ import {
   getBios,
   getSocialLinks,
   getShareTemplates,
+  getReminderSettings,
 } from "@/lib/queries/settings";
+import { db } from "@/lib/db";
+import {
+  MAX_REMINDER_LEAD_DAYS,
+  MIN_REMINDER_LEAD_DAYS,
+  DEFAULT_REMINDER_EMAIL,
+} from "@/lib/dispatches/reminder";
+import { isMailConfigured } from "@/lib/mail/send";
 import { SHARE_TYPES, SHARE_TYPE_LABEL, shareTemplateKey } from "@/lib/share";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
@@ -18,6 +25,10 @@ import {
   createSpeakerFormat,
   saveSpeakerFormat,
   deleteSpeakerFormat,
+  createCategory,
+  renameCategory,
+  deleteCategory,
+  saveReminderSettings,
 } from "./actions";
 import { getSpeakerFormatsRaw } from "@/lib/queries/speaker-formats";
 import { parseFormatLanguages, toDurationUnit } from "@/lib/briefings/speaker-formats";
@@ -72,6 +83,8 @@ const LOCALES = [
 // (?tab=…), damit er Reload und die Rückkehr nach dem Speichern übersteht.
 const TABS = [
   { id: "kontakt", label: "Kontakt" },
+  { id: "fachgebiete", label: "Fachgebiete" },
+  { id: "erinnerungen", label: "Erinnerungen" },
   { id: "kanaele", label: "Kanäle" },
   { id: "bios", label: "Speaker-Kit-Bios" },
   { id: "formate", label: "Speaker-Kit-Formate" },
@@ -85,6 +98,7 @@ export default async function EinstellungenPage({
 }) {
   const { ok, err, tab } = await searchParams;
   const active = TABS.find((t) => t.id === tab)?.id ?? "kontakt";
+  const mailReady = isMailConfigured();
 
   let docs: { docKey: string; locale: string; title: string; body: string }[] = [];
   let dbError = false;
@@ -96,13 +110,28 @@ export default async function EinstellungenPage({
   const find = (key: string, locale: string) => docs.find((d) => d.docKey === key && d.locale === locale);
 
   const contact = await getContactInfo();
-  const [biosDe, biosEn, social, templates, speakerFormats] = await Promise.all([
+  const [biosDe, biosEn, social, templates, speakerFormats, reminders] = await Promise.all([
     getBios("de"),
     getBios("en"),
     getSocialLinks(),
     getShareTemplates(),
     getSpeakerFormatsRaw(),
+    getReminderSettings(),
   ]);
+
+  // Fachgebiete der Depeschen (früher unter „Stammdaten"). Mit Zählung, damit
+  // sichtbar ist, was in Gebrauch ist — und was sich gefahrlos löschen lässt.
+  let topicCats: { id: string; nameDe: string; nameEn: string; count: number }[] = [];
+  try {
+    const rows = await db.taxonomy.findMany({
+      where: { kind: "DOSSIER" },
+      orderBy: { sortOrder: "asc" },
+      include: { _count: { select: { dispatchTopics: true } } },
+    });
+    topicCats = rows.map((c) => ({ id: c.id, nameDe: c.nameDe, nameEn: c.nameEn, count: c._count.dispatchTopics }));
+  } catch {
+    dbError = true;
+  }
 
   return (
     <section>
@@ -146,6 +175,101 @@ export default async function EinstellungenPage({
           <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Kontaktangaben speichern</button>
         </form>
       </div>
+      ) : null}
+
+      {active === "fachgebiete" ? (
+      <>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Fachgebiete</p>
+      <p className="meta">
+        Werkzeuge und Produkte, die du Depeschen zuordnest — Copilot Studio, Purview, Governance.
+        Anlegen geht auch direkt in der Depeschen-Maske. Briefing-Kategorien pflegst du unter
+        „Briefings“, Radar-Themen unter „Aufklärung (Radar)“.
+      </p>
+      <div className="card bracket">
+        {topicCats.length === 0 ? (
+          <p className="muted" style={{ marginTop: 0 }}>
+            Noch kein Fachgebiet. Leg das erste an — danach steht es in jeder Depeschen-Maske bereit.
+          </p>
+        ) : (
+          <table>
+            <tbody>
+              {topicCats.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <form action={renameCategory} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <input className="f" name="nameDe" defaultValue={c.nameDe} style={{ maxWidth: 170 }} aria-label="Fachgebiet DE" />
+                      <input className="f" name="nameEn" defaultValue={c.nameEn} style={{ maxWidth: 170 }} aria-label="Fachgebiet EN" />
+                      <button className="btn ghost sm" type="submit">Umbenennen</button>
+                    </form>
+                  </td>
+                  <td className="meta">{c.count} Depeschen</td>
+                  <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                    <form action={deleteCategory} style={{ display: "inline" }}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <ConfirmButton confirmText={`Fachgebiet „${c.nameDe}" löschen?`}>Löschen</ConfirmButton>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <form action={createCategory} style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <input className="f" name="name" placeholder="Neues Fachgebiet" style={{ maxWidth: 240 }} aria-label="Neues Fachgebiet" />
+          <button className="btn ghost sm" type="submit">+ Anlegen</button>
+        </form>
+      </div>
+      </>
+      ) : null}
+
+      {active === "erinnerungen" ? (
+      <>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Erinnerung an Depeschen</p>
+      <p className="meta">
+        Rückt das Veröffentlichungsdatum einer Depesche näher, kommt eine Mail: Inhalte prüfen,
+        Status setzen. Erinnert wird einmal je Termin — wird das Datum verschoben, erinnert die
+        Zentrale zum neuen Termin erneut.
+      </p>
+      {!mailReady ? (
+        <p className="st sched" style={{ display: "inline-block" }}>
+          Es ist noch kein Mailversand eingerichtet (SMTP_HOST und SMTP_FROM in der Umgebung).
+          Bis dahin wird nichts verschickt.
+        </p>
+      ) : null}
+      <form action={saveReminderSettings} className="card bracket" style={{ maxWidth: 560 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input type="checkbox" name="reminderEnabled" defaultChecked={reminders.enabled} />
+          Erinnerungen verschicken
+        </label>
+        <label className="f" htmlFor="reminderLeadDays" style={{ marginTop: 14 }}>
+          Vorlauf in Tagen
+        </label>
+        <input
+          className="f"
+          id="reminderLeadDays"
+          name="reminderLeadDays"
+          type="number"
+          min={MIN_REMINDER_LEAD_DAYS}
+          max={MAX_REMINDER_LEAD_DAYS}
+          defaultValue={reminders.leadDays}
+          style={{ maxWidth: 120 }}
+        />
+        <p className="meta" style={{ marginTop: 4 }}>
+          Wie viele Tage vor dem Veröffentlichungsdatum die Mail kommt ({MIN_REMINDER_LEAD_DAYS}–{MAX_REMINDER_LEAD_DAYS}).
+        </p>
+        <label className="f" htmlFor="reminderEmail">Empfängeradresse</label>
+        <input
+          className="f"
+          id="reminderEmail"
+          name="reminderEmail"
+          type="email"
+          defaultValue={reminders.email}
+          placeholder={DEFAULT_REMINDER_EMAIL}
+        />
+        <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Erinnerungen speichern</button>
+      </form>
+      </>
       ) : null}
 
       {active === "kanaele" ? (

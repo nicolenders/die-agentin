@@ -47,7 +47,6 @@ model Post {
 
   translations PostTranslation[]
   tasks        ChannelTask[]
-  tags         PostTag[]
 
   @@index([status, publishAt])
   @@index([type])
@@ -135,8 +134,6 @@ model Mission {
   eventUrl        String?     @db.NVarChar(2048)
   contentStatus   String      @default("DRAFT") // ContentStatus
   // Belegmaterial (Phase 9.1) — alle optional, Altdaten dürfen nicht brechen.
-  slidesUrl       String?     @db.NVarChar(2048)
-  slidesPlatform  String?
   // Hochgeladene Foliendatei (PDF). Pfad in der Medienablage + Originalname für
   // den Download-Link. Getrennt von MediaAsset, damit die Bild-Mediathek sauber
   // bleibt. Öffentlich als Download angeboten (Phase: Einsätze-Umbau).
@@ -145,8 +142,6 @@ model Mission {
   recordingUrl    String?     @db.NVarChar(2048) // YouTube o. Ä., datenschutzfreundlich eingebettet
   recapDe         String?     @db.NVarChar(Max) // TipTap JSON
   recapEn         String?     @db.NVarChar(Max)
-  feedbackScore   Float?
-  feedbackSource  String?
   coSpeakers      String?     @db.NVarChar(Max) // JSON [{ name, url }]
   sessionType     String? // SessionType: KEYNOTE | SESSION | WORKSHOP | PANEL
   // Sprache, in der der Vortrag gehalten wurde — als Locale-Kürzel („de"/„en"),
@@ -157,7 +152,11 @@ model Mission {
   // (Talk.durationMin), aber je Einsatz überschreibbar — dieselbe Session dauert
   // auf einer Konferenz 45 und im Webinar 30 Minuten.
   durationMin     Int?
-  attendeeCount   Int?
+  // Publikum in drei Zahlen statt einer: wer im Raum saß, wer zugeschaltet war
+  // und wie oft die Aufzeichnung später abgerufen wurde. Alle optional.
+  attendeesOnsite Int?
+  attendeesRemote Int?
+  onDemandViews   Int?
   bannerAssetId   String?
   banner          MediaAsset? @relation("MissionBanner", fields: [bannerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt       DateTime    @default(now())
@@ -169,9 +168,30 @@ model Mission {
   posts        Post[]
   identities   Identity[]           @relation("IdentityMissions")
   tools        Tool[]               @relation("MissionTools")
+  reportTask   MissionReportTask?
 
   @@index([startDate])
   @@index([contentStatus])
+}
+
+// Aufgabe „Einsatzbericht schreiben" zu genau einem Einsatz. Sie steht im
+// Terminkalender neben dem Einsatz selbst und erinnert daran, dass nach dem
+// Auftritt noch Text fehlt. Abhaken lässt sie sich erst, wenn die Pflichttexte
+// des Einsatzes (Veranstaltung und Vortrag, deutsche Fassung) gefüllt sind —
+// die Regel steht in lib/missions/report-task.ts und gilt serverseitig.
+model MissionReportTask {
+  id        String    @id @default(cuid())
+  missionId String    @unique
+  // Stichtag: Ende des Einsatzes, ersatzweise sein Beginn.
+  dueOn     DateTime
+  status    String    @default("OPEN") // OPEN | DONE
+  doneAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@index([status, dueOn])
 }
 
 model MissionTranslation {
@@ -353,8 +373,6 @@ model Certification {
   // Status (Phase 5.3): PLANNED (in Ausbildung) | ACHIEVED | EXPIRED.
   status      String      @default("ACHIEVED")
   plannedFor  String? // optionales Ziel, Datum oder Freitext („Q4 2026")
-  categoryId  String?
-  category    Taxonomy?   @relation("CertificationCategory", fields: [categoryId], references: [id])
   acquiredOn  DateTime
   validUntil  DateTime?
   proofUrl    String?     @db.NVarChar(2048)
@@ -364,57 +382,33 @@ model Certification {
   logoAssetId String?
   logo        MediaAsset? @relation("CertificationLogo", fields: [logoAssetId], references: [id])
 
-  categories Taxonomy[] @relation("CertificationCategories")
   identities Identity[] @relation("IdentityCertifications")
 
-  @@index([categoryId])
   @@index([series])
 }
 
 // ---------------------------------------------------------------------------
-// Taxonomie (Kategorien), Tags
+// Taxonomie (Kategorien)
 // ---------------------------------------------------------------------------
 
 model Taxonomy {
   id        String @id @default(cuid())
-  kind      String // TaxonomyKind: DOSSIER | TALK | CERTIFICATION
+  kind      String // TaxonomyKind: DOSSIER | TALK
   nameDe    String
   nameEn    String
   slug      String
   sortOrder Int    @default(0)
 
-  dossiers       Dossier[]       @relation("DossierCategory")
-  talks          Talk[]          @relation("TalkCategory")
-  certifications Certification[] @relation("CertificationCategory")
+  dossiers       Dossier[]  @relation("DossierCategory")
+  talks          Talk[]     @relation("TalkCategory")
   // Mehrfachauswahl-Gegenseiten (Join-Tabellen).
-  dossierMulti   Dossier[]       @relation("DossierCategories")
-  talkMulti      Talk[]          @relation("TalkCategories")
-  certMulti      Certification[] @relation("CertificationCategories")
-  talkAudiences  Talk[]          @relation("TalkAudiences")
-  dispatchTopics Dispatch[]      @relation("DispatchTopics")
+  dossierMulti   Dossier[]  @relation("DossierCategories")
+  talkMulti      Talk[]     @relation("TalkCategories")
+  talkAudiences  Talk[]     @relation("TalkAudiences")
+  dispatchTopics Dispatch[] @relation("DispatchTopics")
 
   @@unique([kind, slug])
   @@index([kind, sortOrder])
-}
-
-model Tag {
-  id         String     @id @default(cuid())
-  nameDe     String
-  nameEn     String
-  slug       String     @unique
-  posts      PostTag[]
-  dispatches Dispatch[] @relation("DispatchTags")
-}
-
-model PostTag {
-  postId String
-  tagId  String
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([postId, tagId])
-  @@index([tagId])
 }
 
 // ---------------------------------------------------------------------------
@@ -512,34 +506,18 @@ model Identity {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  attributes     IdentityAttribute[]
-  tools          Tool[]              @relation("IdentityTools")
-  missions       Mission[]           @relation("IdentityMissions")
-  talks          Talk[]              @relation("IdentityTalks")
-  publications   Publication[]       @relation("IdentityPublications")
-  certifications Certification[]     @relation("IdentityCertifications")
-  dispatches     Dispatch[]          @relation("IdentityDispatches")
-  focusTopics    FocusTopic[]        @relation("IdentityFocusTopics")
+  tools          Tool[]          @relation("IdentityTools")
+  missions       Mission[]       @relation("IdentityMissions")
+  talks          Talk[]          @relation("IdentityTalks")
+  publications   Publication[]   @relation("IdentityPublications")
+  certifications Certification[] @relation("IdentityCertifications")
+  dispatches     Dispatch[]      @relation("IdentityDispatches")
+  focusTopics    FocusTopic[]    @relation("IdentityFocusTopics")
 
   @@index([published, sortOrder])
 }
 
 // Erweiterbarkeit ohne Migration (Phase 2.2): freie Merkmale je Identität.
-model IdentityAttribute {
-  id            String  @id @default(cuid())
-  identityId    String
-  labelDe       String
-  labelEn       String  @default("")
-  valueDe       String  @db.NVarChar(Max)
-  valueEn       String  @default("") @db.NVarChar(Max)
-  sortOrder     Int     @default(0)
-  displayPublic Boolean @default(true)
-
-  identity Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
-
-  @@index([identityId, sortOrder])
-}
-
 // Werkzeuge je Identität (Phase 2.3). Die globale Werkzeugliste auf der Legende
 // wird aus der Vereinigungsmenge aller Identitäts-Werkzeuge erzeugt.
 model Tool {
@@ -629,25 +607,28 @@ model ChannelTask {
 // ---------------------------------------------------------------------------
 
 model Dispatch {
-  id          String      @id @default(cuid())
-  format      String      @default("NOTE") // DispatchFormat: NOTE|ANALYSIS|REFERENCE|BACKSTAGE
-  status      String      @default("DRAFT") // ContentStatus
-  publishAt   DateTime?
-  publishedAt DateTime?
-  reviewedAt  DateTime? // sichtbar bei REFERENCE („Wissen mit Haltbarkeit")
-  sourceUrl   String?     @db.NVarChar(2048)
-  sourceTitle String?
-  sourceSite  String?
-  sourceImage String?     @db.NVarChar(2048)
-  heroAssetId String?
-  heroAsset   MediaAsset? @relation("DispatchHero", fields: [heroAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id             String      @id @default(cuid())
+  format         String      @default("NOTE") // DispatchFormat: NOTE|ANALYSIS|REFERENCE|BACKSTAGE
+  status         String      @default("DRAFT") // ContentStatus
+  publishAt      DateTime?
+  publishedAt    DateTime?
+  reviewedAt     DateTime? // sichtbar bei REFERENCE („Wissen mit Haltbarkeit")
+  // Zeitpunkt, zu dem die Erinnerungsmail zum nahenden Veröffentlichungsdatum
+  // verschickt wurde. Verhindert, dass derselbe Termin mehrfach erinnert wird;
+  // wird zurückgesetzt, sobald sich `publishAt` ändert.
+  reminderSentAt DateTime?
+  sourceUrl      String?     @db.NVarChar(2048)
+  sourceTitle    String?
+  sourceSite     String?
+  sourceImage    String?     @db.NVarChar(2048)
+  heroAssetId    String?
+  heroAsset      MediaAsset? @relation("DispatchHero", fields: [heroAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   translations DispatchTranslation[]
   identities   Identity[]            @relation("IdentityDispatches")
   topics       Taxonomy[]            @relation("DispatchTopics")
-  tags         Tag[]                 @relation("DispatchTags")
   tasks        ChannelTask[]
   // Radar-Themen (Aufklärung), zu denen diese Depesche gehört. Öffentlich sind
   // die Radar-Punkte anklickbar und filtern die Depeschenliste darauf.
@@ -673,21 +654,6 @@ model DispatchTranslation {
 
   @@unique([dispatchId, locale])
   @@unique([locale, slug])
-}
-
-// ---------------------------------------------------------------------------
-// Slug-Weiterleitungen (SPEC §5: eingefrorene Slugs → 301)
-// ---------------------------------------------------------------------------
-
-model Redirect {
-  id        String   @id @default(cuid())
-  locale    String
-  fromSlug  String
-  toSlug    String
-  entity    String // "post" | "dossier" | "mission"
-  createdAt DateTime @default(now())
-
-  @@unique([locale, fromSlug, entity])
 }
 
 // ---------------------------------------------------------------------------
@@ -897,12 +863,32 @@ model ResumeEntry {
   title       String
   subtitle    String? // Arbeitgeber / Institution / Kunde / Skill-Kategorie
   location    String?
+  // Zeitraum des Eintrags. Bei PROJECT ist das der EIGENE Einsatz im Projekt;
+  // die Laufzeit des Projekts selbst steht in projectFrom/projectTo.
   periodFrom  String? // Freitext, z. B. „03/2018"
   periodTo    String? // Freitext, z. B. „heute"
   description String?  @db.NVarChar(Max) // mehrzeilig; bei SKILL: Liste je Zeile
   tags        String?  @db.NVarChar(Max) // JSON string[] (z. B. Technologien)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
+
+  // — nur PROJECT —
+  // Laufzeit des Projekts (kann länger sein als der eigene Einsatz darin).
+  projectFrom     String?
+  projectTo       String?
+  // Ungefährer Aufwand des eigenen Einsatzes in Personentagen.
+  personDays      Int?
+  // Anonymer Kunde: Der Kundenname (subtitle) wird im öffentlichen Lebenslauf
+  // und im Export durch eine neutrale Angabe ersetzt, statt ihn zu zeigen.
+  clientAnonymous Boolean @default(false)
+  // Neutrale Ersatzangabe für anonyme Kunden („Versicherungskonzern").
+  clientSector    String?
+
+  // — nur SKILL —
+  // Jahre Erfahrung. Sind periodFrom/periodTo als Jahr/Monat lesbar, wird der
+  // Wert daraus berechnet; sonst gilt die manuelle Eingabe.
+  skillYears Int?
+  skillLevel String? // SkillLevel: THEORY | BEGINNER | ADVANCED | EXPERT
 
   @@index([section, sortOrder])
 }

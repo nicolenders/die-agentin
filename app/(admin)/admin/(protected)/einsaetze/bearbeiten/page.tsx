@@ -130,15 +130,13 @@ export default async function EinsatzBearbeitenPage({
           banner: mission.banner ? { id: mission.banner.id, url: assetUrl(mission.banner.blobPath) } : null,
           toolIds: mission.tools.map((t) => t.id),
           material: {
-            slidesUrl: mission.slidesUrl ?? "",
-            slidesPlatform: mission.slidesPlatform ?? "",
             slidesFilePath: mission.slidesFilePath ?? "",
             slidesFileName: mission.slidesFileName ?? "",
             recordingUrl: mission.recordingUrl ?? "",
             sessionType: mission.sessionType ?? "",
-            attendeeCount: mission.attendeeCount != null ? String(mission.attendeeCount) : "",
-            feedbackScore: mission.feedbackScore != null ? String(mission.feedbackScore) : "",
-            feedbackSource: mission.feedbackSource ?? "",
+            attendeesOnsite: mission.attendeesOnsite != null ? String(mission.attendeesOnsite) : "",
+            attendeesRemote: mission.attendeesRemote != null ? String(mission.attendeesRemote) : "",
+            onDemandViews: mission.onDemandViews != null ? String(mission.onDemandViews) : "",
             coSpeakers: coSpeakersToText(mission.coSpeakers),
           },
         };

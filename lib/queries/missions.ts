@@ -128,20 +128,19 @@ export interface MissionDetail {
   briefing: { title: string; language: string } | null;
   // Belegmaterial (Phase 9)
   identities: { slug: string; name: string; color: string }[];
-  slidesUrl: string | null;
-  slidesPlatform: string | null;
   slidesFileUrl: string | null; // öffentlicher Download-Link der hochgeladenen PDF
   slidesFileName: string | null;
   recordingUrl: string | null;
   recap: string | null;
-  feedbackScore: number | null;
-  feedbackSource: string | null;
   coSpeakers: { name: string; url: string | null }[];
   sessionType: string | null;
   /** Vortragssprache („de"/„en"), aus der einen Pflegestelle. */
   sessionLanguage: string | null;
   durationMin: number | null;
-  attendeeCount: number | null;
+  // Publikum in drei Zahlen: vor Ort, zugeschaltet, später abgerufen.
+  attendeesOnsite: number | null;
+  attendeesRemote: number | null;
+  onDemandViews: number | null;
 }
 
 function parseCoSpeakers(json: string | null): { name: string; url: string | null }[] {
@@ -205,19 +204,17 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
     })),
     briefing: delivery && talkTitle ? { title: talkTitle, language: talkLanguage ?? delivery.language } : null,
     identities: mission.identities.map((i) => ({ slug: i.slug, name: identityDisplayName(i, locale), color: i.color })),
-    slidesUrl: mission.slidesUrl,
-    slidesPlatform: mission.slidesPlatform,
     slidesFileUrl: mission.slidesFilePath ? assetUrl(mission.slidesFilePath) : null,
     slidesFileName: mission.slidesFileName,
     recordingUrl: mission.recordingUrl,
     recap: locale === "en" && mission.recapEn ? mission.recapEn : mission.recapDe,
-    feedbackScore: mission.feedbackScore,
-    feedbackSource: mission.feedbackSource,
     coSpeakers: parseCoSpeakers(mission.coSpeakers),
     sessionType: mission.sessionType,
     sessionLanguage: talkLanguage,
     durationMin: mission.durationMin,
-    attendeeCount: mission.attendeeCount,
+    attendeesOnsite: mission.attendeesOnsite,
+    attendeesRemote: mission.attendeesRemote,
+    onDemandViews: mission.onDemandViews,
   };
 }
 

@@ -31,7 +31,6 @@ export interface PostEditorInitial {
   postId?: string;
   type: PostType;
   publishAtLocal: string;
-  tags: string;
   de: { title: string; summary: string; social: string; doc: TiptapDoc };
   en: { title: string; summary: string; doc: TiptapDoc } | null;
 }
@@ -41,7 +40,6 @@ export default function PostEditor({ initial }: { initial: PostEditorInitial }) 
   const [enEnabled, setEnEnabled] = useState<boolean>(Boolean(initial.en));
   const [type, setType] = useState<PostType>(initial.type);
   const [publishAtLocal, setPublishAtLocal] = useState(initial.publishAtLocal);
-  const [tags, setTags] = useState(initial.tags);
   const [deTitle, setDeTitle] = useState(initial.de.title);
   const [deSummary, setDeSummary] = useState(initial.de.summary);
   const [deSocial, setDeSocial] = useState(initial.de.social);
@@ -119,7 +117,6 @@ export default function PostEditor({ initial }: { initial: PostEditorInitial }) 
       postId: initial.postId,
       type,
       publishAtLocal,
-      tags,
       intent,
       de: {
         title: deTitle,
@@ -248,8 +245,6 @@ export default function PostEditor({ initial }: { initial: PostEditorInitial }) 
             <label className="f" htmlFor="pe-date">Veröffentlichen am (Europe/Berlin)</label>
             <input id="pe-date" className="f" type="datetime-local" value={publishAtLocal} onChange={(e) => setPublishAtLocal(e.target.value)} />
 
-            <label className="f" htmlFor="pe-tags">Themen (kommagetrennt)</label>
-            <input id="pe-tags" className="f" value={tags} onChange={(e) => setTags(e.target.value)} />
 
             <label className="f" htmlFor="pe-social">Begleittext für Social</label>
             <textarea id="pe-social" className="f" rows={3} value={deSocial} onChange={(e) => setDeSocial(e.target.value)} />

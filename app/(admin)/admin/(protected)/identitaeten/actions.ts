@@ -29,31 +29,6 @@ function jsonList(formData: FormData, key: string): string[] {
   }
 }
 
-interface AttrInput {
-  labelDe: string;
-  labelEn: string;
-  valueDe: string;
-  valueEn: string;
-  displayPublic: boolean;
-}
-function parseAttributes(formData: FormData): AttrInput[] {
-  try {
-    const parsed = JSON.parse(String(formData.get("attributes") ?? "[]"));
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((r) => ({
-        labelDe: String(r.labelDe ?? "").trim(),
-        labelEn: String(r.labelEn ?? "").trim(),
-        valueDe: String(r.valueDe ?? "").trim(),
-        valueEn: String(r.valueEn ?? "").trim(),
-        displayPublic: Boolean(r.displayPublic),
-      }))
-      .filter((r) => r.labelDe || r.valueDe);
-  } catch {
-    return [];
-  }
-}
-
 function invalidateIdentities(): void {
   invalidateTags([tags.identityList("de"), tags.identityList("en")]);
 }
@@ -147,7 +122,6 @@ export async function createIdentity(formData: FormData): Promise<void> {
 
   const data = commonData(formData);
   const links = linkConnect(formData);
-  const attrs = parseAttributes(formData);
 
   let newId: string | null = null;
   try {
@@ -161,7 +135,6 @@ export async function createIdentity(formData: FormData): Promise<void> {
         publications: { connect: links.publications.map((id) => ({ id })) },
         certifications: { connect: links.certifications.map((id) => ({ id })) },
         focusTopics: { connect: links.focusTopics.map((id) => ({ id })) },
-        attributes: { create: attrs.map((a, i) => ({ ...a, sortOrder: i })) },
       },
     });
     newId = created.id;
@@ -184,7 +157,6 @@ export async function updateIdentity(formData: FormData): Promise<void> {
   const slug = slugify(str(formData, "slug") || roleDe);
   const data = commonData(formData);
   const links = linkConnect(formData);
-  const attrs = parseAttributes(formData);
 
   try {
     await db.identity.update({
@@ -198,8 +170,6 @@ export async function updateIdentity(formData: FormData): Promise<void> {
         publications: { set: links.publications.map((id) => ({ id })) },
         certifications: { set: links.certifications.map((id) => ({ id })) },
         focusTopics: { set: links.focusTopics.map((id) => ({ id })) },
-        // Merkmale komplett ersetzen (einfachste konsistente Strategie).
-        attributes: { deleteMany: {}, create: attrs.map((a, i) => ({ ...a, sortOrder: i })) },
       },
     });
   } catch {

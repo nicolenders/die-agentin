@@ -40,7 +40,7 @@ export const TASK_STATES = [
 ] as const;
 export type TaskState = (typeof TASK_STATES)[number];
 
-export const TAXONOMY_KINDS = ["DOSSIER", "TALK", "CERTIFICATION"] as const;
+export const TAXONOMY_KINDS = ["DOSSIER", "TALK"] as const;
 export type TaxonomyKind = (typeof TAXONOMY_KINDS)[number];
 
 export const PUBLICATION_TYPES = ["BOOK", "COURSE", "REPOSITORY", "ARTICLE", "PODCAST", "INTERVIEW", "WHITEPAPER"] as const;
@@ -76,3 +76,18 @@ export type PromptKind = (typeof PROMPT_KINDS)[number];
 
 export const PROMPT_SUBJECTS = ["MISSION", "TALK", "DISPATCH", "IDENTITY", "NONE"] as const;
 export type PromptSubject = (typeof PROMPT_SUBJECTS)[number];
+
+// Aufgaben im Terminkalender (bislang nur der Einsatzbericht je Einsatz).
+export const TASK_STATUSES = ["OPEN", "DONE"] as const;
+export type TaskStatus = (typeof TASK_STATUSES)[number];
+
+// Selbsteinschätzung je Fähigkeit im Lebenslauf. Reihenfolge = Steigerung.
+export const SKILL_LEVELS = ["THEORY", "BEGINNER", "ADVANCED", "EXPERT"] as const;
+export type SkillLevel = (typeof SKILL_LEVELS)[number];
+
+export const SKILL_LEVEL_LABEL: Record<SkillLevel, { de: string; en: string }> = {
+  THEORY: { de: "Theoretisches Wissen", en: "Theoretical knowledge" },
+  BEGINNER: { de: "Anfänger", en: "Beginner" },
+  ADVANCED: { de: "Fortgeschritten", en: "Advanced" },
+  EXPERT: { de: "Experte", en: "Expert" },
+};

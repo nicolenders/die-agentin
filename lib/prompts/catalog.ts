@@ -78,7 +78,6 @@ const DISPATCH_PLACEHOLDERS: PlaceholderDef[] = [
   { key: "depesche.teaser_en", label: "Anrisstext (Englisch)" },
   { key: "depesche.art", label: "Format (Meldung, Einordnung …)" },
   { key: "depesche.themen", label: "Radar-Themen und Fachgebiete" },
-  { key: "depesche.schlagworte", label: "Schlagworte" },
   { key: "depesche.text", label: "Volltext als reiner Text (Deutsch)" },
   { key: "depesche.text_en", label: "Volltext als reiner Text (Englisch)" },
   { key: "depesche.quelle", label: "Quelle mit Adresse" },

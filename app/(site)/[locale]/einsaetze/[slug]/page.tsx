@@ -52,18 +52,20 @@ export default async function EinsatzaktePage({
   const isDe = locale === "de";
   const videoId = extractYouTubeId(mission.recordingUrl);
 
-  // Fakten-Zeile: Art, Sprache, Teilnehmende, Feedback (leere Angaben entfallen).
+  // Fakten-Zeile: Art, Sprache, Dauer, Publikum (leere Angaben entfallen). Das
+  // Publikum steht in bis zu drei Zahlen — vor Ort, zugeschaltet, später
+  // abgerufen —, weil ein Webinar mit 40 im Raum und 900 online sonst wie eine
+  // kleine Runde aussieht.
   const facts = [
     mission.sessionType ? { KEYNOTE: "Keynote", SESSION: "Session", WORKSHOP: "Workshop", PANEL: "Panel" }[mission.sessionType] ?? mission.sessionType : null,
     talkLanguageLabel(mission.sessionLanguage, locale),
     mission.durationMin ? formatDuration(mission.durationMin, locale) : null,
-    mission.attendeeCount ? `${mission.attendeeCount} ${isDe ? "Teilnehmende" : "attendees"}` : null,
-    mission.feedbackScore != null ? `${isDe ? "Feedback" : "Feedback"} ${mission.feedbackScore}${mission.feedbackSource ? ` (${mission.feedbackSource})` : ""}` : null,
+    mission.attendeesOnsite ? `${mission.attendeesOnsite} ${isDe ? "vor Ort" : "on site"}` : null,
+    mission.attendeesRemote ? `${mission.attendeesRemote} ${isDe ? "zugeschaltet" : "remote"}` : null,
+    mission.onDemandViews ? `${mission.onDemandViews} ${isDe ? "Abrufe" : "on-demand views"}` : null,
   ].filter(Boolean);
 
-  const hasMaterial = Boolean(
-    mission.slidesUrl || mission.slidesFileUrl || videoId || mission.photos.length > 0,
-  );
+  const hasMaterial = Boolean(mission.slidesFileUrl || videoId || mission.photos.length > 0);
 
   const url = `${siteOrigin()}/${locale}/einsaetze/${mission.slug}`;
   const jsonLd = graph([
@@ -168,14 +170,6 @@ export default async function EinsatzaktePage({
                   rel="noopener noreferrer"
                 >
                   {isDe ? "Folien herunterladen (PDF)" : "Download slides (PDF)"} ↓
-                </a>
-              </p>
-            ) : null}
-            {mission.slidesUrl ? (
-              <p>
-                <a className="btn ghost sm" href={mission.slidesUrl} target="_blank" rel="noopener noreferrer">
-                  {isDe ? "Folien ansehen" : "View slides"}
-                  {mission.slidesPlatform ? ` · ${mission.slidesPlatform}` : ""} ↗
                 </a>
               </p>
             ) : null}

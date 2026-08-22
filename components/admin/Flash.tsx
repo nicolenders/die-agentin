@@ -37,6 +37,11 @@ export const FLASH_MESSAGES: Record<string, string> = {
   "not-found": "Eintrag nicht gefunden.",
   "focus-full": `Auf der Startseite ist Platz für ${HOME_FOCUS_MAX} Einträge. Erst einen bestehenden ausblenden oder löschen, dann den neuen anlegen.`,
   "category-in-use": "Kategorie ist noch zugeordnet: erst umhängen oder löschen.",
+  "report-done": "Einsatzbericht abgehakt.",
+  "report-open": "Aufgabe wieder geöffnet.",
+  "report-incomplete":
+    "Einsatzbericht noch nicht vollständig: Veranstaltung und Vortrag brauchen Text. Erst ergänzen, dann abhaken.",
+  "lead-days-range": "Vorlauf muss zwischen 1 und 90 Tagen liegen. Nichts wurde gespeichert.",
   "alt-required": "Alt-Text ist Pflicht (außer das Bild ist dekorativ).",
   "asset-in-use": "Bild wird noch verwendet: erst aus Beitrag/Einsatz entfernen.",
   "document-in-use": "Datei ist noch einem Einsatz zugeordnet: dort erst entfernen.",

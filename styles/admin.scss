@@ -322,9 +322,9 @@
 }
 
 // ---------------------------------------------------------------------------
-// Einsatzzentrale. Ziel: alles ohne Scrollen sichtbar. Deshalb eine
-// Höhenaufteilung statt gestapelter Blöcke — der Kennzahlenteil darf wachsen,
-// die Kachelreihen bleiben kompakt.
+// Einsatzzentrale. Ziel: das Wichtigste ohne Scrollen sichtbar. Kennzahlen
+// oben über die volle Breite, darunter zwei Spalten — links, was ansteht,
+// rechts Reichweite und Wege.
 // ---------------------------------------------------------------------------
 .hq {
   display: flex;
@@ -424,6 +424,88 @@
   background: none;
   -webkit-text-fill-color: #5c4e7c;
   color: #5c4e7c;
+}
+
+// Zwei Spalten für die Zentrale: das laufende Geschäft neben Reichweite und
+// Wegen. Unter 1100 px fällt es untereinander — nebeneinander wären beide
+// Spalten dort zu schmal, um noch lesbar zu sein.
+.hq-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .hq-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.hq-panel {
+  padding: 14px 16px;
+}
+.hq-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hq-panel-head .btn {
+  margin-left: auto;
+}
+
+// „Als Nächstes": Titel, Typ und Termin in einer Zeile, davor der Farbpunkt der
+// Identität — dieselbe Sprache wie im Terminkalender.
+.hq-next {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hq-next li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 8px;
+}
+.hq-next li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.hq-next-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  align-self: center;
+}
+.hq-next .meta {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+// Meistbesuchte Bereiche als schlichte Wertepaare.
+.hq-sections {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.hq-sections li {
+  display: flex;
+  gap: 10px;
+  color: var(--muted);
+}
+.hq-sections b {
+  margin-left: auto;
+  color: var(--text);
+  font-family: var(--mono);
 }
 
 // Kachel-Knöpfe (anlegen, springen).

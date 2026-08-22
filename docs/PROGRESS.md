@@ -856,6 +856,10 @@ Auf Wunsch von Nicole überarbeitete Redaktionsoberfläche. Migration:
 `prisma/migrations/20260822120000_admin_umbau`. **Vor dem Deployment ein
 Azure-SQL-Snapshot** — die Migration löscht Tabellen (siehe ADR 0024).
 
+Die Anwendung migriert beim Serverstart selbst; wer es von Hand machen will,
+folgt `docs/db/2026-08-22-admin-umbau.md` (Anleitung) mit
+`docs/db/2026-08-22-admin-umbau.sql` (Skript).
+
 **Terminkalender statt Redaktionsplan**
 - `/admin/redaktionsplan` → `/admin/terminkalender` (alte Route leitet weiter).
   Der Kalender zeigt jetzt alle Termine, nicht nur Ungeplantes: Filter nach

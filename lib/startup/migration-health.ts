@@ -24,12 +24,24 @@ export interface MigrationFacts {
   expected: string[];
   /** Zeilen aus `_prisma_migrations`. */
   rows: MigrationRow[];
+  /**
+   * Migrationen ohne Eintrag, deren Tabellen aber schon in der Datenbank
+   * stehen. Fehlt die Angabe (`undefined`), wurde nicht nachgesehen.
+   */
+  alreadyInPlace?: string[];
 }
 
 export interface MigrationHealth {
   state: MigrationState;
-  /** Migrationen ohne (erfolgreichen) Eintrag — die Datenbank ist hinterher. */
+  /** Migrationen ohne Eintrag, deren Objekte auch wirklich fehlen. */
   pending: string[];
+  /**
+   * Migrationen ohne Eintrag, die faktisch längst wirken — von Hand
+   * ausgeführt, aber nie verbucht. Sie sind der eigentliche Stolperstein: Beim
+   * Start versucht Prisma sie erneut, scheitert an schon vorhandenen Objekten
+   * und lässt alles Nachfolgende liegen.
+   */
+  unrecorded: string[];
   /** Angefangen und nie fertig geworden — blockiert jeden weiteren Lauf. */
   broken: string[];
   /** Ein Satz, der sagt, was los ist. Leer, wenn alles stimmt. */
@@ -58,6 +70,7 @@ export function resolveMigrationHealth(
     return {
       state: processState,
       pending: [],
+      unrecorded: [],
       broken: [],
       summary:
         processState === "failed"
@@ -70,26 +83,55 @@ export function resolveMigrationHealth(
   const broken = facts.rows.filter((r) => !isApplied(r)).map((r) => r.name);
   const pending = facts.expected.filter((name) => !applied.has(name) && !broken.includes(name));
 
+  const known = new Set(facts.alreadyInPlace ?? []);
+  const unrecorded = pending.filter((name) => known.has(name));
+  const missing = pending.filter((name) => !known.has(name));
+
   if (broken.length > 0) {
     return {
       state: "failed",
-      pending,
+      pending: missing,
+      unrecorded,
       broken,
       summary: `Die Migration ${broken[0]} steckt halb angewendet fest und blockiert alle weiteren. Sie muss aufgelöst werden (prisma migrate resolve).`,
     };
   }
 
-  if (pending.length > 0) {
+  // Der Fall, an dem sich alles verhakt: Die Objekte sind da, nur der Eintrag
+  // fehlt. Er wird zuerst genannt, weil er die übrigen blockiert — solange er
+  // besteht, kommt kein Startlauf an ihm vorbei.
+  if (unrecorded.length > 0) {
+    const rest = missing.length;
     return {
       state: "failed",
-      pending,
+      pending: missing,
+      unrecorded,
       broken,
       summary:
-        pending.length === 1
-          ? `Die Migration ${pending[0]} ist noch nicht angewendet.`
-          : `${pending.length} Migrationen sind noch nicht angewendet, die älteste ist ${pending[0]}.`,
+        `${unrecorded.length === 1 ? "Die Migration" : `${unrecorded.length} Migrationen`} ` +
+        `${unrecorded.length === 1 ? unrecorded[0] + " wirkt" : "wirken"} bereits in der Datenbank, ` +
+        `${unrecorded.length === 1 ? "ist" : "sind"} aber nicht eingetragen. ` +
+        "Beim Start versucht Prisma sie erneut, " +
+        `scheitert an den vorhandenen Tabellen und bricht ab` +
+        (rest > 0
+          ? ` — deshalb ${rest === 1 ? "bleibt eine weitere Migration" : `bleiben ${rest} weitere Migrationen`} liegen.`
+          : ".") +
+        " Nachtragen statt erneut ausführen.",
     };
   }
 
-  return { state: "applied", pending: [], broken: [], summary: "" };
+  if (missing.length > 0) {
+    return {
+      state: "failed",
+      pending: missing,
+      unrecorded,
+      broken,
+      summary:
+        missing.length === 1
+          ? `Die Migration ${missing[0]} ist noch nicht angewendet.`
+          : `${missing.length} Migrationen sind noch nicht angewendet, die älteste ist ${missing[0]}.`,
+    };
+  }
+
+  return { state: "applied", pending: [], unrecorded: [], broken: [], summary: "" };
 }

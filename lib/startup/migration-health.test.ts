@@ -59,4 +59,61 @@ describe("resolveMigrationHealth", () => {
     expect(failed.state).toBe("failed");
     expect(failed.summary).toContain("nicht nachlesen");
   });
+
+  // Der Fall, der zweimal zugeschlagen hat: von Hand ausgeführt, nie verbucht.
+  // Er sieht aus wie „noch nicht angewendet", braucht aber die umgekehrte
+  // Abhilfe — nachtragen statt laufen lassen.
+  it("trennt nicht verbuchte von wirklich fehlenden Migrationen", () => {
+    const h = resolveMigrationHealth("applied", {
+      expected: ["0001_init", "0002_zwei", "0003_drei"],
+      rows: [done("0001_init")],
+      alreadyInPlace: ["0002_zwei"],
+    });
+    expect(h.state).toBe("failed");
+    expect(h.unrecorded).toEqual(["0002_zwei"]);
+    expect(h.pending).toEqual(["0003_drei"]);
+  });
+
+  it("nennt beim Nachtragen den Grund und die Folge", () => {
+    const h = resolveMigrationHealth("applied", {
+      expected: ["0001_init", "0002_zwei", "0003_drei"],
+      rows: [done("0001_init")],
+      alreadyInPlace: ["0002_zwei"],
+    });
+    expect(h.summary).toContain("bereits in der Datenbank");
+    expect(h.summary).toContain("Nachtragen");
+    // Die blockierte Migration muss vorkommen, sonst wirkt der Rest beliebig.
+    expect(h.summary).toContain("eine weitere Migration");
+  });
+
+  it("meldet die Blockade auch dann, wenn sonst nichts offen ist", () => {
+    const h = resolveMigrationHealth("applied", {
+      expected: ["0001_init", "0002_zwei"],
+      rows: [done("0001_init")],
+      alreadyInPlace: ["0002_zwei"],
+    });
+    expect(h.unrecorded).toEqual(["0002_zwei"]);
+    expect(h.pending).toEqual([]);
+    expect(h.summary).not.toContain("weitere Migration");
+  });
+
+  it("bleibt beim alten Wortlaut, wenn nichts vorab da ist", () => {
+    const h = resolveMigrationHealth("applied", {
+      expected: ["0001_init", "0002_zwei"],
+      rows: [done("0001_init")],
+      alreadyInPlace: [],
+    });
+    expect(h.unrecorded).toEqual([]);
+    expect(h.pending).toEqual(["0002_zwei"]);
+    expect(h.summary).toContain("noch nicht angewendet");
+  });
+
+  it("behauptet nichts, wenn nicht nachgesehen wurde", () => {
+    const h = resolveMigrationHealth("applied", {
+      expected: ["0001_init", "0002_zwei"],
+      rows: [done("0001_init")],
+    });
+    expect(h.unrecorded).toEqual([]);
+    expect(h.pending).toEqual(["0002_zwei"]);
+  });
 });

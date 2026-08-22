@@ -47,7 +47,6 @@ export default async function BriefingEditPage({
           audiences: true,
           tools: { select: { id: true } },
           slideDecks: true,
-          attachments: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         },
       })
     : null;
@@ -55,6 +54,25 @@ export default async function BriefingEditPage({
   // Die Vorlagen (Medien → Vorlagen) stehen hier zum Anfangen bereit — der Weg
   // ist: Vorlage laden, Folien bauen, Folien hier hinterlegen.
   const templates = await getSlideTemplates();
+
+  // Das Material getrennt holen, nicht als `include` am Briefing.
+  //
+  // Der Grund ist eine Lehre: Als `include` nahm eine fehlende Tabelle
+  // `TalkAttachment` die ganze Maske mit — ein Briefing ließ sich nicht mehr
+  // öffnen, weil ein NACHGEREICHTER Zusatz nicht in der Datenbank angekommen
+  // war. Eine Ergänzung darf nie das kippen, was vorher schon funktioniert hat.
+  // Fehlt sie, fehlt eben das Material; alles andere steht.
+  const attachments = talk
+    ? await db.talkAttachment
+        .findMany({
+          where: { talkId: talk.id },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        })
+        .catch((error) => {
+          console.error("[briefing] Material nicht lesbar:", error);
+          return null;
+        })
+    : [];
 
   if (id && !talk) {
     return (
@@ -201,9 +219,19 @@ export default async function BriefingEditPage({
           Anleitungen, Notizen, Demo-Dateien, Videos — alles, was zur Vorbereitung dazugehört.
           Nur hier im Adminbereich sichtbar.
         </p>
+        {attachments === null ? (
+          <div className="card bracket">
+            <p className="meta" style={{ margin: 0, color: "var(--warn)" }}>
+              Das Material lässt sich gerade nicht lesen. Meist fehlt der Datenbank noch die
+              Migration <code>20260912120000_talk_attachments</code> —{" "}
+              <Link href="/admin/einstellungen?tab=system">Einstellungen → System</Link> sagt, was
+              zu tun ist. Alles andere an diesem Briefing funktioniert weiter.
+            </p>
+          </div>
+        ) : (
         <TalkAttachments
           talkId={talk?.id ?? null}
-          rows={(talk?.attachments ?? []).map((a) => ({
+          rows={attachments.map((a) => ({
             id: a.id,
             kind: a.kind,
             title: a.title,
@@ -216,6 +244,7 @@ export default async function BriefingEditPage({
           saveAction={saveTalkAttachment}
           deleteAction={deleteTalkAttachment}
         />
+        )}
       </div>
 
       {isEdit ? (

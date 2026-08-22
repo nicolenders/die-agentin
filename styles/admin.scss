@@ -344,9 +344,13 @@ a.st:focus-visible {
 // was übrig bleibt, und ihre Kästen scrollen bei Bedarf INNEN. Wächst dort eine
 // Liste, wandert also nicht die ganze Seite, sondern nur der Kasten.
 //
-// Nur dort erzwungen, wo wirklich Platz ist: Unterhalb von 1000 px Breite oder
-// 720 px Höhe passt das nicht mehr, und eine abgeschnittene Zentrale wäre
-// schlimmer als eine, die scrollt.
+// Nur dort erzwungen, wo wirklich Platz ist. Die Schwelle liegt bei 1180 px
+// Breite, nicht bei 1000: Ausschlaggebend ist nicht die Höhe, sondern die
+// Breite — je schmaler das Fenster, desto mehr Zeilen brauchen die Kachelreihen
+// unten, und die sind fest. Bei 1024 px blieben der mittleren Zeile gemessene
+// 11 px; das ist keine Zentrale mehr, das ist ein Spalt. Darunter darf die
+// Seite wieder normal scrollen — eine abgeschnittene Zentrale wäre schlimmer
+// als eine, die scrollt.
 // ---------------------------------------------------------------------------
 .hq {
   display: flex;
@@ -354,53 +358,6 @@ a.st:focus-visible {
   gap: 14px;
 }
 
-@media (min-width: 1000px) and (min-height: 720px) {
-  // Die Inhaltsfläche bekommt genau die Fensterhöhe abzüglich der Kopfzeile.
-  // `:has()` statt einer eigenen Klasse: Das Layout ist für alle Admin-Seiten
-  // dasselbe, nur diese eine soll sich anders verhalten.
-  .content:has(.hq) {
-    height: calc(100dvh - 60px);
-    overflow: hidden;
-    padding-bottom: 22px;
-  }
-
-  .hq {
-    display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
-    height: 100%;
-    min-height: 0;
-    gap: 12px;
-  }
-
-  // Damit die Zeile schrumpfen darf, muss auch ihr Inhalt schrumpfen dürfen.
-  .hq-grid,
-  .hq-panel {
-    min-height: 0;
-  }
-
-  .hq-panel {
-    overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
-  }
-  .hq-panel::-webkit-scrollbar {
-    width: 8px;
-  }
-  .hq-panel::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .hq-panel::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.28);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-
-  // Die Begrüßung darf den Platz nicht auffressen, wenn er knapp wird.
-  .hq-head h1 {
-    font-size: clamp(26px, 3.2vw, 44px);
-  }
-}
 .hq-head {
   display: flex;
   align-items: baseline;
@@ -617,6 +574,102 @@ a.st:focus-visible {
   color: var(--muted);
   padding: 10px 13px;
   font-size: 13px;
+}
+
+// Die begrenzte Ansicht steht bewusst HINTER den Grundregeln: Sie überschreibt
+// unter anderem `align-items: start` am Raster, und bei gleicher Spezifität
+// gewinnt die spätere Regel. Stand sie vorher, blieb `start` wirksam — die
+// Kästen behielten ihre Inhaltshöhe, füllten die Zeile nicht und wurden am
+// unteren Rand abgeschnitten, statt zu scrollen.
+@media (min-width: 1180px) and (min-height: 720px) {
+  // Die Inhaltsfläche bekommt genau die Fensterhöhe abzüglich der Kopfzeile.
+  // `:has()` statt einer eigenen Klasse: Das Layout ist für alle Admin-Seiten
+  // dasselbe, nur diese eine soll sich anders verhalten.
+  .content:has(.hq) {
+    height: calc(100dvh - 60px);
+    overflow: hidden;
+    padding-bottom: 22px;
+  }
+
+  .hq {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    height: 100%;
+    min-height: 0;
+    gap: 10px;
+  }
+
+  // Alles, was fest ist, wird schmaler — damit für die dehnbare Zeile in der
+  // Mitte möglichst viel übrig bleibt und sie ohne Scrollen auskommt.
+  .hq-overview {
+    gap: 10px;
+  }
+  .hq-card {
+    padding: 11px 14px 10px;
+    gap: 8px;
+  }
+  .count {
+    padding: 6px 9px;
+  }
+  .count b {
+    font-size: 22px;
+  }
+  .hq-panel {
+    padding: 12px 14px;
+  }
+  .hq-tiles {
+    grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
+    gap: 8px;
+  }
+  .tile {
+    padding: 10px 12px;
+  }
+  .tile.ghost {
+    padding: 9px 12px;
+  }
+
+  // Damit die Zeile schrumpfen darf, muss auch ihr Inhalt schrumpfen dürfen.
+  .hq-grid,
+  .hq-panel {
+    min-height: 0;
+  }
+
+  // Hier lag der Fehler, der die Kästen übereinander schob: `align-items: start`
+  // (aus dem Grundlayout) gibt jedem Kasten seine INHALTSHÖHE statt der
+  // Zeilenhöhe. Damit war er nie zu hoch für sich selbst, `overflow: auto` griff
+  // nie — und was nicht mehr in die Zeile passte, wurde einfach über die
+  // nächste gemalt. In der begrenzten Ansicht müssen die Kästen die Zeile füllen
+  // und an ihr enden; `overflow: hidden` am Raster ist der Riegel davor, dass je
+  // wieder etwas herausläuft.
+  .hq-grid {
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .hq-panel {
+    max-height: 100%;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+  }
+  .hq-panel::-webkit-scrollbar {
+    width: 8px;
+  }
+  .hq-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hq-panel::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  // Die Begrüßung darf den Platz nicht auffressen, wenn er knapp wird. Sie ist
+  // ein Gruß, keine Überschrift, um die man herumlesen muss.
+  .hq-head h1 {
+    font-size: clamp(22px, 2.4vw, 32px);
+  }
 }
 .tile.ghost:hover {
   color: var(--text);

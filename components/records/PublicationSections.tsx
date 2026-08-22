@@ -2,6 +2,7 @@ import type { Locale } from "@/lib/i18n/config";
 import type { PublicationItem } from "@/lib/queries/records";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
+import { youtubeWatchUrl } from "@/lib/video/youtube";
 
 // Publikationen-Layout (Bücher-Grid, Kurse, Repositories, Weitere) — aus der
 // eigenständigen Seite ausgelagert, damit Identitäts-Detailseite und Lebenslauf
@@ -37,14 +38,29 @@ function PdfIcon() {
   );
 }
 
+/**
+ * Abspiel-Dreieck über dem Vorschaubild. Ohne das sähe die Kachel aus wie ein
+ * Bild — mit ihm ist auf einen Blick klar, dass ein Klick ein Video startet.
+ * Rein dekorativ: Was passiert, steht im Linktext.
+ */
+function PlayBadge() {
+  return (
+    <span className="video-play" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+        <path d="M9.5 7.2 19 13l-9.5 5.8V7.2Z" fill="currentColor" />
+      </svg>
+    </span>
+  );
+}
+
 function typeLabel(t: string, isDe: boolean): string {
   const de: Record<string, string> = {
     BOOK: "Buch", ARTICLE: "Fachartikel", WHITEPAPER: "Whitepaper", COURSE: "Kurs",
-    REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview",
+    REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview", VIDEO: "Video",
   };
   const en: Record<string, string> = {
     BOOK: "Book", ARTICLE: "Article", WHITEPAPER: "Whitepaper", COURSE: "Course",
-    REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview",
+    REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview", VIDEO: "Video",
   };
   return (isDe ? de : en)[t] ?? t;
 }
@@ -53,10 +69,18 @@ export default function PublicationSections({
   items,
   locale,
   compact = false,
+  showVideos = true,
 }: {
   items: PublicationItem[];
   locale: Locale;
   compact?: boolean;
+  /**
+   * Videos mitzeigen. Auf der Publikationsseite ja — dort gehören sie hin. Im
+   * Lebenslauf nein: Bei dreistelligen Zahlen wäre der Abschnitt
+   * „Publikationen" eine Wand aus Vorschaubildern, und ein Lebenslauf ist kein
+   * Kanal. Wer die Videos sucht, findet sie eine Seite weiter.
+   */
+  showVideos?: boolean;
 }) {
   const isDe = locale === "de";
 
@@ -74,9 +98,10 @@ export default function PublicationSections({
       >
         {items.map((p) => {
           const link = p.repoUrl ?? p.url;
-          const showCover = p.type === "BOOK" || p.type === "COURSE";
-          const ratio = p.type === "COURSE" ? "16 / 9" : "2 / 3";
-          const coverWidth = p.type === "COURSE" ? 96 : 60;
+          const showCover = p.type === "BOOK" || p.type === "COURSE" || p.type === "VIDEO";
+          const wide = p.type === "COURSE" || p.type === "VIDEO";
+          const ratio = wide ? "16 / 9" : "2 / 3";
+          const coverWidth = wide ? 96 : 60;
           return (
             <article
               key={p.id}
@@ -89,7 +114,13 @@ export default function PublicationSections({
                     src={p.coverUrl ?? brandAsset(`cover-${p.id}.jpg`)}
                     alt={p.coverAlt || `Cover: ${p.title}`}
                     label="Cover"
-                    sub={p.type === "COURSE" ? (isDe ? "Kurs" : "Course") : isDe ? "Buchcover" : "Book cover"}
+                    sub={
+                      p.type === "COURSE"
+                        ? isDe ? "Kurs" : "Course"
+                        : p.type === "VIDEO"
+                          ? "YouTube"
+                          : isDe ? "Buchcover" : "Book cover"
+                    }
                     ratio={ratio}
                     ai={p.coverAi}
                     locale={locale}
@@ -127,7 +158,10 @@ export default function PublicationSections({
   const books = items.filter((p) => p.type === "BOOK");
   const courses = items.filter((p) => p.type === "COURSE");
   const repos = items.filter((p) => p.type === "REPOSITORY");
-  const others = items.filter((p) => !["BOOK", "COURSE", "REPOSITORY"].includes(p.type));
+  // Nur Videos mit lesbarer Kennung: Ohne sie gäbe es weder Link noch Bild, und
+  // eine Kachel, die ins Leere führt, ist schlimmer als keine.
+  const videos = showVideos ? items.filter((p) => p.type === "VIDEO" && p.videoId) : [];
+  const others = items.filter((p) => !["BOOK", "COURSE", "REPOSITORY", "VIDEO"].includes(p.type));
 
   return (
     <>
@@ -242,6 +276,60 @@ export default function PublicationSections({
                   </a>
                 ) : null}
               </article>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {videos.length > 0 ? (
+        <>
+          <p className="eyebrow" style={{ marginTop: 40 }}>
+            {isDe ? "Videos" : "Videos"}
+          </p>
+          <p className="meta" style={{ marginTop: 6, maxWidth: "62ch" }}>
+            {isDe
+              ? "Aufzeichnungen und Gespräche, verstreut über die Kanäle anderer. Ein Klick öffnet das Video bei YouTube — im neuen Tab, am Telefon in der App."
+              : "Recordings and conversations, scattered across other people’s channels. A click opens the video on YouTube — in a new tab, or in the app on your phone."}
+          </p>
+          <div className="video-grid">
+            {videos.map((v) => (
+              // Die ganze Kachel ist der Link: ein Ziel statt Bild und Titel
+              // getrennt, damit auch mit Tastatur ein Tabstopp genügt.
+              <a
+                key={v.id}
+                className="card bracket video-card"
+                href={youtubeWatchUrl(v.videoId!)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {/* Block-Elemente statt <span>: BrandImage rendert ein
+                    <figure>, und das darf in keinem <span> stehen. In einem <a>
+                    ist es dagegen zulässig, solange darin nichts Bedienbares
+                    liegt — deshalb bleibt die ganze Kachel EIN Link. */}
+                <div className="video-thumb">
+                  <BrandImage
+                    src={v.coverUrl ?? brandAsset(`cover-${v.id}.jpg`)}
+                    alt={v.coverAlt || `${isDe ? "Vorschaubild" : "Thumbnail"}: ${v.title}`}
+                    label="YouTube"
+                    sub={v.publisher ?? "YouTube"}
+                    ratio="16 / 9"
+                    ai={v.coverAi}
+                    locale={locale}
+                  />
+                  <PlayBadge />
+                </div>
+                <div className="video-body">
+                  <div className="pub-tags">
+                    <span className="tag">{typeLabel(v.type, isDe)}</span>
+                    <span className="pub-year">{v.year}</span>
+                  </div>
+                  <b className="video-title">{v.title}</b>
+                  {v.publisher ? <span className="meta">{v.publisher}</span> : null}
+                  <span className="meta video-cta">
+                    {isDe ? "Auf YouTube ansehen" : "Watch on YouTube"} ↗
+                  </span>
+                </div>
+              </a>
             ))}
           </div>
         </>

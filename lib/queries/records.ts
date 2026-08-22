@@ -4,6 +4,7 @@ import { pickTranslation } from "@/lib/content/pick";
 import { assetUrl } from "@/lib/media/url";
 import type { Locale } from "@/lib/i18n/config";
 import type { PublicationType } from "@/lib/domain";
+import { extractYouTubeId } from "@/lib/video/youtube";
 
 export interface PublicationItem {
   id: string;
@@ -20,6 +21,11 @@ export interface PublicationItem {
   coverUrl: string | null;
   coverAlt: string;
   coverAi: boolean;
+  /**
+   * Nur bei `type = "VIDEO"`: die YouTube-Kennung, aus `url` gelesen. Steht
+   * hier `null`, taugt die Adresse nicht — dann erscheint das Video nicht.
+   */
+  videoId?: string | null;
   // Verkaufte Exemplare (Summe über alle Halbjahre): gedruckt = printed + bundle,
   // PDF = pdf + bundle. null, wenn noch keine Zahlen gepflegt sind.
   salesPrinted?: number | null;
@@ -38,6 +44,7 @@ async function loadPublications(locale: Locale): Promise<PublicationItem[]> {
     return {
       id: p.id,
       type: p.type as PublicationType,
+      videoId: p.type === "VIDEO" ? extractYouTubeId(p.url) : null,
       year: p.year,
       isbn: p.isbn,
       publisher: p.publisher,

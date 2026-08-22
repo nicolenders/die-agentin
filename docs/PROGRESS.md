@@ -1005,3 +1005,29 @@ Drei Störungen mit einer gemeinsamen Wurzel und einer eigenen.
   mittleren Zeile gemessene 11 px. Darunter scrollt die Seite wieder normal.
 - Nachgemessen bei 13 Fenstergrößen von 1024×730 bis 1920×1080: keine
   Überlappung, oberhalb der Schwelle kein Seiten-Scrollbalken.
+
+## Videos als Publikationen (13.09.2026)
+
+Nicole tritt in vielen YouTube-Videos auf, verstreut über fremde Kanäle. Die
+liegen jetzt unter „Publikationen" und stehen öffentlich auf der
+Publikationsseite. Ausführlich in `docs/decisions/0025-videos-als-publikationen.md`.
+
+- Ein Video ist eine `Publication` mit `type = "VIDEO"`: Adresse in `url`, Kanal
+  in `publisher`, Vorschaubild in `coverAsset`, Kennung aus der Adresse gelesen.
+  **Keine Migration** — `type` ist eine Zeichenkette ohne Check-Constraint.
+- Admin: neues Register „Videos". Oben viele Adressen auf einmal einfügen (eine
+  je Zeile, optional `| Jahr`, `#` für Gliederungszeilen), unten die vorhandenen
+  mit Vorschaubild, Kanalfilter und Blättern. Titel und Kanal holt oEmbed.
+- Das Vorschaubild wandert **in die eigene Medienablage**
+  (`lib/media/import-image.ts`) statt von `i.ytimg.com` verlinkt zu werden.
+  Sonst wäre jeder Aufruf der Seite eine Anfrage an Google. Feste Host-Liste mit
+  genauer Gleichheit, nur https, keine Weiterleitungen — sonst wäre die Funktion
+  ein SSRF-Werkzeug.
+- Öffentlich: Kacheln mit Vorschaubild und Abspiel-Symbol, die ganze Kachel ist
+  ein Link auf die kanonische `watch`-Adresse. Neuer Tab, am Telefon die App.
+  Kein iframe: ohne Klick keine Verbindung zu Google. Die Zwei-Klick-Einbettung
+  bleibt für Videos im Fließtext.
+- Im Lebenslauf erscheinen die Videos nicht — dort wäre eine Wand aus
+  Vorschaubildern fehl am Platz.
+- Nachgemessen bei 1440, 768 und 380 px: Karten einer Reihe gleich hoch,
+  „Auf YouTube ansehen" auf gemeinsamer Grundlinie, kein waagerechter Überlauf.

@@ -43,7 +43,11 @@ export type TaskState = (typeof TASK_STATES)[number];
 export const TAXONOMY_KINDS = ["DOSSIER", "TALK"] as const;
 export type TaxonomyKind = (typeof TAXONOMY_KINDS)[number];
 
-export const PUBLICATION_TYPES = ["BOOK", "COURSE", "REPOSITORY", "ARTICLE", "PODCAST", "INTERVIEW", "WHITEPAPER"] as const;
+// VIDEO: ein YouTube-Auftritt. Bewusst ohne eigene Tabelle und ohne neue
+// Spalten — die Kennung steckt in `url` (siehe `extractYouTubeId`), der Kanal
+// im vorhandenen `publisher`, das Vorschaubild im vorhandenen `coverAsset`.
+// Damit kommt das Ganze ohne Migration aus.
+export const PUBLICATION_TYPES = ["BOOK", "COURSE", "REPOSITORY", "ARTICLE", "PODCAST", "INTERVIEW", "WHITEPAPER", "VIDEO"] as const;
 export type PublicationType = (typeof PUBLICATION_TYPES)[number];
 
 // Depeschen-Format (Phase 3): NOTE kurze Meldung · ANALYSIS Einordnung ·

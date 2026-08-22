@@ -173,9 +173,15 @@ async function importMissions(missions: MissionInput[], report: Report): Promise
           },
         },
       });
+      // Zu jedem Einsatz gehört die Aufgabe „Einsatzbericht schreiben" — auch
+      // zu einem importierten. Frisch angelegt heißt: es gibt noch keine, ein
+      // schlichtes `create` genügt (die Regel selbst steht in
+      // lib/missions/ensure-report-task).
+      await db.missionReportTask.create({
+        data: { missionId: created.id, dueOn: data.startDate, status: "OPEN" },
+      });
       // Fachgebiete gibt es an der Mission nicht direkt — sie hängen über
       // Briefings/Depeschen. topicIds hier nur informativ.
-      void created;
       void topicIds;
       report.missionsCreated++;
     }

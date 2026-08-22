@@ -18,12 +18,14 @@ import { serializeRichValue } from "@/lib/content/rich";
 import { slugify } from "@/lib/slug";
 import { tags } from "@/lib/cache";
 import {
-  MAX_REMINDER_LEAD_DAYS,
-  MIN_REMINDER_LEAD_DAYS,
+  DISPATCH_REMINDER_ENABLED_KEY,
+  DISPATCH_REMINDER_LEAD_DAYS_KEY,
+  MISSION_REMINDER_AFTER_DAYS_KEY,
+  MISSION_REMINDER_BEFORE_DAYS_KEY,
+  MISSION_REMINDER_ENABLED_KEY,
   REMINDER_EMAIL_KEY,
-  REMINDER_ENABLED_KEY,
-  REMINDER_LEAD_DAYS_KEY,
-} from "@/lib/dispatches/reminder";
+  isValidReminderDays,
+} from "@/lib/reminders/config";
 
 /** Zurück auf das Register, aus dem gespeichert wurde — nicht auf das erste. */
 function tabPath(tab: string): string {
@@ -288,26 +290,39 @@ export async function deleteCategory(formData: FormData): Promise<void> {
 
 // -------------------------------------------------------------- Erinnerungen
 
-// Erinnerung an nahende Veröffentlichungsdaten von Depeschen: Vorlaufzeit und
-// Empfängeradresse. Der Versand selbst läuft im Job-Takt (lib/publish/reminders).
+// Erinnerungen: Empfängeradresse, Vorlauf vor dem Veröffentlichungsdatum einer
+// Depesche und die zwei Abstände rund um einen Einsatz. Der Versand selbst
+// läuft im Job-Takt (lib/publish/reminders).
 export async function saveReminderSettings(formData: FormData): Promise<void> {
   await requireAdmin();
   const back = tabPath("erinnerungen");
   const email = String(formData.get("reminderEmail") ?? "").trim();
-  const leadRaw = Number.parseInt(String(formData.get("reminderLeadDays") ?? ""), 10);
-  const enabled = formData.get("reminderEnabled") === "on";
+  const dispatchEnabled = formData.get("dispatchEnabled") === "on";
+  const missionEnabled = formData.get("missionEnabled") === "on";
 
-  if (enabled && !email) redirect(`${back}&err=missing-fields`);
-  if (!Number.isFinite(leadRaw) || leadRaw < MIN_REMINDER_LEAD_DAYS || leadRaw > MAX_REMINDER_LEAD_DAYS) {
+  const days = (key: string) => Number.parseInt(String(formData.get(key) ?? "").trim(), 10);
+  const dispatchLeadDays = days("dispatchLeadDays");
+  const missionBeforeDays = days("missionBeforeDays");
+  const missionAfterDays = days("missionAfterDays");
+
+  if ((dispatchEnabled || missionEnabled) && !email) redirect(`${back}&err=missing-fields`);
+  if (
+    !isValidReminderDays(dispatchLeadDays) ||
+    !isValidReminderDays(missionBeforeDays) ||
+    !isValidReminderDays(missionAfterDays)
+  ) {
     redirect(`${back}&err=lead-days-range`);
   }
 
   let failed = false;
   try {
     for (const [key, value] of [
-      [REMINDER_ENABLED_KEY, String(enabled)],
-      [REMINDER_LEAD_DAYS_KEY, String(leadRaw)],
       [REMINDER_EMAIL_KEY, email],
+      [DISPATCH_REMINDER_ENABLED_KEY, String(dispatchEnabled)],
+      [DISPATCH_REMINDER_LEAD_DAYS_KEY, String(dispatchLeadDays)],
+      [MISSION_REMINDER_ENABLED_KEY, String(missionEnabled)],
+      [MISSION_REMINDER_BEFORE_DAYS_KEY, String(missionBeforeDays)],
+      [MISSION_REMINDER_AFTER_DAYS_KEY, String(missionAfterDays)],
     ] as const) {
       await db.siteSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
     }

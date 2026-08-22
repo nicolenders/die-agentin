@@ -14,6 +14,7 @@ export type EntityIconName =
   | "dispatch"
   | "radar"
   | "plan"
+  | "task"
   | "home"
   | "legend"
   | "identity"
@@ -75,6 +76,13 @@ const PATHS: Record<EntityIconName, React.ReactNode> = {
     <>
       <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
       <path d="M3.5 9.6h17M8.4 3v4M15.6 3v4M9 13.5h6M9 17h4" />
+    </>
+  ),
+  // Aufgaben — Liste mit Haken.
+  task: (
+    <>
+      <path d="M4 6.8h11M4 12h11M4 17.2h7" />
+      <path d="m16.5 15.6 2 2 3.2-3.6" />
     </>
   ),
   home: (

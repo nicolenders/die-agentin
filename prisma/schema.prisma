@@ -180,14 +180,21 @@ model Mission {
 // des Einsatzes (Veranstaltung und Vortrag, deutsche Fassung) gefüllt sind —
 // die Regel steht in lib/missions/report-task.ts und gilt serverseitig.
 model MissionReportTask {
-  id        String    @id @default(cuid())
-  missionId String    @unique
-  // Stichtag: Ende des Einsatzes, ersatzweise sein Beginn.
-  dueOn     DateTime
-  status    String    @default("OPEN") // OPEN | DONE
-  doneAt    DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  missionId            String    @unique
+  // Stichtag ist der Einsatztag selbst (Mission.startDate). Der Bericht hängt
+  // am Auftritt, nicht an einer eigenen Frist.
+  dueOn                DateTime
+  status               String    @default("OPEN") // TaskStatus: OPEN | DONE
+  doneAt               DateTime?
+  // Zwei Erinnerungen je Aufgabe: einmal vor dem Einsatz („denk an Fotos"),
+  // einmal danach („der Bericht fehlt noch"). Die Marken verhindern, dass
+  // dieselbe Erinnerung mehrfach herausgeht; ein verschobener Einsatztag setzt
+  // sie zurück.
+  reminderBeforeSentAt DateTime?
+  reminderAfterSentAt  DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
 

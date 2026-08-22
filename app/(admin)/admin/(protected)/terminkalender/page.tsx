@@ -10,13 +10,14 @@ import {
 } from "@/lib/queries/planning";
 import {
   countOverdueTasks,
+  countPlanFacets,
   filterPlanEntries,
   sortPlanEntries,
   toPlanSort,
   toPlanTime,
   toPlanType,
 } from "@/lib/planning/filter";
-import { completeMissionReport, reopenMissionReport } from "./actions";
+import { completeMissionReport, reopenMissionReport } from "../aufgaben/actions";
 
 export const metadata = { title: "Terminkalender · Zentrale" };
 
@@ -117,6 +118,7 @@ export default async function TerminkalenderPage({
   }
 
   const overdue = countOverdueTasks(entries);
+  const facets = countPlanFacets(entries, { type, time, status }, now);
   const sorted = sortPlanEntries(filterPlanEntries(entries, { type, time, status }, now), sort);
 
   /**
@@ -140,7 +142,7 @@ export default async function TerminkalenderPage({
     return `/admin/terminkalender${query ? `?${query}` : ""}`;
   };
   // Die Filter reisen mit, wenn eine Aufgabe abgehakt wird.
-  const currentQuery = hrefWith({}).split("?")[1] ?? "";
+  const backHref = hrefWith({});
 
   const monthStr = (y: number, m0: number) => `${y}-${String(m0 + 1).padStart(2, "0")}`;
   const prev = month0 === 0 ? monthStr(year - 1, 11) : monthStr(year, month0 - 1);
@@ -173,7 +175,8 @@ export default async function TerminkalenderPage({
             {" "}
             <b>
               {overdue} {overdue === 1 ? "Einsatzbericht ist" : "Einsatzberichte sind"} überfällig.
-            </b>
+            </b>{" "}
+            <Link href="/admin/aufgaben?ansicht=ueberfaellig">Zur Aufgabenliste</Link>
           </>
         ) : null}
       </p>
@@ -194,7 +197,7 @@ export default async function TerminkalenderPage({
             href={hrefWith({ typ: t.id })}
           >
             {t.label}
-            {t.id === "task" && overdue > 0 ? <span className="tab-count">{overdue}</span> : null}
+            <span className="tab-count">{facets.type[t.id]}</span>
           </Link>
         ))}
         {view === "tabelle" ? (
@@ -203,6 +206,7 @@ export default async function TerminkalenderPage({
             {TIME_FILTERS.map((t) => (
               <Link key={t.id} className="chip sm" aria-current={time === t.id ? "true" : undefined} href={hrefWith({ zeit: t.id })}>
                 {t.label}
+                <span className="tab-count">{facets.time[t.id]}</span>
               </Link>
             ))}
           </>
@@ -276,13 +280,13 @@ export default async function TerminkalenderPage({
                       e.status === "DONE" ? (
                         <form action={reopenMissionReport} style={{ display: "inline" }}>
                           <input type="hidden" name="missionId" value={e.task.missionId} />
-                          <input type="hidden" name="query" value={currentQuery} />
+                          <input type="hidden" name="back" value={backHref} />
                           <button className="btn ghost sm" type="submit">Wieder öffnen</button>
                         </form>
                       ) : (
                         <form action={completeMissionReport} style={{ display: "inline" }}>
                           <input type="hidden" name="missionId" value={e.task.missionId} />
-                          <input type="hidden" name="query" value={currentQuery} />
+                          <input type="hidden" name="back" value={backHref} />
                           <button
                             className="btn solid sm"
                             type="submit"

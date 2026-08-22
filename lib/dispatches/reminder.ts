@@ -4,28 +4,11 @@
 // zurückgesetzt und beim neuen Termin erneut fällig.
 //
 // Reine Logik ohne Datenbank und ohne Versand — damit die Frage „ist das jetzt
-// fällig?" prüfbar bleibt.
-
-export const REMINDER_LEAD_DAYS_KEY = "dispatch.reminder.leadDays";
-export const REMINDER_EMAIL_KEY = "dispatch.reminder.email";
-export const REMINDER_ENABLED_KEY = "dispatch.reminder.enabled";
-
-/** Voreinstellung, wenn nichts gepflegt ist. */
-export const DEFAULT_REMINDER_LEAD_DAYS = 3;
-export const DEFAULT_REMINDER_EMAIL = "nicole.enders.de@gmail.com";
-
-/** Grenzen für die Vorlaufzeit — 0 wäre keine Erinnerung, 90 Tage kein „bald". */
-export const MIN_REMINDER_LEAD_DAYS = 1;
-export const MAX_REMINDER_LEAD_DAYS = 90;
+// fällig?" prüfbar bleibt. Die Einstellungen (Vorlauf, Empfänger) liegen
+// zentral in lib/reminders/config.ts, weil sie sich Einsatzberichte und
+// Depeschen teilen.
 
 const DAY_MS = 86_400_000;
-
-/** Liest die gepflegte Vorlaufzeit; unbrauchbare Werte fallen auf den Standard. */
-export function parseLeadDays(raw: string | null | undefined): number {
-  const n = Number.parseInt(String(raw ?? "").trim(), 10);
-  if (!Number.isFinite(n)) return DEFAULT_REMINDER_LEAD_DAYS;
-  return Math.min(MAX_REMINDER_LEAD_DAYS, Math.max(MIN_REMINDER_LEAD_DAYS, n));
-}
 
 export interface ReminderCandidate {
   id: string;

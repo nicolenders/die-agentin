@@ -13,6 +13,8 @@ export type Migrations = "pending" | "applied" | "failed";
 export interface HealthResponse {
   ok?: boolean;
   migrations?: Migrations;
+  /** Ein Satz, der sagt, WAS mit den Migrationen nicht stimmt. */
+  migrationDetail?: string;
 }
 
 export interface AdminDbState {
@@ -21,6 +23,11 @@ export interface AdminDbState {
   /** Ruhige Warnung in der Kopfzeile, ohne Sperre. */
   warnMigrations: boolean;
   migrations: Migrations;
+  /**
+   * Grund der Warnung, in einem Satz. Eine Warnung ohne Grund lässt sich nicht
+   * abstellen — man sieht sie und weiß nicht, wo man anfangen soll.
+   */
+  migrationDetail: string;
 }
 
 /**
@@ -34,5 +41,6 @@ export function adminDbState(httpOk: boolean, body: HealthResponse | null): Admi
     // Eine gescheiterte Migration meldet nur, wer überhaupt antworten kann.
     warnMigrations: httpOk && migrations === "failed",
     migrations,
+    migrationDetail: body?.migrationDetail ?? "",
   };
 }

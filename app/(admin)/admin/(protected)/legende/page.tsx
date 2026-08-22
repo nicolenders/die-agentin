@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import { isLocale } from "@/lib/i18n/config";
 import { getContactInfo } from "@/lib/queries/settings";
+import { getAggregatedTools } from "@/lib/queries/identities";
 import { LEGEND_DEFAULTS, type LegendPillar } from "@/lib/queries/legend";
 import Flash from "@/components/admin/Flash";
 import LegendPortraitField from "@/components/admin/LegendPortraitField";
@@ -49,6 +50,11 @@ export default async function LegendeAdminPage({
   const pillars: LegendPillar[] = row ? safeParse(row.pillarsJson, defaults.pillars) : defaults.pillars;
   const pillarsText = pillars.map((p) => `${p.title} | ${p.text}`).join("\n");
   const contact = await getContactInfo();
+  // Die Werkzeuge werden je Identität gepflegt; die Legende zeigt öffentlich
+  // deren Summe. Hier steht dieselbe Summe — sonst müsste man sie sich aus den
+  // Identitäten zusammensuchen, um zu sehen, was auf der Seite landet.
+  const tools = await getAggregatedTools();
+  const publicTools = tools.filter((t) => t.publicOnLegend);
 
   const tabs: FormTabDef[] = [
     {
@@ -121,10 +127,51 @@ export default async function LegendeAdminPage({
       id: "werkzeuge",
       label: "Werkzeuge",
       content: (
-        <p className="meta" style={{ marginTop: 0 }}>
-          Werkzeuge werden je Identität gepflegt (unter <Link href="/admin/identitaeten">Identitäten</Link>).
-          Öffentlich zeigt die Legende die Summe aller Identitäts-Werkzeuge, Duplikate entfernt, alphabetisch.
-        </p>
+        <>
+          <p className="meta" style={{ marginTop: 0 }}>
+            Gepflegt werden Werkzeuge je Identität (unter <Link href="/admin/identitaeten">Identitäten</Link>).
+            Die Legende zeigt öffentlich ihre Summe, Duplikate entfernt, alphabetisch — hier steht
+            genau diese Summe.
+          </p>
+          {tools.length === 0 ? (
+            <p className="muted" style={{ marginTop: 12 }}>
+              Noch keine Werkzeuge. Sie entstehen bei den Identitäten und erscheinen dann hier.
+            </p>
+          ) : (
+            <>
+              <p className="meta">
+                {publicTools.length} von {tools.length} erscheinen öffentlich. Der Rest hängt nur an
+                Identitäten, die noch nicht veröffentlicht sind.
+              </p>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ marginTop: 4 }}>
+                  <thead>
+                    <tr>
+                      <th>Werkzeug</th>
+                      <th>Identität(en)</th>
+                      <th>Einsätze</th>
+                      <th>Öffentlich</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tools.map((t) => (
+                      <tr key={t.id}>
+                        <td><b>{t.name}</b></td>
+                        <td className="meta">{t.identities.join(", ") || "keiner zugeordnet"}</td>
+                        <td className="meta">{t.missionCount}</td>
+                        <td>
+                          <span className={`st ${t.publicOnLegend ? "live" : "draft"}`}>
+                            {t.publicOnLegend ? "Ja" : "Nein"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </>
       ),
     },
   ];

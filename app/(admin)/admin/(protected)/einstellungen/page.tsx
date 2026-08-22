@@ -14,6 +14,8 @@ import {
   DEFAULT_REMINDER_EMAIL,
 } from "@/lib/reminders/config";
 import { isMailConfigured } from "@/lib/mail/send";
+import { getMigrationFacts } from "@/lib/queries/migrations";
+import { resolveMigrationHealth } from "@/lib/startup/migration-health";
 import { SHARE_TYPES, SHARE_TYPE_LABEL, shareTemplateKey } from "@/lib/share";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
@@ -89,6 +91,7 @@ const TABS = [
   { id: "bios", label: "Speaker-Kit-Bios" },
   { id: "formate", label: "Speaker-Kit-Formate" },
   { id: "recht", label: "Rechtliche Seiten" },
+  { id: "system", label: "System" },
 ] as const;
 
 export default async function EinstellungenPage({
@@ -99,6 +102,9 @@ export default async function EinstellungenPage({
   const { ok, err, tab } = await searchParams;
   const active = TABS.find((t) => t.id === tab)?.id ?? "kontakt";
   const mailReady = isMailConfigured();
+  // Der tatsächliche Migrationsstand — dieselbe Auskunft, die in der Kopfzeile
+  // warnt, hier mit Namen und einem Satz dazu, was zu tun ist.
+  const migrations = resolveMigrationHealth("applied", await getMigrationFacts());
 
   let docs: { docKey: string; locale: string; title: string; body: string }[] = [];
   let dbError = false;
@@ -579,6 +585,75 @@ export default async function EinstellungenPage({
             </button>
           </div>
         </form>
+      </div>
+      </>
+      ) : null}
+
+      {active === "system" ? (
+      <>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Stand der Datenbank</p>
+      <p className="meta">
+        Die Anwendung wendet ausstehende Migrationen beim Serverstart selbst an. Hier steht, was
+        davon in der Datenbank angekommen ist — dieselbe Auskunft, aus der die Warnung
+        „Migration prüfen“ in der Kopfzeile entsteht.
+      </p>
+      <div className="card bracket" style={{ maxWidth: 720 }}>
+        {migrations.state === "applied" ? (
+          <p style={{ margin: 0 }}>
+            <span className="st live">Alles angewendet</span>{" "}
+            <span className="meta">Der Stand der Datenbank passt zum Code.</span>
+          </p>
+        ) : (
+          <>
+            <p style={{ marginTop: 0 }}>
+              <span className="st draft">Abweichung</span> {migrations.summary}
+            </p>
+            {migrations.broken.length > 0 ? (
+              <>
+                <p className="meta" style={{ marginBottom: 4 }}>Halb angewendet (blockiert alles Weitere):</p>
+                <ul className="meta" style={{ margin: "0 0 12px", paddingLeft: 18 }}>
+                  {migrations.broken.map((name) => <li key={name}><code>{name}</code></li>)}
+                </ul>
+                <p className="meta" style={{ marginTop: 0 }}>
+                  Auflösen mit <code>npx prisma migrate resolve --rolled-back &lt;name&gt;</code> (wenn nichts
+                  angekommen ist) bzw. <code>--applied &lt;name&gt;</code> (wenn die Änderungen von Hand
+                  ausgeführt wurden). Danach die Container App neu starten.
+                </p>
+              </>
+            ) : null}
+            {migrations.pending.length > 0 ? (
+              <>
+                <p className="meta" style={{ marginBottom: 4 }}>Noch nicht angewendet:</p>
+                <ul className="meta" style={{ margin: "0 0 12px", paddingLeft: 18 }}>
+                  {migrations.pending.map((name) => <li key={name}><code>{name}</code></li>)}
+                </ul>
+                <p className="meta" style={{ marginTop: 0 }}>
+                  Meist genügt ein Neustart der Container App: Der nächste Start wendet sie an.
+                  Bleibt es dabei, steht die Ursache im Serverprotokoll unter{" "}
+                  <code>[startup-migrate]</code>.
+                </p>
+              </>
+            ) : null}
+          </>
+        )}
+      </div>
+
+      <p className="eyebrow" style={{ marginTop: 28 }}>Mailversand</p>
+      <div className="card bracket" style={{ maxWidth: 720 }}>
+        {mailReady ? (
+          <p style={{ margin: 0 }}>
+            <span className="st live">Eingerichtet</span>{" "}
+            <span className="meta">Erinnerungen können verschickt werden.</span>
+          </p>
+        ) : (
+          <p style={{ margin: 0 }}>
+            <span className="st draft">Fehlt</span>{" "}
+            <span className="meta">
+              <code>SMTP_HOST</code> und <code>SMTP_FROM</code> sind in der Umgebung nicht gesetzt.
+              Bis dahin wird keine Erinnerung verschickt.
+            </span>
+          </p>
+        )}
       </div>
       </>
       ) : null}

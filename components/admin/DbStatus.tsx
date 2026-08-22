@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { adminDbState, type HealthResponse } from "@/lib/admin/db-health";
 
 type Status = "checking" | "ready" | "down";
@@ -18,6 +19,7 @@ type Status = "checking" | "ready" | "down";
 export default function DbStatus() {
   const [status, setStatus] = useState<Status>("checking");
   const [warnMigrations, setWarnMigrations] = useState(false);
+  const [migrationDetail, setMigrationDetail] = useState("");
   const active = useRef(true);
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export default function DbStatus() {
       const ok = !state.blocking;
       setStatus(ok ? "ready" : "down");
       setWarnMigrations(state.warnMigrations);
+      setMigrationDetail(state.migrationDetail);
       // Schnell nachfragen, solange nicht erreichbar; ruhig, wenn bereit.
       handle = setTimeout(tick, ok ? 30000 : 4000);
     };
@@ -120,14 +123,20 @@ export default function DbStatus() {
         {label}
       </span>
 
-      {/* Getrennte Auskunft, getrennte Anzeige: sichtbar, aber ohne Sperre. */}
+      {/* Getrennte Auskunft, getrennte Anzeige: sichtbar, aber ohne Sperre.
+          Die Warnung nennt ihren Grund — sonst sieht man sie und weiß nicht,
+          wo man anfangen soll. */}
       {warnMigrations ? (
-        <span
+        <Link
           className="st draft topbar-optional"
-          title="Die Datenbank antwortet, aber der Migrationslauf beim Start ist fehlgeschlagen. Serverprotokoll prüfen und die Instanz neu starten."
+          href="/admin/einstellungen?tab=system"
+          title={
+            migrationDetail ||
+            "Die Datenbank antwortet, aber der Stand der Migrationen weicht vom Code ab. Serverprotokoll prüfen."
+          }
         >
           ▲ Migration prüfen
-        </span>
+        </Link>
       ) : null}
 
       {overlay ? createPortal(overlay, document.body) : null}

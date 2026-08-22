@@ -292,6 +292,46 @@ export interface IdentityTool {
 /** Ab so vielen Jahren ohne Einsatz gilt ein Werkzeug als historisch. */
 const HISTORIC_AFTER_YEARS = 3;
 
+/**
+ * Werkzeuge über ALLE Identitäten, wie sie die Legende zusammenfasst — für die
+ * Redaktion, deshalb ohne den Filter auf veröffentlichte Identitäten. Wer hier
+ * nachsieht, will wissen, was zusammenkommt und woher es kommt.
+ */
+export interface AggregatedTool {
+  id: string;
+  name: string;
+  slug: string;
+  /** Identitäten, an denen das Werkzeug hängt — die Herkunft der Zeile. */
+  identities: string[];
+  /** Ob es öffentlich auf der Legende erscheint (mind. eine Identität ist live). */
+  publicOnLegend: boolean;
+  missionCount: number;
+}
+
+export async function getAggregatedTools(): Promise<AggregatedTool[]> {
+  try {
+    const rows = await db.tool.findMany({
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      include: {
+        identities: { select: { codenameDe: true, roleDe: true, published: true } },
+        _count: { select: { missions: true } },
+      },
+    });
+    return rows
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+        identities: t.identities.map((i) => i.codenameDe?.trim() || i.roleDe),
+        publicOnLegend: t.identities.some((i) => i.published),
+        missionCount: t._count.missions,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  } catch {
+    return [];
+  }
+}
+
 export async function getIdentityTools(nowYear = new Date().getUTCFullYear()): Promise<IdentityTool[]> {
   try {
     const rows = await db.tool.findMany({

@@ -318,13 +318,16 @@ export async function createFocusTopic(formData: FormData): Promise<void> {
  * Ein Radar-Thema ändern. Bis hierher ließ sich ein Thema nur anlegen oder
  * entfernen — ein Tippfehler bedeutete löschen und neu anlegen, samt Verlust
  * aller Verknüpfungen zu Depeschen und Identitäten.
+ *
+ * Bearbeitet wird auf eigener Seite; nach dem Speichern geht es zurück auf die
+ * Übersicht, weil man dort weiterarbeitet.
  */
 export async function updateFocusTopic(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
   const titleDe = str(formData, "titleDe");
   if (!id) redirect(`${FOCUS_LIST}?err=not-found`);
-  if (!titleDe) redirect(`${FOCUS_LIST}?err=missing-fields`);
+  if (!titleDe) redirect(`/admin/aufklaerung/bearbeiten?id=${id}&err=missing-fields`);
 
   const sortRaw = Number.parseInt(String(formData.get("sortOrder") ?? ""), 10);
   let failed = false;

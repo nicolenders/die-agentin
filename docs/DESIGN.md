@@ -75,7 +75,7 @@ erinnern soll. Boldness hier, alles andere ruhig:
 │ ● ID-03            [Umschlag-Motiv 4:5]    │  Header = Umschlagkarte (View Transition)
 │ Deckname / Rolle                           │
 │ Beschreibung (mehrere Absätze)             │
-│ Aktueller Fokus · Sprachen · Merkmale      │
+│ Aktueller Fokus · Sprachen · Werkzeuge     │
 ├───────────────────────────────────────────┤
 │ Was hier belegt wird:                      │  der Beweis
 │  Depeschen · Einsätze · Briefings ·        │

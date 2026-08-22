@@ -315,7 +315,7 @@ Alle öffentlichen Routen liegen unter `/[locale]`, `de` ist Standard und wird n
 | `/feed.xml`, `/feed.en.xml`, `/sitemap.xml`, `/robots.txt` | Maschinenlesbares |
 | `/admin/**` | Redaktion, komplett `noindex`, nur mit Rolle Admin |
 
-**Slugs** werden je Sprache gepflegt und beim ersten Veröffentlichen eingefroren; spätere Änderungen erzeugen automatisch eine 301-Weiterleitung (Tabelle `Redirect`).
+**Slugs** werden je Sprache gepflegt und beim ersten Veröffentlichen eingefroren. Eine pflegbare Weiterleitungstabelle gibt es nicht mehr (ADR 0024): Wo eine Adresse einmal umziehen muss, steht die Regel im Code (`lib/seo/legacy-redirects.ts`, `next.config.ts`) und muss von niemandem nachgetragen werden.
 
 ---
 

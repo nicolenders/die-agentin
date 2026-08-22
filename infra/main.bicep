@@ -70,6 +70,18 @@ param linkedinClientId string = ''
 @secure()
 param linkedinClientSecret string = ''
 
+// Mailversand für die Erinnerung an Depeschen (ADR 0023). Leer = kein Versand;
+// die Einstellungen weisen dann darauf hin, statt still zu scheitern.
+@description('SMTP-Server für die Erinnerungsmail. Leer = kein Mailversand.')
+param smtpHost string = ''
+@description('SMTP-Port. 587 = STARTTLS, 465 = direkt verschlüsselt.')
+param smtpPort string = '587'
+@description('Absender, z. B. "Die Agentin <zentrale@nicolenders.com>".')
+param smtpFrom string = ''
+param smtpUser string = ''
+@secure()
+param smtpPassword string = ''
+
 // --- Kostenbremse ------------------------------------------------------------
 @description('E-Mail für den Budget-Alarm. Leer = kein Budget-Alarm.')
 param budgetContactEmail string = ''
@@ -214,6 +226,7 @@ var commonSecrets = [
   { name: 'job-shared-secret', value: jobSharedSecret }
   { name: 'entra-secret', value: empty(entraClientSecret) ? 'unused' : entraClientSecret }
   { name: 'linkedin-secret', value: empty(linkedinClientSecret) ? 'unused' : linkedinClientSecret }
+  { name: 'smtp-password', value: empty(smtpPassword) ? 'unused' : smtpPassword }
 ]
 
 // ---- Web Container App ------------------------------------------------------
@@ -266,6 +279,11 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'BLOB_ACCOUNT_NAME', value: storage.name }
             { name: 'BLOB_CONTAINER_MEDIA', value: 'media' }
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
+            { name: 'SMTP_HOST', value: smtpHost }
+            { name: 'SMTP_PORT', value: smtpPort }
+            { name: 'SMTP_FROM', value: smtpFrom }
+            { name: 'SMTP_USER', value: smtpUser }
+            { name: 'SMTP_PASSWORD', secretRef: 'smtp-password' }
           ]
         }
       ]

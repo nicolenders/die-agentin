@@ -119,10 +119,15 @@ export default async function TerminkalenderPage({
   const overdue = countOverdueTasks(entries);
   const sorted = sortPlanEntries(filterPlanEntries(entries, { type, time, status }, now), sort);
 
-  /** Link, der die aktuelle Auswahl behält und nur einen Wert austauscht. */
+  /**
+   * Link, der die aktuelle Auswahl behält und nur einen Wert austauscht. Der
+   * Zeitfilter kommt aus der URL, nicht aus `time`: im Kalender ist er außer
+   * Kraft gesetzt, und diese Aushebelung darf beim Zurückwechseln nicht als
+   * Auswahl hängen bleiben.
+   */
   const hrefWith = (patch: Record<string, string | undefined>) => {
     const q = new URLSearchParams();
-    const merged = { view, month: sp.month, sort, typ: type, status, zeit: time, ...patch };
+    const merged = { view, month: sp.month, sort, typ: type, status, zeit: toPlanTime(sp.zeit), ...patch };
     for (const [key, value] of Object.entries(merged)) {
       if (!value) continue;
       if (key === "view" && value === "tabelle") continue;
@@ -250,12 +255,16 @@ export default async function TerminkalenderPage({
                     ))}
                   </td>
                   <td>
-                    <span
+                    {/* Klick auf den Status filtert darauf — der einzige Weg,
+                        diesen Filter zu setzen, ohne die URL zu tippen. */}
+                    <Link
+                      href={hrefWith({ status: e.status })}
                       className={`st ${e.status === "SCHEDULED" ? "sched" : e.status === "DONE" ? "live" : ""}`}
                       style={{ display: "inline-block" }}
+                      title={`Nur „${statusLabel(e.status)}" zeigen`}
                     >
                       {statusLabel(e.status)}
-                    </span>
+                    </Link>
                   </td>
                   <td className="meta" style={{ whiteSpace: "nowrap" }}>
                     {formatDate(e.date, "de")}

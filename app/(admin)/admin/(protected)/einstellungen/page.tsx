@@ -232,9 +232,10 @@ export default async function EinstellungenPage({
         Zentrale zum neuen Termin erneut.
       </p>
       {!mailReady ? (
-        <p className="st sched" style={{ display: "inline-block" }}>
-          Es ist noch kein Mailversand eingerichtet (SMTP_HOST und SMTP_FROM in der Umgebung).
-          Bis dahin wird nichts verschickt.
+        <p className="meta" style={{ color: "var(--warn)" }}>
+          ⚠ Es ist noch kein Mailversand eingerichtet: <code>SMTP_HOST</code> und{" "}
+          <code>SMTP_FROM</code> fehlen in der Umgebung. Bis dahin wird nichts verschickt — die
+          Einstellungen hier lassen sich trotzdem schon setzen.
         </p>
       ) : null}
       <form action={saveReminderSettings} className="card bracket" style={{ maxWidth: 560 }}>

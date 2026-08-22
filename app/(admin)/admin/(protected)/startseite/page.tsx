@@ -39,14 +39,19 @@ export default async function StartseiteAdminPage({
   const { ok, err, tab } = await searchParams;
   const active = TABS.find((t) => t.id === tab)?.id ?? "texte-de";
 
-  const [heroDe, heroEn, raw, stats, focus] = await Promise.all([
+  const [heroDe, heroEn, rawDe, rawEn, stats, focus] = await Promise.all([
     getHomeHero("de"),
     getHomeHero("en"),
     getHomeContentRaw("de"),
+    getHomeContentRaw("en"),
     getHomeStats(),
     getHomeFocusRaw(),
   ]);
   const heroes = { de: heroDe, en: heroEn };
+  // Das Bild wird ab jetzt auf beide Sprachzeilen geschrieben. Altbestand kann
+  // es nur an der englischen hängen haben — dann wird es hier gezeigt und beim
+  // nächsten Speichern auf beide gesetzt, statt still zu verschwinden.
+  const heroImageRow = rawDe?.heroAssetId ? rawDe : rawEn?.heroAssetId ? rawEn : rawDe;
   const activeFocus = focus.filter((f) => f.active).length;
   const room = homeFocusRoom(activeFocus);
 
@@ -136,8 +141,8 @@ export default async function StartseiteAdminPage({
           <form action={saveHomeImage}>
             <AssetPickerField
               name="heroAssetId"
-              initialAssetId={raw?.heroAssetId ?? null}
-              initialUrl={raw?.heroAsset ? assetUrl(raw.heroAsset.blobPath) : null}
+              initialAssetId={heroImageRow?.heroAssetId ?? null}
+              initialUrl={heroImageRow?.heroAsset ? assetUrl(heroImageRow.heroAsset.blobPath) : null}
               aspectRatio="4 / 5"
               width={180}
               emptyHint="Kein Bild gewählt. Es wird das Standard-Markenbild gezeigt."

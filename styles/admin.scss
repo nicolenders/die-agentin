@@ -198,6 +198,20 @@
   white-space: nowrap;
   display: inline-block;
 }
+// Im Terminkalender ist der Status ein Filter-Link. Er soll ein Badge bleiben
+// und nicht wie ein Fließtext-Link aussehen — sichtbar wird die Klickbarkeit
+// über den Rahmen beim Überfahren und den Fokusring.
+a.st {
+  text-decoration: none;
+}
+a.st:hover {
+  border-color: var(--violet);
+}
+a.st:focus-visible {
+  outline: 2px solid var(--violet-bright);
+  outline-offset: 2px;
+}
+
 .st.draft {
   color: var(--warn);
   border-color: rgba(251, 191, 36, 0.4);

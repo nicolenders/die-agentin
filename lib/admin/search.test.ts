@@ -7,6 +7,7 @@ import {
   rankHits,
   countByEntity,
   type SearchHit,
+  previewForFile,
 } from "./search";
 
 describe("normalizeQuery", () => {
@@ -87,5 +88,21 @@ describe("countByEntity", () => {
     expect(counts.mission).toBe(2);
     expect(counts.dispatch).toBe(1);
     expect(counts.media).toBe(0);
+  });
+});
+
+describe("previewForFile", () => {
+  it("erkennt PDFs", () => {
+    expect(previewForFile("folien.pdf")).toEqual({ kind: "pdf", label: "PDF" });
+    expect(previewForFile("FOLIEN.PDF")).toEqual({ kind: "pdf", label: "PDF" });
+  });
+
+  it("erkennt PowerPoint in beiden Endungen", () => {
+    expect(previewForFile("deck.pptx").label).toBe("PPTX");
+    expect(previewForFile("alt.ppt").label).toBe("PPT");
+  });
+
+  it("behandelt Unbekanntes als Foliensatz, statt zu raten", () => {
+    expect(previewForFile("ohne-endung").kind).toBe("slides");
   });
 });

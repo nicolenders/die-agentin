@@ -27,6 +27,22 @@ export const ENTITY_LABEL: Record<SearchEntity, string> = {
   media: "Medien",
 };
 
+/**
+ * Vorschau eines Medientreffers. Bilder bekommen ein Vorschaubild; Dateien, die
+ * sich ohne Renderer nicht als Bild zeigen lassen (PDF, PowerPoint), bekommen
+ * ihr Dateikürzel — das ist ehrlicher als ein Platzhalterbild, das so tut, als
+ * sähe man den Inhalt.
+ */
+export interface SearchPreview {
+  kind: "image" | "pdf" | "slides";
+  /** Nur bei Bildern gesetzt. */
+  url: string | null;
+  alt: string;
+  ai: boolean;
+  /** Kürzel für Dateien ohne Vorschaubild, z. B. „PDF" oder „PPTX". */
+  label: string;
+}
+
 export interface SearchHit {
   entity: SearchEntity;
   id: string;
@@ -37,6 +53,16 @@ export interface SearchHit {
   status: string;
   /** Ziel im Adminbereich (Bearbeiten-Maske, wenn es eine gibt). */
   href: string;
+  /** Nur bei Medien: Vorschaubild bzw. Dateikürzel. */
+  preview?: SearchPreview;
+}
+
+/** Dateiendung → Kürzel und Art für die Vorschau. */
+export function previewForFile(fileName: string): { kind: "pdf" | "slides"; label: string } {
+  const ext = fileName.toLowerCase().split(".").pop() ?? "";
+  if (ext === "pdf") return { kind: "pdf", label: "PDF" };
+  if (ext === "ppt") return { kind: "slides", label: "PPT" };
+  return { kind: "slides", label: "PPTX" };
 }
 
 /** Kleinschreibung + gestutzte Ränder — die Basis jedes Vergleichs. */

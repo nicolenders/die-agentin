@@ -22,6 +22,7 @@ export const adminNav: AdminNavItem[] = [
   // Neuigkeiten — was laufend gepflegt wird. Der Terminkalender steht vorn: er
   // ist der Einstieg in die Woche, nicht das Nachschlagewerk.
   { href: "/admin/terminkalender", label: "Terminkalender", icon: "plan", section: "Neuigkeiten" },
+  { href: "/admin/aufgaben", label: "Aufgaben", icon: "task" },
   { href: "/admin/einsaetze", label: "Einsätze", icon: "mission" },
   { href: "/admin/briefings", label: "Briefings", icon: "briefing" },
   { href: "/admin/depeschen", label: "Depeschen", icon: "dispatch" },

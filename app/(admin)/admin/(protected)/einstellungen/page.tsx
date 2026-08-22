@@ -9,11 +9,13 @@ import {
 } from "@/lib/queries/settings";
 import { db } from "@/lib/db";
 import {
-  MAX_REMINDER_LEAD_DAYS,
-  MIN_REMINDER_LEAD_DAYS,
+  MAX_REMINDER_DAYS,
+  MIN_REMINDER_DAYS,
   DEFAULT_REMINDER_EMAIL,
-} from "@/lib/dispatches/reminder";
+} from "@/lib/reminders/config";
 import { isMailConfigured } from "@/lib/mail/send";
+import { getMigrationFacts } from "@/lib/queries/migrations";
+import { resolveMigrationHealth } from "@/lib/startup/migration-health";
 import { SHARE_TYPES, SHARE_TYPE_LABEL, shareTemplateKey } from "@/lib/share";
 import Flash from "@/components/admin/Flash";
 import RichTextField from "@/components/admin/editor/RichTextField";
@@ -89,6 +91,7 @@ const TABS = [
   { id: "bios", label: "Speaker-Kit-Bios" },
   { id: "formate", label: "Speaker-Kit-Formate" },
   { id: "recht", label: "Rechtliche Seiten" },
+  { id: "system", label: "System" },
 ] as const;
 
 export default async function EinstellungenPage({
@@ -99,6 +102,9 @@ export default async function EinstellungenPage({
   const { ok, err, tab } = await searchParams;
   const active = TABS.find((t) => t.id === tab)?.id ?? "kontakt";
   const mailReady = isMailConfigured();
+  // Der tatsächliche Migrationsstand — dieselbe Auskunft, die in der Kopfzeile
+  // warnt, hier mit Namen und einem Satz dazu, was zu tun ist.
+  const migrations = resolveMigrationHealth("applied", await getMigrationFacts());
 
   let docs: { docKey: string; locale: string; title: string; body: string }[] = [];
   let dbError = false;
@@ -225,11 +231,12 @@ export default async function EinstellungenPage({
 
       {active === "erinnerungen" ? (
       <>
-      <p className="eyebrow" style={{ marginTop: 20 }}>Erinnerung an Depeschen</p>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Erinnerungen</p>
       <p className="meta">
-        Rückt das Veröffentlichungsdatum einer Depesche näher, kommt eine Mail: Inhalte prüfen,
-        Status setzen. Erinnert wird einmal je Termin — wird das Datum verschoben, erinnert die
-        Zentrale zum neuen Termin erneut.
+        Zwei Anlässe, eine Adresse: Depeschen melden sich, bevor ihr Veröffentlichungsdatum
+        erreicht ist. Einsatzberichte melden sich vor dem Einsatz („denk an Fotos“) und noch
+        einmal danach, solange der Bericht offen ist. Jede Erinnerung geht einmal heraus;
+        verschiebt sich der Termin, erinnert die Zentrale erneut.
       </p>
       {!mailReady ? (
         <p className="meta" style={{ color: "var(--warn)" }}>
@@ -238,37 +245,83 @@ export default async function EinstellungenPage({
           Einstellungen hier lassen sich trotzdem schon setzen.
         </p>
       ) : null}
-      <form action={saveReminderSettings} className="card bracket" style={{ maxWidth: 560 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" name="reminderEnabled" defaultChecked={reminders.enabled} />
-          Erinnerungen verschicken
-        </label>
-        <label className="f" htmlFor="reminderLeadDays" style={{ marginTop: 14 }}>
-          Vorlauf in Tagen
-        </label>
-        <input
-          className="f"
-          id="reminderLeadDays"
-          name="reminderLeadDays"
-          type="number"
-          min={MIN_REMINDER_LEAD_DAYS}
-          max={MAX_REMINDER_LEAD_DAYS}
-          defaultValue={reminders.leadDays}
-          style={{ maxWidth: 120 }}
-        />
-        <p className="meta" style={{ marginTop: 4 }}>
-          Wie viele Tage vor dem Veröffentlichungsdatum die Mail kommt ({MIN_REMINDER_LEAD_DAYS}–{MAX_REMINDER_LEAD_DAYS}).
-        </p>
-        <label className="f" htmlFor="reminderEmail">Empfängeradresse</label>
-        <input
-          className="f"
-          id="reminderEmail"
-          name="reminderEmail"
-          type="email"
-          defaultValue={reminders.email}
-          placeholder={DEFAULT_REMINDER_EMAIL}
-        />
-        <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Erinnerungen speichern</button>
+
+      <form action={saveReminderSettings}>
+        <div className="card bracket" style={{ maxWidth: 620 }}>
+          <label className="f" htmlFor="reminderEmail">Empfängeradresse (alle Erinnerungen)</label>
+          <input
+            className="f"
+            id="reminderEmail"
+            name="reminderEmail"
+            type="email"
+            defaultValue={reminders.email}
+            placeholder={DEFAULT_REMINDER_EMAIL}
+          />
+        </div>
+
+        <div className="card bracket" style={{ maxWidth: 620, marginTop: 14 }}>
+          <p className="eyebrow" style={{ marginTop: 0 }}>Depeschen</p>
+          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input type="checkbox" name="dispatchEnabled" defaultChecked={reminders.dispatchEnabled} />
+            Vor dem Veröffentlichungsdatum erinnern
+          </label>
+          <label className="f" htmlFor="dispatchLeadDays" style={{ marginTop: 14 }}>Vorlauf in Tagen</label>
+          <input
+            className="f"
+            id="dispatchLeadDays"
+            name="dispatchLeadDays"
+            type="number"
+            min={MIN_REMINDER_DAYS}
+            max={MAX_REMINDER_DAYS}
+            defaultValue={reminders.dispatchLeadDays}
+            style={{ maxWidth: 120 }}
+          />
+          <p className="meta" style={{ marginTop: 4, marginBottom: 0 }}>
+            Wie viele Tage vor dem Veröffentlichungsdatum die Mail kommt ({MIN_REMINDER_DAYS}–{MAX_REMINDER_DAYS}).
+          </p>
+        </div>
+
+        <div className="card bracket" style={{ maxWidth: 620, marginTop: 14 }}>
+          <p className="eyebrow" style={{ marginTop: 0 }}>Einsatzberichte</p>
+          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input type="checkbox" name="missionEnabled" defaultChecked={reminders.missionEnabled} />
+            An offene Einsatzberichte erinnern
+          </label>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 14 }}>
+            <span>
+              <label className="f" htmlFor="missionBeforeDays">Tage VOR dem Einsatz</label>
+              <input
+                className="f"
+                id="missionBeforeDays"
+                name="missionBeforeDays"
+                type="number"
+                min={MIN_REMINDER_DAYS}
+                max={MAX_REMINDER_DAYS}
+                defaultValue={reminders.missionBeforeDays}
+                style={{ maxWidth: 120 }}
+              />
+            </span>
+            <span>
+              <label className="f" htmlFor="missionAfterDays">Tage NACH dem Einsatz</label>
+              <input
+                className="f"
+                id="missionAfterDays"
+                name="missionAfterDays"
+                type="number"
+                min={MIN_REMINDER_DAYS}
+                max={MAX_REMINDER_DAYS}
+                defaultValue={reminders.missionAfterDays}
+                style={{ maxWidth: 120 }}
+              />
+            </span>
+          </div>
+          <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
+            Die erste Erinnerung kommt vor dem Auftritt, die zweite danach — Letztere nur, solange
+            die Aufgabe offen ist. Abgehakte Berichte melden sich nicht mehr.
+          </p>
+        </div>
+
+        <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Erinnerungen speichern</button>
       </form>
       </>
       ) : null}
@@ -532,6 +585,75 @@ export default async function EinstellungenPage({
             </button>
           </div>
         </form>
+      </div>
+      </>
+      ) : null}
+
+      {active === "system" ? (
+      <>
+      <p className="eyebrow" style={{ marginTop: 20 }}>Stand der Datenbank</p>
+      <p className="meta">
+        Die Anwendung wendet ausstehende Migrationen beim Serverstart selbst an. Hier steht, was
+        davon in der Datenbank angekommen ist — dieselbe Auskunft, aus der die Warnung
+        „Migration prüfen“ in der Kopfzeile entsteht.
+      </p>
+      <div className="card bracket" style={{ maxWidth: 720 }}>
+        {migrations.state === "applied" ? (
+          <p style={{ margin: 0 }}>
+            <span className="st live">Alles angewendet</span>{" "}
+            <span className="meta">Der Stand der Datenbank passt zum Code.</span>
+          </p>
+        ) : (
+          <>
+            <p style={{ marginTop: 0 }}>
+              <span className="st draft">Abweichung</span> {migrations.summary}
+            </p>
+            {migrations.broken.length > 0 ? (
+              <>
+                <p className="meta" style={{ marginBottom: 4 }}>Halb angewendet (blockiert alles Weitere):</p>
+                <ul className="meta" style={{ margin: "0 0 12px", paddingLeft: 18 }}>
+                  {migrations.broken.map((name) => <li key={name}><code>{name}</code></li>)}
+                </ul>
+                <p className="meta" style={{ marginTop: 0 }}>
+                  Auflösen mit <code>npx prisma migrate resolve --rolled-back &lt;name&gt;</code> (wenn nichts
+                  angekommen ist) bzw. <code>--applied &lt;name&gt;</code> (wenn die Änderungen von Hand
+                  ausgeführt wurden). Danach die Container App neu starten.
+                </p>
+              </>
+            ) : null}
+            {migrations.pending.length > 0 ? (
+              <>
+                <p className="meta" style={{ marginBottom: 4 }}>Noch nicht angewendet:</p>
+                <ul className="meta" style={{ margin: "0 0 12px", paddingLeft: 18 }}>
+                  {migrations.pending.map((name) => <li key={name}><code>{name}</code></li>)}
+                </ul>
+                <p className="meta" style={{ marginTop: 0 }}>
+                  Meist genügt ein Neustart der Container App: Der nächste Start wendet sie an.
+                  Bleibt es dabei, steht die Ursache im Serverprotokoll unter{" "}
+                  <code>[startup-migrate]</code>.
+                </p>
+              </>
+            ) : null}
+          </>
+        )}
+      </div>
+
+      <p className="eyebrow" style={{ marginTop: 28 }}>Mailversand</p>
+      <div className="card bracket" style={{ maxWidth: 720 }}>
+        {mailReady ? (
+          <p style={{ margin: 0 }}>
+            <span className="st live">Eingerichtet</span>{" "}
+            <span className="meta">Erinnerungen können verschickt werden.</span>
+          </p>
+        ) : (
+          <p style={{ margin: 0 }}>
+            <span className="st draft">Fehlt</span>{" "}
+            <span className="meta">
+              <code>SMTP_HOST</code> und <code>SMTP_FROM</code> sind in der Umgebung nicht gesetzt.
+              Bis dahin wird keine Erinnerung verschickt.
+            </span>
+          </p>
+        )}
       </div>
       </>
       ) : null}

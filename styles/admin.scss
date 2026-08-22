@@ -336,16 +336,70 @@ a.st:focus-visible {
 }
 
 // ---------------------------------------------------------------------------
-// Einsatzzentrale. Ziel: das Wichtigste ohne Scrollen sichtbar. Kennzahlen
-// oben über die volle Breite, darunter zwei Spalten — links, was ansteht,
-// rechts Reichweite und Wege.
+// Einsatzzentrale. Ziel: kein Scrollbalken — die Seite füllt genau das Fenster.
+// Kennzahlen oben über die volle Breite, darunter zwei Spalten (links, was
+// ansteht, rechts Reichweite), unten die Kachelreihen.
+//
+// Umgesetzt als Raster mit einer dehnbaren Zeile: Die mittlere Zeile bekommt,
+// was übrig bleibt, und ihre Kästen scrollen bei Bedarf INNEN. Wächst dort eine
+// Liste, wandert also nicht die ganze Seite, sondern nur der Kasten.
+//
+// Nur dort erzwungen, wo wirklich Platz ist: Unterhalb von 1000 px Breite oder
+// 720 px Höhe passt das nicht mehr, und eine abgeschnittene Zentrale wäre
+// schlimmer als eine, die scrollt.
 // ---------------------------------------------------------------------------
 .hq {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  // Kopfleiste (60) + Innenabstand der Inhaltsfläche; der Rest gehört uns.
-  min-height: calc(100vh - 60px - 96px);
+}
+
+@media (min-width: 1000px) and (min-height: 720px) {
+  // Die Inhaltsfläche bekommt genau die Fensterhöhe abzüglich der Kopfzeile.
+  // `:has()` statt einer eigenen Klasse: Das Layout ist für alle Admin-Seiten
+  // dasselbe, nur diese eine soll sich anders verhalten.
+  .content:has(.hq) {
+    height: calc(100dvh - 60px);
+    overflow: hidden;
+    padding-bottom: 22px;
+  }
+
+  .hq {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    height: 100%;
+    min-height: 0;
+    gap: 12px;
+  }
+
+  // Damit die Zeile schrumpfen darf, muss auch ihr Inhalt schrumpfen dürfen.
+  .hq-grid,
+  .hq-panel {
+    min-height: 0;
+  }
+
+  .hq-panel {
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+  }
+  .hq-panel::-webkit-scrollbar {
+    width: 8px;
+  }
+  .hq-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hq-panel::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  // Die Begrüßung darf den Platz nicht auffressen, wenn er knapp wird.
+  .hq-head h1 {
+    font-size: clamp(26px, 3.2vw, 44px);
+  }
 }
 .hq-head {
   display: flex;

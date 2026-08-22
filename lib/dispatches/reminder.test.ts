@@ -1,13 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_REMINDER_LEAD_DAYS,
-  MAX_REMINDER_LEAD_DAYS,
-  daysUntil,
-  dueReminders,
-  isReminderDue,
-  parseLeadDays,
-  type ReminderCandidate,
-} from "./reminder";
+import { daysUntil, dueReminders, isReminderDue, type ReminderCandidate } from "./reminder";
 
 const now = new Date("2026-06-10T09:00:00Z");
 const base: ReminderCandidate = {
@@ -17,19 +9,6 @@ const base: ReminderCandidate = {
   publishAt: new Date("2026-06-12T06:00:00Z"),
   reminderSentAt: null,
 };
-
-describe("parseLeadDays", () => {
-  it("nimmt den Standard bei leerer oder unlesbarer Angabe", () => {
-    expect(parseLeadDays(null)).toBe(DEFAULT_REMINDER_LEAD_DAYS);
-    expect(parseLeadDays("bald")).toBe(DEFAULT_REMINDER_LEAD_DAYS);
-  });
-
-  it("begrenzt auf sinnvolle Werte", () => {
-    expect(parseLeadDays("0")).toBe(1);
-    expect(parseLeadDays("500")).toBe(MAX_REMINDER_LEAD_DAYS);
-    expect(parseLeadDays("7")).toBe(7);
-  });
-});
 
 describe("isReminderDue", () => {
   it("erinnert innerhalb der Vorlaufzeit", () => {

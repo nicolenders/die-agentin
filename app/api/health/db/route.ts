@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { migrationState } from "@/lib/startup-state";
+import { getMigrationFacts } from "@/lib/queries/migrations";
+import { resolveMigrationHealth } from "@/lib/startup/migration-health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,11 +29,23 @@ export const dynamic = "force-dynamic";
 // Protokoll und als ruhige Warnung in die Kopfzeile, nicht in eine Sperre.
 export async function GET() {
   const headers = { "Cache-Control": "no-store" };
-  const migrations = migrationState();
+  const processState = migrationState();
   try {
     await db.$queryRaw`SELECT 1`;
   } catch {
-    return NextResponse.json({ ok: false, migrations }, { status: 503, headers });
+    return NextResponse.json({ ok: false, migrations: processState }, { status: 503, headers });
   }
-  return NextResponse.json({ ok: true, migrations }, { headers });
+
+  // Die Datenbank hat das letzte Wort. Ein Merker im Arbeitsspeicher kann nicht
+  // wissen, dass eine ANDERE Instanz die Migration erledigt hat — und genau das
+  // ließ die Warnung „Migration prüfen" stehen, obwohl alles angewendet war.
+  const health = resolveMigrationHealth(processState, await getMigrationFacts());
+  return NextResponse.json(
+    {
+      ok: true,
+      migrations: health.state,
+      ...(health.summary ? { migrationDetail: health.summary } : {}),
+    },
+    { headers },
+  );
 }

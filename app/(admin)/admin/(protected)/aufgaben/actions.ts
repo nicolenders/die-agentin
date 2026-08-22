@@ -7,22 +7,27 @@ import { missionReportComplete } from "@/lib/queries/planning";
 
 // Aufgabe „Einsatzbericht" abhaken bzw. wieder öffnen. Die Bedingung wird HIER
 // geprüft, nicht nur im Formular: ein ausgegrauter Knopf ist keine Regel.
+//
+// Beide Aktionen kehren dorthin zurück, wo sie ausgelöst wurden — die
+// Aufgabenliste und der Terminkalender teilen sie sich, und nach dem Abhaken
+// will man dort weitermachen, wo man war.
 
-const PAGE = "/admin/terminkalender";
+const DEFAULT_BACK = "/admin/aufgaben";
 
-/** Nimmt die Filter der Liste mit zurück, damit die Ansicht erhalten bleibt. */
-function back(formData: FormData, params: string): string {
-  const query = String(formData.get("query") ?? "").replace(/^\?/, "");
-  return `${PAGE}?${[query, params].filter(Boolean).join("&")}`;
+/** Rücksprungziel aus dem Formular; alles Fremde landet auf der Aufgabenliste. */
+function backTo(formData: FormData, params: string): string {
+  const raw = String(formData.get("back") ?? "").trim();
+  const safe = raw.startsWith("/admin/") && !raw.includes("//") ? raw : DEFAULT_BACK;
+  return `${safe}${safe.includes("?") ? "&" : "?"}${params}`;
 }
 
 export async function completeMissionReport(formData: FormData): Promise<void> {
   await requireAdmin();
   const missionId = String(formData.get("missionId") ?? "").trim();
-  if (!missionId) redirect(back(formData, "err=not-found"));
+  if (!missionId) redirect(backTo(formData, "err=not-found"));
 
   const { complete } = await missionReportComplete(missionId);
-  if (!complete) redirect(back(formData, "err=report-incomplete"));
+  if (!complete) redirect(backTo(formData, "err=report-incomplete"));
 
   let failed = false;
   try {
@@ -33,14 +38,14 @@ export async function completeMissionReport(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(back(formData, "err=failed"));
-  redirect(back(formData, "ok=report-done"));
+  if (failed) redirect(backTo(formData, "err=failed"));
+  redirect(backTo(formData, "ok=report-done"));
 }
 
 export async function reopenMissionReport(formData: FormData): Promise<void> {
   await requireAdmin();
   const missionId = String(formData.get("missionId") ?? "").trim();
-  if (!missionId) redirect(back(formData, "err=not-found"));
+  if (!missionId) redirect(backTo(formData, "err=not-found"));
 
   let failed = false;
   try {
@@ -51,6 +56,6 @@ export async function reopenMissionReport(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(back(formData, "err=failed"));
-  redirect(back(formData, "ok=report-open"));
+  if (failed) redirect(backTo(formData, "err=failed"));
+  redirect(backTo(formData, "ok=report-open"));
 }

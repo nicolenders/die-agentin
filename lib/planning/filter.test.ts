@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  countPlanFacets,
   countOverdueTasks,
   filterPlanEntries,
   sortPlanEntries,
@@ -97,5 +98,28 @@ describe("sortPlanEntries", () => {
 describe("countOverdueTasks", () => {
   it("zählt nur überfällige Aufgaben", () => {
     expect(countOverdueTasks(all)).toBe(1);
+  });
+});
+
+describe("countPlanFacets", () => {
+  it("zählt je Filterwert das, was ein Klick darauf ergäbe", () => {
+    const facets = countPlanFacets(all, { type: "alle", time: "alle", status: "" }, now);
+    expect(facets.type.mission).toBe(2);
+    expect(facets.type.dispatch).toBe(2);
+    expect(facets.type.task).toBe(1);
+    expect(facets.type.alle).toBe(5);
+  });
+
+  it("lässt den eigenen Filter außer Acht, damit keine Zahl auf null fällt", () => {
+    // Aktiv ist „nur Einsätze“ — die Zahl an „Depeschen“ muss trotzdem stimmen.
+    const facets = countPlanFacets(all, { type: "mission", time: "alle", status: "" }, now);
+    expect(facets.type.dispatch).toBe(2);
+    expect(facets.type.task).toBe(1);
+  });
+
+  it("berücksichtigt die übrigen Filter aber sehr wohl", () => {
+    const facets = countPlanFacets(all, { type: "alle", time: "vergangen", status: "" }, now);
+    expect(facets.type.mission).toBe(1);
+    expect(facets.type.dispatch).toBe(0);
   });
 });

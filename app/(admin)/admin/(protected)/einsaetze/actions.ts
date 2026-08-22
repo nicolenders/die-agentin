@@ -8,7 +8,7 @@ import { slugify } from "@/lib/slug";
 import { invalidateTags, tags } from "@/lib/cache";
 import { MISSION_STATUSES, SESSION_TYPES, isOneOf } from "@/lib/domain";
 import { serializeRichValue } from "@/lib/content/rich";
-import { reportDueDate, reportReadiness } from "@/lib/missions/report-task";
+import { ensureMissionReportTask } from "@/lib/missions/ensure-report-task";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface MissionTextInput {
@@ -195,31 +195,17 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
       }
     }
 
-    // Aufgabe „Einsatzbericht": zu jedem Einsatz gehört genau eine. Sie wird
-    // hier angelegt bzw. auf den aktuellen Stichtag gebracht. Abgehakt wird sie
-    // im Terminkalender — aber nur, wenn die Texte da sind; verschwindet der
-    // Text später wieder, geht die Aufgabe erneut auf.
-    const dueOn = reportDueDate(startDate, endDate);
-    const ready = reportReadiness({
-      eventText: input.de.eventText,
-      talkText: input.de.talkText,
-      photoCount: input.photoAssetIds.length,
+    // Aufgabe „Einsatzbericht": zu jedem Einsatz gehört genau eine. Die Regel
+    // steht in lib/missions/ensure-report-task, damit sie auch beim Import gilt.
+    await ensureMissionReportTask({
+      missionId: mission.id,
+      startDate,
+      content: {
+        eventTextDe: input.de.eventText,
+        talkTextDe: input.de.talkText,
+        photoCount: input.photoAssetIds.length,
+      },
     });
-    const existingTask = await db.missionReportTask.findUnique({
-      where: { missionId: mission.id },
-      select: { id: true, status: true },
-    });
-    if (!existingTask) {
-      await db.missionReportTask.create({ data: { missionId: mission.id, dueOn, status: "OPEN" } });
-    } else {
-      await db.missionReportTask.update({
-        where: { missionId: mission.id },
-        data: {
-          dueOn,
-          ...(existingTask.status === "DONE" && !ready.complete ? { status: "OPEN", doneAt: null } : {}),
-        },
-      });
-    }
 
     // Optional: gehaltenen Vortrag als TalkDelivery erfassen (für Ranking, M6).
     if (input.talkId) {

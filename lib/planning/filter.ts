@@ -80,3 +80,39 @@ export function sortPlanEntries(entries: PlanEntry[], sort: PlanSort): PlanEntry
 export function countOverdueTasks(entries: PlanEntry[]): number {
   return entries.filter((e) => e.kind === "task" && e.task?.overdue).length;
 }
+
+export interface PlanFacetCounts {
+  type: Record<PlanTypeFilter, number>;
+  time: Record<PlanTimeFilter, number>;
+}
+
+/**
+ * Zahlen an den Filtern. Jede Zahl beantwortet „was bekomme ich, wenn ich das
+ * anklicke?" — sie lässt deshalb genau den Filter außer Acht, an dem sie steht.
+ * Ohne das zeigte ein Filter, der gerade aktiv ist, überall seine eigene
+ * Auswahl, und die anderen Zahlen wären null.
+ */
+export function countPlanFacets(
+  entries: PlanEntry[],
+  filter: PlanFilter,
+  now: Date = new Date(),
+): PlanFacetCounts {
+  const byType = (value: PlanTypeFilter) =>
+    filterPlanEntries(entries, { ...filter, type: value }, now).length;
+  const byTime = (value: PlanTimeFilter) =>
+    filterPlanEntries(entries, { ...filter, time: value }, now).length;
+
+  return {
+    type: {
+      alle: byType("alle"),
+      mission: byType("mission"),
+      dispatch: byType("dispatch"),
+      task: byType("task"),
+    },
+    time: {
+      kommend: byTime("kommend"),
+      vergangen: byTime("vergangen"),
+      alle: byTime("alle"),
+    },
+  };
+}

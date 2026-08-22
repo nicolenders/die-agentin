@@ -428,24 +428,46 @@ h1.as-h2 {
 // Innenrand des Bildkastens, ein Rahmen am Bild verschiebt ihn also nicht.
 // Bedingung an jeden Aufrufer: Der umgebende Kasten muss das Bild sein
 // (`position: relative` und deckungsgleich mit dem <img>).
+// Der Hinweis MUSS an jedem KI-generierten Bild stehen — er darf aber nicht das
+// Erste sein, was man am Bild sieht. Deshalb zurückgenommen: kleiner, ohne
+// Rahmen, gedämpftes Weiß auf einem dunklen Schleier. Beim Überfahren des
+// Bildes tritt er hervor, damit er im Zweifel gut lesbar ist.
+//
+// Der Kontrast bleibt dabei über 4.5:1 (rgba(255,255,255,.82) auf dem
+// abgedunkelten Grund) — dezent heißt nicht unlesbar.
 .ai-badge {
   --ai-badge-inset: 8px;
   position: absolute;
   right: var(--ai-badge-inset);
   bottom: var(--ai-badge-inset);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-size: 9px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #fff;
-  background: rgba(5, 1, 13, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  padding: 3px 7px;
-  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(5, 1, 13, 0.55);
+  border: 0;
+  padding: 2px 6px;
+  border-radius: 3px;
   pointer-events: none;
   line-height: 1.2;
   backdrop-filter: blur(2px);
   max-width: calc(100% - 8px);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+.asset-image:hover .ai-badge,
+.lightbox-media .ai-badge {
+  color: #fff;
+  background: rgba(5, 1, 13, 0.78);
+}
+// Wer Bewegung reduziert haben will, bekommt den Wechsel ohne Übergang — der
+// Hinweis bleibt derselbe.
+@media (prefers-reduced-motion: reduce) {
+  .ai-badge {
+    transition: none;
+  }
 }
 // Kompaktvariante für kleine Thumbnails (Avatare): nur „KI", damit der Hinweis
 // das Bild nicht überdeckt. Der volle Text bleibt in aria-label/title. Die
@@ -454,8 +476,8 @@ h1.as-h2 {
 .ai-badge.compact {
   font-size: 8px;
   padding: 1px 4px;
-  letter-spacing: 0.06em;
-  border-radius: 3px;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
 }
 .lightbox {
   position: fixed;

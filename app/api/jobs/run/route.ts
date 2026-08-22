@@ -35,13 +35,18 @@ export async function POST(request: Request) {
     try {
       reminders = await runDispatchReminders();
     } catch (error) {
-      reminders = { reminded: [], skipped: error instanceof Error ? error.message : "Erinnerungslauf fehlgeschlagen." };
+      reminders = {
+        reminded: [],
+        remindedReports: [],
+        skipped: error instanceof Error ? error.message : "Erinnerungslauf fehlgeschlagen.",
+      };
     }
     return NextResponse.json({
       ok: true,
       published: result.published,
       publishedDispatches: result.publishedDispatches,
       remindedDispatches: reminders.reminded,
+      remindedReports: reminders.remindedReports,
       ...(reminders.skipped ? { remindersSkipped: reminders.skipped } : {}),
     });
   } catch (error) {

@@ -903,3 +903,45 @@ leitet weiter.
 
 **Öffentlich:** Der Button „CV abrufen" ist von der Legende verschwunden. Die
 Seiten `/de/cv` und `/en/cv` bleiben erreichbar und werden gezielt weitergegeben.
+
+---
+
+## Feinschliff Adminbereich (05.09.2026)
+
+Zweite Runde nach dem Umbau. Migration:
+`prisma/migrations/20260905120000_mission_report_reminders` — sie löscht nichts,
+ergänzt zwei Spalten und legt die fehlenden Aufgaben an. Manuelle Ausführung:
+`docs/db/2026-09-05-einsatzbericht-aufgaben.sql`, Ablauf wie in
+`docs/db/2026-08-22-admin-umbau.md`.
+
+**Aufgaben**
+- Zu JEDEM Einsatz gehört eine Aufgabe „Einsatzbericht schreiben" — rückwirkend
+  nachgezogen, künftig auch beim Import (`lib/missions/ensure-report-task.ts`).
+- Stichtag ist der Einsatztag. Zwei Erinnerungen: x Tage davor, x Tage danach,
+  beide in den Einstellungen pflegbar. Eine Empfängeradresse für alle
+  Erinnerungen (`reminder.email`, Altwert wird übernommen).
+- Neue Aufgabenliste `/admin/aufgaben`: offen, überfällig, erledigt, alle.
+- Terminkalender zeigt Zahlen an jedem Filter (`countPlanFacets`).
+
+**„Migration prüfen"**
+- Die Warnung hing am Prozessgedächtnis und blieb stehen, wenn EINE Instanz beim
+  Start aufgab (etwa bei Sperr-Konkurrenz), obwohl die Datenbank auf dem Stand
+  war. Jetzt entscheidet `_prisma_migrations`
+  (`lib/startup/migration-health.ts`, unit-getestet); die Warnung nennt ihren
+  Grund und verlinkt das neue Register **Einstellungen → System**.
+
+**Oberfläche**
+- Aufklärung im Muster der Publikationen: Tabelle plus eigene Bearbeiten-Maske.
+- Legende → Werkzeuge: die tatsächliche Summe über alle Identitäten.
+- KI-Label zurückgenommen (kleiner, ohne Rahmen, beim Überfahren deutlich).
+- Einsatzzentrale füllt das Fenster ohne Seiten-Scrollbalken; lange Listen
+  scrollen innerhalb ihres Kastens (ab 1000×720 px).
+- Admin-Einsatzliste: Paging statt `take: 200` (221 Einsätze waren nicht
+  vollständig zu sehen) und ein Jahresfilter, der nur belegte Jahre anbietet.
+- Adminsuche: Vorschaubilder für Medien, dazu die Foliensätze der Briefings
+  (PowerPoint) und PDFs als Treffer.
+
+**Öffentlich**
+- `/einsaetze` am Telefon: wieder mit Filtern und allen Einsätzen, voreingestellt
+  auf das laufende Jahr. Vorher zeigte das Telefon nur Anstehendes und bot
+  keinen Filter an.

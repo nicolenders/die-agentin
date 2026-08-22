@@ -118,11 +118,8 @@ export default async function EinsaetzePage({
           onlineLocation: isDe ? "Online" : "Online",
           empty: isDe ? "Keine Einsätze für diese Auswahl." : "No missions for this selection.",
           phoneNote: isDe
-            ? "Anstehende Einsätze, heute und später."
-            : "Upcoming missions, today and later.",
-          phoneEmpty: isDe
-            ? "Zurzeit steht kein Einsatz an. Am größeren Bildschirm sind auch die vergangenen zu sehen."
-            : "No missions coming up. The past ones are visible on a larger screen.",
+            ? "Voreingestellt auf das laufende Jahr — über die Jahre unten kommst du an alle Einsätze."
+            : "Preset to the current year — use the years below to reach every mission.",
           map: {
             aiGenerated: dict.common.aiGenerated,
             aiGeneratedImage: dict.common.aiGeneratedImage,

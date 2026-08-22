@@ -248,7 +248,9 @@ export default async function CvPage({
       {pubs.length > 0 ? (
         <div style={{ marginTop: 40 }}>
           <h2>{isDe ? "Publikationen" : "Publications"}</h2>
-          <PublicationSections items={pubs} locale={locale} />
+          {/* Ohne Videos: Im Lebenslauf wäre eine Wand aus Vorschaubildern fehl am
+              Platz. Sie stehen auf der Publikationsseite. */}
+          <PublicationSections items={pubs} locale={locale} showVideos={false} />
         </div>
       ) : null}
 

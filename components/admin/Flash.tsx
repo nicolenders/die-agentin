@@ -50,6 +50,14 @@ export const FLASH_MESSAGES: Record<string, string> = {
   "key-taken": "Diesen Schlüssel gibt es schon. Wähl einen anderen Namen oder Schlüssel.",
   "snippet-in-use": "Baustein wird noch von einer Vorlage angesprochen: dort erst entfernen.",
   "merge-failed": "Zusammenführen fehlgeschlagen. Nichts wurde geändert.",
+  "videos-imported": "Videos übernommen.",
+  "video-thumb": "Vorschaubild geholt.",
+  "video-thumb-failed":
+    "Vorschaubild konnte nicht geholt werden. YouTube war nicht erreichbar oder es gibt zu diesem Video keins. Später erneut versuchen.",
+  "video-no-id": "Aus dieser Adresse lässt sich keine YouTube-Kennung lesen. Bitte den Link zum Video prüfen.",
+  "video-none-usable":
+    "Aus keiner Zeile ließ sich eine YouTube-Adresse lesen. Erwartet wird eine Adresse je Zeile, z. B. https://www.youtube.com/watch?v=…",
+  "video-too-many": "Zu viele Zeilen auf einmal. Bitte in Blöcken von höchstens 100 Videos einfügen.",
   failed: "Speichern fehlgeschlagen. Bitte erneut versuchen.",
 };
 

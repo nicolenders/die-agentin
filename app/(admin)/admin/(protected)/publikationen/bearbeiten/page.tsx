@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { assetUrl } from "@/lib/media/url";
 import Flash from "@/components/admin/Flash";
 import AssetPickerField from "@/components/admin/AssetPickerField";
-import { updatePublication, savePublicationSales, deletePublicationSales } from "../actions";
+import { updatePublication, savePublicationSales, deletePublicationSales, refreshVideoThumbnail } from "../actions";
+import { extractYouTubeId } from "@/lib/video/youtube";
 
 export const metadata = { title: "Bearbeiten · Publikationen · Zentrale" };
 
@@ -37,6 +38,8 @@ export default async function PublicationEditPage({
   }
   const de = row.translations[0];
   const coverUrl = row.coverAsset ? assetUrl(row.coverAsset.blobPath) : null;
+  const isVideo = row.type === "VIDEO";
+  const videoId = isVideo ? extractYouTubeId(row.url) : null;
 
   return (
     <section>
@@ -66,27 +69,79 @@ export default async function PublicationEditPage({
             <option value="ARTICLE">Fachartikel</option>
             <option value="WHITEPAPER">Whitepaper</option>
             <option value="COURSE">Kurs</option>
+            <option value="VIDEO">Video</option>
           </select>
           <label className="f">Jahr</label>
           <input className="f" name="year" type="number" defaultValue={row.year} />
           <label className="f">Rolle (z. B. Co-Autorin)</label>
           <input className="f" name="role" defaultValue={de?.role ?? ""} />
-          <label className="f">{row.type === "COURSE" ? "Plattform" : "Verlag / Medium"}</label>
-          <input className="f" name="publisher" defaultValue={row.publisher ?? ""} />
+          <label className="f">
+            {row.type === "COURSE" ? "Plattform" : isVideo ? "Kanal" : "Verlag / Medium"}
+          </label>
+          <input
+            className="f"
+            name="publisher"
+            defaultValue={row.publisher ?? ""}
+            placeholder={isVideo ? "Name des YouTube-Kanals" : ""}
+          />
           <label className="f">ISBN (optional)</label>
           <input className="f" name="isbn" defaultValue={row.isbn ?? ""} />
-          <label className="f">{row.type === "COURSE" ? "Link zum Kurs" : "Link (optional)"}</label>
-          <input className="f" name="url" defaultValue={row.url ?? ""} placeholder="https://…" />
-          <label className="f">{row.type === "COURSE" ? "Thumbnail (optional)" : "Cover (optional)"}</label>
+          <label className="f">
+            {row.type === "COURSE" ? "Link zum Kurs" : isVideo ? "YouTube-Adresse" : "Link (optional)"}
+          </label>
+          <input
+            className="f"
+            name="url"
+            defaultValue={row.url ?? ""}
+            placeholder={isVideo ? "https://www.youtube.com/watch?v=…" : "https://…"}
+          />
+          {isVideo ? (
+            <p className="meta" style={{ marginTop: 4 }}>
+              {videoId ? (
+                <>Erkannte Kennung: <code>{videoId}</code>. Daraus baut die Website den Link und holt das Vorschaubild.</>
+              ) : (
+                <b style={{ color: "var(--warn)" }}>
+                  Aus dieser Adresse lässt sich keine YouTube-Kennung lesen. Solange das so ist,
+                  erscheint das Video nicht auf der Website.
+                </b>
+              )}
+            </p>
+          ) : null}
+          <label className="f">
+            {row.type === "COURSE" ? "Thumbnail (optional)" : isVideo ? "Vorschaubild" : "Cover (optional)"}
+          </label>
           <AssetPickerField
             name="coverAssetId"
             initialAssetId={row.coverAssetId}
             initialUrl={coverUrl}
-            aspectRatio={row.type === "COURSE" ? "16 / 9" : "3 / 4"}
-            emptyHint={row.type === "COURSE" ? "Kein Thumbnail gewählt" : "Kein Cover gewählt"}
+            aspectRatio={row.type === "COURSE" || isVideo ? "16 / 9" : "3 / 4"}
+            emptyHint={
+              row.type === "COURSE"
+                ? "Kein Thumbnail gewählt"
+                : isVideo
+                  ? "Noch kein Vorschaubild geholt"
+                  : "Kein Cover gewählt"
+            }
           />
           <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Änderungen speichern</button>
         </form>
+        {isVideo && videoId ? (
+          <>
+            {/* Eigenes Formular, damit „Bild holen" nicht die ungespeicherten
+                Änderungen im Formular darüber mitschickt. */}
+            <form action={refreshVideoThumbnail} style={{ marginTop: 12 }}>
+              <input type="hidden" name="id" value={row.id} />
+              <button className="btn ghost sm" type="submit">
+                {coverUrl ? "Vorschaubild erneuern" : "Vorschaubild von YouTube holen"}
+              </button>
+            </form>
+            <p className="meta" style={{ marginTop: 8 }}>
+              Das Bild wird einmal geholt und liegt danach in der eigenen Medienablage. Auf der
+              Website entsteht dadurch keine Verbindung zu YouTube — erst ein Klick auf das Video
+              führt dorthin.
+            </p>
+          </>
+        ) : null}
       </div>
 
       {row.type === "BOOK" ? (

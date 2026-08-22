@@ -251,6 +251,7 @@ model Talk {
   translations TalkTranslation[]
   deliveries   TalkDelivery[]
   slideDecks   TalkSlideDeck[]
+  attachments  TalkAttachment[]
   categories   Taxonomy[]        @relation("TalkCategories")
   audiences    Taxonomy[]        @relation("TalkAudiences")
   identities   Identity[]        @relation("IdentityTalks")
@@ -278,6 +279,34 @@ model TalkSlideDeck {
   talk Talk @relation(fields: [talkId], references: [id], onDelete: Cascade)
 
   @@unique([talkId, locale])
+}
+
+// Material am Briefing: Anleitungen, Notizen, Demo-Dateien, Videos — alles,
+// was zur Vorbereitung eines Vortrags gehört und beliebig viel sein darf.
+//
+// Bewusst getrennt von `TalkSlideDeck`: Der Foliensatz ist das eine, definierte
+// Ding je Sprache, das ein Einsatz zum Download anbietet. Material ist interne
+// Arbeitsablage und erscheint nirgends öffentlich; heruntergeladen wird es über
+// eine Route mit Rollenprüfung, nicht über den öffentlichen Medien-Proxy.
+model TalkAttachment {
+  id        String   @id @default(cuid())
+  talkId    String
+  kind      String   @default("OTHER") // AttachmentKind: GUIDE|NOTES|DEMO|VIDEO|OTHER
+  title     String
+  note      String?  @db.NVarChar(Max)
+  blobPath  String   @db.NVarChar(2048)
+  fileName  String
+  mime      String
+  // Größe in Bytes. `Int` reicht: die Obergrenze liegt bei 500 MB
+  // (lib/briefings/attachments.ts), also weit unter dem Wertebereich.
+  bytes     Int      @default(0)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  talk Talk @relation(fields: [talkId], references: [id], onDelete: Cascade)
+
+  @@index([talkId, sortOrder])
 }
 
 model TalkTranslation {

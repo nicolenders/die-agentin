@@ -5,17 +5,24 @@ import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import { rankRelatedBriefings } from "@/lib/related-briefings";
 import TalkSlidesManager from "@/components/admin/TalkSlidesManager";
+import TalkAttachments from "@/components/admin/TalkAttachments";
 import { getSlideTemplates } from "@/lib/queries/settings";
-import { createTalk, updateTalk, removeTalkSlideDeck } from "../actions";
+import {
+  createTalk,
+  updateTalk,
+  removeTalkSlideDeck,
+  saveTalkAttachment,
+  deleteTalkAttachment,
+} from "../actions";
 
 export const metadata = { title: "Briefing bearbeiten · Zentrale" };
 
 export default async function BriefingEditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; err?: string }>;
+  searchParams: Promise<{ id?: string; err?: string; ok?: string }>;
 }) {
-  const { id, err } = await searchParams;
+  const { id, err, ok } = await searchParams;
 
   const [cats, audiences, tools] = await Promise.all([
     db.taxonomy.findMany({
@@ -40,6 +47,7 @@ export default async function BriefingEditPage({
           audiences: true,
           tools: { select: { id: true } },
           slideDecks: true,
+          attachments: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         },
       })
     : null;
@@ -85,7 +93,7 @@ export default async function BriefingEditPage({
       <div style={{ marginBottom: 12 }}>
         <Link className="btn ghost sm" href="/admin/briefings">← Zurück zur Liste</Link>
       </div>
-      <MaskBar title={isEdit ? "Briefing bearbeiten" : "Neues Briefing"} err={err}>
+      <MaskBar title={isEdit ? "Briefing bearbeiten" : "Neues Briefing"} ok={ok} err={err}>
         <button className="btn solid sm" type="submit" form="talk-form">
           {isEdit ? "Änderungen speichern" : "Briefing anlegen"}
         </button>
@@ -184,6 +192,29 @@ export default async function BriefingEditPage({
           }))}
           templates={templates}
           onRemove={removeTalkSlideDeck}
+        />
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <p className="eyebrow">Material zu diesem Briefing</p>
+        <p className="meta" style={{ marginTop: -6 }}>
+          Anleitungen, Notizen, Demo-Dateien, Videos — alles, was zur Vorbereitung dazugehört.
+          Nur hier im Adminbereich sichtbar.
+        </p>
+        <TalkAttachments
+          talkId={talk?.id ?? null}
+          rows={(talk?.attachments ?? []).map((a) => ({
+            id: a.id,
+            kind: a.kind,
+            title: a.title,
+            note: a.note ?? "",
+            fileName: a.fileName,
+            mime: a.mime,
+            bytes: a.bytes,
+            sortOrder: a.sortOrder,
+          }))}
+          saveAction={saveTalkAttachment}
+          deleteAction={deleteTalkAttachment}
         />
       </div>
 

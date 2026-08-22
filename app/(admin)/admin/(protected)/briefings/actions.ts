@@ -8,6 +8,8 @@ import { invalidateTags, tags } from "@/lib/cache";
 import { serializeRichValue } from "@/lib/content/rich";
 import { planTalkMerge } from "@/lib/briefings/merge";
 import { isLocale } from "@/lib/i18n/config";
+import { deleteMedia } from "@/lib/media/storage";
+import { toAttachmentKind } from "@/lib/briefings/attachments";
 
 // Verwaltung des Vortragsrepertoires (SPEC §6/M6). Kategorien und Briefings sind
 // vom Nutzer pflegbar (anlegen, bearbeiten, löschen). Formulare nutzen
@@ -193,6 +195,78 @@ export async function removeTalkSlideDeck(formData: FormData): Promise<void> {
   let failed = false;
   try {
     await db.talkSlideDeck.deleteMany({ where: { talkId, locale } });
+  } catch {
+    failed = true;
+  }
+  redirect(failed ? `${back}&err=failed` : `${back}&ok=deleted`);
+}
+
+// ------------------------------------------------------- Material am Briefing
+
+/**
+ * Titel, Art, Notiz und Reihenfolge eines Materials ändern. Die Datei selbst
+ * wird hier nicht angefasst — die kommt über den Upload und wird zum Ersetzen
+ * neu hochgeladen.
+ */
+export async function saveTalkAttachment(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const talkId = str(formData, "talkId");
+  const back = `${LIST}/bearbeiten?id=${talkId}`;
+  if (!id || !talkId) redirect(`${back}&err=not-found`);
+
+  const title = str(formData, "title");
+  if (!title) redirect(`${back}&err=missing-fields`);
+  const sortRaw = Number.parseInt(str(formData, "sortOrder"), 10);
+
+  let failed = false;
+  try {
+    // `updateMany` mit talkId in der Bedingung: So lässt sich über eine fremde
+    // id kein Material eines anderen Briefings ändern.
+    const result = await db.talkAttachment.updateMany({
+      where: { id, talkId },
+      data: {
+        title,
+        note: str(formData, "note") || null,
+        kind: toAttachmentKind(str(formData, "kind")),
+        ...(Number.isFinite(sortRaw) ? { sortOrder: sortRaw } : {}),
+      },
+    });
+    if (result.count === 0) redirect(`${back}&err=not-found`);
+  } catch (error) {
+    // `redirect` wirft — der Umweg über das Flag würde ihn sonst verschlucken.
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    failed = true;
+  }
+  redirect(failed ? `${back}&err=failed` : `${back}&ok=saved`);
+}
+
+/**
+ * Material entfernen — Eintrag UND Datei. Anders als bei Bildern hängt an diesen
+ * Dateien kein verteilter Link, den ein Löschen ins Leere laufen ließe; sie
+ * liegen zu lassen hieße nur, den Speicher mit Waisen zu füllen.
+ */
+export async function deleteTalkAttachment(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const talkId = str(formData, "talkId");
+  const back = `${LIST}/bearbeiten?id=${talkId}`;
+  if (!id || !talkId) redirect(`${back}&err=not-found`);
+
+  let failed = false;
+  try {
+    const row = await db.talkAttachment.findFirst({
+      where: { id, talkId },
+      select: { blobPath: true },
+    });
+    if (!row) {
+      failed = true;
+    } else {
+      await db.talkAttachment.delete({ where: { id } });
+      // Erst der Eintrag, dann die Datei: Bleibt die Datei liegen, ist das ein
+      // Rest im Speicher. Bliebe der Eintrag ohne Datei, wäre es ein toter Link.
+      await deleteMedia(row.blobPath);
+    }
   } catch {
     failed = true;
   }

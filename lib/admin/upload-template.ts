@@ -1,6 +1,7 @@
 import { SLIDE_TEMPLATE_PART_BYTES } from "@/lib/slide-templates";
 
-// Upload einer Foliensvorlage in Teilstücken.
+// Upload großer Dateien in Teilstücken — Foliensvorlagen, Foliensätze und das
+// Material an einem Briefing.
 //
 // Der Grund: Eine 42-MB-Datei in einer einzigen Anfrage hängt minutenlang an
 // einer Verbindung. Reißt die unterwegs ab, kommt das serverseitig als sauberes
@@ -11,6 +12,7 @@ import { SLIDE_TEMPLATE_PART_BYTES } from "@/lib/slide-templates";
 
 const TEMPLATE_ENDPOINT = "/api/admin/missions/slide-template";
 const TALK_ENDPOINT = "/api/admin/briefings/slides";
+const ATTACHMENT_ENDPOINT = "/api/admin/briefings/files";
 const ATTEMPTS = 3;
 
 export type UploadResult =
@@ -119,6 +121,16 @@ export function uploadSlideTemplate(
   onProgress?: (done: number, total: number) => void,
 ): Promise<UploadResult> {
   return uploadInParts(file, TEMPLATE_ENDPOINT, { locale }, onProgress);
+}
+
+/** Material an einem Briefing: Anleitung, Notizen, Demo-Datei, Video. */
+export function uploadTalkAttachment(
+  file: File,
+  talkId: string,
+  kind: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<UploadResult> {
+  return uploadInParts(file, ATTACHMENT_ENDPOINT, { talk: talkId, kind }, onProgress);
 }
 
 /** Foliensatz eines Briefings in einer Sprache. */

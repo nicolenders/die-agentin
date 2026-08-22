@@ -2,9 +2,11 @@ import { db } from "@/lib/db";
 import { identityDisplayName } from "@/lib/identities";
 import { formatDate } from "@/lib/format";
 import { assetUrl } from "@/lib/media/url";
+import { ATTACHMENT_KIND_LABEL, toAttachmentKind } from "@/lib/briefings/attachments";
 import {
   matchesAny,
   normalizeQuery,
+  previewForAttachment,
   previewForFile,
   rankHits,
   type SearchHit,
@@ -22,7 +24,18 @@ export async function searchAdmin(rawQuery: string): Promise<SearchHit[]> {
   const q = normalizeQuery(rawQuery);
   if (!q) return [];
 
-  const [missions, talks, dispatches, identities, publications, certifications, focus, media, decks] =
+  const [
+    missions,
+    talks,
+    dispatches,
+    identities,
+    publications,
+    certifications,
+    focus,
+    media,
+    decks,
+    attachments,
+  ] =
     await Promise.all([
       searchMissions(q),
       searchTalks(q),
@@ -33,6 +46,7 @@ export async function searchAdmin(rawQuery: string): Promise<SearchHit[]> {
       searchFocusTopics(q),
       searchMedia(q),
       searchSlideDecks(q),
+      searchTalkAttachments(q),
     ]);
 
   return rankHits(
@@ -46,6 +60,7 @@ export async function searchAdmin(rawQuery: string): Promise<SearchHit[]> {
       ...focus,
       ...media,
       ...decks,
+      ...attachments,
     ],
     q,
   );
@@ -298,6 +313,52 @@ function searchSlideDecks(q: string): Promise<SearchHit[]> {
         status: "",
         href: `/admin/briefings/bearbeiten?id=${deck.talkId}`,
         preview: { ...file, url: null, alt: deck.fileName, ai: false },
+      };
+    });
+  });
+}
+
+/**
+ * Das Material an den Briefings: Anleitungen, Notizen, Demo-Dateien, Videos.
+ * Gesucht wird über Titel, Notiz und Dateiname — und über den Titel des
+ * Briefings, denn gefragt wird meist „wo lag noch mal die Demo zu X?".
+ */
+function searchTalkAttachments(q: string): Promise<SearchHit[]> {
+  return safe(async () => {
+    const rows = await db.talkAttachment.findMany({
+      where: {
+        OR: [
+          { title: { contains: q } },
+          { note: { contains: q } },
+          { fileName: { contains: q } },
+          { talk: { translations: { some: { title: { contains: q } } } } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: PER_ENTITY,
+      include: { talk: { include: { translations: true } } },
+    });
+    return rows.map((a) => {
+      const talkTitle =
+        a.talk.translations.find((t) => t.locale === "de")?.title ??
+        a.talk.translations[0]?.title ??
+        "(ohne Titel)";
+      const file = previewForAttachment(a.fileName, a.mime);
+      return {
+        entity: "media" as const,
+        id: a.id,
+        title: a.title || a.fileName,
+        detail: `${ATTACHMENT_KIND_LABEL[toAttachmentKind(a.kind)]} · ${talkTitle}`,
+        status: "",
+        href: `/admin/briefings/bearbeiten?id=${a.talkId}`,
+        preview: {
+          ...file,
+          // Bilder kommen über die Download-Route mit Rollenprüfung, nicht über
+          // den öffentlichen Medien-Proxy — das Material ist interne Ablage.
+          url: file.kind === "image" ? `/api/admin/briefings/files/${a.id}?inline=1` : null,
+          alt: a.title || a.fileName,
+          ai: false,
+        },
       };
     });
   });

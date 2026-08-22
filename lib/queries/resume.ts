@@ -15,6 +15,17 @@ export interface ResumeEntryData {
   description: string | null;
   tags: string[];
   sortOrder: number;
+
+  // nur PROJECT
+  projectFrom: string | null;
+  projectTo: string | null;
+  personDays: number | null;
+  clientAnonymous: boolean;
+  clientSector: string | null;
+
+  // nur SKILL
+  skillYears: number | null;
+  skillLevel: string | null;
 }
 
 export interface ResumeProfileData {
@@ -41,18 +52,9 @@ function parseTags(value: string | null): string[] {
   }
 }
 
-function toEntry(e: {
-  id: string;
-  section: string;
-  title: string;
-  subtitle: string | null;
-  location: string | null;
-  periodFrom: string | null;
-  periodTo: string | null;
-  description: string | null;
-  tags: string | null;
-  sortOrder: number;
-}): ResumeEntryData {
+type ResumeEntryRow = Omit<ResumeEntryData, "tags"> & { tags: string | null };
+
+function toEntry(e: ResumeEntryRow): ResumeEntryData {
   return {
     id: e.id,
     section: e.section,
@@ -64,6 +66,13 @@ function toEntry(e: {
     description: e.description,
     tags: parseTags(e.tags),
     sortOrder: e.sortOrder,
+    projectFrom: e.projectFrom,
+    projectTo: e.projectTo,
+    personDays: e.personDays,
+    clientAnonymous: e.clientAnonymous,
+    clientSector: e.clientSector,
+    skillYears: e.skillYears,
+    skillLevel: e.skillLevel,
   };
 }
 

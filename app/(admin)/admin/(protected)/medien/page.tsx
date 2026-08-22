@@ -94,7 +94,26 @@ export default async function MedienPage({
                 createdAtLabel: formatDate(a.createdAt, "de"),
                 size: `${a.width}×${a.height}`,
                 usages: a.usages,
-                thumb: <AssetImage compact aiLabel="KI" src={a.url} alt={a.altDe || "Bild"} ai={a.source === "AI"} imgStyle={{ width: 72, height: 72, objectFit: "cover", borderRadius: 4 }} />,
+                // Feste Fläche im Seitenverhältnis 16:10 statt eines Quadrats:
+                // Querformate wurden vorher beschnitten und waren als Motiv
+                // kaum zu erkennen. `contain` zeigt das ganze Bild, hoch wie quer.
+                thumb: (
+                  <AssetImage
+                    compact
+                    aiLabel="KI"
+                    src={a.url}
+                    alt={a.altDe || "Bild"}
+                    ai={a.source === "AI"}
+                    style={{ display: "block" }}
+                    imgStyle={{
+                      width: 160,
+                      height: 100,
+                      objectFit: "contain",
+                      borderRadius: 4,
+                      background: "var(--surface-2, #1a1420)",
+                    }}
+                  />
+                ),
                 editForm: (
                   <form action={updateAsset} id={`asset-${a.id}`}>
                     <input type="hidden" name="id" value={a.id} />

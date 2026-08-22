@@ -314,6 +314,39 @@ export async function createFocusTopic(formData: FormData): Promise<void> {
   redirect(`${FOCUS_LIST}?ok=created`);
 }
 
+/**
+ * Ein Radar-Thema ändern. Bis hierher ließ sich ein Thema nur anlegen oder
+ * entfernen — ein Tippfehler bedeutete löschen und neu anlegen, samt Verlust
+ * aller Verknüpfungen zu Depeschen und Identitäten.
+ */
+export async function updateFocusTopic(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const titleDe = str(formData, "titleDe");
+  if (!id) redirect(`${FOCUS_LIST}?err=not-found`);
+  if (!titleDe) redirect(`${FOCUS_LIST}?err=missing-fields`);
+
+  const sortRaw = Number.parseInt(String(formData.get("sortOrder") ?? ""), 10);
+  let failed = false;
+  try {
+    await db.focusTopic.update({
+      where: { id },
+      data: {
+        titleDe,
+        titleEn: str(formData, "titleEn") || null,
+        note: str(formData, "note") || null,
+        active: formData.get("active") === "on",
+        ...(Number.isFinite(sortRaw) ? { sortOrder: sortRaw } : {}),
+      },
+    });
+  } catch {
+    failed = true;
+  }
+  if (failed) redirect(`${FOCUS_LIST}?err=failed`);
+  invalidateTags([FOCUS_TAG]);
+  redirect(`${FOCUS_LIST}?ok=updated`);
+}
+
 export async function deleteFocusTopic(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");

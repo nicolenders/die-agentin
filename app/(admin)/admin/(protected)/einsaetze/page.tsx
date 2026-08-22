@@ -9,6 +9,7 @@ import { identityDisplayName } from "@/lib/identities";
 import { missionTalkLanguage, talkLanguageLabel } from "@/lib/mission-language";
 import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
+import { DEFAULT_PAGE_SIZE, pageWindow, paginate, parsePage } from "@/lib/admin/pagination";
 import { deleteMission } from "./actions";
 
 export const metadata = { title: "Einsätze · Zentrale" };
@@ -24,34 +25,63 @@ interface Filter {
   q: string;
   status: ContentStatus | "";
   ort: "" | "vorort" | "online";
+  /** Jahr als Text; leer = alle Jahre. */
+  jahr: string;
 }
 
 export default async function EinsaetzeAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; err?: string; q?: string; status?: string; ort?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    err?: string;
+    q?: string;
+    status?: string;
+    ort?: string;
+    jahr?: string;
+    seite?: string;
+  }>;
 }) {
-  const { ok, err, q, status, ort } = await searchParams;
+  const { ok, err, q, status, ort, jahr, seite } = await searchParams;
   const filter: Filter = {
     q: (q ?? "").trim(),
     status: isOneOf(CONTENT_STATUSES, status ?? "") ? (status as ContentStatus) : "",
     ort: ort === "online" || ort === "vorort" ? ort : "",
+    jahr: /^\d{4}$/.test(jahr ?? "") ? (jahr as string) : "",
   };
+  const requestedPage = parsePage(seite);
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
 
   let rows: Awaited<ReturnType<typeof load>>["rows"] = [];
-  let total = 0;
+  let matching = 0;
+  let grandTotal = 0;
+  let years: number[] = [];
   let dbError = false;
   try {
-    const loaded = await load(base, templates, filter);
+    const loaded = await load(base, templates, filter, requestedPage);
     rows = loaded.rows;
-    total = loaded.total;
+    matching = loaded.matching;
+    grandTotal = loaded.grandTotal;
+    years = loaded.years;
   } catch {
     dbError = true;
   }
 
-  const isFiltered = filter.q !== "" || filter.status !== "" || filter.ort !== "";
+  const page = paginate(matching, requestedPage);
+  const isFiltered = filter.q !== "" || filter.status !== "" || filter.ort !== "" || filter.jahr !== "";
+
+  /** Blätter-Link, der die Filter mitnimmt. */
+  const pageHref = (target: number) => {
+    const params = new URLSearchParams();
+    if (filter.q) params.set("q", filter.q);
+    if (filter.status) params.set("status", filter.status);
+    if (filter.ort) params.set("ort", filter.ort);
+    if (filter.jahr) params.set("jahr", filter.jahr);
+    if (target > 1) params.set("seite", String(target));
+    const query = params.toString();
+    return `/admin/einsaetze${query ? `?${query}` : ""}`;
+  };
 
   return (
     <section>
@@ -86,9 +116,25 @@ export default async function EinsaetzeAdminPage({
             <option value="online">Online</option>
           </select>
         </label>
+        {/* Nur Jahre, zu denen es auch Einsätze gibt — eine Auswahl, die ins
+            Leere führt, ist keine Auswahl. */}
+        <label className="f">
+          Jahr
+          <select className="f" name="jahr" defaultValue={filter.jahr} style={{ minWidth: 120 }}>
+            <option value="">Alle</option>
+            {years.map((y) => (
+              <option key={y} value={String(y)}>{y}</option>
+            ))}
+          </select>
+        </label>
         <button className="btn solid sm" type="submit">Filtern</button>
         {isFiltered ? <Link className="btn ghost sm" href="/admin/einsaetze">Zurücksetzen</Link> : null}
-        {!dbError ? <span className="meta">{rows.length} von {total}</span> : null}
+        {!dbError ? (
+          <span className="meta">
+            {page.total === 0 ? "0" : `${page.from}–${page.to}`} von {page.total}
+            {isFiltered ? ` (${grandTotal} gesamt)` : ""}
+          </span>
+        ) : null}
       </form>
 
       {dbError ? (
@@ -162,6 +208,32 @@ export default async function EinsaetzeAdminPage({
           </tbody>
         </table>
       )}
+
+      {!dbError && page.pageCount > 1 ? (
+        <nav className="filter-row" aria-label="Seiten" style={{ marginTop: 16, alignItems: "center" }}>
+          {page.hasPrev ? (
+            <Link className="btn ghost sm" href={pageHref(page.page - 1)} rel="prev">← Zurück</Link>
+          ) : null}
+          {pageWindow(page.page, page.pageCount).map((p, i) =>
+            p === null ? (
+              <span key={`luecke-${i}`} className="meta" aria-hidden>…</span>
+            ) : (
+              <Link
+                key={p}
+                className="chip sm"
+                aria-current={p === page.page ? "page" : undefined}
+                href={pageHref(p)}
+              >
+                {p}
+              </Link>
+            ),
+          )}
+          {page.hasNext ? (
+            <Link className="btn ghost sm" href={pageHref(page.page + 1)} rel="next">Weiter →</Link>
+          ) : null}
+          <span className="meta">Seite {page.page} von {page.pageCount}</span>
+        </nav>
+      ) : null}
     </section>
   );
 }
@@ -170,11 +242,20 @@ async function load(
   base: string,
   templates: Awaited<ReturnType<typeof getShareTemplates>>,
   filter: Filter,
+  requestedPage: number,
 ) {
-  const missions = await db.mission.findMany({
-    where: {
+  const year = filter.jahr ? Number(filter.jahr) : null;
+  const where = {
       ...(filter.status ? { contentStatus: filter.status } : {}),
       ...(filter.ort === "online" ? { isOnline: true } : filter.ort === "vorort" ? { isOnline: false } : {}),
+      ...(year !== null
+        ? {
+            startDate: {
+              gte: new Date(Date.UTC(year, 0, 1)),
+              lt: new Date(Date.UTC(year + 1, 0, 1)),
+            },
+          }
+        : {}),
       ...(filter.q
         ? {
             OR: [
@@ -184,7 +265,15 @@ async function load(
             ],
           }
         : {}),
-    },
+  };
+
+  // Erst zählen, dann die Seite holen: Ohne die Gesamtzahl lässt sich eine zu
+  // hohe Seitennummer nicht auf die letzte zurückholen.
+  const matching = await db.mission.count({ where });
+  const page = paginate(matching, requestedPage, DEFAULT_PAGE_SIZE);
+
+  const missions = await db.mission.findMany({
+    where,
     orderBy: { startDate: "desc" },
     include: {
       translations: { select: { locale: true, slug: true } },
@@ -195,9 +284,17 @@ async function load(
         include: { talk: { include: { translations: { where: { locale: "de" } } } } },
       },
     },
-    take: 200,
+    skip: page.offset,
+    take: page.pageSize,
   });
-  const total = await db.mission.count();
+
+  // Auswahl der Jahre aus dem GESAMTEN Bestand, nicht aus der gefilterten
+  // Seite: sonst verschwindet das Jahr, mit dem man gerade gefiltert hat.
+  const [grandTotal, allDates] = await Promise.all([
+    db.mission.count(),
+    db.mission.findMany({ select: { startDate: true }, orderBy: { startDate: "desc" } }),
+  ]);
+  const years = [...new Set(allDates.map((m) => m.startDate.getUTCFullYear()))].sort((a, b) => b - a);
   const rows = missions.map((m) => {
     const de = m.translations.find((t) => t.locale === "de");
     const en = m.translations.find((t) => t.locale === "en");
@@ -247,5 +344,5 @@ async function load(
       share,
     };
   });
-  return { rows, total };
+  return { rows, matching, grandTotal, years };
 }

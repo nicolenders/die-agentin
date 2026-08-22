@@ -1,9 +1,11 @@
 import { db } from "@/lib/db";
 import { identityDisplayName } from "@/lib/identities";
 import { formatDate } from "@/lib/format";
+import { assetUrl } from "@/lib/media/url";
 import {
   matchesAny,
   normalizeQuery,
+  previewForFile,
   rankHits,
   type SearchHit,
 } from "@/lib/admin/search";
@@ -20,7 +22,7 @@ export async function searchAdmin(rawQuery: string): Promise<SearchHit[]> {
   const q = normalizeQuery(rawQuery);
   if (!q) return [];
 
-  const [missions, talks, dispatches, identities, publications, certifications, focus, media] =
+  const [missions, talks, dispatches, identities, publications, certifications, focus, media, decks] =
     await Promise.all([
       searchMissions(q),
       searchTalks(q),
@@ -30,10 +32,21 @@ export async function searchAdmin(rawQuery: string): Promise<SearchHit[]> {
       searchCertifications(q),
       searchFocusTopics(q),
       searchMedia(q),
+      searchSlideDecks(q),
     ]);
 
   return rankHits(
-    [...missions, ...talks, ...dispatches, ...identities, ...publications, ...certifications, ...focus, ...media],
+    [
+      ...missions,
+      ...talks,
+      ...dispatches,
+      ...identities,
+      ...publications,
+      ...certifications,
+      ...focus,
+      ...media,
+      ...decks,
+    ],
     q,
   );
 }
@@ -227,17 +240,65 @@ function searchMedia(q: string): Promise<SearchHit[]> {
         detail: `Bild · ${a.width}×${a.height}`,
         status: "",
         href: "/admin/medien?tab=bilder",
+        preview: {
+          kind: "image" as const,
+          url: assetUrl(a.blobPath),
+          alt: a.altDe || "Bild",
+          ai: a.source === "AI",
+          label: "",
+        },
       }));
+
     for (const d of docs) {
+      const file = previewForFile(d.fileName);
       hits.push({
         entity: "media",
         id: d.id,
         title: d.title || d.fileName,
-        detail: `Präsentation · ${d.fileName}`,
+        detail: `${file.kind === "pdf" ? "PDF" : "Präsentation"} · ${d.fileName}`,
         status: "",
         href: "/admin/medien?tab=praesentationen",
+        preview: { ...file, url: null, alt: d.fileName, ai: false },
       });
     }
     return hits;
+  });
+}
+
+/**
+ * Die Foliensätze der Briefings (PowerPoint, je Sprache einer). Sie liegen
+ * nicht in der Medienverwaltung, sondern am Briefing — gesucht wurden sie
+ * bisher gar nicht, obwohl „wo war noch mal das Deck zu X?" genau die Frage
+ * ist, für die es eine Suche gibt.
+ */
+function searchSlideDecks(q: string): Promise<SearchHit[]> {
+  return safe(async () => {
+    const rows = await db.talkSlideDeck.findMany({
+      where: {
+        OR: [
+          { fileName: { contains: q } },
+          { talk: { translations: { some: { title: { contains: q } } } } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: PER_ENTITY,
+      include: { talk: { include: { translations: true } } },
+    });
+    return rows.map((deck) => {
+      const title =
+        deck.talk.translations.find((t) => t.locale === "de")?.title ??
+        deck.talk.translations[0]?.title ??
+        "(ohne Titel)";
+      const file = previewForFile(deck.fileName);
+      return {
+        entity: "media" as const,
+        id: deck.id,
+        title: deck.fileName,
+        detail: `Foliensatz · ${title} · ${deck.locale.toUpperCase()}`,
+        status: "",
+        href: `/admin/briefings/bearbeiten?id=${deck.talkId}`,
+        preview: { ...file, url: null, alt: deck.fileName, ai: false },
+      };
+    });
   });
 }

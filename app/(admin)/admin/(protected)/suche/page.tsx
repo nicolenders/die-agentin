@@ -1,5 +1,7 @@
 import Link from "next/link";
+import AssetImage from "@/components/media/AssetImage";
 import { searchAdmin } from "@/lib/queries/admin-search";
+import type { SearchPreview } from "@/lib/admin/search";
 import {
   ENTITY_LABEL,
   SEARCH_ENTITIES,
@@ -11,6 +13,53 @@ import {
 } from "@/lib/admin/search";
 
 export const metadata = { title: "Suche · Zentrale" };
+
+/**
+ * Vorschau eines Medientreffers. Bilder werden gezeigt; PDFs und Foliensätze
+ * bekommen ihr Dateikürzel — ohne Renderer gäbe es davon kein Bild, und ein
+ * Platzhalter, der so täte, wäre eine Lüge.
+ */
+function Preview({ preview }: { preview: SearchPreview }) {
+  if (preview.kind === "image" && preview.url) {
+    return (
+      <AssetImage
+        compact
+        aiLabel="KI"
+        src={preview.url}
+        alt={preview.alt}
+        ai={preview.ai}
+        imgStyle={{
+          width: 88,
+          height: 56,
+          objectFit: "contain",
+          borderRadius: 4,
+          background: "var(--surface-2, #1a1420)",
+        }}
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      title={preview.alt}
+      style={{
+        display: "grid",
+        placeItems: "center",
+        width: 88,
+        height: 56,
+        borderRadius: 4,
+        border: "1px solid var(--line-soft)",
+        background: "var(--surface-2, #1a1420)",
+        fontFamily: "var(--mono)",
+        fontSize: 11,
+        letterSpacing: "0.1em",
+        color: "var(--muted)",
+      }}
+    >
+      {preview.label}
+    </span>
+  );
+}
 
 // Ergebnisseite der globalen Suche. Gesucht wird über alle Bereiche; die Chips
 // darunter filtern die Trefferliste auf einen Bereich (Zahl = Treffer dort).
@@ -43,7 +92,7 @@ export default async function AdminSearchPage({
       <h1>Suche</h1>
       <p className="muted">
         Findet Einsätze, Briefings, Depeschen, Identitäten, Publikationen, Ausbildung, Radar-Themen
-        und Medien in einem Rutsch.
+        und Medien in einem Rutsch — Bilder, PDFs und die Foliensätze der Briefings eingeschlossen.
       </p>
 
       <form method="get" className="list-filter" role="search">
@@ -94,9 +143,11 @@ export default async function AdminSearchPage({
               </p>
             </div>
           ) : (
+            <div style={{ overflowX: "auto" }}>
             <table style={{ marginTop: 18 }}>
               <thead>
                 <tr>
+                  <th style={{ width: 100 }}>Vorschau</th>
                   <th>Bereich</th>
                   <th>Treffer</th>
                   <th>Einordnung</th>
@@ -107,6 +158,7 @@ export default async function AdminSearchPage({
               <tbody>
                 {shown.map((h) => (
                   <tr key={`${h.entity}-${h.id}`}>
+                    <td style={{ width: 100 }}>{h.preview ? <Preview preview={h.preview} /> : null}</td>
                     <td className="meta" style={{ whiteSpace: "nowrap" }}>{ENTITY_LABEL[h.entity]}</td>
                     <td><b>{h.title}</b></td>
                     <td className="meta">{h.detail}</td>
@@ -118,6 +170,7 @@ export default async function AdminSearchPage({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </>
       )}

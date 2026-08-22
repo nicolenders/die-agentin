@@ -4,9 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import WorldMap, { type MapMission } from "@/components/map/WorldMap";
 import { availableViews, matchesView } from "@/lib/map/views";
-import { isUpcoming, matchesYear, parseYearSelection, type YearSelection } from "@/lib/missions";
+import { matchesYear, parseYearSelection, type YearSelection } from "@/lib/missions";
 import { useIsPhone } from "@/lib/hooks/use-media-query";
-import { berlinDay } from "@/lib/time";
 import { toggleCsv } from "@/lib/filters";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import type { Locale } from "@/lib/i18n/config";
@@ -72,8 +71,8 @@ export interface ExplorerLabels {
   onlineLocation: string;
   empty: string;
   /** Hinweis am Telefon, wo ohne Filter nur Anstehendes gezeigt wird. */
+  /** Hinweis am Telefon, warum zunächst nur das laufende Jahr zu sehen ist. */
   phoneNote: string;
-  phoneEmpty: string;
   map: {
     aiGenerated: string;
     aiGeneratedImage: string;
@@ -115,9 +114,11 @@ interface FilterState {
 }
 
 const STORE_KEY = "einsaetze:filter";
+// `year: ""` heißt „noch nicht gewählt". Erst daraus wird die Vorgabe abgeleitet
+// — und die ist am Telefon eine andere als am großen Bildschirm.
 const DEFAULT_STATE: FilterState = {
   q: "",
-  year: "alle",
+  year: "",
   ids: [],
   showOnline: true,
   werkzeug: "",
@@ -138,7 +139,7 @@ function readFromSearch(search: string): FilterState | null {
   }
   return {
     q: p.get("q") ?? "",
-    year: p.get("jahr") ?? "alle",
+    year: p.get("jahr") ?? "",
     ids: (p.get("identitaet") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     showOnline: p.get("online") !== "0",
     werkzeug: p.get("werkzeug") ?? "",
@@ -153,7 +154,7 @@ function readFromStore(): FilterState | null {
     const parsed = JSON.parse(raw) as Partial<FilterState>;
     return {
       q: typeof parsed.q === "string" ? parsed.q : "",
-      year: typeof parsed.year === "string" ? parsed.year : "alle",
+      year: typeof parsed.year === "string" ? parsed.year : "",
       ids: Array.isArray(parsed.ids) ? parsed.ids.filter((x): x is string => typeof x === "string") : [],
       showOnline: parsed.showOnline !== false,
       werkzeug: typeof parsed.werkzeug === "string" ? parsed.werkzeug : "",
@@ -240,30 +241,28 @@ export default function MissionExplorer({
   const views = useMemo(() => availableViews(missions), [missions]);
   const activeView = views.find((v) => v.id === state.view) ?? views[0] ?? null;
   const currentYear = new Date().getUTCFullYear();
-  const selection: YearSelection = parseYearSelection(state.year);
   const needle = state.q.trim().toLowerCase();
 
-  // Am Telefon ist die Auswahl eine andere: keine Filter, dafür nur, was noch
-  // ansteht (heute eingeschlossen). Ein Filterband und eine Jahresliste sind auf
-  // einem schmalen Display teurer als der Nutzen — und wer unterwegs nachsieht,
-  // will wissen, wo Nicole als Nächstes auftritt.
+  // Am Telefon gelten dieselben Filter wie sonst — nur die Vorgabe ist eine
+  // andere: das laufende Jahr statt aller Jahre. Vorher zeigte das Telefon
+  // ausschließlich Anstehendes und bot keinen Filter an; wer dort nach einem
+  // Einsatz von letztem Jahr suchte, fand ihn schlicht nicht.
   const isPhone = useIsPhone();
-  const today = berlinDay();
+  const yearValue = state.year || (isPhone ? String(currentYear) : "alle");
+  const selection: YearSelection = parseYearSelection(yearValue);
 
   const filtered = useMemo(
     () =>
-      isPhone
-        ? missions.filter((m) => isUpcoming(m.startDay, today) && matchesView(activeView, m))
-        : missions.filter(
-            (m) =>
-              matchesView(activeView, m) &&
-              (state.showOnline || !m.isOnline) &&
-              matchesYear(m.year, m.future, selection, currentYear) &&
-              (state.ids.length === 0 || m.identitySlugs.some((s) => state.ids.includes(s))) &&
-              (!state.werkzeug || m.tools.some((t) => t.slug === state.werkzeug)) &&
-              (!needle || `${m.eventName} ${m.city} ${m.countryCode}`.toLowerCase().includes(needle)),
-          ),
-    [missions, isPhone, today, activeView, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
+      missions.filter(
+        (m) =>
+          matchesView(activeView, m) &&
+          (state.showOnline || !m.isOnline) &&
+          matchesYear(m.year, m.future, selection, currentYear) &&
+          (state.ids.length === 0 || m.identitySlugs.some((s) => state.ids.includes(s))) &&
+          (!state.werkzeug || m.tools.some((t) => t.slug === state.werkzeug)) &&
+          (!needle || `${m.eventName} ${m.city} ${m.countryCode}`.toLowerCase().includes(needle)),
+      ),
+    [missions, activeView, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
   );
 
   // Fällt der ausgewählte Einsatz durch einen Filter heraus, gilt er als nicht
@@ -315,7 +314,7 @@ export default function MissionExplorer({
 
   const isDefault =
     state.q === "" &&
-    state.year === "alle" &&
+    state.year === "" &&
     state.ids.length === 0 &&
     state.showOnline &&
     state.werkzeug === "" &&
@@ -332,12 +331,12 @@ export default function MissionExplorer({
   // Jahres-Blibs: „Alle Jahre" und „Aktuell & geplant" sind immer sichtbar; die
   // einzelnen Jahre klappen erst nach „weitere Jahre" auf (oder wenn ein
   // konkretes Jahr aktiv ist).
-  const showYearList = yearsExpanded || (state.year !== "alle" && state.year !== "aktuell");
+  const showYearList = yearsExpanded || (yearValue !== "alle" && yearValue !== "aktuell");
   const yearChip = (value: string, label: string) => (
     <button
       type="button"
       className="chip sm"
-      aria-pressed={state.year === value}
+      aria-pressed={yearValue === value}
       onClick={() => set({ year: value })}
     >
       {label}
@@ -484,17 +483,17 @@ export default function MissionExplorer({
           />
         ) : (
           <div className="card bracket">
-            <p className="muted" style={{ margin: 0 }}>{isPhone ? labels.phoneEmpty : labels.empty}</p>
+            <p className="muted" style={{ margin: 0 }}>{labels.empty}</p>
           </div>
         )}
       </div>
 
-      {isPhone ? (
-        // Statt eines stillen Ausblendens: sagen, was die Liste zeigt.
-        <p className="meta" style={{ marginTop: 14 }}>{labels.phoneNote}</p>
-      ) : (
-        filterBlock
-      )}
+      {/* Auch am Telefon: Filter statt einer festen Auswahl. Der Hinweis sagt,
+          warum zunächst nur das laufende Jahr zu sehen ist. */}
+      {isPhone && !state.year ? (
+        <p className="meta" style={{ marginTop: 14, marginBottom: 0 }}>{labels.phoneNote}</p>
+      ) : null}
+      {filterBlock}
 
       <p className="eyebrow" style={{ marginTop: 24 }}>{labels.listTitle}</p>
       {filtered.length > 0 ? (
@@ -565,7 +564,7 @@ export default function MissionExplorer({
           </tbody>
         </table>
       ) : (
-        <p className="muted" style={{ marginTop: 12 }}>{isPhone ? labels.phoneEmpty : labels.empty}</p>
+        <p className="muted" style={{ marginTop: 12 }}>{labels.empty}</p>
       )}
     </div>
   );

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   availableMissionYears,
   countVisitedCountries,
-  isUpcoming,
   parseYearSelection,
   matchesYear,
 } from "./missions";
@@ -38,28 +37,6 @@ describe("matchesYear", () => {
   it("a specific year matches only that year", () => {
     expect(matchesYear(2024, false, 2024, cur)).toBe(true);
     expect(matchesYear(2025, false, 2024, cur)).toBe(false);
-  });
-});
-
-describe("isUpcoming", () => {
-  const today = "2026-08-17";
-
-  it("zählt den heutigen Einsatz dazu", () => {
-    // Der eigentliche Punkt: ein Einsatz, der heute läuft, ist nicht vorbei —
-    // auch wenn sein Zeitstempel (Mitternacht UTC) längst hinter uns liegt.
-    expect(isUpcoming(today, today)).toBe(true);
-  });
-
-  it("nimmt Späteres an und Früheres nicht", () => {
-    expect(isUpcoming("2026-08-18", today)).toBe(true);
-    expect(isUpcoming("2027-01-01", today)).toBe(true);
-    expect(isUpcoming("2026-08-16", today)).toBe(false);
-    expect(isUpcoming("2019-12-31", today)).toBe(false);
-  });
-
-  it("vergleicht über Monats- und Jahresgrenzen richtig", () => {
-    expect(isUpcoming("2026-09-01", "2026-08-31")).toBe(true);
-    expect(isUpcoming("2026-12-31", "2027-01-01")).toBe(false);
   });
 });
 

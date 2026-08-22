@@ -621,6 +621,29 @@ export default async function EinstellungenPage({
                 </p>
               </>
             ) : null}
+            {migrations.unrecorded.length > 0 ? (
+              <>
+                <p className="meta" style={{ marginBottom: 4 }}>
+                  Wirkt schon, ist aber nicht eingetragen (blockiert alles Weitere):
+                </p>
+                <ul className="meta" style={{ margin: "0 0 12px", paddingLeft: 18 }}>
+                  {migrations.unrecorded.map((name) => <li key={name}><code>{name}</code></li>)}
+                </ul>
+                <p className="meta" style={{ marginTop: 0 }}>
+                  Die Tabellen dieser Migrationen stehen bereits in der Datenbank — sie wurden von
+                  Hand ausgeführt, aber nie verbucht. Beim Serverstart versucht Prisma sie deshalb
+                  erneut, scheitert am schon vorhandenen Objekt und bricht den ganzen Lauf ab. Ein
+                  Neustart hilft hier <b>nicht</b>; er wiederholt nur denselben Abbruch.
+                </p>
+                <p className="meta" style={{ marginTop: 8 }}>
+                  Nachtragen statt erneut ausführen — je Name einmal:{" "}
+                  <code>npx prisma migrate resolve --applied &lt;name&gt;</code>. Ohne Zugang zur CLI
+                  tut es das Skript{" "}
+                  <code>docs/db/2026-09-13-migrationen-nachtragen.sql</code>, das genau diese Einträge
+                  setzt und fehlende Tabellen anlegt. Danach die Container App neu starten.
+                </p>
+              </>
+            ) : null}
             {migrations.pending.length > 0 ? (
               <>
                 <p className="meta" style={{ marginBottom: 4 }}>Noch nicht angewendet:</p>

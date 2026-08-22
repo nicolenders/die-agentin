@@ -968,3 +968,40 @@ nirgends — jetzt hängt es am Briefing.
 - Adminsuche findet das Material über Titel, Notiz, Dateiname und den Titel des
   Briefings — „wo lag noch mal die Demo zu X?" ist genau die Frage dafür.
 - Nichts davon erscheint auf der öffentlichen Website.
+
+## Zentrale passt wieder, Migrationen entstockt (13.09.2026)
+
+Drei Störungen mit einer gemeinsamen Wurzel und einer eigenen.
+
+**Briefings ließen sich nicht mehr öffnen**
+- Das Material am Briefing hing als `include` an der Talk-Abfrage. Fehlte die
+  Tabelle `TalkAttachment`, nahm sie die ganze Maske mit — ein nachgereichter
+  Zusatz kippte, was vorher funktionierte. Jetzt wird das Material getrennt
+  geholt; fehlt es, fehlt eben das Material, und alles andere steht.
+
+**„Migration prüfen" ließ sich nicht abstellen**
+- Ursache: Vier Migrationen waren seinerzeit von Hand ausgeführt, aber nie in
+  `_prisma_migrations` eingetragen. `migrate deploy` versuchte sie bei jedem
+  Start erneut, scheiterte an den vorhandenen Tabellen und brach ab — deshalb
+  kam die fünfte (`talk_attachments`) nie an, und deshalb war die Briefing-Maske
+  kaputt. Ein Neustart konnte daran nichts ändern; er wiederholte den Abbruch.
+- Die Statusauskunft unterscheidet das jetzt: Für jede offene Migration wird
+  nachgesehen, ob ihre Tabellen schon stehen (`lib/startup/migration-objects.ts`,
+  unit-getestet). Steht sie, heißt es nicht mehr „nicht angewendet", sondern
+  „wirkt schon, ist nicht eingetragen" — mit der umgekehrten Abhilfe.
+- `docs/db/2026-09-13-migrationen-nachtragen.sql` trägt genau diese Einträge nach
+  und legt fehlende Tabellen an. Mehrfach ausführbar, löscht nichts.
+
+**Die Kästen der Zentrale lagen übereinander**
+- Ursache: `align-items: start` gab jedem Kasten seine Inhaltshöhe statt der
+  Zeilenhöhe. Damit war er nie zu hoch für sich selbst, `overflow: auto` griff
+  nie, und was nicht in die Zeile passte, wurde über die nächste gemalt.
+  Gemessen 565 px Überlauf. Jetzt füllen die Kästen ihre Zeile und enden an ihr.
+- Der begrenzte Modus steht jetzt hinter den Grundregeln — davor verlor er das
+  Duell um `align-items` bei gleicher Spezifität und schnitt Inhalt ab.
+- Weniger Höhe, damit gar nicht erst gescrollt werden muss: kleinere Begrüßung,
+  kompaktere Kennzahlen und Kacheln, fünf statt sechs Termine.
+- Die Schwelle liegt bei 1180 px Breite statt 1000: Bei 1024 px blieben der
+  mittleren Zeile gemessene 11 px. Darunter scrollt die Seite wieder normal.
+- Nachgemessen bei 13 Fenstergrößen von 1024×730 bis 1920×1080: keine
+  Überlappung, oberhalb der Schwelle kein Seiten-Scrollbalken.

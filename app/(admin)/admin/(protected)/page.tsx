@@ -131,10 +131,13 @@ export default async function DashboardPage() {
   } catch {
     // Ohne Termine bleibt die Spalte leer — die Zentrale soll trotzdem stehen.
   }
+  // Fünf statt sechs: Die Zentrale soll in ein Fenster passen, ohne zu scrollen,
+  // und der sechste Termin war der, der sie regelmäßig darüber hinausschob. Wer
+  // mehr sehen will, ist mit einem Klick im Terminkalender.
   const upcoming = sortPlanEntries(
     filterPlanEntries(calendar, { type: "alle", time: "kommend", status: "" }, now),
     "date",
-  ).slice(0, 6);
+  ).slice(0, 5);
   const overdue = countOverdueTasks(calendar);
 
   const greetingName = user?.name?.split(" ")[0] ?? "Nicole";

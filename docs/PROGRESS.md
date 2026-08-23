@@ -1032,6 +1032,31 @@ Publikationsseite. Ausführlich in `docs/decisions/0025-videos-als-publikationen
 - Nachgemessen bei 1440, 768 und 380 px: Karten einer Reihe gleich hoch,
   „Auf YouTube ansehen" auf gemeinsamer Grundlinie, kein waagerechter Überlauf.
 
+## Einsatzzentrale ohne Scrollbalken (13.09.2026)
+
+Die Zentrale war auf die Fensterhöhe festgenagelt, und ihre Kästen scrollten
+innen. Das hat zwei Übel erzeugt und keines gelöst: erst malten die Kästen
+übereinander, dann hatte jeder seinen eigenen kleinen Balken.
+
+Der Fehler lag in der Annahme. „Als Nächstes" und „Reichweite" haben keine
+feste Länge — sie hängen daran, wie viel gerade ansteht. Etwas Unbegrenztes in
+einen festen Rahmen zu zwingen endet immer in einem Balken oder in
+abgeschnittenem Inhalt; man kann sich nur aussuchen, welches von beiden.
+
+- **Reihenfolge statt Zwangshöhe:** Was feste Größe hat, steht oben (Kennzahlen,
+  die beiden Kachelreihen); was wachsen darf, steht zuunterst und darf wachsen.
+  Die Seite scrollt, wie eine Seite das tut — kein Balken in einem Kasten.
+- Die ganze begrenzte Ansicht (`100dvh`, `overflow: hidden`, `:has(.hq)`) ist
+  ersatzlos entfallen. Weniger CSS, kein Überlappungsrisiko mehr.
+- „Als Nächstes": Terminlinks von 16 auf 13,5 px — dieselbe Größe wie die
+  Kacheln. In der Grundschrift stachen ausgerechnet sie heraus.
+- Beide Kästen einer Reihe enden auf gleicher Höhe (`align-items: stretch`);
+  vorher hatte die Zentrale eine Treppenkante.
+- Acht Termine statt fünf — der Kasten darf jetzt wachsen.
+- Nachgemessen bei sechs Fenstergrößen von 1024×730 bis 1912×905: kein Balken in
+  irgendeinem Kasten, keine Überlappung, kein waagerechter Überlauf, die
+  Kachelreihen ohne Scrollen sichtbar. Bei 1912×905 scrollt die Seite gar nicht.
+
 ## Sichtungen: Galerie und Videos am Einsatz (13.09.2026)
 
 Nachtrag zu den Video-Publikationen. Ergänzt in

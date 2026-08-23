@@ -43,9 +43,14 @@ export default function MissionVideos({
   linkAction: FormAction;
   unlinkAction: FormAction;
 }) {
+  // Kein eigener Kasten: Der Bereich steht IN der Box „Belegmaterial", und ein
+  // Kasten im Kasten macht aus einer Maske eine Schachtel. Abgesetzt wird er
+  // wie die Blöcke darüber — mit einer Linie.
+  const frame = { marginTop: 16, borderTop: "1px solid var(--line-soft)", paddingTop: 14 } as const;
+
   if (!missionId) {
     return (
-      <div className="card bracket" style={{ marginTop: 16 }}>
+      <div style={frame}>
         <p className="eyebrow" style={{ marginTop: 0 }}>Videos zu diesem Einsatz</p>
         <p className="meta" style={{ margin: 0 }}>
           Erst den Einsatz anlegen, dann lassen sich Videos zuordnen — sie hängen an diesem Einsatz.
@@ -57,7 +62,7 @@ export default function MissionVideos({
   const available = selectableVideos(choices, missionId);
 
   return (
-    <div className="card bracket" style={{ marginTop: 16 }}>
+    <div style={frame}>
       <p className="eyebrow" style={{ marginTop: 0 }}>Videos zu diesem Einsatz</p>
       <p className="meta" style={{ marginTop: -6 }}>
         Aufzeichnung, Interview, Ausschnitt eines Veranstalters — alles, was von diesem Auftritt
@@ -132,7 +137,7 @@ export default function MissionVideos({
         </div>
       )}
 
-      <div className="grid g2" style={{ gap: 16, alignItems: "start", marginTop: 18 }}>
+      <div className="field-row g2" style={{ marginTop: 18, alignItems: "start" }}>
         <div>
           <p className="eyebrow" style={{ marginTop: 0 }}>Adresse einwerfen</p>
           <p className="meta" style={{ marginTop: -6 }}>

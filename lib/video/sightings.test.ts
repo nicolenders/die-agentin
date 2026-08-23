@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterSightings, sightingFacets } from "./sightings";
+import { filterSightings, groupByYear, sightingFacets } from "./sightings";
 
 const items = [
   { year: 2025, publisher: "Cloud Community" },
@@ -57,5 +57,35 @@ describe("filterSightings", () => {
 
   it("liefert nichts, wenn es zur Auswahl nichts gibt", () => {
     expect(filterSightings(items, { year: "1999" })).toHaveLength(0);
+  });
+});
+
+describe("groupByYear", () => {
+  it("bündelt je Jahrgang, das jüngste zuerst", () => {
+    const groups = groupByYear(items);
+    expect(groups.map((g) => g.year)).toEqual([2025, 2024, 2023]);
+    expect(groups[0]?.items).toHaveLength(2);
+  });
+
+  it("behält innerhalb eines Jahres die Reihenfolge bei", () => {
+    const a = { year: 2025, publisher: "A" };
+    const b = { year: 2025, publisher: "B" };
+    expect(groupByYear([a, b])[0]?.items).toEqual([a, b]);
+  });
+
+  it("findet auch wieder zusammen, was in der Liste auseinanderliegt", () => {
+    const groups = groupByYear([
+      { year: 2025, publisher: "A" },
+      { year: 2024, publisher: "B" },
+      { year: 2025, publisher: "C" },
+    ]);
+    expect(groups.map((g) => [g.year, g.items.length])).toEqual([
+      [2025, 2],
+      [2024, 1],
+    ]);
+  });
+
+  it("kommt mit leerer Liste zurecht", () => {
+    expect(groupByYear([])).toEqual([]);
   });
 });

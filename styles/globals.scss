@@ -481,6 +481,101 @@ h1.as-h2 {
     grid-template-columns: 1fr;
   }
 }
+// Der eingeklappte Filter der Galerie.
+//
+// Bei 48 Aufnahmen aus 30 Kanälen füllten die Filterschaltflächen den ganzen
+// ersten Bildschirm — man kam auf einer Video-Galerie an und sah kein einziges
+// Video. Jetzt steht dort eine Zeile, und wer filtern will, klappt sie auf.
+// `<details>` statt eines Umschalters im Browser: ohne JavaScript, mit der
+// Tastatur bedienbar, und die Semantik bringt es selbst mit.
+.sighting-filters {
+  margin-top: 22px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  background: rgba(139, 92, 246, 0.04);
+}
+.sighting-filters > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+}
+// Das Standard-Dreieck von `<details>` sieht in jedem Browser anders aus.
+// Deshalb ein eigenes, das sich beim Aufklappen dreht.
+.sighting-filters > summary::-webkit-details-marker {
+  display: none;
+}
+.sighting-filters > summary::before {
+  content: "▸";
+  display: inline-block;
+  color: var(--violet-bright);
+  transition: transform 0.14s ease;
+}
+.sighting-filters[open] > summary::before {
+  transform: rotate(90deg);
+}
+.sighting-filters > summary:hover,
+.sighting-filters > summary:focus-visible {
+  color: var(--text);
+}
+.sighting-filters > summary:focus-visible {
+  outline: 2px solid var(--violet-bright);
+  outline-offset: 2px;
+}
+.sighting-filters-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.sighting-filters > .filter-row,
+.sighting-filters > p {
+  padding: 0 14px;
+}
+.sighting-filters > .filter-row:first-of-type {
+  padding-top: 4px;
+}
+.sighting-filters > :last-child {
+  padding-bottom: 14px;
+}
+// „Jahr" / „Kanal" vor der jeweiligen Reihe. `.filter-row` ist ein Flex-Kasten,
+// die Beschriftung sitzt also links daneben und bleibt beim Umbruch oben —
+// deshalb `align-self`, sonst rutschte sie in die Mitte des Blocks.
+.sighting-filters-group {
+  align-self: flex-start;
+  padding-top: 8px;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sighting-filters > summary::before {
+    transition: none;
+  }
+}
+
+// Jahrgänge in der Galerie: Aus einer langen Liste wird eine Chronik.
+.sighting-year {
+  margin-top: 30px;
+}
+.sighting-year-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  color: var(--violet-text);
+}
+.sighting-year-head .meta {
+  margin-left: auto;
+}
+
 // Galerie „Sichtungen": wie die Video-Kachel auf der Publikationsseite, nur
 // mit einem zweiten Ziel. Deshalb ist die Karte hier KEIN Link mehr, sondern
 // eine <article> mit einem großen Link (das Video) und darunter einem kleinen

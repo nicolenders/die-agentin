@@ -1124,3 +1124,25 @@ veröffentlichen" ab. Der Video-Bereich stand darunter und gehört nach oben.
   als schief wahrnimmt. Jetzt beide 38 px.
 - Nachgemessen bei 1400, 1200, 1100, 900, 700, 420 und 380 px: Beschriftungen
   und Felder je Zeile ohne Versatz, überall dieselbe Feldhöhe.
+
+## Sichtungen: Filter eingeklappt, nach Jahrgängen (13.09.2026)
+
+Bei 48 Aufnahmen aus rund 30 Kanälen füllten die Filterschaltflächen den ganzen
+ersten Bildschirm — man kam auf einer Video-Galerie an und sah kein einziges
+Video. Meistens will man dort ohnehin nur scrollen.
+
+- **Der Filter ist eingeklappt.** Statt der Schaltflächen steht eine Zeile
+  „Nach Jahr oder Kanal filtern"; die Werte erscheinen erst nach einem Klick.
+  Umgesetzt mit `<details>` statt eines Umschalters im Browser: ohne
+  JavaScript, mit der Tastatur bedienbar, Semantik inklusive. Ist gerade
+  gefiltert, steht es offen — sonst wäre nicht zu sehen, warum weniger da ist.
+  Gemessen: 48 px statt 470 px, und bei jeder Fenstergröße sind beim Ankommen
+  Videos zu sehen.
+- **Nach Jahrgängen gegliedert**, das jüngste zuerst (`groupByYear`,
+  unit-getestet). Aus einer langen Liste wird eine Chronik. Die Jahreszahl auf
+  der einzelnen Kachel entfällt dafür — sie steht jetzt in der Überschrift.
+- „Filter zurücksetzen" im aufgeklappten Bereich, und wenn eine Auswahl nichts
+  trifft, sagt die Seite das statt eine leere Fläche zu zeigen.
+- Nachgemessen bei 1912×905, 1440×900, 768×1000 und 380×800: Kacheln einer Reihe
+  gleich hoch, „Aufnahme ansehen" auf gemeinsamer Grundlinie, kein Link im Link,
+  kein waagerechter Überlauf — auch bei aufgeklapptem Filter.

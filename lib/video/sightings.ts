@@ -55,3 +55,29 @@ export function filterSightings<T extends SightingLike>(
     (item) => (!hasYear || item.year === year) && (!channel || item.publisher === channel),
   );
 }
+
+export interface YearGroup<T> {
+  year: number;
+  items: T[];
+}
+
+/**
+ * Nach Jahrgängen bündeln, das jüngste zuerst.
+ *
+ * Die Galerie ist eine lange Liste, durch die man scrollt statt zu filtern.
+ * Ohne Zwischenüberschriften verliert man dabei jedes Gefühl dafür, wo man ist;
+ * mit ihnen wird aus der Liste eine Chronik. Innerhalb eines Jahres bleibt die
+ * Reihenfolge, in der die Einträge hereinkommen — die Datenbank sortiert sie
+ * bereits.
+ */
+export function groupByYear<T extends SightingLike>(items: T[]): YearGroup<T>[] {
+  const groups = new Map<number, T[]>();
+  for (const item of items) {
+    const bucket = groups.get(item.year);
+    if (bucket) bucket.push(item);
+    else groups.set(item.year, [item]);
+  }
+  return [...groups.entries()]
+    .map(([year, list]) => ({ year, items: list }))
+    .sort((a, b) => b.year - a.year);
+}

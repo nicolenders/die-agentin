@@ -56,7 +56,6 @@ export interface MissionFormInitial {
 export interface MissionMaterialForm {
   slidesFilePath: string;
   slidesFileName: string;
-  recordingUrl: string;
   sessionType: string;
   /** Publikum in drei Zahlen; als Text, weil sie aus Eingabefeldern kommen. */
   attendeesOnsite: string;
@@ -66,7 +65,7 @@ export interface MissionMaterialForm {
 }
 
 export const EMPTY_MATERIAL: MissionMaterialForm = {
-  slidesFilePath: "", slidesFileName: "", recordingUrl: "",
+  slidesFilePath: "", slidesFileName: "",
   sessionType: "", attendeesOnsite: "", attendeesRemote: "", onDemandViews: "", coSpeakers: "",
 };
 
@@ -85,6 +84,7 @@ export default function MissionForm({
   categories = [],
   allTools = [],
   isEdit = false,
+  videos,
 }: {
   initial: MissionFormInitial;
   existingPins: { lat: number; lon: number }[];
@@ -103,6 +103,13 @@ export default function MissionForm({
   categories?: { id: string; name: string }[];
   allTools?: { id: string; name: string }[];
   isEdit?: boolean;
+  /**
+   * Der Bereich „Videos zu diesem Einsatz". Kommt als fertiger Baustein von der
+   * Seite herein, weil er Server Actions braucht und diese Maske im Browser
+   * läuft. Er steht IM Register Belegmaterial, nicht darunter: Die Maske soll
+   * mit „Als Entwurf speichern" und „Einsatzakte veröffentlichen" abschließen.
+   */
+  videos?: React.ReactNode;
 }) {
   const router = useRouter();
   const { landPath, graticulePath, projection } = useMemo(() => computeGeo(W, H), []);
@@ -272,7 +279,6 @@ export default function MissionForm({
       material: {
         slidesFilePath: material.slidesFilePath || null,
         slidesFileName: material.slidesFileName || null,
-        recordingUrl: material.recordingUrl,
         sessionType: material.sessionType || null,
         attendeesOnsite: material.attendeesOnsite ? Number(material.attendeesOnsite) : null,
         attendeesRemote: material.attendeesRemote ? Number(material.attendeesRemote) : null,
@@ -769,20 +775,16 @@ export default function MissionForm({
             <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
               <p className="eyebrow" style={{ marginTop: 0 }}>Aufzeichnung und Publikum</p>
               <p className="meta" style={{ marginTop: 0 }}>Alles optional. Leere Angaben erscheinen öffentlich nicht.</p>
-              <div className="grid g2" style={{ gap: 12, alignItems: "start" }}>
-                <label className="f">Aufzeichnung (YouTube-URL)
-                  <input className="f" value={material.recordingUrl} onChange={(e) => setMat({ recordingUrl: e.target.value })} placeholder="https://youtu.be/…" />
-                </label>
+              {/* Vier Felder in einer Zeile: die Art des Auftritts zuerst, dann
+                  das Publikum. Drei Zahlen statt einer — ein Webinar mit 40 im
+                  Raum und 900 online sieht sonst aus wie eine kleine Runde. */}
+              <div className="field-row g4" style={{ marginTop: 4 }}>
                 <label className="f">Art des Auftritts
                   <select className="f" value={material.sessionType} onChange={(e) => setMat({ sessionType: e.target.value })}>
                     <option value="">— keine —</option>
                     {SESSION_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </label>
-              </div>
-              {/* Drei Zahlen statt einer: ein Webinar mit 40 im Raum und 900
-                  online sieht sonst aus wie eine kleine Runde. */}
-              <div className="grid g3" style={{ gap: 12, alignItems: "start", marginTop: 4 }}>
                 <label className="f">Teilnehmende (Präsenz)
                   <input className="f" type="number" min={0} value={material.attendeesOnsite} onChange={(e) => setMat({ attendeesOnsite: e.target.value })} />
                 </label>
@@ -793,6 +795,7 @@ export default function MissionForm({
                   <input className="f" type="number" min={0} value={material.onDemandViews} onChange={(e) => setMat({ onDemandViews: e.target.value })} />
                 </label>
               </div>
+              {videos ? <div style={{ marginTop: 18 }}>{videos}</div> : null}
             </div>
           </div>
         </>

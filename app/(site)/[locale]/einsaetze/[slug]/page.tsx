@@ -5,7 +5,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { getMissionBySlug } from "@/lib/queries/missions";
 import { formatDate, formatDuration } from "@/lib/format";
-import { extractYouTubeId } from "@/lib/video";
+import { extractYouTubeId, youtubeWatchUrl } from "@/lib/video/youtube";
 import { siteOrigin } from "@/lib/site";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import { eventNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
@@ -50,7 +50,11 @@ export default async function EinsatzaktePage({
   const mission = await getMissionBySlug(locale, slug);
   if (!mission) notFound();
   const isDe = locale === "de";
-  const videoId = extractYouTubeId(mission.recordingUrl);
+  // Videos zu diesem Einsatz. Der frühere Einzelwert `recordingUrl` ist aus der
+  // Maske entfallen; er greift nur noch, solange an einem alten Einsatz einer
+  // steht, zu dem es noch kein Video gibt. Dann sieht die Seite aus wie vorher.
+  const legacyVideoId = extractYouTubeId(mission.recordingUrl);
+  const videoId = mission.videos.length === 0 ? legacyVideoId : null;
 
   // Fakten-Zeile: Art, Sprache, Dauer, Publikum (leere Angaben entfallen). Das
   // Publikum steht in bis zu drei Zahlen — vor Ort, zugeschaltet, später
@@ -173,9 +177,34 @@ export default async function EinsatzaktePage({
                 </a>
               </p>
             ) : null}
+            {/* Ein einzelnes Video wird eingebettet (Zwei-Klick), mehrere werden
+                verlinkt: Drei Zustimmungsfelder untereinander wären eine Wand,
+                und die Galerie zeigt sie ohnehin als Kacheln. */}
             {videoId ? (
               <div style={{ marginTop: 12 }}>
                 <VideoConsent videoId={videoId} title={mission.eventName} labels={embedLabels(locale)} />
+              </div>
+            ) : mission.videos.length === 1 && mission.videos[0] ? (
+              <div style={{ marginTop: 12 }}>
+                <VideoConsent
+                  videoId={mission.videos[0].videoId}
+                  title={mission.videos[0].title || mission.eventName}
+                  labels={embedLabels(locale)}
+                />
+              </div>
+            ) : mission.videos.length > 1 ? (
+              <div style={{ marginTop: 12 }}>
+                <p className="eyebrow">{isDe ? "Aufnahmen" : "Recordings"}</p>
+                <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+                  {mission.videos.map((v) => (
+                    <li key={v.videoId} style={{ marginBottom: 4 }}>
+                      <a href={youtubeWatchUrl(v.videoId)} target="_blank" rel="noopener noreferrer">
+                        {v.title || (isDe ? "Aufnahme" : "Recording")}
+                      </a>
+                      {v.channel ? <span className="meta"> · {v.channel}</span> : null}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
             {mission.photos.length > 0 ? (

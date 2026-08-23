@@ -46,6 +46,7 @@ export default async function EinsatzBearbeitenPage({
   let allTools: { id: string; name: string }[] = [];
   let linkedVideos: LinkedVideo[] = [];
   let videoChoices: VideoChoice[] = [];
+  let legacyRecordingUrl: string | null = null;
   let initial: MissionFormInitial = {
     eventName: "",
     city: "",
@@ -115,6 +116,7 @@ export default async function EinsatzBearbeitenPage({
         },
       });
       if (mission) {
+        legacyRecordingUrl = mission.recordingUrl;
         linkedVideos = mission.videos.map((v) => ({
           id: v.id,
           title: v.translations[0]?.title ?? "(ohne Titel)",
@@ -154,7 +156,6 @@ export default async function EinsatzBearbeitenPage({
           material: {
             slidesFilePath: mission.slidesFilePath ?? "",
             slidesFileName: mission.slidesFileName ?? "",
-            recordingUrl: mission.recordingUrl ?? "",
             sessionType: mission.sessionType ?? "",
             attendeesOnsite: mission.attendeesOnsite != null ? String(mission.attendeesOnsite) : "",
             attendeesRemote: mission.attendeesRemote != null ? String(mission.attendeesRemote) : "",
@@ -200,7 +201,11 @@ export default async function EinsatzBearbeitenPage({
     }
   }
 
-  const suggestedVideoId = recordingWorthImporting(initial.material.recordingUrl, linkedVideos);
+  // Der Altwert aus dem Feld „Aufzeichnung", das es in der Maske nicht mehr
+  // gibt. Er wird nicht mehr geschrieben, aber gelesen: Solange er da ist und
+  // noch keine Publikation dazu existiert, steht er unten als Vorschlag — der
+  // Weg, auf dem die alten Aufzeichnungen nach und nach zu Videos werden.
+  const suggestedVideoId = recordingWorthImporting(legacyRecordingUrl, linkedVideos);
 
   return (
     <>
@@ -208,6 +213,12 @@ export default async function EinsatzBearbeitenPage({
         <Link className="btn ghost sm" href="/admin/einsaetze">← Zurück zur Liste</Link>
       </div>
       <Flash ok={ok} err={err} />
+      {/* Der Video-Bereich wird der Maske als fertiger Baustein übergeben und
+          steht dort im Register Belegmaterial. Er kann kein Feld des Formulars
+          sein: Das Anlegen eines Videos holt Titel, Kanal und Bild von YouTube
+          und läuft über eigene Server Actions — das darf nicht am Speichern des
+          Einsatzes hängen, und ein halb ausgefülltes Formular soll davon nichts
+          merken. */}
       <MissionForm
         initial={initial}
         existingPins={existingPins}
@@ -215,19 +226,17 @@ export default async function EinsatzBearbeitenPage({
         categories={categories}
         allTools={allTools}
         isEdit={Boolean(id)}
-      />
-      {/* Eigener Abschnitt unter dem Formular statt eines Feldes darin: Das
-          Anlegen eines Videos holt Titel, Kanal und Bild von YouTube — das darf
-          nicht am Speichern des Einsatzes hängen, und umgekehrt soll ein halb
-          ausgefülltes Formular davon nichts merken. */}
-      <MissionVideos
-        missionId={id ?? null}
-        linked={linkedVideos}
-        choices={videoChoices}
-        suggestedVideoId={suggestedVideoId}
-        addAction={addMissionVideo}
-        linkAction={linkMissionVideo}
-        unlinkAction={unlinkMissionVideo}
+        videos={
+          <MissionVideos
+            missionId={id ?? null}
+            linked={linkedVideos}
+            choices={videoChoices}
+            suggestedVideoId={suggestedVideoId}
+            addAction={addMissionVideo}
+            linkAction={linkMissionVideo}
+            unlinkAction={unlinkMissionVideo}
+          />
+        }
       />
     </>
   );

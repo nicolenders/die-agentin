@@ -22,6 +22,11 @@ export interface MissionTextInput {
 export interface MissionMaterialInput {
   slidesFilePath?: string | null; // hochgeladene PDF-Folien (Pfad in der Medienablage)
   slidesFileName?: string | null; // Originalname für den Download-Link
+  /**
+   * Nicht mehr aus der Maske: Das Feld ist entfallen, Aufzeichnungen hängen
+   * jetzt als Videos am Einsatz. Bleibt hier, damit ein Aufrufer den Altwert
+   * ausdrücklich setzen oder löschen KANN — wer ihn weglässt, ändert ihn nicht.
+   */
   recordingUrl?: string | null;
   sessionType?: string | null;
   // Publikum in drei Zahlen: vor Ort, zugeschaltet, später abgerufen.
@@ -54,7 +59,12 @@ function materialData(m: MissionMaterialInput | undefined) {
   return {
     slidesFilePath: m?.slidesFilePath?.trim() || null,
     slidesFileName: m?.slidesFileName?.trim() || null,
-    recordingUrl: m?.recordingUrl?.trim() || null,
+    // Der Altwert aus dem früheren Feld „Aufzeichnung (YouTube-URL)". Die Maske
+    // schickt ihn nicht mehr — dann bleibt er, wie er ist (`undefined` heißt bei
+    // Prisma „nicht ändern"). Ihn hier stumpf auf `null` zu setzen hieße, eine
+    // Angabe zu löschen, die niemand mehr sehen kann; sie ist aber genau das,
+    // woraus die Video-Zuordnung ihren Vorschlag zieht.
+    recordingUrl: m && "recordingUrl" in m ? m.recordingUrl?.trim() || null : undefined,
     sessionType: isOneOf(SESSION_TYPES, m?.sessionType ?? "") ? m!.sessionType! : null,
     attendeesOnsite: count(m?.attendeesOnsite),
     attendeesRemote: count(m?.attendeesRemote),

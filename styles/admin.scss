@@ -694,6 +694,42 @@ a.st:focus-visible {
   font-size: 11px;
 }
 
+// Felder nebeneinander, sauber auf einer Linie.
+//
+// Der Grund: `label.f` ist ein Block mit der Eingabe darin. Nebeneinander
+// richtet sich dann jede Spalte nach sich selbst — bricht eine Beschriftung um
+// oder ist ein `<select>` ein paar Pixel höher als ein `<input>`, stehen die
+// Felder versetzt und die Maske wirkt unruhig. Hier wird beides festgezurrt:
+// Die Spalten sind gleich hoch, die Beschriftung sitzt oben, die Eingabe unten,
+// und alle Eingaben derselben Zeile enden auf derselben Linie.
+.field-row {
+  display: grid;
+  gap: 12px;
+  align-items: stretch;
+}
+.field-row > label.f {
+  display: flex;
+  flex-direction: column;
+  // Beschriftung oben, Eingabe unten: Der Zwischenraum wächst, nicht die Zeile.
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+// Gleiche Höhe für Textfeld und Auswahlfeld. Ein `<select>` bringt seine eigene
+// Zeilenhöhe mit und wäre sonst ein bis zwei Pixel höher als das `<input>`
+// daneben — wenig, aber genau das, was man als „schief" wahrnimmt.
+.field-row input.f,
+.field-row select.f,
+.field-row textarea.f {
+  margin: 0;
+  line-height: 1.4;
+}
+.field-row input.f,
+.field-row select.f {
+  height: 38px;
+}
+
 // Zweispaltige Erfassungsmaske. Bricht auf schmalen Anzeigen auf eine Spalte um.
 .form-2col {
   display: grid;

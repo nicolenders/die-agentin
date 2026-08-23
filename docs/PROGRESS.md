@@ -1095,3 +1095,32 @@ Nachtrag zu den Video-Publikationen. Ergänzt in
   `lib/video/save.ts`.
 - Nachgemessen bei 1440, 768 und 380 px: Karten gleich hoch, „Aufnahme ansehen"
   auf gemeinsamer Grundlinie, kein Link im Link, kein waagerechter Überlauf.
+
+## Belegmaterial-Maske aufgeräumt (13.09.2026)
+
+Die Maske schließt jetzt wieder mit „Als Entwurf speichern" und „Einsatzakte
+veröffentlichen" ab. Der Video-Bereich stand darunter und gehört nach oben.
+
+- **„Videos zu diesem Einsatz" steht im Register Belegmaterial**, im Abschnitt
+  „Aufzeichnung und Publikum". Er kommt als fertiger Baustein von der Seite in
+  die Maske (`videos`-Prop): Er braucht Server Actions, die Maske läuft im
+  Browser. Ein Feld des Formulars kann er nicht sein — das Anlegen eines Videos
+  holt Titel, Kanal und Bild von YouTube und darf nicht am Speichern hängen.
+- **Das Feld „Aufzeichnung (YouTube-URL)" ist entfallen.** Es wurde vom
+  Video-Bereich abgelöst. Der gespeicherte Altwert bleibt: Die Maske schickt ihn
+  nicht mehr, und die Server Action lässt ihn dann unverändert (`undefined`
+  heißt bei Prisma „nicht ändern"). Solange er da ist und es noch kein Video
+  dazu gibt, steht er im Video-Bereich als Vorschlag — so werden die alten
+  Aufzeichnungen nach und nach zu Videos.
+- **Öffentlich** zeigt die Einsatzakte jetzt die verknüpften Videos: eines
+  eingebettet wie bisher (Zwei-Klick), mehrere als Liste — drei
+  Zustimmungsfelder untereinander wären eine Wand. Ohne Video greift der
+  Altwert, dann sieht die Seite aus wie vorher.
+- **„Art des Auftritts" steht zuerst**, danach die drei Publikumszahlen. Vier
+  Felder in einer Zeile.
+- **Neue Regel `.field-row`:** Beschriftung oben, Eingabe unten, alle Eingaben
+  einer Zeile auf derselben Linie und gleich hoch. Vorher war das Auswahlfeld
+  37 px hoch und das Textfeld daneben 36 — ein Pixel, aber genau das, was man
+  als schief wahrnimmt. Jetzt beide 38 px.
+- Nachgemessen bei 1400, 1200, 1100, 900, 700, 420 und 380 px: Beschriftungen
+  und Felder je Zeile ohne Versatz, überall dieselbe Feldhöhe.

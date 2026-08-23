@@ -6,6 +6,7 @@ import { identityDisplayName } from "@/lib/identities";
 import { missionTalkLanguage } from "@/lib/mission-language";
 import type { Locale } from "@/lib/i18n/config";
 import type { MissionStatus } from "@/lib/domain";
+import { extractYouTubeId } from "@/lib/video/youtube";
 
 export interface MissionListItem {
   id: string;
@@ -130,6 +131,12 @@ export interface MissionDetail {
   identities: { slug: string; name: string; color: string }[];
   slidesFileUrl: string | null; // öffentlicher Download-Link der hochgeladenen PDF
   slidesFileName: string | null;
+  /**
+   * Videos zu diesem Einsatz. Sie haben den früheren Einzelwert
+   * `recordingUrl` abgelöst; der bleibt als Rückfall, solange er an einem
+   * Einsatz noch steht und niemand ihn in ein Video überführt hat.
+   */
+  videos: { videoId: string; title: string; channel: string | null; coverUrl: string | null; coverAlt: string; coverAi: boolean }[];
   recordingUrl: string | null;
   recap: string | null;
   coSpeakers: { name: string; url: string | null }[];
@@ -166,6 +173,10 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
           photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
           deliveries: { include: { talk: { include: { translations: true } } }, orderBy: { heldOn: "desc" }, take: 1 },
           identities: { orderBy: { sortOrder: "asc" } },
+          videos: {
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+            include: { coverAsset: true, translations: true },
+          },
         },
       },
     },
@@ -206,6 +217,19 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
     identities: mission.identities.map((i) => ({ slug: i.slug, name: identityDisplayName(i, locale), color: i.color })),
     slidesFileUrl: mission.slidesFilePath ? assetUrl(mission.slidesFilePath) : null,
     slidesFileName: mission.slidesFileName,
+    videos: mission.videos
+      .map((v) => ({
+        videoId: extractYouTubeId(v.url),
+        title:
+          pickTranslation(v.translations, locale)?.translation.title ??
+          v.translations[0]?.title ??
+          "",
+        channel: v.publisher,
+        coverUrl: v.coverAsset ? assetUrl(v.coverAsset.blobPath) : null,
+        coverAlt: v.coverAsset?.altDe ?? "",
+        coverAi: v.coverAsset?.source === "AI",
+      }))
+      .filter((v): v is { videoId: string } & typeof v => Boolean(v.videoId)),
     recordingUrl: mission.recordingUrl,
     recap: locale === "en" && mission.recapEn ? mission.recapEn : mission.recapDe,
     coSpeakers: parseCoSpeakers(mission.coSpeakers),

@@ -55,6 +55,7 @@ export default async function SiteFooter({ locale, dict }: SiteFooterProps) {
             <li><Link href={l("identitaeten")}>{dict.nav.identitaeten}</Link></li>
             <li><Link href={l("depeschen")}>{dict.dispatch.namePlural}</Link></li>
             <li><Link href={l("briefings")}>{dict.nav.briefings}</Link></li>
+            <li><Link href={l("sichtungen")}>{dict.nav.sichtungen}</Link></li>
           </ul>
         </nav>
 

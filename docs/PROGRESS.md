@@ -1056,3 +1056,42 @@ abgeschnittenem Inhalt; man kann sich nur aussuchen, welches von beiden.
 - Nachgemessen bei sechs Fenstergrößen von 1024×730 bis 1912×905: kein Balken in
   irgendeinem Kasten, keine Überlappung, kein waagerechter Überlauf, die
   Kachelreihen ohne Scrollen sichtbar. Bei 1912×905 scrollt die Seite gar nicht.
+
+## Sichtungen: Galerie und Videos am Einsatz (13.09.2026)
+
+Nachtrag zu den Video-Publikationen. Ergänzt in
+`docs/decisions/0025-videos-als-publikationen.md`.
+
+**Öffentlich: `/sichtungen`**
+- Galerie aller Videos, im Ton der Seite: nicht „meine Videos", sondern das, was
+  die Überwachung eingefangen hat. Filter nach Jahr und Kanal, angeboten nur,
+  wozu es Einträge gibt (`lib/video/sightings.ts`, unit-getestet).
+- Jede Kachel führt zu YouTube; hängt am Video ein Einsatz mit offener Akte,
+  steht der Weg dorthin darunter. Kein iframe, Vorschaubilder aus eigener Ablage.
+- Erreichbar über den Footer (Spalte „Inhalte") und von der Publikationsseite.
+  In `sitemap.ts` aufgenommen, mit Canonical und hreflang wie jede Route.
+
+**Admin: Videos an einem Einsatz**
+- Neuer Abschnitt unter der Einsatzmaske. Zwei Wege: Adresse einwerfen — dann
+  entsteht die Publikation gleich mit (Titel, Kanal, Vorschaubild) — oder ein
+  vorhandenes Video zuordnen. Was an einem anderen Einsatz hängt, bleibt
+  wählbar und trägt dessen Namen; Umhängen ist ein Griff.
+- Steht im Feld „Aufzeichnung" eine YouTube-Adresse, zu der es noch keine
+  Publikation gibt, ist sie vorbelegt. Verglichen wird über die Kennung, nicht
+  über die Zeichenkette — sonst gälten `youtu.be/…` und `watch?v=…` als zwei
+  verschiedene Videos.
+- Das Jahr kommt aus dem Einsatzdatum, nicht aus dem laufenden Jahr: Beim
+  Nacharbeiten eines Auftritts von 2023 wäre „2026" schlicht falsch.
+- „Lösen" entfernt die Zuordnung, nicht das Video.
+
+**Datenbank**
+- `Publication.missionId`, Migration `20260913120000_publication_mission`, rein
+  additiv. `ON DELETE SET NULL` — ein gelöschter Einsatz nimmt kein Video mit.
+- Runbook für die Ausführung von Hand inkl. Eintrag in `_prisma_migrations`:
+  `docs/db/2026-09-13-videos-am-einsatz.sql`.
+
+**Aufgeräumt**
+- Das Anlegen eines Videos lag doppelt (Sammel-Import, Einsatz). Jetzt einmal in
+  `lib/video/save.ts`.
+- Nachgemessen bei 1440, 768 und 380 px: Karten gleich hoch, „Aufnahme ansehen"
+  auf gemeinsamer Grundlinie, kein Link im Link, kein waagerechter Überlauf.

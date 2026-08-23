@@ -7,16 +7,8 @@ import { invalidateTags, tags } from "@/lib/cache";
 import { PUBLICATION_TYPES, CERTIFICATION_STATUSES, isOneOf } from "@/lib/domain";
 import { toCertKind, toCertFamily } from "@/lib/records/kind";
 import { FOCUS_TAG } from "@/lib/queries/records";
-import {
-  MAX_IMPORT_LINES,
-  MIN_THUMBNAIL_WIDTH,
-  extractYouTubeId,
-  parseVideoList,
-  youtubeThumbnailUrls,
-  youtubeWatchUrl,
-} from "@/lib/video/youtube";
-import { fetchVideoMetadata } from "@/lib/video/oembed";
-import { importImageFromUrl } from "@/lib/media/import-image";
+import { MAX_IMPORT_LINES, extractYouTubeId, parseVideoList } from "@/lib/video/youtube";
+import { attachVideoThumbnail, saveVideoPublication } from "@/lib/video/save";
 
 const LIST = "/admin/publikationen";
 const CERT_LIST = "/admin/ausbildung";
@@ -385,39 +377,6 @@ export async function deleteFocusTopic(formData: FormData): Promise<void> {
 const VIDEO_LIST = `${LIST}?tab=videos`;
 
 /**
- * Holt das Vorschaubild zu einem Video in die eigene Medienablage und hängt es
- * an die Publikation. Gibt zurück, ob es geklappt hat — der Aufrufer entscheidet,
- * wie laut er das meldet.
- *
- * Die Auflösungen werden der Reihe nach probiert: `maxresdefault` gibt es nicht
- * für jedes Video, und wo es fehlt, antwortet YouTube mit einem grauen
- * Ersatzbild statt mit einem Fehler. Deshalb die Mindestbreite — sie ist das
- * Einzige, woran sich der Platzhalter erkennen lässt.
- */
-async function attachThumbnail(publicationId: string, videoId: string, title: string): Promise<boolean> {
-  for (const url of youtubeThumbnailUrls(videoId)) {
-    const result = await importImageFromUrl({
-      url,
-      altDe: `Vorschaubild: ${title}`.slice(0, 300),
-      source: "OTHER",
-      credit: "YouTube",
-      minWidth: MIN_THUMBNAIL_WIDTH,
-    });
-    if (!result.ok) continue;
-    try {
-      await db.publication.update({
-        where: { id: publicationId },
-        data: { coverAssetId: result.assetId },
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
-
-/**
  * Sammel-Import: eine Adresse je Zeile, optional `| Jahr` dahinter.
  *
  * Für „super viele Videos, verteilt auf viele Kanäle" ist das der eigentliche
@@ -445,32 +404,14 @@ export async function importVideos(formData: FormData): Promise<void> {
 
   for (const entry of parsed.ok) {
     const videoId = entry.videoId!;
-    const watchUrl = youtubeWatchUrl(videoId);
     try {
-      // Schon erfasst? Gesucht wird über die kanonische Adresse — die ist es,
-      // die hier geschrieben wird, egal in welcher Form sie hereinkam.
-      const existing = await db.publication.findFirst({
-        where: { type: "VIDEO", url: watchUrl },
-        select: { id: true },
-      });
-      if (existing) {
+      const saved = await saveVideoPublication({ videoId, year: entry.year ?? fallbackYear });
+      if (saved.existed) {
         skipped += 1;
         continue;
       }
-
-      const meta = await fetchVideoMetadata(videoId);
-      const title = meta.title ?? `YouTube-Video ${videoId}`;
-      const publication = await db.publication.create({
-        data: {
-          type: "VIDEO",
-          year: entry.year ?? fallbackYear,
-          url: watchUrl,
-          publisher: meta.channel,
-          translations: { create: [{ locale: "de", title }] },
-        },
-      });
       created += 1;
-      if (!(await attachThumbnail(publication.id, videoId, title))) withoutThumbnail += 1;
+      if (!saved.hasThumbnail) withoutThumbnail += 1;
     } catch (error) {
       if (error && typeof error === "object" && "digest" in error) throw error;
       console.error(`[videos] ${videoId} konnte nicht angelegt werden:`, error);
@@ -510,7 +451,7 @@ export async function refreshVideoThumbnail(formData: FormData): Promise<void> {
       redirect(`${VIDEO_LIST}&err=video-no-id`);
     }
     const title = row?.translations[0]?.title ?? `YouTube-Video ${videoId}`;
-    if (await attachThumbnail(id, videoId, title)) outcome = "video-thumb";
+    if (await attachVideoThumbnail(id, videoId, title)) outcome = "video-thumb";
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     console.error("[videos] Vorschaubild konnte nicht geholt werden:", error);

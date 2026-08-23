@@ -481,11 +481,79 @@ h1.as-h2 {
     grid-template-columns: 1fr;
   }
 }
+// Galerie „Sichtungen": wie die Video-Kachel auf der Publikationsseite, nur
+// mit einem zweiten Ziel. Deshalb ist die Karte hier KEIN Link mehr, sondern
+// eine <article> mit einem großen Link (das Video) und darunter einem kleinen
+// (die Einsatzakte). Ein Link im Link wäre ungültiges HTML und für die Tastatur
+// eine Falle — der Preis ist diese Handvoll Regeln.
+.sighting-card {
+  padding: 12px;
+  // Ohne das sprengt ein langer Veranstaltungsname in der Fußzeile die Spalte:
+  // `nowrap` erzeugt eine Mindestbreite, und `1fr` richtet sich danach. Am
+  // Telefon schob das die ganze Seite 137 px zur Seite. `overflow: hidden`
+  // allein genügt nicht — es greift erst, wenn die Breite schon feststeht.
+  min-width: 0;
+}
+.sighting-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+  // Füllt die Karte, damit „Aufnahme ansehen" bei allen Kacheln einer Reihe auf
+  // gleicher Grundlinie sitzt.
+  flex: 1;
+}
+.sighting-card:hover,
+.sighting-card:focus-within {
+  border-color: var(--violet-bright);
+}
+.sighting-card:hover .video-play svg,
+.sighting-main:focus-visible .video-play svg {
+  background: var(--violet);
+  transform: scale(1.06);
+}
+.sighting-main:focus-visible {
+  outline: 2px solid var(--violet-bright);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.sighting-case {
+  display: block;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  // Eine Zeile, nie zwei: Ein langer Veranstaltungsname würde die Karte sonst
+  // auseinanderziehen und die Reihe aus dem Tritt bringen. Er wird gekürzt.
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+// Der Platzhalter ohne Einsatzakte: nimmt denselben Raum ein, zeigt aber nichts.
+.sighting-case.is-empty {
+  border-top-color: transparent;
+}
+.sighting-case:hover {
+  color: var(--violet-text);
+}
+// Die Karte selbst hebt sich nicht mehr an: Bei zwei Zielen darin wäre unklar,
+// welches gemeint ist. Der Rahmen genügt.
+.sighting-card:hover,
+.sighting-card:focus-within {
+  transform: none;
+}
+
 // Wer weniger Bewegung möchte, bekommt die Hervorhebung ohne Verschiebung.
 @media (prefers-reduced-motion: reduce) {
   .video-card,
   .video-play svg {
     transition: none;
+  }
+  .sighting-card:hover .video-play svg,
+  .sighting-main:focus-visible .video-play svg {
+    transform: none;
   }
   .video-card:hover,
   .video-card:focus-visible {

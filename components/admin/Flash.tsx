@@ -50,6 +50,12 @@ export const FLASH_MESSAGES: Record<string, string> = {
   "key-taken": "Diesen Schlüssel gibt es schon. Wähl einen anderen Namen oder Schlüssel.",
   "snippet-in-use": "Baustein wird noch von einer Vorlage angesprochen: dort erst entfernen.",
   "merge-failed": "Zusammenführen fehlgeschlagen. Nichts wurde geändert.",
+  "video-linked": "Video dem Einsatz zugeordnet.",
+  "video-unlinked": "Zuordnung gelöst. Das Video bleibt unter Publikationen bestehen.",
+  "video-added": "Video angelegt und dem Einsatz zugeordnet.",
+  "video-added-no-thumb":
+    "Video angelegt und zugeordnet — das Vorschaubild kam nicht mit. Unter Publikationen → Videos lässt es sich nachholen.",
+  "video-linked-existing": "Das Video gab es schon; es ist jetzt diesem Einsatz zugeordnet.",
   "videos-imported": "Videos übernommen.",
   "video-thumb": "Vorschaubild geholt.",
   "video-thumb-failed":

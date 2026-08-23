@@ -10,6 +10,8 @@ import { MISSION_STATUSES, SESSION_TYPES, isOneOf } from "@/lib/domain";
 import { serializeRichValue } from "@/lib/content/rich";
 import { ensureMissionReportTask } from "@/lib/missions/ensure-report-task";
 import type { Locale } from "@/lib/i18n/config";
+import { extractYouTubeId } from "@/lib/video/youtube";
+import { saveVideoPublication } from "@/lib/video/save";
 
 export interface MissionTextInput {
   eventText: string;
@@ -273,4 +275,114 @@ async function upsertText(
     create: { missionId, locale, slug, eventText, talkText, state: "REVIEWED" },
     update: { slug: existing?.slug ?? slug, eventText, talkText },
   });
+}
+
+// ------------------------------------------------------ Videos an einem Einsatz
+//
+// Ein Video ist eine Publikation mit `type = "VIDEO"` (ADR 0025); der Bezug
+// hängt an `Publication.missionId`. Zwei Wege führen hierher: ein vorhandenes
+// Video zuordnen, oder eine Adresse einwerfen — dann entsteht die Publikation
+// gleich mit. Der zweite Weg ist der wichtigere: Beim Nacharbeiten eines
+// Einsatzes hat man die Adresse zur Hand, nicht die Publikationsliste im Kopf.
+
+function videoBack(missionId: string): string {
+  return `/admin/einsaetze/bearbeiten?id=${missionId}`;
+}
+
+/** Ein vorhandenes Video diesem Einsatz zuordnen (oder von einem anderen umhängen). */
+export async function linkMissionVideo(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const missionId = String(formData.get("missionId") ?? "").trim();
+  const publicationId = String(formData.get("publicationId") ?? "").trim();
+  if (!missionId) redirect("/admin/einsaetze?err=not-found");
+  const back = videoBack(missionId);
+  if (!publicationId) redirect(`${back}&err=missing-fields`);
+
+  let failed = false;
+  try {
+    // `updateMany` mit `type` in der Bedingung: Über eine fremde id lässt sich
+    // so kein Buch an einen Einsatz hängen.
+    const result = await db.publication.updateMany({
+      where: { id: publicationId, type: "VIDEO" },
+      data: { missionId },
+    });
+    if (result.count === 0) failed = true;
+  } catch {
+    failed = true;
+  }
+  invalidateVideos(missionId);
+  redirect(failed ? `${back}&err=failed` : `${back}&ok=video-linked`);
+}
+
+/**
+ * Zuordnung lösen. Das Video bleibt als Publikation bestehen — gelöscht wird es
+ * unter Publikationen, nicht hier. Was hier gelöst wird, war eine Zuordnung,
+ * keine Aufzeichnung.
+ */
+export async function unlinkMissionVideo(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const missionId = String(formData.get("missionId") ?? "").trim();
+  const publicationId = String(formData.get("publicationId") ?? "").trim();
+  if (!missionId || !publicationId) redirect("/admin/einsaetze?err=not-found");
+  const back = videoBack(missionId);
+
+  let failed = false;
+  try {
+    const result = await db.publication.updateMany({
+      where: { id: publicationId, missionId },
+      data: { missionId: null },
+    });
+    if (result.count === 0) failed = true;
+  } catch {
+    failed = true;
+  }
+  invalidateVideos(missionId);
+  redirect(failed ? `${back}&err=failed` : `${back}&ok=video-unlinked`);
+}
+
+/**
+ * Schnellerfassung: Adresse einwerfen, Publikation entsteht, Zuordnung steht.
+ *
+ * Das Jahr wird aus dem Einsatzdatum vorbelegt statt aus dem laufenden Jahr —
+ * beim Nacharbeiten eines Auftritts von 2023 wäre „2026" schlicht falsch, und
+ * YouTube verrät über oEmbed kein Veröffentlichungsdatum.
+ */
+export async function addMissionVideo(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const missionId = String(formData.get("missionId") ?? "").trim();
+  if (!missionId) redirect("/admin/einsaetze?err=not-found");
+  const back = videoBack(missionId);
+
+  const videoId = extractYouTubeId(String(formData.get("url") ?? ""));
+  if (!videoId) redirect(`${back}&err=video-no-id`);
+
+  let outcome = "video-added";
+  try {
+    const mission = await db.mission.findUnique({
+      where: { id: missionId },
+      select: { startDate: true },
+    });
+    if (!mission) redirect(`${back}&err=not-found`);
+    const saved = await saveVideoPublication({
+      videoId,
+      year: mission.startDate.getUTCFullYear(),
+      missionId,
+    });
+    if (saved.existed) outcome = "video-linked-existing";
+    else if (!saved.hasThumbnail) outcome = "video-added-no-thumb";
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    console.error("[mission-videos] Video konnte nicht angelegt werden:", error);
+    redirect(`${back}&err=failed`);
+  }
+  invalidateVideos(missionId);
+  redirect(`${back}&ok=${outcome}`);
+}
+
+function invalidateVideos(missionId: string): void {
+  invalidateTags([
+    tags.mission(missionId),
+    tags.publicationList("de"),
+    tags.publicationList("en"),
+  ]);
 }

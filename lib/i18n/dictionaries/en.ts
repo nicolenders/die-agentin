@@ -23,6 +23,8 @@ const en: Dictionary = {
     briefings:
       "The full talk repertoire on Microsoft AI, Copilot, Modern Work and Power Platform, filterable by topic.",
     publikationen: "Technical books and online courses on Microsoft 365, Teams and Power Platform.",
+    sichtungen:
+      "Every video recording the agent turns up in: conference talks, interviews and community sessions.",
     ausbildung: "Microsoft certifications, MVP awards and trainings at a glance.",
     akte: "The speaker kit for organisers: copy-ready bios, press photo, talk formats, topics and contact.",
     cv: "Career, selected projects, certifications and publications of Nicole Enders.",
@@ -36,6 +38,7 @@ const en: Dictionary = {
     einsaetze: "Missions",
     briefings: "Briefings",
     publikationen: "Publications",
+    sichtungen: "Sightings",
     ausbildung: "Credentials",
     akte: "Speaker kit",
     legende: "Legend",
@@ -45,6 +48,22 @@ const en: Dictionary = {
     selectLanguage: "Select language",
     mainNavigation: "Main navigation",
     viewSite: "View site",
+  },
+  sightings: {
+    eyebrow: "Sightings · video recordings",
+    title: "Caught on camera.",
+    lead:
+      "Not every appearance goes unobserved. Whatever cameras, organisers and community channels recorded is collected here. One click opens the recording on YouTube.",
+    empty: "No sighting on record yet. The agent moves carefully.",
+    countOne: "1 sighting",
+    countMany: "{n} sightings",
+    filterYear: "Year",
+    filterChannel: "Channel",
+    all: "All",
+    watch: "Watch recording",
+    caseFile: "Open case file",
+    externalNote:
+      "The thumbnails are served from this site. Only a click takes you to YouTube; nothing connects there before that.",
   },
   common: {
     readMore: "Read more",

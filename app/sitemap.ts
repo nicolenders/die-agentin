@@ -33,6 +33,7 @@ const SECTIONS = [
   "einsaetze",
   "briefings",
   "publikationen",
+  "sichtungen",
   "ausbildung",
   "akte",
   "legende",

@@ -336,21 +336,25 @@ a.st:focus-visible {
 }
 
 // ---------------------------------------------------------------------------
-// Einsatzzentrale. Ziel: kein Scrollbalken — die Seite füllt genau das Fenster.
-// Kennzahlen oben über die volle Breite, darunter zwei Spalten (links, was
-// ansteht, rechts Reichweite), unten die Kachelreihen.
+// Einsatzzentrale.
 //
-// Umgesetzt als Raster mit einer dehnbaren Zeile: Die mittlere Zeile bekommt,
-// was übrig bleibt, und ihre Kästen scrollen bei Bedarf INNEN. Wächst dort eine
-// Liste, wandert also nicht die ganze Seite, sondern nur der Kasten.
+// Vorgeschichte, damit niemand den alten Weg noch einmal geht: Sie war einmal
+// auf die Fensterhöhe festgenagelt — Raster mit dehnbarer Zeile, `100dvh`,
+// `overflow: hidden` an der Inhaltsfläche, und die Kästen scrollten INNEN. Das
+// hat zwei Übel erzeugt und keines gelöst. Erst malten die Kästen übereinander,
+// dann hatte jeder von ihnen seinen eigenen kleinen Scrollbalken.
 //
-// Nur dort erzwungen, wo wirklich Platz ist. Die Schwelle liegt bei 1180 px
-// Breite, nicht bei 1000: Ausschlaggebend ist nicht die Höhe, sondern die
-// Breite — je schmaler das Fenster, desto mehr Zeilen brauchen die Kachelreihen
-// unten, und die sind fest. Bei 1024 px blieben der mittleren Zeile gemessene
-// 11 px; das ist keine Zentrale mehr, das ist ein Spalt. Darunter darf die
-// Seite wieder normal scrollen — eine abgeschnittene Zentrale wäre schlimmer
-// als eine, die scrollt.
+// Der Fehler steckte in der Annahme: „Als Nächstes" und „Reichweite" haben
+// keine feste Länge. Sie hängen daran, wie viel gerade ansteht. Etwas
+// Unbegrenztes in einen festen Rahmen zu zwingen, endet immer entweder in einem
+// Balken oder in abgeschnittenem Inhalt — man kann sich nur aussuchen, welches
+// von beiden.
+//
+// Deshalb jetzt die Reihenfolge statt der Zwangshöhe: Was FESTE Größe hat,
+// steht oben — Kennzahlen und die beiden Kachelreihen. Was wachsen darf, steht
+// zuunterst und darf wachsen. Beim Öffnen sieht man alles Wichtige; wird die
+// Terminliste lang, scrollt die Seite, wie eine Seite das tut. Kein einziger
+// Balken innerhalb eines Kastens.
 // ---------------------------------------------------------------------------
 .hq {
   display: flex;
@@ -458,7 +462,10 @@ a.st:focus-visible {
   display: grid;
   grid-template-columns: 1.25fr 1fr;
   gap: 12px;
-  align-items: start;
+  // Beide Kästen einer Reihe enden auf gleicher Höhe. Vorher richtete sich
+  // jeder nach seinem Inhalt, und die Zentrale bekam eine Treppenkante — bei
+  // vier Kästen in zwei Reihen fällt das auf.
+  align-items: stretch;
 }
 @media (max-width: 1100px) {
   .hq-grid {
@@ -480,13 +487,19 @@ a.st:focus-visible {
 
 // „Als Nächstes": Titel, Typ und Termin in einer Zeile, davor der Farbpunkt der
 // Identität — dieselbe Sprache wie im Terminkalender.
+//
+// 13,5 px statt der 16 px des Fließtextes: Die Zentrale besteht aus kurzen
+// Beschriftungen — Kacheln 13,5 px, Reichweiten-Zeilen 13 px, Metazeilen 11 px.
+// In der Grundschrift stachen ausgerechnet die Terminlinks heraus und sahen aus
+// wie eine Überschriftenliste. Jetzt liest sich der Kasten wie der Rest.
 .hq-next {
   list-style: none;
   margin: 10px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
+  font-size: 13.5px;
 }
 .hq-next li {
   display: flex;
@@ -494,7 +507,8 @@ a.st:focus-visible {
   gap: 8px;
   flex-wrap: wrap;
   border-bottom: 1px solid var(--line-soft);
-  padding-bottom: 8px;
+  padding-bottom: 7px;
+  line-height: 1.35;
 }
 .hq-next li:last-child {
   border-bottom: 0;
@@ -576,101 +590,6 @@ a.st:focus-visible {
   font-size: 13px;
 }
 
-// Die begrenzte Ansicht steht bewusst HINTER den Grundregeln: Sie überschreibt
-// unter anderem `align-items: start` am Raster, und bei gleicher Spezifität
-// gewinnt die spätere Regel. Stand sie vorher, blieb `start` wirksam — die
-// Kästen behielten ihre Inhaltshöhe, füllten die Zeile nicht und wurden am
-// unteren Rand abgeschnitten, statt zu scrollen.
-@media (min-width: 1180px) and (min-height: 720px) {
-  // Die Inhaltsfläche bekommt genau die Fensterhöhe abzüglich der Kopfzeile.
-  // `:has()` statt einer eigenen Klasse: Das Layout ist für alle Admin-Seiten
-  // dasselbe, nur diese eine soll sich anders verhalten.
-  .content:has(.hq) {
-    height: calc(100dvh - 60px);
-    overflow: hidden;
-    padding-bottom: 22px;
-  }
-
-  .hq {
-    display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
-    height: 100%;
-    min-height: 0;
-    gap: 10px;
-  }
-
-  // Alles, was fest ist, wird schmaler — damit für die dehnbare Zeile in der
-  // Mitte möglichst viel übrig bleibt und sie ohne Scrollen auskommt.
-  .hq-overview {
-    gap: 10px;
-  }
-  .hq-card {
-    padding: 11px 14px 10px;
-    gap: 8px;
-  }
-  .count {
-    padding: 6px 9px;
-  }
-  .count b {
-    font-size: 22px;
-  }
-  .hq-panel {
-    padding: 12px 14px;
-  }
-  .hq-tiles {
-    grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
-    gap: 8px;
-  }
-  .tile {
-    padding: 10px 12px;
-  }
-  .tile.ghost {
-    padding: 9px 12px;
-  }
-
-  // Damit die Zeile schrumpfen darf, muss auch ihr Inhalt schrumpfen dürfen.
-  .hq-grid,
-  .hq-panel {
-    min-height: 0;
-  }
-
-  // Hier lag der Fehler, der die Kästen übereinander schob: `align-items: start`
-  // (aus dem Grundlayout) gibt jedem Kasten seine INHALTSHÖHE statt der
-  // Zeilenhöhe. Damit war er nie zu hoch für sich selbst, `overflow: auto` griff
-  // nie — und was nicht mehr in die Zeile passte, wurde einfach über die
-  // nächste gemalt. In der begrenzten Ansicht müssen die Kästen die Zeile füllen
-  // und an ihr enden; `overflow: hidden` am Raster ist der Riegel davor, dass je
-  // wieder etwas herausläuft.
-  .hq-grid {
-    align-items: stretch;
-    overflow: hidden;
-  }
-
-  .hq-panel {
-    max-height: 100%;
-    overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
-  }
-  .hq-panel::-webkit-scrollbar {
-    width: 8px;
-  }
-  .hq-panel::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .hq-panel::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.28);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-
-  // Die Begrüßung darf den Platz nicht auffressen, wenn er knapp wird. Sie ist
-  // ein Gruß, keine Überschrift, um die man herumlesen muss.
-  .hq-head h1 {
-    font-size: clamp(22px, 2.4vw, 32px);
-  }
-}
 .tile.ghost:hover {
   color: var(--text);
   border-color: var(--violet);

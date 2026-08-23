@@ -131,13 +131,13 @@ export default async function DashboardPage() {
   } catch {
     // Ohne Termine bleibt die Spalte leer — die Zentrale soll trotzdem stehen.
   }
-  // Fünf statt sechs: Die Zentrale soll in ein Fenster passen, ohne zu scrollen,
-  // und der sechste Termin war der, der sie regelmäßig darüber hinausschob. Wer
-  // mehr sehen will, ist mit einem Klick im Terminkalender.
+  // Acht Termine: Der Kasten steht jetzt unten und darf wachsen, also muss die
+  // Liste nicht mehr auf eine Fensterhöhe zurechtgestutzt werden. Ein Ausschnitt
+  // bleibt es trotzdem — alles steht im Terminkalender, hier oben rechts verlinkt.
   const upcoming = sortPlanEntries(
     filterPlanEntries(calendar, { type: "alle", time: "kommend", status: "" }, now),
     "date",
-  ).slice(0, 5);
+  ).slice(0, 8);
   const overdue = countOverdueTasks(calendar);
 
   const greetingName = user?.name?.split(" ")[0] ?? "Nicole";
@@ -178,8 +178,39 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* Zwei Spalten: links das laufende Geschäft, rechts Reichweite und
-          Wege. Auf schmalen Fenstern fällt es untereinander zurück. */}
+      {/* Die Kachelreihen stehen VOR den Listen — und das ist der ganze Trick
+          gegen die Scrollbalken. Sie haben eine feste Größe, die Listen nicht.
+          Oben steht damit, was immer gleich viel Platz braucht; unten das, was
+          wachsen darf, und dort scrollt dann die Seite statt eines Kastens. */}
+      <div className="hq-grid">
+        <div className="card bracket hq-panel">
+          <p className="eyebrow" style={{ margin: "0 0 10px" }}>Neu anlegen</p>
+          <div className="hq-tiles">
+            {CREATE.map((q) => (
+              <Link key={q.href} className="tile" href={q.href}>
+                <EntityIcon name={q.icon} size={22} />
+                <span>{q.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="card bracket hq-panel">
+          <p className="eyebrow" style={{ margin: "0 0 10px" }}>Direkt hin</p>
+          <div className="hq-tiles">
+            {JUMP.map((q) => (
+              <Link key={q.href} className="tile ghost" href={q.href}>
+                <EntityIcon name={q.icon} size={20} />
+                <span>{q.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Zwei Spalten: links das laufende Geschäft, rechts Reichweite und Wege.
+          Zuunterst, weil beide beliebig lang werden dürfen. Auf schmalen
+          Fenstern fällt es untereinander. */}
       <div className="hq-grid">
         <div className="card bracket hq-panel">
           <div className="hq-panel-head">
@@ -258,31 +289,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="hq-grid">
-        <div className="card bracket hq-panel">
-          <p className="eyebrow" style={{ margin: "0 0 10px" }}>Neu anlegen</p>
-          <div className="hq-tiles">
-            {CREATE.map((q) => (
-              <Link key={q.href} className="tile" href={q.href}>
-                <EntityIcon name={q.icon} size={22} />
-                <span>{q.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="card bracket hq-panel">
-          <p className="eyebrow" style={{ margin: "0 0 10px" }}>Direkt hin</p>
-          <div className="hq-tiles">
-            {JUMP.map((q) => (
-              <Link key={q.href} className="tile ghost" href={q.href}>
-                <EntityIcon name={q.icon} size={20} />
-                <span>{q.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
     </section>
   );
 }

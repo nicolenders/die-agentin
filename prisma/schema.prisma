@@ -169,6 +169,8 @@ model Mission {
   identities   Identity[]           @relation("IdentityMissions")
   tools        Tool[]               @relation("MissionTools")
   reportTask   MissionReportTask?
+  // Videos zu diesem Einsatz (Publikationen mit type = "VIDEO").
+  videos       Publication[]        @relation("MissionVideos")
 
   @@index([startDate])
   @@index([contentStatus])
@@ -351,6 +353,11 @@ model Publication {
   coverAssetId String?
   coverAsset   MediaAsset? @relation("PublicationCover", fields: [coverAssetId], references: [id])
   url          String?     @db.NVarChar(2048)
+  // Der Einsatz, bei dem das entstanden ist. Vor allem für Videos gedacht: Eine
+  // Aufzeichnung gehört zu genau einem Auftritt. Optional und ohne Zwang —
+  // Bücher und Kurse haben keinen Einsatz, und ein Video muss auch keinen haben.
+  missionId    String?
+  mission      Mission?    @relation("MissionVideos", fields: [missionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   sortOrder    Int         @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -360,6 +367,7 @@ model Publication {
   sales        PublicationSales[]
 
   @@index([year])
+  @@index([missionId])
 }
 
 // Verkaufszahlen je Buch, halbjährlich gepflegt (z. B. Periode „2024-H1"). Die

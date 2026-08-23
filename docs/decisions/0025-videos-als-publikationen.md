@@ -91,3 +91,29 @@ es ein Feld wie jedes andere und in der Maske änderbar.
 trotzdem — mit „YouTube-Video <Kennung>" als Titel und ohne Bild. Ein
 abgebrochener Import wäre schlechter als einer, der etwas zum Nacharbeiten
 hinterlässt; die Liste zeigt genau diese Einträge mit „Bild holen".
+
+## Nachtrag (13.09.2026): Einsatzbezug und Galerie
+
+**Einsatzbezug.** `Publication.missionId` — eine Aufzeichnung gehört zu genau
+einem Auftritt, ein Auftritt kann mehrere haben (Mitschnitt, Interview danach,
+Ausschnitt eines Veranstalters). Eine Verknüpfungstabelle wäre die allgemeinere
+Lösung gewesen; sie hätte einen Fall abgebildet, den es nicht gibt (dasselbe
+Video zu zwei Veranstaltungen), und dafür eine Tabelle mehr zu pflegen bedeutet.
+
+`ON DELETE SET NULL`: Wird ein Einsatz gelöscht, verliert das Video seine
+Zuordnung und bleibt als Publikation stehen. Die Aufzeichnung existiert ja
+weiter.
+
+**Galerie `/sichtungen`.** Eigene Seite statt eines längeren Abschnitts auf der
+Publikationsseite: Bei dreistelligen Zahlen erschlägt die Videowand alles
+andere, und eine Galerie will Filter (Jahr, Kanal), die dort nichts zu suchen
+haben. Auf der Publikationsseite bleibt der Abschnitt als Ausschnitt mit einem
+Verweis auf die Galerie.
+
+**Warum die Karte dort KEIN Link mehr ist.** Auf der Publikationsseite ist die
+ganze Kachel ein Link. In der Galerie kommt ein zweites Ziel dazu — die
+Einsatzakte. Ein Link in einem Link ist ungültiges HTML und für die Tastatur
+eine Falle, deshalb ist die Karte hier eine `<article>` mit zwei nebeneinander
+liegenden Links. Die Fußzeile steht auch dann da, wenn es keine Akte gibt (leer
+und für Vorlesewerkzeuge unsichtbar): Sonst rutschte „Aufnahme ansehen" bei
+diesen Kacheln nach unten, und die Reihe verlöre ihre gemeinsame Grundlinie.

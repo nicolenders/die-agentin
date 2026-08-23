@@ -24,6 +24,8 @@ const de = {
     briefings:
       "Das komplette Vortragsrepertoire zu Microsoft AI, Copilot, Modern Work und Power Platform, filterbar nach Thema.",
     publikationen: "Fachbücher und Online-Kurse zu Microsoft 365, Teams und Power Platform.",
+    sichtungen:
+      "Alle Videoaufnahmen, in denen die Agentin auftaucht: Konferenzmitschnitte, Interviews und Community-Sessions.",
     ausbildung: "Microsoft-Zertifizierungen, MVP-Auszeichnungen und Schulungen im Überblick.",
     akte: "Das Speaker-Kit für Veranstalter: Bios zum Kopieren, Pressefoto, Vortragsformate, Themen und Kontakt.",
     cv: "Beruflicher Werdegang, Projektreferenzen, Zertifizierungen und Publikationen von Nicole Enders.",
@@ -37,6 +39,7 @@ const de = {
     einsaetze: "Einsätze",
     briefings: "Briefings",
     publikationen: "Publikationen",
+    sichtungen: "Sichtungen",
     // „Ausbildung" heißt im Deutschen Berufsausbildung; die Seite zeigt aber
     // Zertifizierungen, Awards und Schulungen — und der Lebenslauf hat eine
     // eigene Sektion „Ausbildung" im Sinne von Education (Audit 2.6).
@@ -52,6 +55,24 @@ const de = {
     selectLanguage: "Sprache wählen",
     mainNavigation: "Hauptnavigation",
     viewSite: "Website ansehen",
+  },
+  // Die Video-Galerie. Der Ton ist der der Seite: Nicht „meine Videos", sondern
+  // das, was die Überwachung von ihr eingefangen hat.
+  sightings: {
+    eyebrow: "Sichtungen · Videoaufnahmen",
+    title: "Doch erwischt.",
+    lead:
+      "Nicht jeder Auftritt bleibt unbeobachtet. Was Kameras, Veranstalter und Community-Kanäle aufgezeichnet haben, ist hier gesammelt. Ein Klick öffnet die Aufnahme bei YouTube.",
+    empty: "Bislang keine Sichtung dokumentiert. Die Agentin bewegt sich vorsichtig.",
+    countOne: "1 Sichtung",
+    countMany: "{n} Sichtungen",
+    filterYear: "Jahr",
+    filterChannel: "Kanal",
+    all: "Alle",
+    watch: "Aufnahme ansehen",
+    caseFile: "Zur Einsatzakte",
+    externalNote:
+      "Die Vorschaubilder liegen auf dieser Website. Erst ein Klick führt zu YouTube; vorher entsteht keine Verbindung dorthin.",
   },
   common: {
     readMore: "Weiterlesen",

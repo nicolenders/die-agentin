@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/i18n/config";
 import type { PublicationItem } from "@/lib/queries/records";
 import { brandAsset } from "@/lib/brand-assets";
+import Link from "next/link";
 import BrandImage from "@/components/BrandImage";
 import { youtubeWatchUrl } from "@/lib/video/youtube";
 
@@ -289,7 +290,10 @@ export default function PublicationSections({
           <p className="meta" style={{ marginTop: 6, maxWidth: "62ch" }}>
             {isDe
               ? "Aufzeichnungen und Gespräche, verstreut über die Kanäle anderer. Ein Klick öffnet das Video bei YouTube — im neuen Tab, am Telefon in der App."
-              : "Recordings and conversations, scattered across other people’s channels. A click opens the video on YouTube — in a new tab, or in the app on your phone."}
+              : "Recordings and conversations, scattered across other people’s channels. A click opens the video on YouTube — in a new tab, or in the app on your phone."}{" "}
+            <Link href={`/${locale}/sichtungen`}>
+              {isDe ? "Alle Sichtungen ansehen" : "See all sightings"} →
+            </Link>
           </p>
           <div className="video-grid">
             {videos.map((v) => (

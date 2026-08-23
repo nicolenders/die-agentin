@@ -210,3 +210,78 @@ export async function getRadarTopics(locale: Locale): Promise<RadarTopicItem[]> 
     return [];
   }
 }
+
+export interface SightingItem extends PublicationItem {
+  /** Der Einsatz, bei dem das aufgenommen wurde — nur wenn seine Akte offen ist. */
+  mission: { slug: string; eventName: string; city: string; isOnline: boolean } | null;
+}
+
+async function loadSightings(locale: Locale): Promise<SightingItem[]> {
+  const rows = await db.publication.findMany({
+    where: { type: "VIDEO" },
+    orderBy: [{ year: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+    include: {
+      translations: true,
+      coverAsset: true,
+      // Nur verlinken, wenn die Einsatzakte öffentlich ist — sonst führte der
+      // Weg von der Galerie auf eine Seite, die es öffentlich nicht gibt.
+      mission: {
+        select: {
+          eventName: true,
+          city: true,
+          isOnline: true,
+          caseFilePublic: true,
+          translations: { select: { locale: true, slug: true } },
+        },
+      },
+    },
+  });
+
+  return rows
+    .map((p) => {
+      const picked = pickTranslation(p.translations, locale);
+      const missionSlug =
+        p.mission?.translations.find((t) => t.locale === locale)?.slug ??
+        p.mission?.translations[0]?.slug ??
+        null;
+      return {
+        id: p.id,
+        type: "VIDEO" as PublicationType,
+        videoId: extractYouTubeId(p.url),
+        year: p.year,
+        isbn: null,
+        publisher: p.publisher,
+        url: p.url,
+        repoUrl: null,
+        language: null,
+        title: picked?.translation.title ?? "",
+        role: picked?.translation.role ?? null,
+        description: picked?.translation.description ?? null,
+        coverUrl: p.coverAsset ? assetUrl(p.coverAsset.blobPath) : null,
+        coverAlt: p.coverAsset?.altDe ?? "",
+        coverAi: p.coverAsset?.source === "AI",
+        mission:
+          p.mission && p.mission.caseFilePublic && missionSlug
+            ? {
+                slug: missionSlug,
+                eventName: p.mission.eventName,
+                city: p.mission.city,
+                isOnline: p.mission.isOnline,
+              }
+            : null,
+      };
+    })
+    // Ohne Kennung gäbe es weder Link noch Bild — eine Kachel ins Leere ist
+    // schlimmer als keine.
+    .filter((v) => v.videoId);
+}
+
+/** Alle Videos für die Galerie „Sichtungen". Leere Liste, wenn die DB schweigt. */
+export async function getSightings(locale: Locale): Promise<SightingItem[]> {
+  const run = cachedQuery(loadSightings, ["sightings", locale], [tags.publicationList(locale)]);
+  try {
+    return await run(locale);
+  } catch {
+    return [];
+  }
+}

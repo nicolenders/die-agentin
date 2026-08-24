@@ -2265,6 +2265,15 @@ a.radar-chip:focus-visible {
 // Aufbau jeder Zeile: links eine feste Zeitspalte, rechts der Inhalt. Alle
 // Datumsangaben stehen dadurch auf einer Kante, quer durch alle Abschnitte.
 // ---------------------------------------------------------------------------
+// Seitenrand des gedruckten Lebenslaufs. Links etwas mehr: Bewerbungsmappen
+// werden geheftet oder gelocht, und der Text soll dabei nicht in die Falz
+// laufen. Alle vier Werte liegen deutlich innerhalb dessen, was übliche
+// Drucker überhaupt bedrucken können (meist 5–15 mm Sperrzone).
+$cv-margin-top: 22mm;
+$cv-margin-right: 22mm;
+$cv-margin-bottom: 22mm;
+$cv-margin-left: 25mm;
+
 $cv-ink: #16141c;
 $cv-ink-soft: #4c4956;
 $cv-rule: #c9c6d2;
@@ -2288,7 +2297,9 @@ $cv-accent: #3a2f52;
   box-sizing: border-box;
   background: #fff;
   color: $cv-ink;
-  padding: 18mm 16mm;
+  // Dieselben Werte wie der Druckrand unten: Was am Bildschirm zu sehen ist,
+  // liegt später genauso auf dem Papier.
+  padding: $cv-margin-top $cv-margin-right $cv-margin-bottom $cv-margin-left;
   border-radius: 2px;
   box-shadow: 0 18px 50px rgb(0 0 0 / 45%);
   font-family: var(--body);
@@ -2462,11 +2473,26 @@ $cv-accent: #3a2f52;
 // beiliegen. Website-Kopf, -Fuß und alle Bedienelemente verschwinden; das Blatt
 // verliert Schatten und eigene Ränder, weil das Papier sie mitbringt.
 // ---------------------------------------------------------------------------
+// Der Rand gehört an @page, nicht an das Blatt: Ein Innenabstand am Element
+// gilt nur einmal für den ganzen Block — Seite 2 eines mehrseitigen
+// Lebenslaufs stünde sonst oben ohne Rand da.
 @page {
   size: A4;
-  margin: 16mm;
+  margin: $cv-margin-top $cv-margin-right $cv-margin-bottom $cv-margin-left;
 }
 @media print {
+  // Die Website erklärt sich als dunkles Design (`colorScheme: "dark"`,
+  // lib/brand.ts). Der Browser füllt den Seitenrand daraufhin mit seiner
+  // dunklen Grundfarbe — auf Papier ein schwarzer Rahmen um jede Seite,
+  // sobald jemand Hintergrundgrafiken mitdruckt oder als PDF sichert. Eine
+  // weiße Hintergrundfarbe hilft dagegen nicht: Über den Rand entscheidet
+  // allein das Farbschema. Für den Druck erklären wir die Seite mit dem
+  // Lebenslauf deshalb als hell — nur diese, am Bildschirm ändert sich nichts.
+  html:has(.cv-page) {
+    color-scheme: light;
+    background: #fff !important;
+  }
+
   // Nur die Website-Rahmung ausblenden — sie sitzt direkt im <body>. Ein
   // pauschales `header` träfe auch den Kopf des Lebenslaufs selbst, und damit
   // wären Name, Foto und Kontaktzeile ausgerechnet auf dem Papier weg.
@@ -2479,6 +2505,14 @@ $cv-accent: #3a2f52;
   body {
     background: #fff !important;
     color: $cv-ink !important;
+  }
+
+  // Das Website-Raster hat einen eigenen Innenabstand. Auf Papier käme er zum
+  // Seitenrand hinzu und machte links und rechts andere Ränder als oben und
+  // unten — der Rand wäre nicht mehr das, was oben steht.
+  .wrap {
+    max-width: none;
+    padding: 0;
   }
 
   .cv-page {

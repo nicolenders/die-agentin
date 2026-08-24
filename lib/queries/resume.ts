@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { cachedQuery } from "@/lib/cache";
 import { assetUrl } from "@/lib/media/url";
+import { inDisplayOrder, splitProjects } from "@/lib/resume/order";
 import type { Locale } from "@/lib/i18n/config";
 
 // Klassischer Lebenslauf: Kopf/Zusammenfassung (Singleton) + Einträge je Rubrik.
@@ -47,7 +48,10 @@ export interface ResumeData {
   career: ResumeEntryData[];
   education: ResumeEntryData[];
   skills: ResumeEntryData[];
+  /** Projekte mit Zeitraum, neueste zuerst. */
   projects: ResumeEntryData[];
+  /** Projekte, von denen nur die Dauer bekannt ist („6 Monate“). */
+  legacyProjects: ResumeEntryData[];
   hasAny: boolean;
 }
 
@@ -89,7 +93,11 @@ async function loadResume(locale: Locale): Promise<ResumeData> {
     db.resumeProfile.findUnique({ where: { id: "default" }, include: { portrait: true } }),
     db.resumeEntry.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
   ]);
-  const bySection = (s: string) => entries.filter((e) => e.section === s).map(toEntry);
+  // Anzeigereihenfolge: Werdegang und Projekte sortieren sich nach Zeitraum
+  // (neu → alt), Ausbildung und Fähigkeiten bleiben so, wie sie im
+  // Adminbereich stehen. Siehe lib/resume/order.ts.
+  const bySection = (s: string) =>
+    inDisplayOrder(s, entries.filter((e) => e.section === s).map(toEntry));
   const asset = profile?.portrait ?? null;
   const profileData: ResumeProfileData | null = profile
     ? {
@@ -108,12 +116,14 @@ async function loadResume(locale: Locale): Promise<ResumeData> {
       }
     : null;
   const hasProfile = Boolean(profileData && (profileData.headline || profileData.summary));
+  const projects = splitProjects(bySection("PROJECT"));
   return {
     profile: profileData,
     career: bySection("CAREER"),
     education: bySection("EDUCATION"),
     skills: bySection("SKILL"),
-    projects: bySection("PROJECT"),
+    projects: projects.dated,
+    legacyProjects: projects.undated,
     hasAny: hasProfile || entries.length > 0,
   };
 }
@@ -123,7 +133,15 @@ export async function getResume(locale: Locale = "de"): Promise<ResumeData> {
   try {
     return await run(locale);
   } catch {
-    return { profile: null, career: [], education: [], skills: [], projects: [], hasAny: false };
+    return {
+      profile: null,
+      career: [],
+      education: [],
+      skills: [],
+      projects: [],
+      legacyProjects: [],
+      hasAny: false,
+    };
   }
 }
 

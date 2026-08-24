@@ -19,6 +19,7 @@ import PrintButton from "@/components/PrintButton";
 
 export const dynamic = "force-dynamic";
 
+
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
@@ -71,6 +72,7 @@ export default async function CvPage({
   const education = filterSelected(selection, resume.education);
   const skills = filterSelected(selection, resume.skills);
   const projects = filterSelected(selection, resume.projects);
+  const legacyProjects = filterSelected(selection, resume.legacyProjects);
   const records = splitRecordsForCv(certsAll);
   const certifications = filterSelected(selection, records.certifications);
   const trainings = filterSelected(selection, records.trainings);
@@ -82,6 +84,7 @@ export default async function CvPage({
     education.length === 0 &&
     skills.length === 0 &&
     projects.length === 0 &&
+    legacyProjects.length === 0 &&
     certifications.length === 0 &&
     trainings.length === 0 &&
     awards.length === 0 &&
@@ -127,6 +130,15 @@ export default async function CvPage({
         <CvProjects
           title={labels.projects}
           items={projects}
+          locale={locale}
+          labels={{ projectPeriod: labels.projectPeriod }}
+        />
+        {/* Frühere Projekte, von denen nur die Dauer überliefert ist. Sie
+            stehen in einer eigenen Rubrik, damit die Zeitspalte der
+            Projektreferenzen nicht zwischen Datum und Dauer wechselt. */}
+        <CvProjects
+          title={labels.projectsLegacy}
+          items={legacyProjects}
           locale={locale}
           labels={{ projectPeriod: labels.projectPeriod }}
         />

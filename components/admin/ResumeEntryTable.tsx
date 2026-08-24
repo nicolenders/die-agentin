@@ -7,11 +7,17 @@ import { SKILL_LEVELS, SKILL_LEVEL_LABEL } from "@/lib/domain";
 import { computeSkillYears, effectiveSkillYears } from "@/lib/resume/skills";
 import { displayClient, formatPeriod, formatPersonDays } from "@/lib/resume/projects";
 import type { ResumeSection } from "@/lib/resume/sections";
+import { isAutoSorted } from "@/lib/resume/order";
 
 // Eine Rubrik des Lebenslaufs: erst die Tabelle mit dem, was da ist, dann der
 // Dialog zum Anlegen und Ändern. Die Reihenfolge stellt Nicole direkt in der
 // Tabelle mit den Pfeilen ein — der Weg über ein Zahlenfeld im Formular
 // bedeutete, sich Zahlen zu merken, die niemand sieht.
+//
+// Zwei Arten von Reihenfolge: `byPeriod` sortiert sich aus „von“/„bis“ selbst
+// (Werdegang, datierte Projekte) und zeigt gar keine Pfeile — ein Knopf, der
+// nichts bewegt, ist schlimmer als keiner. `manual` bestimmt Nicole mit den
+// Pfeilen (Ausbildung, Fähigkeiten, ältere Projekte).
 
 export interface ResumeEntryRow {
   id: string;
@@ -193,6 +199,7 @@ export default function ResumeEntryTable({
   deleteAction,
   reorderAction,
   emptyText,
+  ordering,
 }: {
   section: ResumeSection;
   label: string;
@@ -203,9 +210,17 @@ export default function ResumeEntryTable({
   deleteAction: FormAction;
   reorderAction: FormAction;
   emptyText: string;
+  /**
+   * `byPeriod`: Die Liste sortiert sich aus „von“/„bis“, keine Pfeile.
+   * `manual`: Nicole bestimmt die Reihenfolge mit den Pfeilen.
+   * Ohne Angabe entscheidet die Rubrik (lib/resume/order.ts).
+   */
+  ordering?: "byPeriod" | "manual";
 }) {
   const [editing, setEditing] = useState<ResumeEntryRow | null>(null);
   const [creating, setCreating] = useState(false);
+
+  const byPeriod = (ordering ?? (isAutoSorted(section) ? "byPeriod" : "manual")) === "byPeriod";
 
   return (
     <div style={{ marginTop: 22 }}>
@@ -216,6 +231,11 @@ export default function ResumeEntryTable({
         </button>
       </div>
       {hint ? <p className="meta" style={{ marginTop: 6 }}>{hint}</p> : null}
+      <p className="meta" style={{ marginTop: 4 }}>
+        {byPeriod
+          ? "Sortiert sich selbst: neueste zuerst, nach „von“/„bis“."
+          : "Reihenfolge bestimmst du hier mit den Pfeilen — genau so steht es später im Lebenslauf."}
+      </p>
 
       {rows.length === 0 ? (
         <div className="card bracket" style={{ marginTop: 12 }}>
@@ -246,27 +266,36 @@ export default function ResumeEntryTable({
                   </td>
                   <td className="meta">{factsFor(r) || "—"}</td>
                   <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                    <form action={reorderAction} style={{ display: "inline" }}>
-                      <input type="hidden" name="id" value={r.id} />
-                      <input type="hidden" name="section" value={section} />
-                      <input type="hidden" name="dir" value="up" />
-                      <button className="btn ghost sm" type="submit" aria-label={`„${r.title}“ nach oben`} disabled={i === 0}>
-                        ↑
-                      </button>
-                    </form>{" "}
-                    <form action={reorderAction} style={{ display: "inline" }}>
-                      <input type="hidden" name="id" value={r.id} />
-                      <input type="hidden" name="section" value={section} />
-                      <input type="hidden" name="dir" value="down" />
-                      <button
-                        className="btn ghost sm"
-                        type="submit"
-                        aria-label={`„${r.title}“ nach unten`}
-                        disabled={i === rows.length - 1}
-                      >
-                        ↓
-                      </button>
-                    </form>{" "}
+                    {byPeriod ? null : (
+                      <>
+                        <form action={reorderAction} style={{ display: "inline" }}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="section" value={section} />
+                          <input type="hidden" name="dir" value="up" />
+                          <button
+                            className="btn ghost sm"
+                            type="submit"
+                            aria-label={`„${r.title}“ nach oben`}
+                            disabled={i === 0}
+                          >
+                            ↑
+                          </button>
+                        </form>{" "}
+                        <form action={reorderAction} style={{ display: "inline" }}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="section" value={section} />
+                          <input type="hidden" name="dir" value="down" />
+                          <button
+                            className="btn ghost sm"
+                            type="submit"
+                            aria-label={`„${r.title}“ nach unten`}
+                            disabled={i === rows.length - 1}
+                          >
+                            ↓
+                          </button>
+                        </form>{" "}
+                      </>
+                    )}
                     <button type="button" className="btn ghost sm" onClick={() => setEditing(r)}>
                       Bearbeiten
                     </button>{" "}

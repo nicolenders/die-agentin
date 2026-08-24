@@ -9,6 +9,7 @@ import { RESUME_PROFILE_SEED, RESUME_ENTRIES_SEED } from "@/lib/resume-seed";
 import { SKILL_LEVELS, isOneOf } from "@/lib/domain";
 import { computeSkillYears } from "@/lib/resume/skills";
 import { RESUME_TAB_FOR_SECTION, isResumeSection } from "@/lib/resume/sections";
+import { inDisplayOrder } from "@/lib/resume/order";
 
 const PAGE = "/admin/lebenslauf";
 
@@ -213,6 +214,12 @@ export async function deleteResumeEntry(formData: FormData): Promise<void> {
  * Werte der Rubrik werden dabei auf fortlaufende Indizes normalisiert und die
  * Nachbarn getauscht — so ist die Reihenfolge deterministisch, auch wenn
  * bisher alles auf sortOrder = 0 stand.
+ *
+ * Getauscht werden die Nachbarn in der ANGEZEIGTEN Reihenfolge. Bei Werdegang
+ * und Projekten sortiert der Zeitraum; dort bewegen die Pfeile nur die
+ * Einträge ohne lesbares Datum, die hinten stehen. Würde hier nach sortOrder
+ * getauscht, verschöbe der Pfeil einen anderen Eintrag als den, neben dem er
+ * steht.
  */
 export async function reorderResumeEntry(formData: FormData): Promise<void> {
   await requireAdmin();
@@ -223,11 +230,12 @@ export async function reorderResumeEntry(formData: FormData): Promise<void> {
   if (!id || !isResumeSection(section)) back(tab, { err: "not-found" });
 
   try {
-    const group = await db.resumeEntry.findMany({
+    const stored = await db.resumeEntry.findMany({
       where: { section },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: { id: true },
+      select: { id: true, periodFrom: true, periodTo: true },
     });
+    const group = inDisplayOrder(section, stored);
     const index = group.findIndex((g) => g.id === id);
     const swapWith = dir === "down" ? index + 1 : index - 1;
     const order = group.map((g) => g.id);

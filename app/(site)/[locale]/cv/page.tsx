@@ -15,6 +15,7 @@ import CvProjects from "@/components/cv/CvProjects";
 import CvSkills from "@/components/cv/CvSkills";
 import CvRecordList from "@/components/cv/CvRecordList";
 import CvPublicationList from "@/components/cv/CvPublicationList";
+import CvPrintFlow from "@/components/cv/CvPrintFlow";
 import PrintButton from "@/components/PrintButton";
 
 export const dynamic = "force-dynamic";
@@ -110,6 +111,8 @@ export default async function CvPage({
       </div>
 
       <article className="cv-sheet" lang={locale}>
+        {/* Sorgt beim Drucken auf jeder Seite für Rand oben und unten. */}
+        <CvPrintFlow>
         <CvHead
           name={legend.name}
           headline={resume.profile?.headline || null}
@@ -168,6 +171,7 @@ export default async function CvPage({
             <p className="cv-row-place">{labels.emptyHint}</p>
           </section>
         ) : null}
+        </CvPrintFlow>
       </article>
     </div>
   );

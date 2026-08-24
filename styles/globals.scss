@@ -2321,6 +2321,24 @@ $cv-accent: #3a2f52;
   }
 }
 
+// Druckrahmen (components/cv/CvPrintFlow.tsx). Am Bildschirm ist er nichts als
+// ein durchsichtiger Behälter — den Rand macht dort der Innenabstand des
+// Blattes. Erst im Druck treten Kopf- und Fußzeile in Erscheinung und
+// reservieren auf jeder Seite Platz.
+.cv-flow {
+  width: 100%;
+  border-collapse: collapse;
+}
+.cv-flow > tbody > tr > td {
+  padding: 0;
+  border: 0;
+  vertical-align: top;
+}
+.cv-flow > thead,
+.cv-flow > tfoot {
+  display: none;
+}
+
 // Kopf: Text links, Foto rechts.
 .cv-head {
   display: flex;
@@ -2473,12 +2491,25 @@ $cv-accent: #3a2f52;
 // beiliegen. Website-Kopf, -Fuß und alle Bedienelemente verschwinden; das Blatt
 // verliert Schatten und eigene Ränder, weil das Papier sie mitbringt.
 // ---------------------------------------------------------------------------
-// Der Rand gehört an @page, nicht an das Blatt: Ein Innenabstand am Element
-// gilt nur einmal für den ganzen Block — Seite 2 eines mehrseitigen
-// Lebenslaufs stünde sonst oben ohne Rand da.
+// Der Seitenrand kommt aus dem Dokument, nicht aus dem Druckdialog.
+//
+// Naheliegend wäre `@page { margin: … }`. Nur verhandelt der Browser das weg:
+// Steht im Druckdialog „Ränder: keine“ — oder übergeht ein Druckertreiber die
+// Angabe —, fällt der Rand ersatzlos weg und der Text klebt an der
+// Papierkante. Deshalb steht hier eine Null, und den Rand liefert das
+// Dokument selbst:
+//
+//   links/rechts  Innenabstand am Blatt. Ein seitlicher Innenabstand gilt auf
+//                 jeder Seite eines umbrochenen Blocks.
+//   oben/unten    Kopf- und Fußzeile einer Tabelle, die der Browser auf jeder
+//                 gedruckten Seite wiederholt (components/cv/CvPrintFlow.tsx).
+//                 Ein Innenabstand täte es nicht: Der gilt einmal für den
+//                 ganzen Block, Seite 2 stünde oben ohne Rand da.
+//
+// Ergebnis: derselbe Rand auf jeder Seite, bei jeder Einstellung.
 @page {
   size: A4;
-  margin: $cv-margin-top $cv-margin-right $cv-margin-bottom $cv-margin-left;
+  margin: 0;
 }
 @media print {
   // Die Website erklärt sich als dunkles Design (`colorScheme: "dark"`,
@@ -2523,9 +2554,28 @@ $cv-accent: #3a2f52;
   .cv-sheet {
     width: auto;
     max-width: none;
-    padding: 0;
+    // Seitlicher Rand — siehe die Begründung an @page oben.
+    padding: 0 $cv-margin-right 0 $cv-margin-left;
     box-shadow: none;
     border-radius: 0;
+  }
+
+  // Rand oben und unten, auf jeder Seite.
+  .cv-flow > thead {
+    display: table-header-group;
+  }
+  .cv-flow > tfoot {
+    display: table-footer-group;
+  }
+  .cv-flow > thead .cv-flow-pad {
+    height: $cv-margin-top;
+    padding: 0;
+    border: 0;
+  }
+  .cv-flow > tfoot .cv-flow-pad {
+    height: $cv-margin-bottom;
+    padding: 0;
+    border: 0;
   }
 }
 

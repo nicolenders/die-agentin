@@ -1,26 +1,31 @@
+import Link from "next/link";
 import Flash from "@/components/admin/Flash";
+import Tabs, { type TabDef } from "@/components/admin/Tabs";
+import AssetPickerField from "@/components/admin/AssetPickerField";
+import ResumeEntryTable, { type ResumeEntryRow } from "@/components/admin/ResumeEntryTable";
+import ResumeExportDialog, { type ExportGroup } from "@/components/admin/ResumeExportDialog";
 import { getResumeForEdit } from "@/lib/queries/resume";
-import { SKILL_LEVELS, SKILL_LEVEL_LABEL } from "@/lib/domain";
-import { computeSkillYears } from "@/lib/resume/skills";
+import { getLegend } from "@/lib/queries/legend";
+import { getCertifications, getPublications } from "@/lib/queries/records";
+import { publicationTypeLabel } from "@/lib/records/publication-type";
+import { formatPeriod } from "@/lib/resume/projects";
+import { publicationsForCv, splitRecordsForCv } from "@/lib/resume/records";
+import { RESUME_SECTION_LABEL, toResumeTab, type ResumeSection } from "@/lib/resume/sections";
+import type { CertificationRecord } from "@/lib/queries/records";
 import {
   saveResumeProfile,
+  saveResumePortrait,
   createResumeEntry,
   updateResumeEntry,
   deleteResumeEntry,
+  reorderResumeEntry,
   seedResume,
 } from "./actions";
 
 export const metadata = { title: "Lebenslauf · Zentrale" };
 export const dynamic = "force-dynamic";
 
-type Entry = Awaited<ReturnType<typeof getResumeForEdit>>["entries"][number];
-
-const SECTIONS: { key: string; label: string; hint: string }[] = [
-  { key: "CAREER", label: "Beruflicher Werdegang", hint: "Neueste Station zuerst (kleinste Reihenfolge oben)." },
-  { key: "EDUCATION", label: "Ausbildung", hint: "" },
-  { key: "SKILL", label: "Fähigkeiten", hint: "Titel = Kategorie, Beschreibung = Liste der Fähigkeiten. Die Jahre rechnen sich aus „von“/„bis“, wenn beides lesbar ist (z. B. 03/2018 – heute)." },
-  { key: "PROJECT", label: "Projektreferenzen", hint: "„Von“/„Bis“ ist DEIN Einsatz im Projekt; die Laufzeit des Projekts steht daneben. Anonyme Kunden erscheinen im Export nur mit ihrer Branche." },
-];
+type DbEntry = Awaited<ReturnType<typeof getResumeForEdit>>["entries"][number];
 
 function tagsToText(json: string | null): string {
   try {
@@ -31,225 +36,383 @@ function tagsToText(json: string | null): string {
   }
 }
 
-function EntryFields({ e, section }: { e?: Entry; section: string }) {
-  // Bei Fähigkeiten zeigt das Formular die berechneten Jahre an, sobald sich
-  // der Zeitraum lesen lässt — sonst bleibt das Feld eine freie Eingabe.
-  const derivedYears = section === "SKILL" ? computeSkillYears(e?.periodFrom, e?.periodTo) : null;
-  // Je Eintrag eine eigene id: der Hinweis steht in jeder Zeile einmal, und
-  // doppelte ids würden aria-describedby auf den falschen Text zeigen lassen.
-  const yearsHintId = `skill-years-hint-${e?.id ?? `neu-${section}`}`;
+/** DB-Zeile → das, was die Tabelle im Browser braucht (alles serialisierbar). */
+function toRow(e: DbEntry): ResumeEntryRow {
+  return {
+    id: e.id,
+    section: e.section as ResumeSection,
+    title: e.title,
+    subtitle: e.subtitle,
+    location: e.location,
+    periodFrom: e.periodFrom,
+    periodTo: e.periodTo,
+    description: e.description,
+    tagsText: tagsToText(e.tags),
+    projectFrom: e.projectFrom,
+    projectTo: e.projectTo,
+    personDays: e.personDays,
+    clientAnonymous: e.clientAnonymous,
+    clientSector: e.clientSector,
+    skillYears: e.skillYears,
+    skillLevel: e.skillLevel,
+  };
+}
+
+function certYear(cert: CertificationRecord): string {
+  return String(cert.acquiredOn.getUTCFullYear());
+}
+
+/** Ein Bereich, der hier nur gelesen wird — gepflegt wird er woanders. */
+function ReadOnlySection({
+  intro,
+  href,
+  linkLabel,
+  rows,
+  emptyText,
+}: {
+  intro: string;
+  href: string;
+  linkLabel: string;
+  rows: { id: string; when: string; title: string; meta: string }[];
+  emptyText: string;
+}) {
   return (
-    <>
-      <input type="hidden" name="section" value={section} />
-      {e ? <input type="hidden" name="id" value={e.id} /> : null}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ flex: "2 1 220px" }}>
-          <label className="f">Titel {section === "SKILL" ? "(Kategorie)" : ""}</label>
-          <input className="f" name="title" defaultValue={e?.title ?? ""} required />
-        </span>
-        <span style={{ flex: "2 1 220px" }}>
-          <label className="f">
-            {section === "PROJECT" ? "Kunde" : section === "CAREER" ? "Untertitel (Arbeitgeber)" : "Untertitel"}
-          </label>
-          <input className="f" name="subtitle" defaultValue={e?.subtitle ?? ""} />
-        </span>
-        <span style={{ flex: "0 1 110px" }}>
-          <label className="f">{section === "PROJECT" ? "Einsatz von" : "Von"}</label>
-          <input className="f" name="periodFrom" defaultValue={e?.periodFrom ?? ""} placeholder="03/2018" />
-        </span>
-        <span style={{ flex: "0 1 110px" }}>
-          <label className="f">{section === "PROJECT" ? "Einsatz bis" : "Bis"}</label>
-          <input className="f" name="periodTo" defaultValue={e?.periodTo ?? ""} placeholder="heute" />
-        </span>
-        <span style={{ flex: "0 1 70px" }}>
-          <label className="f">Reihenf.</label>
-          <input className="f" name="sortOrder" type="number" defaultValue={e?.sortOrder ?? 0} />
-        </span>
-      </div>
-
-      {section === "PROJECT" ? (
-        <>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-            <span style={{ flex: "0 1 130px" }}>
-              <label className="f">Projekt von</label>
-              <input className="f" name="projectFrom" defaultValue={e?.projectFrom ?? ""} placeholder="01/2018" />
-            </span>
-            <span style={{ flex: "0 1 130px" }}>
-              <label className="f">Projekt bis</label>
-              <input className="f" name="projectTo" defaultValue={e?.projectTo ?? ""} placeholder="12/2020" />
-            </span>
-            <span style={{ flex: "0 1 150px" }}>
-              <label className="f">Aufwand (PT, ungefähr)</label>
-              <input className="f" name="personDays" type="number" min={0} defaultValue={e?.personDays ?? ""} placeholder="120" />
-            </span>
-          </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-            <input type="checkbox" name="clientAnonymous" defaultChecked={e?.clientAnonymous ?? false} />
-            Kunde anonym — Name erscheint nicht im Export
-          </label>
-          <label className="f">Branche statt Kundenname (bei anonym)</label>
-          <input className="f" name="clientSector" defaultValue={e?.clientSector ?? ""} placeholder="z. B. Energieversorger" />
-        </>
-      ) : null}
-
-      {section === "SKILL" ? (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-          <span style={{ flex: "0 1 150px" }}>
-            <label className="f">Jahre Erfahrung</label>
-            <input
-              className="f"
-              name="skillYears"
-              type="number"
-              min={0}
-              defaultValue={derivedYears ?? e?.skillYears ?? ""}
-              readOnly={derivedYears != null}
-              aria-describedby={yearsHintId}
-            />
-          </span>
-          <span style={{ flex: "1 1 200px" }}>
-            <label className="f">Können</label>
-            <select className="f" name="skillLevel" defaultValue={e?.skillLevel ?? ""}>
-              <option value="">— keine Angabe —</option>
-              {SKILL_LEVELS.map((level) => (
-                <option key={level} value={level}>{SKILL_LEVEL_LABEL[level].de}</option>
-              ))}
-            </select>
-          </span>
-          <p className="meta" id={yearsHintId} style={{ flexBasis: "100%", margin: "4px 0 0" }}>
-            {derivedYears != null
-              ? `Aus „von“/„bis“ berechnet: ${derivedYears} ${derivedYears === 1 ? "Jahr" : "Jahre"}. Zum Ändern den Zeitraum anpassen.`
-              : "Ohne lesbaren Zeitraum gilt diese Eingabe. Lesbar sind z. B. 03/2018, 2018-03, 2018 und „heute“."}
-          </p>
+    <div style={{ marginTop: 18 }}>
+      <p className="meta" style={{ marginTop: 0 }}>{intro}</p>
+      <p style={{ marginTop: 8 }}>
+        <Link className="btn ghost sm" href={href}>{linkLabel}</Link>
+      </p>
+      {rows.length === 0 ? (
+        <div className="card bracket" style={{ marginTop: 12 }}>
+          <p className="muted" style={{ margin: 0 }}>{emptyText}</p>
         </div>
-      ) : null}
-
-      {section !== "SKILL" ? (
-        <>
-          <label className="f">Ort (optional)</label>
-          <input className="f" name="location" defaultValue={e?.location ?? ""} />
-        </>
       ) : (
-        <input type="hidden" name="location" value="" />
+        <div style={{ overflowX: "auto", marginTop: 12 }}>
+          <table className="media-table">
+            <thead>
+              <tr>
+                <th style={{ width: 110 }}>Jahr</th>
+                <th>Titel</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="meta" style={{ whiteSpace: "nowrap" }}>{r.when}</td>
+                  <td><b>{r.title}</b></td>
+                  <td className="meta">{r.meta || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-      <label className="f">Beschreibung {section === "SKILL" ? "(Fähigkeiten, Komma-getrennt)" : ""}</label>
-      <textarea className="f" name="description" rows={section === "SKILL" ? 2 : 3} defaultValue={e?.description ?? ""} />
-      <label className="f">Tags / Technologien (Komma-getrennt, optional)</label>
-      <input className="f" name="tags" defaultValue={e ? tagsToText(e.tags) : ""} placeholder="React, Azure, SharePoint" />
-    </>
+    </div>
   );
 }
 
 export default async function ResumeAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; err?: string }>;
+  searchParams: Promise<{ ok?: string; err?: string; tab?: string }>;
 }) {
-  const { ok, err } = await searchParams;
-  const { profile, entries } = await getResumeForEdit();
+  const { ok, err, tab } = await searchParams;
+  const activeTab = toResumeTab(tab);
+  const [{ profile, portraitUrl, entries }, legend, certsAll, pubsAll] = await Promise.all([
+    getResumeForEdit(),
+    getLegend("de"),
+    getCertifications("de"),
+    getPublications("de"),
+  ]);
+
+  const rows = entries.map(toRow);
+  const bySection = (s: ResumeSection) => rows.filter((r) => r.section === s);
+  const career = bySection("CAREER");
+  const education = bySection("EDUCATION");
+  const projects = bySection("PROJECT");
+  const skills = bySection("SKILL");
+
+  const records = splitRecordsForCv(certsAll);
+  const publications = publicationsForCv(pubsAll);
+
+  // Was der Export-Dialog zur Auswahl stellt — dieselben Einträge, die das
+  // Dokument kennt, in derselben Reihenfolge.
+  const exportGroups: ExportGroup[] = [
+    {
+      key: "career",
+      label: RESUME_SECTION_LABEL.CAREER,
+      items: career.map((r) => ({ id: r.id, label: r.title, meta: formatPeriod(r.periodFrom, r.periodTo) ?? undefined })),
+    },
+    {
+      key: "education",
+      label: RESUME_SECTION_LABEL.EDUCATION,
+      items: education.map((r) => ({ id: r.id, label: r.title, meta: formatPeriod(r.periodFrom, r.periodTo) ?? undefined })),
+    },
+    {
+      key: "skills",
+      label: RESUME_SECTION_LABEL.SKILL,
+      items: skills.map((r) => ({ id: r.id, label: r.title })),
+    },
+    {
+      key: "projects",
+      label: RESUME_SECTION_LABEL.PROJECT,
+      items: projects.map((r) => ({ id: r.id, label: r.title, meta: formatPeriod(r.periodFrom, r.periodTo) ?? undefined })),
+    },
+    {
+      key: "certifications",
+      label: "Zertifizierungen",
+      items: records.certifications.map((c) => ({ id: c.id, label: c.name, meta: certYear(c) })),
+    },
+    {
+      key: "trainings",
+      label: "Schulungen & Trainings",
+      items: records.trainings.map((c) => ({ id: c.id, label: c.name, meta: certYear(c) })),
+    },
+    {
+      key: "awards",
+      label: "Auszeichnungen",
+      items: records.awards.map((c) => ({ id: c.id, label: c.name, meta: certYear(c) })),
+    },
+    {
+      key: "publications",
+      label: "Publikationen",
+      items: publications.map((p) => ({
+        id: p.id,
+        label: p.title,
+        meta: [String(p.year), publicationTypeLabel(p.type, "de")].join(" · "),
+      })),
+    },
+  ];
+
+  const tabs: TabDef[] = [
+    {
+      id: "person",
+      label: "Zur Person",
+      content: (
+        <div style={{ marginTop: 18 }}>
+          {entries.length === 0 ? (
+            <div className="card bracket" style={{ borderColor: "var(--signal)", marginBottom: 16 }}>
+              <p className="eyebrow" style={{ marginTop: 0, color: "var(--signal)" }}>Startpunkt</p>
+              <p className="meta" style={{ marginTop: 0 }}>
+                Noch keine Einträge. Du kannst die aus deinen Profil-Dokumenten extrahierten
+                Vorlagedaten übernehmen und anschließend anpassen.
+              </p>
+              <form action={seedResume}>
+                <button className="btn solid sm" type="submit">Vorlagedaten laden</button>
+              </form>
+            </div>
+          ) : null}
+
+          <form action={saveResumeProfile} className="card bracket" style={{ maxWidth: 760 }}>
+            <p className="eyebrow" style={{ marginTop: 0 }}>Kopf &amp; Zusammenfassung</p>
+            <label className="f" htmlFor="cv-headline">
+              Kurztitel (z. B. „Lead Developer · Microsoft 365 &amp; Azure“)
+            </label>
+            <input className="f" id="cv-headline" name="headline" defaultValue={profile?.headline ?? ""} />
+            <label className="f" htmlFor="cv-location">Standort</label>
+            <input className="f" id="cv-location" name="location" defaultValue={profile?.location ?? ""} />
+            <label className="f" htmlFor="cv-summary">Kurzprofil / Zusammenfassung</label>
+            <textarea className="f" id="cv-summary" name="summary" rows={6} defaultValue={profile?.summary ?? ""} />
+            <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Speichern</button>
+          </form>
+
+          <p className="meta" style={{ marginTop: 12, maxWidth: 760 }}>
+            Name, E-Mail-Adresse, LinkedIn-Profil und Arbeitgeber stehen im Lebenslauf, kommen
+            aber aus der Legende und den Einstellungen — dort gepflegt, hier verwendet.
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: "werdegang",
+      label: "Beruflicher Werdegang & Ausbildung",
+      content: (
+        <div>
+          <ResumeEntryTable
+            section="CAREER"
+            label={RESUME_SECTION_LABEL.CAREER}
+            hint="Neueste Station zuerst. Die Reihenfolge stellst du mit den Pfeilen ein."
+            rows={career}
+            createAction={createResumeEntry}
+            updateAction={updateResumeEntry}
+            deleteAction={deleteResumeEntry}
+            reorderAction={reorderResumeEntry}
+            emptyText="Noch keine Station erfasst. Fang mit der aktuellen an — sie steht später oben."
+          />
+          <ResumeEntryTable
+            section="EDUCATION"
+            label={RESUME_SECTION_LABEL.EDUCATION}
+            hint="Abschlüsse und Ausbildungen. Studium und Berufsausbildung gehören hierhin, Zertifikate nicht."
+            rows={education}
+            createAction={createResumeEntry}
+            updateAction={updateResumeEntry}
+            deleteAction={deleteResumeEntry}
+            reorderAction={reorderResumeEntry}
+            emptyText="Noch keine Ausbildung erfasst."
+          />
+        </div>
+      ),
+    },
+    {
+      id: "projekte",
+      label: "Projektreferenzen",
+      content: (
+        <ResumeEntryTable
+          section="PROJECT"
+          label={RESUME_SECTION_LABEL.PROJECT}
+          hint="„Von“/„Bis“ ist DEIN Einsatz im Projekt; die Laufzeit des Projekts steht daneben. Anonyme Kunden erscheinen im Lebenslauf nur mit ihrer Branche."
+          rows={projects}
+          createAction={createResumeEntry}
+          updateAction={updateResumeEntry}
+          deleteAction={deleteResumeEntry}
+          reorderAction={reorderResumeEntry}
+          emptyText="Noch keine Projektreferenz erfasst. Ein Projekt mit Rolle, Zeitraum und Technologien sagt mehr als eine Aufgabenliste."
+        />
+      ),
+    },
+    {
+      id: "faehigkeiten",
+      label: "Fähigkeiten",
+      content: (
+        <ResumeEntryTable
+          section="SKILL"
+          label={RESUME_SECTION_LABEL.SKILL}
+          hint="Titel = Kategorie, Beschreibung = Liste der Fähigkeiten. Die Jahre rechnen sich aus „von“/„bis“, wenn beides lesbar ist (z. B. 03/2018 – heute)."
+          rows={skills}
+          createAction={createResumeEntry}
+          updateAction={updateResumeEntry}
+          deleteAction={deleteResumeEntry}
+          reorderAction={reorderResumeEntry}
+          emptyText="Noch keine Fähigkeiten erfasst. Wenige Kategorien mit klaren Inhalten lesen sich besser als eine lange Stichwortwolke."
+        />
+      ),
+    },
+    {
+      id: "bild",
+      label: "Profilbild",
+      content: (
+        <div style={{ marginTop: 18 }}>
+          <form action={saveResumePortrait} className="card bracket" style={{ maxWidth: 620 }}>
+            <p className="eyebrow" style={{ marginTop: 0 }}>Bewerbungsfoto</p>
+            <p className="meta" style={{ marginTop: 0 }}>
+              Ohne eigenes Bild nimmt der Lebenslauf das Porträt der Legende. Wählst du hier
+              ein anderes, gilt es nur für den Lebenslauf — die Legende bleibt, wie sie ist.
+            </p>
+            <AssetPickerField
+              name="portraitAssetId"
+              initialAssetId={profile?.portraitAssetId ?? null}
+              initialUrl={portraitUrl}
+              aspectRatio="4 / 5"
+              width={140}
+              emptyHint="Kein eigenes Bild — der Lebenslauf nimmt das Porträt der Legende"
+            />
+            <button className="btn solid sm" type="submit" style={{ marginTop: 14 }}>Speichern</button>
+          </form>
+
+          <div className="card bracket" style={{ marginTop: 16, maxWidth: 620 }}>
+            <p className="eyebrow" style={{ marginTop: 0 }}>Zum Vergleich: Porträt der Legende</p>
+            {legend.portrait ? (
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={legend.portrait.url}
+                  alt={legend.portrait.alt || "Porträt der Legende"}
+                  style={{ width: 110, aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 4 }}
+                />
+                <p className="meta" style={{ margin: 0 }}>
+                  Dieses Bild erscheint im Lebenslauf, solange oben keins gewählt ist.
+                </p>
+              </div>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                In der Legende ist kein Porträt hinterlegt. Ohne Bild hier bleibt der Kopf des
+                Lebenslaufs ohne Foto.
+              </p>
+            )}
+            <p style={{ marginTop: 12, marginBottom: 0 }}>
+              <Link className="btn ghost sm" href="/admin/legende">Zur Legende</Link>
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "publikationen",
+      label: "Publikationen",
+      content: (
+        <ReadOnlySection
+          intro="Bücher, Kurse und Artikel kommen aus dem Bereich „Publikationen“ und werden dort gepflegt. Hier stehen sie, damit du siehst, was im Lebenslauf landen kann. Videos bleiben draußen — ein Lebenslauf ist kein Kanal."
+          href="/admin/publikationen"
+          linkLabel="Publikationen pflegen"
+          rows={publications.map((p) => ({
+            id: p.id,
+            when: String(p.year),
+            title: p.title,
+            meta: [publicationTypeLabel(p.type, "de"), p.publisher, p.role].filter(Boolean).join(" · "),
+          }))}
+          emptyText="Noch keine Publikationen erfasst."
+        />
+      ),
+    },
+    {
+      id: "zertifizierungen",
+      label: "Zertifizierungen",
+      content: (
+        <ReadOnlySection
+          intro="Zertifizierungen und Schulungen kommen aus dem Bereich „Ausbildung & Auszeichnungen“. Geplante Zertifizierungen erscheinen nicht im Lebenslauf."
+          href="/admin/ausbildung"
+          linkLabel="Zertifizierungen pflegen"
+          rows={[...records.certifications, ...records.trainings].map((c) => ({
+            id: c.id,
+            when: certYear(c),
+            title: c.name,
+            meta: [c.shortCode, c.status === "EXPIRED" ? "abgelaufen" : null].filter(Boolean).join(" · "),
+          }))}
+          emptyText="Noch keine Zertifizierungen erfasst."
+        />
+      ),
+    },
+    {
+      id: "awards",
+      label: "Awards",
+      content: (
+        <ReadOnlySection
+          intro="MVP-Awards und andere Auszeichnungen kommen aus dem Bereich „Ausbildung & Auszeichnungen“. Gleichnamige Auszeichnungen fasst der Lebenslauf zu einer Zeile mit Jahresspanne zusammen."
+          href="/admin/ausbildung"
+          linkLabel="Auszeichnungen pflegen"
+          rows={records.awards.map((c) => ({
+            id: c.id,
+            when: certYear(c),
+            title: c.name,
+            meta: c.series ?? "",
+          }))}
+          emptyText="Noch keine Auszeichnungen erfasst."
+        />
+      ),
+    },
+  ];
 
   return (
     <section>
-      <h1>Lebenslauf</h1>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+        <h1 style={{ marginBottom: 0 }}>Lebenslauf</h1>
+        <div style={{ marginLeft: "auto", paddingTop: 6 }}>
+          <ResumeExportDialog groups={exportGroups} />
+        </div>
+      </div>
       <Flash ok={ok} err={err} />
-      <p className="muted">
-        Der klassische Bewerbungs-Lebenslauf. Er liegt unter <code>/de/cv</code> bzw.
-        <code>/en/cv</code>, wird aber von der Website nicht mehr verlinkt: Du gibst die Adresse
-        gezielt weiter. Druckbar als A4.
+      <p className="muted" style={{ maxWidth: 760 }}>
+        Der klassische Bewerbungs-Lebenslauf. Er liegt unter <code>/de/cv</code> bzw.{" "}
+        <code>/en/cv</code>, wird aber von der Website nicht verlinkt: Du gibst die Adresse
+        gezielt weiter. Über „Lebenslauf erzeugen“ suchst du aus, welche Einträge in einen
+        bestimmten Auszug gehören — druckbar als A4.
       </p>
 
-      {/* Export: öffnet einen druckfertigen A4-Auszug in einem neuen Tab
-          (Browser → Drucken → Als PDF speichern). Auswahl nach Datenart und
-          Zeitraum; per GET direkt an die /cv-Seite. Steht hier statt in der
-          Einsatzzentrale — beim Lebenslauf sucht man ihn. */}
-      <div className="card bracket" style={{ marginTop: 16, maxWidth: 720 }}>
-        <p className="eyebrow" style={{ marginTop: 0 }}>Exportieren</p>
-        <p className="meta" style={{ marginTop: 0 }}>
-          Erzeugt einen druckfertigen Lebenslauf im A4-Format (zum Ausdrucken oder als
-          PDF für eine Bewerbung). Öffnet in einem neuen Tab.
-        </p>
-        <form action="/de/cv" method="get" target="_blank">
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-            <label className="f" style={{ margin: 0 }}>
-              Datenart
-              <select className="f" name="art" defaultValue="alle">
-                <option value="alle">Alles</option>
-                <option value="publikationen">Nur Publikationen</option>
-                <option value="ausbildung">Nur Ausbildung &amp; Auszeichnungen</option>
-              </select>
-            </label>
-            <label className="f" style={{ margin: 0 }}>
-              Von Jahr
-              <input className="f" name="von" type="number" placeholder="z. B. 2018" style={{ maxWidth: 130 }} />
-            </label>
-            <label className="f" style={{ margin: 0 }}>
-              Bis Jahr
-              <input className="f" name="bis" type="number" placeholder="z. B. 2026" style={{ maxWidth: 130 }} />
-            </label>
-            <button className="btn solid sm" type="submit">Lebenslauf öffnen</button>
-          </div>
-        </form>
-        <p className="meta" style={{ marginTop: 8, marginBottom: 0 }}>
-          Leere Jahresfelder = kein Zeitfilter. Englische Fassung:{" "}
-          <a href="/en/cv" target="_blank" rel="noopener noreferrer">/en/cv</a>.
-        </p>
-      </div>
-
-      {entries.length === 0 ? (
-        <div className="card bracket" style={{ marginTop: 16, borderColor: "var(--signal)" }}>
-          <p className="eyebrow" style={{ marginTop: 0, color: "var(--signal)" }}>Startpunkt</p>
-          <p className="meta" style={{ marginTop: 0 }}>
-            Noch keine Einträge. Du kannst die aus deinen Profil-Dokumenten extrahierten
-            Vorlagedaten übernehmen und anschließend anpassen.
-          </p>
-          <form action={seedResume}>
-            <button className="btn solid sm" type="submit">Vorlagedaten laden</button>
-          </form>
-        </div>
-      ) : null}
-
-      {/* Kopf / Zusammenfassung */}
-      <form action={saveResumeProfile} className="card bracket" style={{ marginTop: 16, maxWidth: 720 }}>
-        <p className="eyebrow" style={{ marginTop: 0 }}>Kopf & Zusammenfassung</p>
-        <label className="f">Kurztitel (z. B. „Lead Developer · Microsoft 365 & Azure“)</label>
-        <input className="f" name="headline" defaultValue={profile?.headline ?? ""} />
-        <label className="f">Standort</label>
-        <input className="f" name="location" defaultValue={profile?.location ?? ""} />
-        <label className="f">Kurzprofil / Zusammenfassung</label>
-        <textarea className="f" name="summary" rows={5} defaultValue={profile?.summary ?? ""} />
-        <button className="btn solid sm" type="submit" style={{ marginTop: 12 }}>Kopf speichern</button>
-      </form>
-
-      {SECTIONS.map((sec) => {
-        const items = entries.filter((e) => e.section === sec.key);
-        return (
-          <div key={sec.key} id={sec.key} style={{ marginTop: 28 }}>
-            <p className="eyebrow">{sec.label}</p>
-            {sec.hint ? <p className="meta" style={{ marginTop: 0 }}>{sec.hint}</p> : null}
-
-            {items.map((e) => (
-              <div key={e.id} className="card bracket" style={{ marginTop: 10, maxWidth: 720 }}>
-                <form action={updateResumeEntry}>
-                  <EntryFields e={e} section={sec.key} />
-                  <button className="btn solid sm" type="submit" style={{ marginTop: 10 }}>Speichern</button>
-                </form>
-                <form action={deleteResumeEntry} style={{ marginTop: 6 }}>
-                  <input type="hidden" name="id" value={e.id} />
-                  <input type="hidden" name="section" value={sec.key} />
-                  <button className="btn ghost sm" type="submit">Eintrag entfernen</button>
-                </form>
-              </div>
-            ))}
-
-            <details className="card bracket" style={{ marginTop: 10, maxWidth: 720 }}>
-              <summary style={{ cursor: "pointer" }}>+ Neuen Eintrag ({sec.label})</summary>
-              <form action={createResumeEntry} style={{ marginTop: 10 }}>
-                <EntryFields section={sec.key} />
-                <button className="btn solid sm" type="submit" style={{ marginTop: 10 }}>Hinzufügen</button>
-              </form>
-            </details>
-          </div>
-        );
-      })}
+      {/* Der Schlüssel erzwingt ein Neuaufbauen, wenn eine Server-Action mit
+          anderem `tab` zurückkommt — sonst zeigte die Maske nach dem Speichern
+          wieder das erste Register. */}
+      <Tabs key={activeTab} tabs={tabs} initialId={activeTab} />
     </section>
   );
 }

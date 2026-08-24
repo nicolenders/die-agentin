@@ -3,262 +3,160 @@ import type { Metadata } from "next";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 import { alternatesFor } from "@/lib/seo/alternates";
-import { getCertifications, getFocusTopics, getPublications } from "@/lib/queries/records";
+import { getCertifications, getPublications } from "@/lib/queries/records";
 import { getLegend } from "@/lib/queries/legend";
 import { getContactInfo, getSocialLinks } from "@/lib/queries/settings";
-import { getResume, type ResumeEntryData } from "@/lib/queries/resume";
-import { displayClient, formatPeriod, formatPersonDays } from "@/lib/resume/projects";
-import { effectiveSkillYears, skillLevelLabel } from "@/lib/resume/skills";
-import type { Locale } from "@/lib/i18n/config";
-import CertificationSections from "@/components/records/CertificationSections";
-import PublicationSections from "@/components/records/PublicationSections";
+import { getResume } from "@/lib/queries/resume";
+import { filterSelected, selectionFromParams, SELECT_EXCEPT_PARAM, SELECT_ONLY_PARAM } from "@/lib/resume/selection";
+import { publicationsForCv, splitRecordsForCv } from "@/lib/resume/records";
+import CvHead, { type CvContactLine } from "@/components/cv/CvHead";
+import CvTimeline from "@/components/cv/CvTimeline";
+import CvProjects from "@/components/cv/CvProjects";
+import CvSkills from "@/components/cv/CvSkills";
+import CvRecordList from "@/components/cv/CvRecordList";
+import CvPublicationList from "@/components/cv/CvPublicationList";
 import PrintButton from "@/components/PrintButton";
 
 export const dynamic = "force-dynamic";
 
-// Werdegang: Titel · Untertitel, Zeitraum rechts, Beschreibung + Tags.
-function TimelineSection({ title, items }: { title: string; items: ResumeEntryData[] }) {
-  if (items.length === 0) return null;
-  return (
-    <div style={{ marginTop: 32 }}>
-      <h2>{title}</h2>
-      {items.map((e) => (
-        <div key={e.id} style={{ marginBottom: 15, breakInside: "avoid" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <b style={{ fontSize: 15 }}>
-              {e.title}
-              {e.subtitle ? <span style={{ fontWeight: 400 }}> · {e.subtitle}</span> : null}
-            </b>
-            {formatPeriod(e.periodFrom, e.periodTo) ? (
-              <span className="meta" style={{ whiteSpace: "nowrap" }}>{formatPeriod(e.periodFrom, e.periodTo)}</span>
-            ) : null}
-          </div>
-          {e.location ? <p className="meta" style={{ margin: "2px 0 0" }}>{e.location}</p> : null}
-          {e.description ? <p style={{ margin: "4px 0 0", fontSize: 14 }}>{e.description}</p> : null}
-          {e.tags.length > 0 ? <p className="meta" style={{ margin: "4px 0 0" }}>{e.tags.join(" · ")}</p> : null}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Projektreferenzen: eigener Einsatz rechts, Laufzeit des Projekts und Aufwand
- * darunter. Bei anonymen Kunden steht statt des Namens die Branche — der Name
- * taucht hier nirgends auf, auch nicht im Titel.
- */
-function ProjectSection({
-  title,
-  items,
-  locale,
-}: {
-  title: string;
-  items: ResumeEntryData[];
-  locale: Locale;
-}) {
-  if (items.length === 0) return null;
-  const isDe = locale === "de";
-  return (
-    <div style={{ marginTop: 32 }}>
-      <h2>{title}</h2>
-      {items.map((e) => {
-        const client = displayClient(e, locale);
-        const engagement = formatPeriod(e.periodFrom, e.periodTo);
-        const project = formatPeriod(e.projectFrom, e.projectTo);
-        const effort = formatPersonDays(e.personDays, locale);
-        const facts = [
-          project ? `${isDe ? "Projekt" : "Project"}: ${project}` : null,
-          effort,
-        ].filter(Boolean);
-        return (
-          <div key={e.id} style={{ marginBottom: 15, breakInside: "avoid" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <b style={{ fontSize: 15 }}>
-                {e.title}
-                {client ? <span style={{ fontWeight: 400 }}> · {client}</span> : null}
-              </b>
-              {engagement ? (
-                <span className="meta" style={{ whiteSpace: "nowrap" }}>
-                  {isDe ? "Einsatz" : "Engagement"}: {engagement}
-                </span>
-              ) : null}
-            </div>
-            {facts.length > 0 ? <p className="meta" style={{ margin: "2px 0 0" }}>{facts.join(" · ")}</p> : null}
-            {e.location ? <p className="meta" style={{ margin: "2px 0 0" }}>{e.location}</p> : null}
-            {e.description ? <p style={{ margin: "4px 0 0", fontSize: 14 }}>{e.description}</p> : null}
-            {e.tags.length > 0 ? <p className="meta" style={{ margin: "4px 0 0" }}>{e.tags.join(" · ")}</p> : null}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// Fähigkeiten: Kategorie — Liste, dazu Jahre und Selbsteinschätzung.
-function SkillsSection({
-  title,
-  items,
-  locale,
-}: {
-  title: string;
-  items: ResumeEntryData[];
-  locale: Locale;
-}) {
-  if (items.length === 0) return null;
-  const isDe = locale === "de";
-  return (
-    <div style={{ marginTop: 32 }}>
-      <h2>{title}</h2>
-      {items.map((e) => {
-        const years = effectiveSkillYears(e);
-        const level = skillLevelLabel(e.skillLevel, locale);
-        const facts = [
-          years != null && years > 0
-            ? isDe
-              ? `${years} ${years === 1 ? "Jahr" : "Jahre"}`
-              : `${years} ${years === 1 ? "year" : "years"}`
-            : null,
-          level,
-        ].filter(Boolean);
-        return (
-          <p key={e.id} style={{ margin: "0 0 8px", fontSize: 14, breakInside: "avoid" }}>
-            <b>{e.title}</b>
-            {facts.length > 0 ? <span className="meta"> ({facts.join(" · ")})</span> : null}
-            {e.description ? <span className="meta"> — {e.description}</span> : null}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const isDe = locale === "de";
   const dict = await getDictionary(locale);
   // Nicht indexieren: der Lebenslauf ist ein Auszug zum Drucken, keine SEO-Seite.
   // Eine eigene Description braucht er trotzdem — sie erscheint beim Teilen des
   // Links (Audit 1.2).
   return {
-    title: isDe ? "Lebenslauf" : "Curriculum vitae",
+    title: dict.cv.documentTitle,
     description: dict.meta.cv,
     alternates: alternatesFor(locale, "cv"),
     robots: { index: false, follow: true },
   };
 }
 
-// Lebenslauf: Ausbildung, Auszeichnungen und Publikationen — unabhängig von den
-// Identitäten, in einem druckbaren A4-Layout. Öffnet in einem neuen Tab und lässt
-// sich über den Browser (Drucken → Als PDF speichern) ausgeben. Über die
-// Query-Parameter `art` (alle|publikationen|ausbildung) und `von`/`bis` (Jahr)
-// lässt sich der Auszug aus dem Adminbereich eingrenzen.
+/**
+ * Der Bewerbungs-Lebenslauf. Ein Dokument, kein Website-Kapitel: weißes
+ * A4-Blatt, Foto oben rechts, links die Zeitspalte, darunter Werdegang,
+ * Ausbildung, Fähigkeiten, Projekte und Nachweise. Was auf dem Bildschirm zu
+ * sehen ist, kommt so auch aus dem Drucker (Drucken → Als PDF speichern).
+ *
+ * Welche Einträge darin stehen, entscheidet der Auswahldialog im
+ * Adminbereich; er hängt die Auswahl als Query-Parameter an die Adresse
+ * (`nur=` / `aus=`, siehe lib/resume/selection.ts). Ohne Parameter steht alles
+ * darin, was gepflegt ist.
+ */
 export default async function CvPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ art?: string; von?: string; bis?: string }>;
+  searchParams: Promise<{ [SELECT_ONLY_PARAM]?: string; [SELECT_EXCEPT_PARAM]?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const isDe = locale === "de";
-  const { art, von, bis } = await searchParams;
-  const kind = art === "publikationen" || art === "ausbildung" ? art : "alle";
-  const fromYear = Number(von) || null;
-  const toYear = Number(bis) || null;
-  const inRange = (year: number) =>
-    (fromYear === null || year >= fromYear) && (toYear === null || year <= toYear);
+  const dict = await getDictionary(locale);
+  const labels = dict.cv;
+  const selection = selectionFromParams(await searchParams);
 
-  const [certsAll, focus, pubsAll, legend, contact, social, resume] = await Promise.all([
+  const [certsAll, pubsAll, legend, contact, social, resume] = await Promise.all([
     getCertifications(locale),
-    getFocusTopics(locale),
     getPublications(locale),
     getLegend(locale),
     getContactInfo(),
     getSocialLinks(),
-    getResume(),
+    getResume(locale),
   ]);
 
-  const showPubs = kind === "alle" || kind === "publikationen";
-  const showCerts = kind === "alle" || kind === "ausbildung";
-  const pubs = showPubs ? pubsAll.filter((p) => inRange(p.year)) : [];
-  const certs = showCerts
-    ? certsAll.filter((c) => inRange(c.acquiredOn.getUTCFullYear()))
-    : [];
-  // Aktuelle Themen (Radar) nur im vollständigen bzw. Ausbildungs-Auszug zeigen.
-  const focusShown = showCerts ? focus : [];
+  const career = filterSelected(selection, resume.career);
+  const education = filterSelected(selection, resume.education);
+  const skills = filterSelected(selection, resume.skills);
+  const projects = filterSelected(selection, resume.projects);
+  const records = splitRecordsForCv(certsAll);
+  const certifications = filterSelected(selection, records.certifications);
+  const trainings = filterSelected(selection, records.trainings);
+  const awards = filterSelected(selection, records.awards);
+  const publications = filterSelected(selection, publicationsForCv(pubsAll));
 
-  const contactBits = [
-    contact.email ? contact.email : null,
-    social.linkedin ? "LinkedIn" : null,
-  ].filter(Boolean);
+  const isEmpty =
+    career.length === 0 &&
+    education.length === 0 &&
+    skills.length === 0 &&
+    projects.length === 0 &&
+    certifications.length === 0 &&
+    trainings.length === 0 &&
+    awards.length === 0 &&
+    publications.length === 0;
+
+  // Das Bewerbungsfoto: eigenes Bild, sonst das Porträt der Legende.
+  const portrait = resume.profile?.portrait ?? legend.portrait;
+  const photo = portrait ? { url: portrait.url, alt: portrait.alt || labels.photoAlt } : null;
+
+  const contactLines: CvContactLine[] = [
+    resume.profile?.location ? { label: resume.profile.location } : null,
+    contact.email ? { label: contact.email, href: `mailto:${contact.email}` } : null,
+    social.linkedin ? { label: "LinkedIn", href: social.linkedin } : null,
+    legend.employer
+      ? { label: legend.employer.name, href: legend.employer.url || undefined }
+      : null,
+  ].filter((x): x is CvContactLine => x !== null);
 
   return (
-    <section className="cv-doc" style={{ padding: "32px 0 90px" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: 240 }}>
-          <p className="eyebrow">{isDe ? "Lebenslauf" : "Curriculum vitae"}</p>
-          <h1 style={{ margin: "4px 0 0" }}>{legend.name}</h1>
-          {resume.profile?.headline ? (
-            <p className="lead" style={{ margin: "6px 0 0", fontSize: 16 }}>{resume.profile.headline}</p>
-          ) : null}
-          <p className="meta" style={{ marginTop: 6 }}>
-            {resume.profile?.location ? <>{resume.profile.location}</> : null}
-            {resume.profile?.location && (contact.email || social.linkedin) ? " · " : ""}
-            {contact.email ? <a href={`mailto:${contact.email}`}>{contact.email}</a> : null}
-            {contact.email && social.linkedin ? " · " : ""}
-            {social.linkedin ? (
-              <a href={social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
-            ) : null}
-            {legend.employer ? (
-              <>
-                {contactBits.length > 0 || resume.profile?.location ? " · " : ""}
-                {legend.employer.url ? (
-                  <a href={legend.employer.url} target="_blank" rel="noopener noreferrer">{legend.employer.name}</a>
-                ) : (
-                  legend.employer.name
-                )}
-              </>
-            ) : null}
-          </p>
-        </div>
-        <PrintButton label={isDe ? "Drucken / als PDF speichern" : "Print / save as PDF"} />
+    <div className="cv-page">
+      <div className="cv-toolbar no-print">
+        <PrintButton label={labels.print} />
       </div>
 
-      {resume.profile?.summary ? (
-        <p style={{ marginTop: 18, fontSize: 15, maxWidth: "70ch" }}>{resume.profile.summary}</p>
-      ) : null}
+      <article className="cv-sheet" lang={locale}>
+        <CvHead
+          name={legend.name}
+          headline={resume.profile?.headline || null}
+          photo={photo}
+          contact={contactLines}
+        />
 
-      {/* Klassischer Lebenslauf — Werdegang, Ausbildung, Fähigkeiten, Projekte. */}
-      <TimelineSection title={isDe ? "Beruflicher Werdegang" : "Career"} items={resume.career} />
-      <TimelineSection title={isDe ? "Ausbildung" : "Education"} items={resume.education} />
-      <SkillsSection title={isDe ? "Fähigkeiten" : "Skills"} items={resume.skills} locale={locale} />
-      <ProjectSection title={isDe ? "Projektreferenzen" : "Selected projects"} items={resume.projects} locale={locale} />
+        {resume.profile?.summary ? (
+          <section className="cv-section">
+            <h2 className="cv-h2">{labels.summary}</h2>
+            <p className="cv-summary">{resume.profile.summary}</p>
+          </section>
+        ) : null}
 
-      {/* Ausbildung, Zertifizierungen & Auszeichnungen */}
-      {certs.length > 0 || focusShown.length > 0 ? (
-        <div style={{ marginTop: 30 }}>
-          <h2>{isDe ? "Zertifizierungen & Auszeichnungen" : "Certifications & awards"}</h2>
-          <CertificationSections certs={certs} focus={focusShown} locale={locale} />
-        </div>
-      ) : null}
+        <CvTimeline title={labels.career} items={career} />
+        <CvTimeline title={labels.education} items={education} />
+        <CvSkills title={labels.skills} items={skills} locale={locale} />
+        <CvProjects
+          title={labels.projects}
+          items={projects}
+          locale={locale}
+          labels={{ projectPeriod: labels.projectPeriod }}
+        />
+        <CvRecordList
+          title={labels.certifications}
+          items={certifications}
+          locale={locale}
+          validUntilLabel={labels.validUntil}
+        />
+        <CvRecordList
+          title={labels.trainings}
+          items={trainings}
+          locale={locale}
+          validUntilLabel={labels.validUntil}
+        />
+        <CvRecordList
+          title={labels.awards}
+          items={awards}
+          locale={locale}
+          validUntilLabel={labels.validUntil}
+        />
+        <CvPublicationList title={labels.publications} items={publications} locale={locale} />
 
-      {/* Publikationen */}
-      {pubs.length > 0 ? (
-        <div style={{ marginTop: 40 }}>
-          <h2>{isDe ? "Publikationen" : "Publications"}</h2>
-          {/* Ohne Videos: Im Lebenslauf wäre eine Wand aus Vorschaubildern fehl am
-              Platz. Sie stehen auf der Publikationsseite. */}
-          <PublicationSections items={pubs} locale={locale} showVideos={false} />
-        </div>
-      ) : null}
-
-      {certs.length === 0 && focusShown.length === 0 && pubs.length === 0 && !resume.hasAny ? (
-        <div className="card bracket" style={{ marginTop: 24 }}>
-          <p className="muted">{isDe ? "Noch keine Einträge erfasst." : "Nothing recorded yet."}</p>
-        </div>
-      ) : null}
-    </section>
+        {isEmpty ? (
+          <section className="cv-section">
+            <p className="cv-row-text">{labels.empty}</p>
+            <p className="cv-row-place">{labels.emptyHint}</p>
+          </section>
+        ) : null}
+      </article>
+    </div>
   );
 }

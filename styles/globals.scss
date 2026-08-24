@@ -2257,75 +2257,241 @@ a.radar-chip:focus-visible {
 }
 
 // ---------------------------------------------------------------------------
-// Druck: Lebenslauf-Seite (/cv) sauber auf Papier bzw. als PDF ausgeben.
-// Kopf-/Fußzeile und interaktive Elemente ausblenden, dunkles Theme auf hellen
-// Grund mit dunkler Schrift umstellen, die Ziel-Ecken-Klammern entfernen.
+// Bewerbungs-Lebenslauf (/cv). Ein Dokument, kein Website-Kapitel: weißes
+// A4-Blatt mit dunkler Schrift, auch auf dem Bildschirm. Wer die Seite öffnet,
+// sieht damit genau das, was aus dem Drucker kommt — kein dunkles Layout, das
+// beim Drucken zu etwas anderem wird.
+//
+// Aufbau jeder Zeile: links eine feste Zeitspalte, rechts der Inhalt. Alle
+// Datumsangaben stehen dadurch auf einer Kante, quer durch alle Abschnitte.
 // ---------------------------------------------------------------------------
-// DIN A4 mit angemessenem Rand — der Lebenslauf soll einer Bewerbung beiliegen.
+$cv-ink: #16141c;
+$cv-ink-soft: #4c4956;
+$cv-rule: #c9c6d2;
+$cv-accent: #3a2f52;
+
+.cv-page {
+  // Der Grund um das Blatt herum gehört zur Website, das Blatt selbst nicht.
+  padding: 24px 0 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.cv-toolbar {
+  width: min(100%, 210mm);
+  display: flex;
+  justify-content: flex-end;
+}
+.cv-sheet {
+  width: min(100%, 210mm);
+  box-sizing: border-box;
+  background: #fff;
+  color: $cv-ink;
+  padding: 18mm 16mm;
+  border-radius: 2px;
+  box-shadow: 0 18px 50px rgb(0 0 0 / 45%);
+  font-family: var(--body);
+  font-size: 10.5pt;
+  line-height: 1.45;
+
+  // Das Blatt ist eine Insel im dunklen Layout: Die globalen Textfarben (hell
+  // auf dunkel) würden hier als blasses Violett auf Weiß landen — unlesbar auf
+  // Papier. Deshalb erben alle Textelemente die Farbe des Blattes; die
+  // Ausnahmen setzen ihre Farbe weiter unten selbst. `:where` hält die
+  // Spezifität bei null, damit genau das funktioniert.
+  :where(h1, h2, h3, h4, p, li, ul, ol, span, div, strong, b, em, a) {
+    color: inherit;
+  }
+
+  a {
+    color: $cv-ink;
+    text-decoration: underline;
+  }
+}
+
+// Kopf: Text links, Foto rechts.
+.cv-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid $cv-accent;
+}
+.cv-head-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cv-head-role {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 9pt;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: $cv-ink-soft;
+}
+.cv-head-name {
+  margin: 2px 0 0;
+  font-family: var(--display);
+  font-size: 24pt;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: $cv-ink;
+}
+.cv-contact {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 9.5pt;
+  color: $cv-ink-soft;
+
+  // Trennpunkte zwischen den Angaben, ohne sie in den Text zu schreiben.
+  li + li::before {
+    content: "·";
+    margin-right: 14px;
+    color: $cv-rule;
+  }
+}
+.cv-photo {
+  flex: 0 0 auto;
+  width: 34mm;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #eceaf1;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+// Abschnitte und Zeilen.
+.cv-section {
+  margin-top: 18px;
+  break-inside: auto;
+}
+.cv-h2 {
+  margin: 0 0 8px;
+  // Bewusst die Fließtextschrift: In einem Bewerbungsdokument sollen die
+  // Abschnitte ruhig wirken, nicht wie Plakattitel.
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 11pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: $cv-accent;
+  border-bottom: 1px solid $cv-rule;
+  padding-bottom: 3px;
+  // Eine Überschrift allein am Seitenende ist ein Bruch, kein Abschnitt.
+  break-after: avoid;
+}
+.cv-row {
+  display: grid;
+  grid-template-columns: 34mm 1fr;
+  gap: 4px 10px;
+  padding: 6px 0;
+  // Eine Station gehört auf eine Seite.
+  break-inside: avoid;
+}
+.cv-when {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 9.5pt;
+  color: $cv-ink-soft;
+}
+.cv-when-main {
+  font-family: var(--mono);
+  font-size: 9pt;
+  color: $cv-ink;
+}
+.cv-when-extra {
+  font-size: 8.5pt;
+}
+.cv-row-title {
+  margin: 0;
+  font-size: 11pt;
+}
+.cv-row-org {
+  font-weight: 400;
+  color: $cv-ink-soft;
+}
+.cv-row-place,
+.cv-row-tags {
+  margin: 1px 0 0;
+  font-size: 9pt;
+  color: $cv-ink-soft;
+}
+.cv-row-text {
+  margin: 3px 0 0;
+  font-size: 10pt;
+}
+.cv-summary {
+  margin: 0;
+  max-width: 78ch;
+}
+
+// Schmale Bildschirme: Die Zeitspalte über den Inhalt legen, statt sie auf
+// wenige Millimeter zu quetschen.
+@media (max-width: 560px) {
+  .cv-sheet {
+    padding: 20px 16px;
+  }
+  .cv-head {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+  .cv-row {
+    grid-template-columns: 1fr;
+  }
+  .cv-when {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Druck: DIN A4 mit angemessenem Rand — der Lebenslauf soll einer Bewerbung
+// beiliegen. Website-Kopf, -Fuß und alle Bedienelemente verschwinden; das Blatt
+// verliert Schatten und eigene Ränder, weil das Papier sie mitbringt.
+// ---------------------------------------------------------------------------
 @page {
   size: A4;
   margin: 16mm;
 }
 @media print {
-  header,
-  footer,
+  // Nur die Website-Rahmung ausblenden — sie sitzt direkt im <body>. Ein
+  // pauschales `header` träfe auch den Kopf des Lebenslaufs selbst, und damit
+  // wären Name, Foto und Kontaktzeile ausgerechnet auf dem Papier weg.
+  body > header,
+  body > footer,
   .no-print {
     display: none !important;
   }
 
   body {
     background: #fff !important;
-    color: #111 !important;
+    color: $cv-ink !important;
   }
 
-  .cv-doc {
-    color: #111 !important;
+  .cv-page {
+    display: block;
+    padding: 0;
+  }
 
-    h1,
-    h2,
-    h3,
-    b,
-    .eyebrow,
-    .meta,
-    .lead,
-    .cert-name,
-    .cert-year,
-    .pub-title,
-    .pub-year,
-    .tag {
-      color: #111 !important;
-    }
-
-    a {
-      color: #111 !important;
-      text-decoration: underline;
-    }
-
-    .card,
-    .bracket {
-      background: #fff !important;
-      border-color: #bbb !important;
-      box-shadow: none !important;
-    }
-
-    .bracket::before,
-    .bracket::after {
-      display: none !important;
-    }
-
-    .tag,
-    .pub-year,
-    .cert .badge {
-      border-color: #999 !important;
-    }
-
-    // Kacheln möglichst nicht über Seitenumbrüche zerreißen.
-    .cert,
-    .pub-card,
-    .course-card,
-    article {
-      break-inside: avoid;
-    }
+  .cv-sheet {
+    width: auto;
+    max-width: none;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
   }
 }
 

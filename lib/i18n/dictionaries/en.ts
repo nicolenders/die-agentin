@@ -214,6 +214,27 @@ const en: Dictionary = {
       "The address comes from the former blog on this domain. The article was deleted along with the old blog and will not return.",
     goneOffer: "What you will find here today:",
   },
+  cv: {
+    documentTitle: "Curriculum vitae",
+    print: "Print / save as PDF",
+    photoAlt: "Application photo",
+    summary: "Profile",
+    career: "Professional experience",
+    education: "Education",
+    skills: "Skills",
+    projects: "Selected projects",
+    certifications: "Certifications",
+    trainings: "Trainings & courses",
+    awards: "Awards",
+    publications: "Publications",
+    engagement: "Engagement",
+    projectPeriod: "Project",
+    noPeriod: "no dates given",
+    empty: "Nothing matches this selection.",
+    emptyHint: "Pick more entries when generating the CV.",
+    selfDisclosure: "Self-assessment",
+    validUntil: "valid until",
+  },
 };
 
 export default en;

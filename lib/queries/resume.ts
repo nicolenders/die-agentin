@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { cachedQuery } from "@/lib/cache";
+import { assetUrl } from "@/lib/media/url";
+import type { Locale } from "@/lib/i18n/config";
 
 // Klassischer Lebenslauf: Kopf/Zusammenfassung (Singleton) + Einträge je Rubrik.
 export const RESUME_TAG = "resume";
@@ -32,6 +34,12 @@ export interface ResumeProfileData {
   headline: string;
   summary: string;
   location: string;
+  /**
+   * Das Bewerbungsfoto. `null` heißt: keins gepflegt — der Lebenslauf greift
+   * dann auf das Porträt der Legende zurück. Umgekehrt wirkt ein Bild hier
+   * NICHT auf die Legende zurück.
+   */
+  portrait: { url: string; alt: string; ai: boolean } | null;
 }
 
 export interface ResumeData {
@@ -76,14 +84,28 @@ function toEntry(e: ResumeEntryRow): ResumeEntryData {
   };
 }
 
-async function loadResume(): Promise<ResumeData> {
+async function loadResume(locale: Locale): Promise<ResumeData> {
   const [profile, entries] = await Promise.all([
-    db.resumeProfile.findUnique({ where: { id: "default" } }),
+    db.resumeProfile.findUnique({ where: { id: "default" }, include: { portrait: true } }),
     db.resumeEntry.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
   ]);
   const bySection = (s: string) => entries.filter((e) => e.section === s).map(toEntry);
+  const asset = profile?.portrait ?? null;
   const profileData: ResumeProfileData | null = profile
-    ? { headline: profile.headline, summary: profile.summary, location: profile.location }
+    ? {
+        headline: profile.headline,
+        summary: profile.summary,
+        location: profile.location,
+        portrait: asset
+          ? {
+              url: assetUrl(asset.blobPath),
+              alt: asset.decorative
+                ? ""
+                : (locale === "en" && asset.altEn ? asset.altEn : asset.altDe),
+              ai: asset.source === "AI",
+            }
+          : null,
+      }
     : null;
   const hasProfile = Boolean(profileData && (profileData.headline || profileData.summary));
   return {
@@ -96,10 +118,10 @@ async function loadResume(): Promise<ResumeData> {
   };
 }
 
-export async function getResume(): Promise<ResumeData> {
-  const run = cachedQuery(loadResume, ["resume"], [RESUME_TAG]);
+export async function getResume(locale: Locale = "de"): Promise<ResumeData> {
+  const run = cachedQuery(loadResume, ["resume", locale], [RESUME_TAG]);
   try {
-    return await run();
+    return await run(locale);
   } catch {
     return { profile: null, career: [], education: [], skills: [], projects: [], hasAny: false };
   }
@@ -109,11 +131,19 @@ export async function getResume(): Promise<ResumeData> {
 export async function getResumeForEdit() {
   try {
     const [profile, entries] = await Promise.all([
-      db.resumeProfile.findUnique({ where: { id: "default" } }),
+      db.resumeProfile.findUnique({ where: { id: "default" }, include: { portrait: true } }),
       db.resumeEntry.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
     ]);
-    return { profile, entries };
+    return {
+      profile,
+      portraitUrl: profile?.portrait ? assetUrl(profile.portrait.blobPath) : null,
+      entries,
+    };
   } catch {
-    return { profile: null, entries: [] as Awaited<ReturnType<typeof db.resumeEntry.findMany>> };
+    return {
+      profile: null,
+      portraitUrl: null,
+      entries: [] as Awaited<ReturnType<typeof db.resumeEntry.findMany>>,
+    };
   }
 }

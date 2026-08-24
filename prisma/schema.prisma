@@ -489,6 +489,7 @@ model MediaAsset {
   identityOgs        Identity[]      @relation("IdentityOg")
   toolIcons          Tool[]          @relation("ToolIcon")
   dispatchHeroes     Dispatch[]      @relation("DispatchHero")
+  resumePortraits    ResumeProfile[] @relation("ResumePortrait")
 }
 
 // ---------------------------------------------------------------------------
@@ -894,11 +895,16 @@ model Pageview {
 // Rubrik. Im Adminbereich pflegbar, öffentlich als druckbarer CV abrufbar.
 // ---------------------------------------------------------------------------
 model ResumeProfile {
-  id        String   @id @default("default")
-  headline  String   @default("") // z. B. „Solution Architect · Microsoft 365 & Azure"
-  summary   String   @default("") @db.NVarChar(Max) // Kurzprofil (mehrzeilig)
-  location  String   @default("")
-  updatedAt DateTime @updatedAt
+  id              String      @id @default("default")
+  headline        String      @default("") // z. B. „Solution Architect · Microsoft 365 & Azure"
+  summary         String      @default("") @db.NVarChar(Max) // Kurzprofil (mehrzeilig)
+  location        String      @default("")
+  // Bewerbungsfoto. Bleibt es leer, zeigt der Lebenslauf das Porträt der
+  // Legende. Ein eigenes Bild hier ändert die Legende NICHT — ein
+  // Bewerbungsfoto ist ein anderes Bild als das der Website.
+  portraitAssetId String?
+  portrait        MediaAsset? @relation("ResumePortrait", fields: [portraitAssetId], references: [id])
+  updatedAt       DateTime    @updatedAt
 }
 
 model ResumeEntry {

@@ -8,9 +8,9 @@ import { RESUME_TAG } from "@/lib/queries/resume";
 import { RESUME_PROFILE_SEED, RESUME_ENTRIES_SEED } from "@/lib/resume-seed";
 import { SKILL_LEVELS, isOneOf } from "@/lib/domain";
 import { computeSkillYears } from "@/lib/resume/skills";
+import { RESUME_TAB_FOR_SECTION, isResumeSection } from "@/lib/resume/sections";
 
 const PAGE = "/admin/lebenslauf";
-const SECTIONS = new Set(["CAREER", "EDUCATION", "SKILL", "PROJECT"]);
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -29,6 +29,22 @@ function invalidate(): void {
 function num(formData: FormData, key: string): number | null {
   const parsed = Number.parseInt(String(formData.get(key) ?? "").trim(), 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+/**
+ * Zurück zur Maske — und zwar auf das Register, von dem die Eingabe kam. Ohne
+ * das landet Nicole nach jedem Speichern wieder auf „Zur Person" und muss sich
+ * durchklicken.
+ */
+function back(tab: string, result: { ok?: string; err?: string }): never {
+  const params = new URLSearchParams({ tab });
+  if (result.ok) params.set("ok", result.ok);
+  if (result.err) params.set("err", result.err);
+  redirect(`${PAGE}?${params.toString()}`);
+}
+
+function tabFor(section: string): string {
+  return isResumeSection(section) ? RESUME_TAB_FOR_SECTION[section] : "person";
 }
 
 /**
@@ -90,19 +106,47 @@ export async function saveResumeProfile(formData: FormData): Promise<void> {
       update: data,
     });
   } catch {
-    redirect(`${PAGE}?err=failed`);
+    back("person", { err: "failed" });
   }
   invalidate();
-  redirect(`${PAGE}?ok=profile`);
+  back("person", { ok: "saved" });
+}
+
+/**
+ * Das Bewerbungsfoto. Leer heißt: den Lebenslauf mit dem Porträt der Legende
+ * ausgeben. Ein Bild hier ändert die Legende nicht — es ist ein zweites Bild,
+ * kein anderes.
+ */
+export async function saveResumePortrait(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const portraitAssetId = str(formData, "portraitAssetId") || null;
+  try {
+    await db.resumeProfile.upsert({
+      where: { id: "default" },
+      create: { id: "default", portraitAssetId },
+      update: { portraitAssetId },
+    });
+  } catch {
+    back("bild", { err: "failed" });
+  }
+  invalidate();
+  back("bild", { ok: "saved" });
 }
 
 export async function createResumeEntry(formData: FormData): Promise<void> {
   await requireAdmin();
   const section = str(formData, "section");
   const title = str(formData, "title");
-  if (!SECTIONS.has(section) || !title) redirect(`${PAGE}?err=missing-fields`);
-  const sortRaw = Number(formData.get("sortOrder") ?? 0);
+  const tab = tabFor(section);
+  if (!isResumeSection(section) || !title) back(tab, { err: "missing-fields" });
   try {
+    // Neue Einträge hinten anstellen: Die Reihenfolge stellt Nicole in der
+    // Tabelle mit den Pfeilen ein, nicht über ein Zahlenfeld im Formular.
+    const last = await db.resumeEntry.findFirst({
+      where: { section },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
     await db.resumeEntry.create({
       data: {
         section,
@@ -113,23 +157,23 @@ export async function createResumeEntry(formData: FormData): Promise<void> {
         periodTo: str(formData, "periodTo") || null,
         description: str(formData, "description") || null,
         tags: tagsJson(str(formData, "tags")),
-        sortOrder: Number.isFinite(sortRaw) ? Math.trunc(sortRaw) : 0,
+        sortOrder: (last?.sortOrder ?? -1) + 1,
         ...sectionFields(formData, section),
       },
     });
   } catch {
-    redirect(`${PAGE}?err=failed`);
+    back(tab, { err: "failed" });
   }
   invalidate();
-  redirect(`${PAGE}?ok=added#${section}`);
+  back(tab, { ok: "created" });
 }
 
 export async function updateResumeEntry(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${PAGE}?err=not-found`);
   const section = str(formData, "section");
-  const sortRaw = Number(formData.get("sortOrder") ?? 0);
+  const tab = tabFor(section);
+  if (!id) back(tab, { err: "not-found" });
   try {
     await db.resumeEntry.update({
       where: { id },
@@ -141,27 +185,66 @@ export async function updateResumeEntry(formData: FormData): Promise<void> {
         periodTo: str(formData, "periodTo") || null,
         description: str(formData, "description") || null,
         tags: tagsJson(str(formData, "tags")),
-        sortOrder: Number.isFinite(sortRaw) ? Math.trunc(sortRaw) : 0,
         ...sectionFields(formData, section),
       },
     });
   } catch {
-    redirect(`${PAGE}?err=failed`);
+    back(tab, { err: "failed" });
   }
   invalidate();
-  redirect(`${PAGE}?ok=saved#${section}`);
+  back(tab, { ok: "saved" });
 }
 
 export async function deleteResumeEntry(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
+  const tab = tabFor(str(formData, "section"));
   try {
     await db.resumeEntry.delete({ where: { id } });
   } catch {
     // bereits entfernt
   }
   invalidate();
-  redirect(`${PAGE}?ok=deleted#${str(formData, "section")}`);
+  back(tab, { ok: "deleted" });
+}
+
+/**
+ * Einen Eintrag innerhalb seiner Rubrik um eine Position verschieben. Die
+ * Werte der Rubrik werden dabei auf fortlaufende Indizes normalisiert und die
+ * Nachbarn getauscht — so ist die Reihenfolge deterministisch, auch wenn
+ * bisher alles auf sortOrder = 0 stand.
+ */
+export async function reorderResumeEntry(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const dir = str(formData, "dir"); // "up" | "down"
+  const section = str(formData, "section");
+  const tab = tabFor(section);
+  if (!id || !isResumeSection(section)) back(tab, { err: "not-found" });
+
+  try {
+    const group = await db.resumeEntry.findMany({
+      where: { section },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: { id: true },
+    });
+    const index = group.findIndex((g) => g.id === id);
+    const swapWith = dir === "down" ? index + 1 : index - 1;
+    const order = group.map((g) => g.id);
+    const a = order[index];
+    const b = order[swapWith];
+    if (a !== undefined && b !== undefined) {
+      order[index] = b;
+      order[swapWith] = a;
+      await db.$transaction(
+        order.map((gid, i) => db.resumeEntry.update({ where: { id: gid }, data: { sortOrder: i } })),
+      );
+    }
+  } catch {
+    back(tab, { err: "failed" });
+  }
+  invalidate();
+  back(tab, { ok: "reordered" });
 }
 
 /** Übernimmt die extrahierten Vorlagedaten — nur, wenn noch nichts erfasst ist. */
@@ -193,8 +276,8 @@ export async function seedResume(): Promise<void> {
       }
     }
   } catch {
-    redirect(`${PAGE}?err=failed`);
+    back("person", { err: "failed" });
   }
   invalidate();
-  redirect(`${PAGE}?ok=seeded`);
+  back("person", { ok: "seeded" });
 }

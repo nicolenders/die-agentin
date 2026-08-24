@@ -254,6 +254,32 @@ const de = {
       "Die Adresse stammt aus dem früheren Blog unter dieser Domain. Der Beitrag wurde zusammen mit dem alten Blog gelöscht und kehrt nicht zurück.",
     goneOffer: "Was hier heute steht:",
   },
+  // Der Bewerbungs-Lebenslauf unter /cv. Ein Dokument, kein Website-Kapitel:
+  // deshalb nüchterne Überschriften statt der Agentin-Sprache.
+  cv: {
+    documentTitle: "Lebenslauf",
+    print: "Drucken / als PDF speichern",
+    photoAlt: "Bewerbungsfoto",
+    summary: "Kurzprofil",
+    career: "Beruflicher Werdegang",
+    education: "Ausbildung",
+    skills: "Fähigkeiten",
+    projects: "Projektreferenzen",
+    certifications: "Zertifizierungen",
+    trainings: "Schulungen & Trainings",
+    awards: "Auszeichnungen",
+    publications: "Publikationen",
+    // Projektzeilen: der eigene Einsatz steht in der Datumsspalte, die Laufzeit
+    // des Projekts als Zusatz daneben.
+    engagement: "Einsatz",
+    projectPeriod: "Projekt",
+    // Zeitangaben, die sich aus den Feldern nicht ableiten lassen.
+    noPeriod: "ohne Zeitangabe",
+    empty: "Zu dieser Auswahl gibt es keine Einträge.",
+    emptyHint: "Wähle beim Erzeugen des Lebenslaufs mehr Einträge aus.",
+    selfDisclosure: "Selbsteinschätzung",
+    validUntil: "gültig bis",
+  },
 } as const;
 
 export default de;

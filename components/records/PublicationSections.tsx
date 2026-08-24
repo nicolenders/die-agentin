@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/i18n/config";
 import type { PublicationItem } from "@/lib/queries/records";
 import { brandAsset } from "@/lib/brand-assets";
+import { publicationTypeLabel } from "@/lib/records/publication-type";
 import Link from "next/link";
 import BrandImage from "@/components/BrandImage";
 import { youtubeWatchUrl } from "@/lib/video/youtube";
@@ -55,15 +56,7 @@ function PlayBadge() {
 }
 
 function typeLabel(t: string, isDe: boolean): string {
-  const de: Record<string, string> = {
-    BOOK: "Buch", ARTICLE: "Fachartikel", WHITEPAPER: "Whitepaper", COURSE: "Kurs",
-    REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview", VIDEO: "Video",
-  };
-  const en: Record<string, string> = {
-    BOOK: "Book", ARTICLE: "Article", WHITEPAPER: "Whitepaper", COURSE: "Course",
-    REPOSITORY: "Repository", PODCAST: "Podcast", INTERVIEW: "Interview", VIDEO: "Video",
-  };
-  return (isDe ? de : en)[t] ?? t;
+  return publicationTypeLabel(t, isDe ? "de" : "en");
 }
 
 export default function PublicationSections({

@@ -26,6 +26,7 @@ export const FLASH_MESSAGES: Record<string, string> = {
   unarchived: "Aus dem Archiv geholt.",
   uploaded: "Hochgeladen.",
   installed: "Standardvorlagen eingespielt. Du kannst jede davon ändern oder ausblenden.",
+  seeded: "Vorlagedaten übernommen. Jetzt prüfen und anpassen.",
   "nothing-new": "Alle Standardvorlagen sind schon da. Nichts wurde geändert.",
   merged: "Zusammengeführt. Einsätze, Sprachfassungen und Verknüpfungen sind übernommen.",
   "has-links": "Identität hat verknüpfte Einträge: erst umhängen oder zurückziehen statt löschen.",

@@ -80,7 +80,18 @@ export function resolveMigrationHealth(
   }
 
   const applied = new Set(facts.rows.filter(isApplied).map((r) => r.name));
-  const broken = facts.rows.filter((r) => !isApplied(r)).map((r) => r.name);
+  // Zu einer Migration können MEHRERE Zeilen stehen. Genau das passiert nach
+  // einer Rettung von Hand: `migrate resolve --rolled-back` setzt in der alten
+  // Zeile `rolled_back_at`, der nächste Lauf legt eine neue Zeile an und bringt
+  // sie sauber durch. Die alte Zeile ist danach Geschichte, kein Befund.
+  //
+  // Ohne diese Unterscheidung meldete die Zentrale genau in diesem Fall dauerhaft
+  // „Migration prüfen“ — für eine Migration, die längst angewendet war und über
+  // die sich nichts mehr tun ließ. Blockierend ist eine Migration nur, wenn es zu
+  // ihr KEINE erfolgreiche Zeile gibt.
+  const broken = [...new Set(facts.rows.filter((r) => !isApplied(r)).map((r) => r.name))].filter(
+    (name) => !applied.has(name),
+  );
   const pending = facts.expected.filter((name) => !applied.has(name) && !broken.includes(name));
 
   const known = new Set(facts.alreadyInPlace ?? []);

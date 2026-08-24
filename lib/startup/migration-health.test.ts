@@ -53,6 +53,36 @@ describe("resolveMigrationHealth", () => {
     expect(h.state).toBe("failed");
   });
 
+  it("wertet eine zurückgerollte und danach angewendete Migration als erledigt", () => {
+    // Der Ablauf aus scripts/start.sh: Eine steckengebliebene Migration wird als
+    // zurückgerollt markiert, der nächste Lauf wendet sie sauber an. In
+    // `_prisma_migrations` stehen danach zwei Zeilen zu demselben Namen — die
+    // alte darf keine Warnung mehr auslösen.
+    const h = resolveMigrationHealth("applied", {
+      expected: ["0001_init", "0002_zwei"],
+      rows: [
+        done("0001_init"),
+        { name: "0002_zwei", finishedAt: new Date("2026-08-01T00:00:00Z"), rolledBackAt: new Date("2026-08-02T00:00:00Z") },
+        done("0002_zwei"),
+      ],
+    });
+    expect(h.state).toBe("applied");
+    expect(h.broken).toEqual([]);
+    expect(h.summary).toBe("");
+  });
+
+  it("nennt eine blockierende Migration nur einmal, auch bei mehreren Fehlversuchen", () => {
+    const h = resolveMigrationHealth("applied", {
+      expected: ["0001_init"],
+      rows: [
+        { name: "0001_init", finishedAt: null, rolledBackAt: null },
+        { name: "0001_init", finishedAt: null, rolledBackAt: null },
+      ],
+    });
+    expect(h.state).toBe("failed");
+    expect(h.broken).toEqual(["0001_init"]);
+  });
+
   it("fällt auf den Prozess-Merker zurück, wenn nichts zu lesen ist", () => {
     expect(resolveMigrationHealth("applied", null).state).toBe("applied");
     const failed = resolveMigrationHealth("failed", null);

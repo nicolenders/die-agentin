@@ -10,6 +10,7 @@ import { getCertifications, getPublications } from "@/lib/queries/records";
 import { publicationTypeLabel } from "@/lib/records/publication-type";
 import { formatPeriod } from "@/lib/resume/projects";
 import { publicationsForCv, splitRecordsForCv } from "@/lib/resume/records";
+import { inDisplayOrder, splitProjects } from "@/lib/resume/order";
 import { RESUME_SECTION_LABEL, toResumeTab, type ResumeSection } from "@/lib/resume/sections";
 import type { CertificationRecord } from "@/lib/queries/records";
 import {
@@ -127,10 +128,15 @@ export default async function ResumeAdminPage({
   ]);
 
   const rows = entries.map(toRow);
-  const bySection = (s: ResumeSection) => rows.filter((r) => r.section === s);
+  // Dieselbe Reihenfolge, die der Lebenslauf zeigt — Tabelle, Auswahldialog und
+  // Dokument müssen sich einig sein, sonst verschiebt ein Pfeil etwas anderes,
+  // als er anzeigt (lib/resume/order.ts).
+  const bySection = (s: ResumeSection) => inDisplayOrder(s, rows.filter((r) => r.section === s));
   const career = bySection("CAREER");
   const education = bySection("EDUCATION");
-  const projects = bySection("PROJECT");
+  // Projekte zerfallen in zwei Listen: mit Zeitraum und — aus den alten
+  // Profil-Dokumenten — nur mit Dauer. Genauso zeigt der Lebenslauf sie.
+  const { dated: projects, undated: legacyProjects } = splitProjects(bySection("PROJECT"));
   const skills = bySection("SKILL");
 
   const records = splitRecordsForCv(certsAll);
@@ -158,6 +164,15 @@ export default async function ResumeAdminPage({
       key: "projects",
       label: RESUME_SECTION_LABEL.PROJECT,
       items: projects.map((r) => ({ id: r.id, label: r.title, meta: formatPeriod(r.periodFrom, r.periodTo) ?? undefined })),
+    },
+    {
+      key: "projects-legacy",
+      label: "Ältere Projekte",
+      items: legacyProjects.map((r) => ({
+        id: r.id,
+        label: r.title,
+        meta: r.periodFrom ?? undefined,
+      })),
     },
     {
       key: "certifications",
@@ -232,7 +247,7 @@ export default async function ResumeAdminPage({
           <ResumeEntryTable
             section="CAREER"
             label={RESUME_SECTION_LABEL.CAREER}
-            hint="Neueste Station zuerst. Die Reihenfolge stellst du mit den Pfeilen ein."
+            hint="Alles, was du beruflich gemacht hast — mit Zeitraum, Arbeitgeber und einem Satz dazu."
             rows={career}
             createAction={createResumeEntry}
             updateAction={updateResumeEntry}
@@ -243,7 +258,7 @@ export default async function ResumeAdminPage({
           <ResumeEntryTable
             section="EDUCATION"
             label={RESUME_SECTION_LABEL.EDUCATION}
-            hint="Abschlüsse und Ausbildungen. Studium und Berufsausbildung gehören hierhin, Zertifikate nicht."
+            hint="Abschlüsse und Ausbildungen. Studium und Berufsausbildung gehören hierhin, Zertifikate nicht — die kommen aus dem Bereich „Ausbildung & Auszeichnungen“."
             rows={education}
             createAction={createResumeEntry}
             updateAction={updateResumeEntry}
@@ -258,17 +273,31 @@ export default async function ResumeAdminPage({
       id: "projekte",
       label: "Projektreferenzen",
       content: (
-        <ResumeEntryTable
-          section="PROJECT"
-          label={RESUME_SECTION_LABEL.PROJECT}
-          hint="„Von“/„Bis“ ist DEIN Einsatz im Projekt; die Laufzeit des Projekts steht daneben. Anonyme Kunden erscheinen im Lebenslauf nur mit ihrer Branche."
-          rows={projects}
-          createAction={createResumeEntry}
-          updateAction={updateResumeEntry}
-          deleteAction={deleteResumeEntry}
-          reorderAction={reorderResumeEntry}
-          emptyText="Noch keine Projektreferenz erfasst. Ein Projekt mit Rolle, Zeitraum und Technologien sagt mehr als eine Aufgabenliste."
-        />
+        <div>
+          <ResumeEntryTable
+            section="PROJECT"
+            label={RESUME_SECTION_LABEL.PROJECT}
+            hint="„Von“/„Bis“ ist DEIN Einsatz im Projekt; die Laufzeit des Projekts steht daneben. Anonyme Kunden erscheinen im Lebenslauf nur mit ihrer Branche."
+            rows={projects}
+            createAction={createResumeEntry}
+            updateAction={updateResumeEntry}
+            deleteAction={deleteResumeEntry}
+            reorderAction={reorderResumeEntry}
+            emptyText="Noch keine Projektreferenz erfasst. Ein Projekt mit Rolle, Zeitraum und Technologien sagt mehr als eine Aufgabenliste."
+          />
+          <ResumeEntryTable
+            section="PROJECT"
+            label="Ältere Projekte"
+            hint="Projekte, von denen nur noch die Dauer bekannt ist. Sie stehen im Lebenslauf unter einer eigenen Überschrift. Trägst du bei einem davon einen Zeitraum wie „03/2018“ nach, rückt er von selbst nach oben zu den Projektreferenzen."
+            rows={legacyProjects}
+            createAction={createResumeEntry}
+            updateAction={updateResumeEntry}
+            deleteAction={deleteResumeEntry}
+            reorderAction={reorderResumeEntry}
+            ordering="manual"
+            emptyText="Nichts hier — alle Projekte haben einen Zeitraum."
+          />
+        </div>
       ),
     },
     {

@@ -223,6 +223,7 @@ const en: Dictionary = {
     education: "Education",
     skills: "Skills",
     projects: "Selected projects",
+    projectsLegacy: "Earlier projects",
     certifications: "Certifications",
     trainings: "Trainings & courses",
     awards: "Awards",

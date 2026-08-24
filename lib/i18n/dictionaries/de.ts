@@ -265,6 +265,7 @@ const de = {
     education: "Ausbildung",
     skills: "Fähigkeiten",
     projects: "Projektreferenzen",
+    projectsLegacy: "Ältere Projekte",
     certifications: "Zertifizierungen",
     trainings: "Schulungen & Trainings",
     awards: "Auszeichnungen",

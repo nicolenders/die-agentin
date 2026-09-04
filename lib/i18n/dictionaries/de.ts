@@ -106,6 +106,13 @@ const de = {
     videoWatchOnYoutube: "direkt bei YouTube ansehen",
     videoFallbackTitle: "YouTube-Video",
     imageGallery: "Bildergalerie",
+    // Bildergalerie: Vollbild mit Blättern. Standen fest auf Deutsch im Bauteil.
+    galleryOpen: "Bild groß ansehen",
+    galleryPrev: "Vorheriges Bild",
+    galleryNext: "Nächstes Bild",
+    galleryClose: "Schließen",
+    /** `{n}` und `{total}` werden ersetzt. */
+    galleryPosition: "Bild {n} von {total}",
   },
   langNotice: {
     // Fallback-Hinweis, wenn EN fehlt (SPEC §8)

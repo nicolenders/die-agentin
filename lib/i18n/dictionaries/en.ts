@@ -93,6 +93,11 @@ const en: Dictionary = {
     videoWatchOnYoutube: "watch directly on YouTube",
     videoFallbackTitle: "YouTube video",
     imageGallery: "Image gallery",
+    galleryOpen: "View image large",
+    galleryPrev: "Previous image",
+    galleryNext: "Next image",
+    galleryClose: "Close",
+    galleryPosition: "Image {n} of {total}",
   },
   langNotice: {
     // „bisher" fehlte hier und änderte damit die Aussage (Audit 2.5).

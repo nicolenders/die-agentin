@@ -125,7 +125,8 @@ export interface MissionDetail {
   talkText: string;
   fallback: boolean;
   contentLocale: Locale;
-  photos: { url: string; alt: string; decorative: boolean; ai: boolean }[];
+  /** Maße kommen mit: aus ihnen baut die Galerie ihr Zeilenlayout. */
+  photos: { url: string; alt: string; decorative: boolean; ai: boolean; width: number; height: number }[];
   briefing: { title: string; language: string } | null;
   // Belegmaterial (Phase 9)
   identities: { slug: string; name: string; color: string }[];
@@ -212,6 +213,8 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
       alt: locale === "en" && p.asset.altEn ? p.asset.altEn : p.asset.altDe,
       decorative: p.asset.decorative,
       ai: p.asset.source === "AI",
+      width: p.asset.width,
+      height: p.asset.height,
     })),
     briefing: delivery && talkTitle ? { title: talkTitle, language: talkLanguage ?? delivery.language } : null,
     identities: mission.identities.map((i) => ({ slug: i.slug, name: identityDisplayName(i, locale), color: i.color })),

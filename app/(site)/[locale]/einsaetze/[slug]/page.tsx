@@ -13,6 +13,7 @@ import { alternatesFor } from "@/lib/seo/alternates";
 import { firstSentence, metaDescription } from "@/lib/seo/description";
 import { richValueToPlain } from "@/lib/content/rich";
 import Gallery from "@/components/content/Gallery";
+import { galleryLabels } from "@/lib/media/gallery-labels";
 import RichText from "@/components/content/RichText";
 import VideoConsent from "@/components/content/VideoConsent";
 import { embedLabels } from "@/lib/content/embed-labels";
@@ -210,10 +211,14 @@ export default async function EinsatzaktePage({
             {mission.photos.length > 0 ? (
               <div style={{ marginTop: 16 }}>
                 <Gallery
-                  images={mission.photos.map((p) => ({ url: p.url, alt: p.decorative ? "" : p.alt, ai: p.ai }))}
-                  label={isDe ? "Fotos vom Einsatz" : "Mission photos"}
-                  aiLabel={dict.common.aiGenerated}
-                  aiTitle={dict.common.aiGeneratedImage}
+                  images={mission.photos.map((p) => ({
+                    url: p.url,
+                    alt: p.decorative ? "" : p.alt,
+                    ai: p.ai,
+                    width: p.width,
+                    height: p.height,
+                  }))}
+                  labels={galleryLabels(locale, isDe ? "Fotos vom Einsatz" : "Mission photos")}
                 />
               </div>
             ) : null}

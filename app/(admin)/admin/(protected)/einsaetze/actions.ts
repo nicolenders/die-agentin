@@ -12,6 +12,7 @@ import { ensureMissionReportTask } from "@/lib/missions/ensure-report-task";
 import type { Locale } from "@/lib/i18n/config";
 import { extractYouTubeId } from "@/lib/video/youtube";
 import { saveVideoPublication } from "@/lib/video/save";
+import { RETURN_PARAM, safeReturnTo, withParams } from "@/lib/admin/return-to";
 
 export interface MissionTextInput {
   eventText: string;
@@ -253,7 +254,9 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
 export async function deleteMission(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
-  if (!id) redirect("/admin/einsaetze?err=not-found");
+  // Zurück in die Liste, aus der gelöscht wurde — mit ihren Filtern.
+  const list = safeReturnTo(String(formData.get(RETURN_PARAM) ?? ""), "/admin/einsaetze");
+  if (!id) redirect(withParams(list, { err: "not-found" }));
 
   let failed = false;
   try {
@@ -262,10 +265,10 @@ export async function deleteMission(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect("/admin/einsaetze?err=failed");
+  if (failed) redirect(withParams(list, { err: "failed" }));
 
   invalidateTags([tags.mission(id), tags.missionList("de"), tags.missionList("en")]);
-  redirect("/admin/einsaetze?ok=deleted");
+  redirect(withParams(list, { ok: "deleted" }));
 }
 
 async function upsertText(

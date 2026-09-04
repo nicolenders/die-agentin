@@ -8,6 +8,7 @@ import { identityDisplayName } from "@/lib/identities";
 import { CONTENT_STATUSES, DISPATCH_FORMATS, isOneOf, type ContentStatus, type DispatchFormat } from "@/lib/domain";
 import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
+import { RETURN_PARAM, editHref, withParams } from "@/lib/admin/return-to";
 import { deleteDispatch } from "./actions";
 
 export const metadata = { title: "Depeschen · Zentrale" };
@@ -33,6 +34,13 @@ export default async function DepeschenAdminPage({
   const statusFilter: ContentStatus | "" = isOneOf(CONTENT_STATUSES, status ?? "") ? (status as ContentStatus) : "";
   const formatFilter: DispatchFormat | "" = isOneOf(DISPATCH_FORMATS, format ?? "") ? (format as DispatchFormat) : "";
   const isFiltered = term !== "" || statusFilter !== "" || formatFilter !== "";
+  // Die Ansicht, in der Nicole gerade steht. Sie reist mit in die Maske und
+  // bringt sie beim Zurückgehen wieder in genau diese gefilterte Liste.
+  const listHref = withParams("/admin/depeschen", {
+    q: term || undefined,
+    status: statusFilter || undefined,
+    format: formatFilter || undefined,
+  });
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const [templates, shareProfiles] = await Promise.all([getShareTemplates(), getShareProfiles()]);
@@ -164,9 +172,10 @@ export default async function DepeschenAdminPage({
                       <SharePanel title={r.title} textDe={r.share.textDe} textEn={r.share.textEn} profiles={shareProfiles} />{" "}
                     </>
                   ) : null}
-                  <Link className="btn ghost sm" href={`/admin/depeschen/bearbeiten?id=${r.id}`}>Bearbeiten</Link>{" "}
+                  <Link className="btn ghost sm" href={editHref("/admin/depeschen/bearbeiten", r.id, listHref)}>Bearbeiten</Link>{" "}
                   <form action={deleteDispatch} style={{ display: "inline" }}>
                     <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name={RETURN_PARAM} value={listHref} />
                     <ConfirmButton confirmText={`„${r.title}" wirklich löschen?`}>Löschen</ConfirmButton>
                   </form>
                 </td>

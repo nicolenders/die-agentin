@@ -7,6 +7,7 @@ import Flash from "@/components/admin/Flash";
 import MissionVideos, { type LinkedVideo } from "@/components/admin/MissionVideos";
 import { extractYouTubeId, youtubeWatchUrl } from "@/lib/video/youtube";
 import { recordingWorthImporting, type VideoChoice } from "@/lib/video/mission-videos";
+import { safeReturnTo } from "@/lib/admin/return-to";
 import { addMissionVideo, linkMissionVideo, unlinkMissionVideo } from "../actions";
 
 export const metadata = { title: "Einsatz bearbeiten · Zentrale" };
@@ -29,9 +30,11 @@ function coSpeakersToText(json: string | null): string {
 export default async function EinsatzBearbeitenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; ok?: string; err?: string }>;
+  searchParams: Promise<{ id?: string; ok?: string; err?: string; zurueck?: string }>;
 }) {
-  const { id, ok, err } = await searchParams;
+  const { id, ok, err, zurueck } = await searchParams;
+  // Wer aus einer gefilterten Liste kam, kommt auch dorthin zurück.
+  const backToList = safeReturnTo(zurueck, "/admin/einsaetze");
 
   let existingPins: { lat: number; lon: number }[] = [];
   let talks: {
@@ -210,7 +213,7 @@ export default async function EinsatzBearbeitenPage({
   return (
     <>
       <div style={{ marginBottom: 12 }}>
-        <Link className="btn ghost sm" href="/admin/einsaetze">← Zurück zur Liste</Link>
+        <Link className="btn ghost sm" href={backToList}>← Zurück zur Liste</Link>
       </div>
       <Flash ok={ok} err={err} />
       {/* Der Video-Bereich wird der Maske als fertiger Baustein übergeben und
@@ -226,6 +229,7 @@ export default async function EinsatzBearbeitenPage({
         categories={categories}
         allTools={allTools}
         isEdit={Boolean(id)}
+        backToList={backToList}
         videos={
           <MissionVideos
             missionId={id ?? null}

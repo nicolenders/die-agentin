@@ -10,6 +10,7 @@ import { assetUrl } from "@/lib/media/url";
 import { identityDisplayName } from "@/lib/identities";
 import { utcToBerlinLocal } from "@/lib/time";
 import { DISPATCH_FORMATS, CONTENT_STATUSES } from "@/lib/domain";
+import { RETURN_PARAM, safeReturnTo } from "@/lib/admin/return-to";
 import {
   createDispatch,
   createFocusTopicInline,
@@ -22,9 +23,11 @@ export const metadata = { title: "Depesche bearbeiten · Zentrale" };
 export default async function DispatchEditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; ok?: string; err?: string }>;
+  searchParams: Promise<{ id?: string; ok?: string; err?: string; zurueck?: string }>;
 }) {
-  const { id, ok, err } = await searchParams;
+  const { id, ok, err, zurueck } = await searchParams;
+  // Wer aus einer gefilterten Liste kam, kommt auch dorthin zurück.
+  const backToList = safeReturnTo(zurueck, "/admin/depeschen");
 
   const [identities, topics, focusTopics, dispatch] = await Promise.all([
     db.identity.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -157,11 +160,14 @@ export default async function DispatchEditPage({
 
   return (
     <section>
-      <p className="meta"><Link href="/admin/depeschen">← Alle Depeschen</Link></p>
+      <p className="meta"><Link href={backToList}>← Alle Depeschen</Link></p>
       <h1>{isNew ? "Neue Depesche" : de?.title || "Depesche"}</h1>
       <Flash ok={ok} err={err} />
       <form action={action} style={{ marginTop: 16 }}>
         {id ? <input type="hidden" name="id" value={id} /> : null}
+        {/* Der Rückweg überlebt das Speichern: die Maske bleibt stehen, der
+            Link „Alle Depeschen" führt danach weiter in die gefilterte Liste. */}
+        <input type="hidden" name={RETURN_PARAM} value={backToList} />
         <div className="card bracket"><FormTabs tabs={tabs} /></div>
         <div style={{ marginTop: 18, display: "flex", gap: 12, alignItems: "center" }}>
           <button className="btn solid" type="submit">{isNew ? "Anlegen" : "Speichern"}</button>

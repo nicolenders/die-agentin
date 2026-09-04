@@ -136,6 +136,12 @@ export default async function EinsaetzePage({
             openFile: isDe ? "Einsatzakte öffnen" : "Open mission file",
             online: isDe ? "Online" : "Online",
             showOnMap: isDe ? "Auf der Karte" : "On the map",
+            galleryPrev: isDe ? "Voriger Einsatz an diesem Ort" : "Previous mission at this location",
+            galleryNext: isDe ? "Nächster Einsatz an diesem Ort" : "Next mission at this location",
+            galleryLabel: isDe ? "Einsätze an diesem Ort" : "Missions at this location",
+            galleryPosition: isDe
+              ? "Einsatz {n} von {total} an diesem Ort"
+              : "Mission {n} of {total} at this location",
           },
         }}
       />

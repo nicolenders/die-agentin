@@ -11,6 +11,7 @@ import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import Flash from "@/components/admin/Flash";
 import SharePanel from "@/components/admin/SharePanel";
+import { RETURN_PARAM, editHref, withParams } from "@/lib/admin/return-to";
 import {
   createTalkCategory,
   renameTalkCategory,
@@ -123,6 +124,15 @@ export default async function BriefingsAdminPage({
     return true;
   });
 
+  // Die Ansicht, in der Nicole gerade steht — Tab und Filter. Sie reist mit in
+  // die Maske und bringt sie beim Zurückgehen wieder in genau diese Liste.
+  const listHref = withParams("/admin/briefings", {
+    tab: active,
+    q: q?.trim() || undefined,
+    kategorie: categoryFilter || undefined,
+    sichtbar: visibilityFilter || undefined,
+  });
+
   const ranking =
     active === "auswertung"
       ? await getBriefingRanking("de", {
@@ -200,11 +210,13 @@ export default async function BriefingsAdminPage({
                       <td style={{ whiteSpace: "nowrap" }}>
                         <form action={reorderTalk} style={{ display: "inline" }}>
                           <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name={RETURN_PARAM} value={listHref} />
                           <input type="hidden" name="dir" value="up" />
                           <button className="btn ghost sm" type="submit" aria-label="Nach oben" disabled={i === 0}>↑</button>
                         </form>{" "}
                         <form action={reorderTalk} style={{ display: "inline" }}>
                           <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name={RETURN_PARAM} value={listHref} />
                           <input type="hidden" name="dir" value="down" />
                           <button className="btn ghost sm" type="submit" aria-label="Nach unten" disabled={i === talks.length - 1}>↓</button>
                         </form>
@@ -221,6 +233,7 @@ export default async function BriefingsAdminPage({
                         ) : (
                           <form action={toggleTalkVisibility} style={{ display: "inline" }}>
                             <input type="hidden" name="id" value={t.id} />
+                            <input type="hidden" name={RETURN_PARAM} value={listHref} />
                             <button className="btn ghost sm" type="submit" title="Sichtbarkeit auf der Website umschalten">
                               {t.active ? "Sichtbar ✓" : "Verborgen"}
                             </button>
@@ -233,15 +246,17 @@ export default async function BriefingsAdminPage({
                             <SharePanel title={t.title} textDe={t.share.textDe} textEn={t.share.textEn} profiles={shareProfiles} />{" "}
                           </>
                         ) : null}
-                        <Link className="btn ghost sm" href={`/admin/briefings/bearbeiten?id=${t.id}`}>Bearbeiten</Link>{" "}
+                        <Link className="btn ghost sm" href={editHref("/admin/briefings/bearbeiten", t.id, listHref)}>Bearbeiten</Link>{" "}
                         <form action={toggleTalkArchive} style={{ display: "inline" }}>
                           <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name={RETURN_PARAM} value={listHref} />
                           <button className="btn ghost sm" type="submit">
                             {t.archivedAt ? "Zurückholen" : "Archivieren"}
                           </button>
                         </form>{" "}
                         <form action={deleteTalk} style={{ display: "inline" }}>
                           <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name={RETURN_PARAM} value={listHref} />
                           <ConfirmButton confirmText={`Briefing „${t.title}“ wirklich löschen? Auch die Einsatz-Zählung geht verloren.`}>Löschen</ConfirmButton>
                         </form>
                       </td>

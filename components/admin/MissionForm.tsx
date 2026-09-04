@@ -4,6 +4,7 @@ import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { computeGeo, project } from "@/lib/map/geo";
 import { MISSION_STATUSES, SESSION_TYPES } from "@/lib/domain";
+import { withParams } from "@/lib/admin/return-to";
 import MediaPicker, { type MediaItem } from "@/components/admin/editor/MediaPicker";
 import RichTextField from "@/components/admin/editor/RichTextField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
@@ -85,8 +86,11 @@ export default function MissionForm({
   allTools = [],
   isEdit = false,
   videos,
+  backToList = "/admin/einsaetze",
 }: {
   initial: MissionFormInitial;
+  /** Liste, in die nach dem Speichern zurückgekehrt wird — samt gesetzter Filter. */
+  backToList?: string;
   existingPins: { lat: number; lon: number }[];
   // `titles`: Titel je Sprache — welcher im Dropdown steht, hängt an der
   // gewählten Vortragssprache. `durationMin`: Vorgabe des Briefings, im Einsatz
@@ -291,7 +295,9 @@ export default function MissionForm({
       // Zurück zur Liste — mit sichtbarer Rückmeldung. Verhindert zugleich das
       // versehentliche Doppelt-Anlegen bei erneutem Klick auf „Speichern".
       router.push(
-        `/admin/einsaetze?ok=${intent === "publish" ? "published" : intent === "archive" ? "archived" : "saved"}`,
+        withParams(backToList, {
+          ok: intent === "publish" ? "published" : intent === "archive" ? "archived" : "saved",
+        }),
       );
       return;
     }

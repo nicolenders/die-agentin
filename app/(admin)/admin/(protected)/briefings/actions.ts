@@ -10,12 +10,22 @@ import { planTalkMerge } from "@/lib/briefings/merge";
 import { isLocale } from "@/lib/i18n/config";
 import { deleteMedia } from "@/lib/media/storage";
 import { toAttachmentKind } from "@/lib/briefings/attachments";
+import { RETURN_PARAM, safeReturnTo, withParams } from "@/lib/admin/return-to";
 
 // Verwaltung des Vortragsrepertoires (SPEC §6/M6). Kategorien und Briefings sind
 // vom Nutzer pflegbar (anlegen, bearbeiten, löschen). Formulare nutzen
 // FormData-Server-Actions (ohne JS bedienbar) und geben sichtbares Feedback.
 
 const LIST = "/admin/briefings";
+
+/**
+ * Die gefilterte Listenansicht, aus der die Aktion ausgelöst wurde (Tab, Suche,
+ * Kategorie, Sichtbarkeit). Ohne sie landet jeder Klick wieder in der
+ * ungefilterten Gesamtliste — und die Auswahl ist beim nächsten Handgriff weg.
+ */
+function listFrom(formData: FormData): string {
+  return safeReturnTo(String(formData.get(RETURN_PARAM) ?? ""), LIST);
+}
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -140,6 +150,7 @@ export async function deleteTalkAudience(formData: FormData): Promise<void> {
 
 export async function createTalk(formData: FormData): Promise<void> {
   await requireAdmin();
+  const list = listFrom(formData);
   const deTitle = str(formData, "deTitle");
   const enTitle = str(formData, "enTitle");
   const deAbstract = serializeRichValue(str(formData, "deAbstract"));
@@ -150,7 +161,7 @@ export async function createTalk(formData: FormData): Promise<void> {
   const level = str(formData, "level") || null;
   const durationRaw = str(formData, "durationMin");
   const durationMin = durationRaw ? Number(durationRaw) : null;
-  if (!deTitle || categoryIds.length === 0) redirect(`${LIST}?err=missing-fields`);
+  if (!deTitle || categoryIds.length === 0) redirect(withParams(list, { err: "missing-fields" }));
 
   let failed = false;
   try {
@@ -175,9 +186,9 @@ export async function createTalk(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(withParams(list, { err: "failed" }));
   invalidate();
-  redirect(`${LIST}?ok=created`);
+  redirect(withParams(list, { ok: "created" }));
 }
 
 /**
@@ -276,10 +287,13 @@ export async function deleteTalkAttachment(formData: FormData): Promise<void> {
 export async function updateTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  const list = listFrom(formData);
+  if (!id) redirect(withParams(list, { err: "not-found" }));
   const deTitle = str(formData, "deTitle");
   const categoryIds = ids(formData, "categoryIds");
-  if (!deTitle || categoryIds.length === 0) redirect(`${LIST}/bearbeiten?id=${id}&err=missing-fields`);
+  if (!deTitle || categoryIds.length === 0) {
+    redirect(withParams(`${LIST}/bearbeiten`, { id, [RETURN_PARAM]: list === LIST ? undefined : list, err: "missing-fields" }));
+  }
   const enTitle = str(formData, "enTitle");
   const deAbstract = serializeRichValue(str(formData, "deAbstract"));
   const enAbstract = serializeRichValue(str(formData, "enAbstract"));
@@ -328,9 +342,11 @@ export async function updateTalk(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}/bearbeiten?id=${id}&err=failed`);
+  if (failed) {
+    redirect(withParams(`${LIST}/bearbeiten`, { id, [RETURN_PARAM]: list === LIST ? undefined : list, err: "failed" }));
+  }
   invalidate();
-  redirect(`${LIST}?ok=updated`);
+  redirect(withParams(list, { ok: "updated" }));
 }
 
 export interface QuickTalkInput {
@@ -393,7 +409,8 @@ export async function createTalkQuick(input: QuickTalkInput): Promise<QuickTalkR
 export async function toggleTalkVisibility(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  const list = listFrom(formData);
+  if (!id) redirect(withParams(list, { err: "not-found" }));
   let failed = false;
   try {
     const current = await db.talk.findUnique({ where: { id }, select: { active: true } });
@@ -401,9 +418,9 @@ export async function toggleTalkVisibility(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(withParams(list, { err: "failed" }));
   invalidate();
-  redirect(`${LIST}?ok=toggled`);
+  redirect(withParams(list, { ok: "toggled" }));
 }
 
 /**
@@ -414,7 +431,8 @@ export async function toggleTalkVisibility(formData: FormData): Promise<void> {
 export async function toggleTalkArchive(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  const list = listFrom(formData);
+  if (!id) redirect(withParams(list, { err: "not-found" }));
   let failed = false;
   let archived = false;
   try {
@@ -431,9 +449,9 @@ export async function toggleTalkArchive(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(withParams(list, { err: "failed" }));
   invalidate();
-  redirect(`${LIST}?tab=alle&ok=${archived ? "archived" : "unarchived"}`);
+  redirect(withParams(list, { tab: "alle", ok: archived ? "archived" : "unarchived" }));
 }
 
 function startOfUtcDay(d: Date): Date {
@@ -445,7 +463,8 @@ export async function reorderTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
   const dir = str(formData, "dir");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  const list = listFrom(formData);
+  if (!id) redirect(withParams(list, { err: "not-found" }));
   try {
     const all = await db.talk.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
@@ -462,10 +481,10 @@ export async function reorderTalk(formData: FormData): Promise<void> {
       await db.$transaction(order.map((tid, i) => db.talk.update({ where: { id: tid }, data: { sortOrder: i } })));
     }
   } catch {
-    redirect(`${LIST}?err=failed`);
+    redirect(withParams(list, { err: "failed" }));
   }
   invalidate();
-  redirect(`${LIST}?ok=reordered`);
+  redirect(withParams(list, { ok: "reordered" }));
 }
 
 /**
@@ -595,7 +614,9 @@ export async function mergeTalkCategory(formData: FormData): Promise<void> {
 export async function deleteTalk(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  // Zurück in die Liste, aus der gelöscht wurde — mit ihren Filtern.
+  const list = listFrom(formData);
+  if (!id) redirect(withParams(list, { err: "not-found" }));
   let failed = false;
   try {
     // Übersetzungen und Vortragszählungen (TalkDelivery) hängen per Kaskade dran.
@@ -603,7 +624,7 @@ export async function deleteTalk(formData: FormData): Promise<void> {
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(withParams(list, { err: "failed" }));
   invalidate();
-  redirect(`${LIST}?ok=deleted`);
+  redirect(withParams(list, { ok: "deleted" }));
 }

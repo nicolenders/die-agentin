@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatDate } from "@/lib/format";
-import { CONTENT_STATUSES, isOneOf, type ContentStatus } from "@/lib/domain";
+import { type ContentStatus } from "@/lib/domain";
+import {
+  MISSION_LIST_STATUSES,
+  MISSION_LIST_STATUS_CLASS,
+  MISSION_LIST_STATUS_LABEL,
+  missionListStatus,
+  missionStatusWhere,
+  parseMissionListStatus,
+  type MissionListStatus,
+} from "@/lib/admin/mission-status";
 import ConfirmButton from "@/components/admin/ConfirmButton";
 import Flash from "@/components/admin/Flash";
 import SharePanel from "@/components/admin/SharePanel";
@@ -10,11 +19,14 @@ import { missionTalkLanguage, talkLanguageLabel } from "@/lib/mission-language";
 import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { DEFAULT_PAGE_SIZE, pageWindow, paginate, parsePage } from "@/lib/admin/pagination";
+import { RETURN_PARAM, editHref } from "@/lib/admin/return-to";
 import { deleteMission } from "./actions";
 
 export const metadata = { title: "Einsätze · Zentrale" };
 
-const STATUS: Record<ContentStatus, { label: string; cls: string }> = {
+// Veröffentlichung des Einsatzes — eine andere Frage als der Einsatzstatus:
+// hier geht es um die öffentliche Einsatzakte, dort um den Auftritt selbst.
+const PUBLICATION: Record<ContentStatus, { label: string; cls: string }> = {
   DRAFT: { label: "Entwurf", cls: "draft" },
   SCHEDULED: { label: "Eingeplant", cls: "sched" },
   PUBLISHED: { label: "Live", cls: "live" },
@@ -23,7 +35,8 @@ const STATUS: Record<ContentStatus, { label: string; cls: string }> = {
 
 interface Filter {
   q: string;
-  status: ContentStatus | "";
+  /** Einsatzstatus: geplant, abgeschlossen, abgesagt oder archiviert. */
+  status: MissionListStatus | "";
   ort: "" | "vorort" | "online";
   /** Jahr als Text; leer = alle Jahre. */
   jahr: string;
@@ -45,7 +58,7 @@ export default async function EinsaetzeAdminPage({
   const { ok, err, q, status, ort, jahr, seite } = await searchParams;
   const filter: Filter = {
     q: (q ?? "").trim(),
-    status: isOneOf(CONTENT_STATUSES, status ?? "") ? (status as ContentStatus) : "",
+    status: parseMissionListStatus(status),
     ort: ort === "online" || ort === "vorort" ? ort : "",
     jahr: /^\d{4}$/.test(jahr ?? "") ? (jahr as string) : "",
   };
@@ -83,6 +96,10 @@ export default async function EinsaetzeAdminPage({
     return `/admin/einsaetze${query ? `?${query}` : ""}`;
   };
 
+  // Die Ansicht, in der Nicole gerade steht — Filter und Seite. Sie reist mit
+  // in die Maske und bringt sie beim Zurückgehen wieder hierher zurück.
+  const listHref = pageHref(page.page);
+
   return (
     <section>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -103,8 +120,8 @@ export default async function EinsaetzeAdminPage({
           Status
           <select className="f" name="status" defaultValue={filter.status} style={{ minWidth: 150 }}>
             <option value="">Alle</option>
-            {CONTENT_STATUSES.map((s) => (
-              <option key={s} value={s}>{STATUS[s].label}</option>
+            {MISSION_LIST_STATUSES.map((s) => (
+              <option key={s} value={s}>{MISSION_LIST_STATUS_LABEL[s]}</option>
             ))}
           </select>
         </label>
@@ -163,6 +180,7 @@ export default async function EinsaetzeAdminPage({
               <th>Ort</th>
               <th>Datum</th>
               <th>Status</th>
+              <th>Veröffentlichung</th>
               <th>Akte</th>
               <th>Texte</th>
               <th></th>
@@ -170,7 +188,7 @@ export default async function EinsaetzeAdminPage({
           </thead>
           <tbody>
             {rows.map((m) => {
-              const st = STATUS[m.contentStatus] ?? STATUS.DRAFT;
+              const pub = PUBLICATION[m.contentStatus] ?? PUBLICATION.DRAFT;
               return (
                 <tr key={m.id}>
                   <td><b>{m.eventName}</b></td>
@@ -184,7 +202,8 @@ export default async function EinsaetzeAdminPage({
                   <td className="meta">{talkLanguageLabel(m.language, "de") ?? "—"}</td>
                   <td className="meta">{m.isOnline ? "Online" : `${m.city}${m.countryCode ? `, ${m.countryCode}` : ""}`}</td>
                   <td className="meta">{formatDate(m.startDate, "de")}</td>
-                  <td><span className={`st ${st.cls}`}>{st.label}</span></td>
+                  <td><span className={`st ${MISSION_LIST_STATUS_CLASS[m.status]}`}>{MISSION_LIST_STATUS_LABEL[m.status]}</span></td>
+                  <td><span className={`st ${pub.cls}`}>{pub.label}</span></td>
                   <td>{m.caseFilePublic ? <span className="st live">Sichtbar</span> : <span className="st">Verborgen</span>}</td>
                   <td>
                     <span className={`lng ${m.hasDe ? "on" : ""}`}>DE</span>{" "}
@@ -196,9 +215,10 @@ export default async function EinsaetzeAdminPage({
                         <SharePanel title={m.eventName} textDe={m.share.textDe} textEn={m.share.textEn} profiles={shareProfiles} />{" "}
                       </>
                     ) : null}
-                    <Link className="btn ghost sm" href={`/admin/einsaetze/bearbeiten?id=${m.id}`}>Bearbeiten</Link>{" "}
+                    <Link className="btn ghost sm" href={editHref("/admin/einsaetze/bearbeiten", m.id, listHref)}>Bearbeiten</Link>{" "}
                     <form action={deleteMission} style={{ display: "inline" }}>
                       <input type="hidden" name="id" value={m.id} />
+                      <input type="hidden" name={RETURN_PARAM} value={listHref} />
                       <ConfirmButton confirmText={`Einsatz „${m.eventName}" wirklich löschen?`}>Löschen</ConfirmButton>
                     </form>
                   </td>
@@ -246,7 +266,7 @@ async function load(
 ) {
   const year = filter.jahr ? Number(filter.jahr) : null;
   const where = {
-      ...(filter.status ? { contentStatus: filter.status } : {}),
+      ...missionStatusWhere(filter.status),
       ...(filter.ort === "online" ? { isOnline: true } : filter.ort === "vorort" ? { isOnline: false } : {}),
       ...(year !== null
         ? {
@@ -337,6 +357,7 @@ async function load(
       caseFilePublic: m.caseFilePublic,
       startDate: m.startDate,
       contentStatus: m.contentStatus as ContentStatus,
+      status: missionListStatus(m.status, m.contentStatus),
       talk: delivery ? { id: delivery.talkId, title: delivery.talk.translations[0]?.title ?? "(ohne Titel)" } : null,
       language: missionTalkLanguage(m.sessionLanguage, delivery?.language),
       hasDe: m.translations.some((t) => t.locale === "de"),

@@ -9,9 +9,20 @@ import { berlinLocalToUtc } from "@/lib/time";
 import { DISPATCH_FORMATS, CONTENT_STATUSES, isOneOf } from "@/lib/domain";
 import { FOCUS_TAG } from "@/lib/queries/records";
 import { checkName, findByName, type InlineCreateResult } from "@/lib/admin/inline-create";
+import { RETURN_PARAM, safeReturnTo, withParams } from "@/lib/admin/return-to";
 
 const LIST = "/admin/depeschen";
 const EDIT = `${LIST}/bearbeiten`;
+
+/** Die gefilterte Liste, aus der die Maske geöffnet wurde. */
+function listFrom(formData: FormData): string {
+  return safeReturnTo(String(formData.get(RETURN_PARAM) ?? ""), LIST);
+}
+
+/** Rückweg in die Maske, der die gefilterte Liste weiterträgt. */
+function editHrefWithReturn(id: string | null, list: string): string {
+  return withParams(EDIT, { id: id ?? undefined, [RETURN_PARAM]: list === LIST ? undefined : list });
+}
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -90,9 +101,12 @@ function translations(formData: FormData, format: string): TransInput[] {
 
 export async function createDispatch(formData: FormData): Promise<void> {
   await requireAdmin();
+  const list = listFrom(formData);
   const c = commonData(formData);
   const trans = translations(formData, c.format);
-  if (trans.length === 0 || trans[0]!.locale !== "de") redirect(`${EDIT}?err=missing-fields`);
+  if (trans.length === 0 || trans[0]!.locale !== "de") {
+    redirect(withParams(editHrefWithReturn(null, list), { err: "missing-fields" }));
+  }
 
   let newId: string | null = null;
   try {
@@ -109,19 +123,22 @@ export async function createDispatch(formData: FormData): Promise<void> {
     });
     newId = created.id;
   } catch {
-    redirect(`${EDIT}?err=failed`);
+    redirect(withParams(editHrefWithReturn(null, list), { err: "failed" }));
   }
   invalidate();
-  redirect(`${EDIT}?id=${newId}&ok=created`);
+  redirect(withParams(editHrefWithReturn(newId, list), { ok: "created" }));
 }
 
 export async function updateDispatch(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  const list = listFrom(formData);
+  if (!id) redirect(withParams(list, { err: "not-found" }));
   const c = commonData(formData);
   const trans = translations(formData, c.format);
-  if (trans.length === 0 || trans[0]!.locale !== "de") redirect(`${EDIT}?id=${id}&err=missing-fields`);
+  if (trans.length === 0 || trans[0]!.locale !== "de") {
+    redirect(withParams(editHrefWithReturn(id, list), { err: "missing-fields" }));
+  }
 
   // Wird der Termin verschoben, gilt die Erinnerung als verbraucht: sie wird
   // zurückgesetzt, damit der NEUE Termin wieder erinnert wird.
@@ -150,25 +167,27 @@ export async function updateDispatch(formData: FormData): Promise<void> {
       db.dispatchTranslation.createMany({ data: trans.map((t) => ({ ...t, dispatchId: id, state: "REVIEWED" })) }),
     ]);
   } catch {
-    redirect(`${EDIT}?id=${id}&err=failed`);
+    redirect(withParams(editHrefWithReturn(id, list), { err: "failed" }));
   }
   invalidate();
-  redirect(`${EDIT}?id=${id}&ok=updated`);
+  redirect(withParams(editHrefWithReturn(id, list), { ok: "updated" }));
 }
 
 export async function deleteDispatch(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = str(formData, "id");
-  if (!id) redirect(`${LIST}?err=not-found`);
+  // Zurück in die Liste, aus der gelöscht wurde — mit ihren Filtern.
+  const list = listFrom(formData);
+  if (!id) redirect(withParams(list, { err: "not-found" }));
   let failed = false;
   try {
     await db.dispatch.delete({ where: { id } });
   } catch {
     failed = true;
   }
-  if (failed) redirect(`${LIST}?err=failed`);
+  if (failed) redirect(withParams(list, { err: "failed" }));
   invalidate();
-  redirect(`${LIST}?ok=deleted`);
+  redirect(withParams(list, { ok: "deleted" }));
 }
 
 // ---------------------------------------------------------------------------

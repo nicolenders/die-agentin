@@ -89,6 +89,10 @@ export interface ExplorerLabels {
     online: string;
     duration: string;
     showOnMap: string;
+    galleryPrev: string;
+    galleryNext: string;
+    galleryLabel: string;
+    galleryPosition: string;
   };
 }
 
@@ -299,6 +303,7 @@ export default function MissionExplorer({
     year: m.year,
     future: m.future,
     isOnline: m.isOnline,
+    startDay: m.startDay,
     dateLabel: m.dateLabel,
     eventUrl: m.eventUrl,
     published: m.published,

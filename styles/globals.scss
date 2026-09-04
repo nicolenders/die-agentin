@@ -1933,6 +1933,47 @@ a.radar-chip:focus-visible {
   display: inline-block;
   flex-shrink: 0;
 }
+// Galerie: mehrere Einsätze am selben Ort teilen sich einen Kartenpunkt. Die
+// Pfeile sitzen links und rechts im Dialog, die Position steht dazwischen.
+.popup-gallery {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  // Wie die Buttons: immer unten, auch bei kurzem Inhalt.
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+// Steht die Galerie darüber, hat sie den freien Platz schon aufgebraucht.
+.popup-gallery + .popup-actions {
+  margin-top: 0;
+  padding-top: 8px;
+}
+.popup-gallery-arrow {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.popup-gallery-arrow:hover {
+  border-color: var(--violet);
+  color: var(--violet-text, var(--text));
+}
+.popup-gallery-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
 .popup-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2007,6 +2048,15 @@ a.radar-chip:focus-visible {
   .popup-actions {
     margin-top: auto;
     padding-top: 16px;
+  }
+  // Am Telefon wird mit dem Daumen getroffen: größere Pfeilflächen.
+  .popup-gallery-arrow {
+    width: 44px;
+    height: 44px;
+    font-size: 26px;
+  }
+  .popup-gallery-count {
+    font-size: 11px;
   }
 }
 .map-legend {

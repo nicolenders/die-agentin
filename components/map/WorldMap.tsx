@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { computeGeo, project } from "@/lib/map/geo";
 import { inBounds, type MapViewDef } from "@/lib/map/views";
+import { missionsAtSameLocation, stepIndex } from "@/lib/map/location-group";
 import AssetImage from "@/components/media/AssetImage";
 import { talkLanguageLabel } from "@/lib/mission-language";
 import { formatDuration } from "@/lib/format";
@@ -23,6 +24,8 @@ export interface MapMission {
   year: number;
   future: boolean;
   isOnline: boolean;
+  /** Tag des Einsatzes als `YYYY-MM-DD` — Sortierschlüssel der Ortsgalerie. */
+  startDay: string;
   dateLabel: string;
   eventUrl: string | null;
   published: boolean;
@@ -69,29 +72,17 @@ export default function WorldMap({
     duration: string;
     aiGenerated: string;
     aiGeneratedImage: string;
+    /** Beschriftung der Pfeile in der Ortsgalerie. */
+    galleryPrev: string;
+    galleryNext: string;
+    /** Gruppenname der Galerie-Navigation. */
+    galleryLabel: string;
+    /** Vorlage für die Position, mit `{n}` und `{total}`. */
+    galleryPosition: string;
   };
 }) {
   const selected = missions.find((m) => m.id === selectedId) ?? null;
   const select = (id: string | null) => onSelect?.(id);
-
-  // Das Popup ist am Telefon bildschirmfüllend (siehe Stylesheet). Solange es
-  // offen ist, bleibt die Seite darunter stehen — sonst scrollt beim Wischen im
-  // Popup unbemerkt die Seite weiter, und nach dem Schließen ist man woanders.
-  // Escape schließt es, wie es sich für einen Dialog gehört.
-  useEffect(() => {
-    if (!selected) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onSelect?.(null);
-    };
-    document.addEventListener("keydown", onKey);
-    const phone = window.matchMedia("(max-width: 640px)").matches;
-    const previous = document.body.style.overflow;
-    if (phone) document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      if (phone) document.body.style.overflow = previous;
-    };
-  }, [selected, onSelect]);
 
   // Die Ansicht (Welt/Kontinente/DACH) wird außerhalb gewählt: sie filtert dort
   // auch die Einsatzliste, damit Karte und Liste dasselbe zeigen. Hier bestimmt
@@ -106,7 +97,75 @@ export default function WorldMap({
 
   // Jahresfilter ist jetzt server-seitig (Phase 8.4). Die Karte zeigt genau die
   // übergebenen Einsätze, nur eingeschränkt durch die gewählte Ansicht (Bounds).
-  const visible = missions.filter((m) => inBounds(activeBounds, m.lon, m.lat));
+  const visible = useMemo(
+    () => missions.filter((m) => inBounds(activeBounds, m.lon, m.lat)),
+    [missions, activeBounds],
+  );
+
+  // Mehrere Einsätze am selben Ort liegen auf der Karte als ein Punkt
+  // übereinander — anklickbar wäre sonst nur der zuletzt gezeichnete. Das Popup
+  // zeigt deshalb den gewählten Einsatz und führt über Pfeile endlos durch die
+  // übrigen desselben Ortes, neuester zuerst.
+  const gallery = useMemo(() => {
+    if (!selected) return [] as MapMission[];
+    const group = missionsAtSameLocation(visible, selected.id);
+    // Liegt der gewählte Einsatz außerhalb des Ausschnitts, bleibt es bei ihm.
+    return group.length > 0 ? group : [selected];
+  }, [visible, selected]);
+  const galleryIndex = selected ? gallery.findIndex((m) => m.id === selected.id) : -1;
+  const inGallery = gallery.length > 1 && galleryIndex >= 0;
+
+  /** Einen Schritt durch die Ortsgalerie — hinter dem letzten kommt der erste. */
+  const stepGallery = (delta: number) => {
+    if (!inGallery) return;
+    const next = gallery[stepIndex(galleryIndex, delta, gallery.length)];
+    if (next) select(next.id);
+  };
+
+  // Beim Wechsel innerhalb der Galerie oben anfangen: sonst steht das Popup
+  // mitten im nächsten Einsatz, weil die Scrollposition des vorigen bleibt.
+  const popupRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    popupRef.current?.scrollTo({ top: 0 });
+  }, [selectedId]);
+
+  // Das Popup ist am Telefon bildschirmfüllend (siehe Stylesheet). Solange es
+  // offen ist, bleibt die Seite darunter stehen — sonst scrollt beim Wischen im
+  // Popup unbemerkt die Seite weiter, und nach dem Schließen ist man woanders.
+  const open = selected !== null;
+  useEffect(() => {
+    if (!open) return;
+    const phone = window.matchMedia("(max-width: 640px)").matches;
+    if (!phone) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  // Escape schließt das Popup, wie es sich für einen Dialog gehört; die
+  // Pfeiltasten blättern durch die Einsätze am selben Ort.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onSelect?.(null);
+        return;
+      }
+      if (!inGallery) return;
+      const delta = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+      if (delta === 0) return;
+      // In Eingabefeldern nicht kapern — dort bewegen Pfeiltasten den Cursor.
+      const target = event.target;
+      if (target instanceof Element && target.closest("input, textarea, select, [contenteditable]")) return;
+      event.preventDefault();
+      const next = gallery[stepIndex(galleryIndex, delta, gallery.length)];
+      if (next) onSelect?.(next.id);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onSelect, inGallery, gallery, galleryIndex]);
 
   return (
     <div>
@@ -154,7 +213,13 @@ export default function WorldMap({
           ? (() => {
               const language = talkLanguageLabel(selected.language, locale);
               return (
-                <div className="popup" role="dialog" aria-modal="true" aria-label={selected.eventName}>
+                <div
+                  className="popup"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={selected.eventName}
+                  ref={popupRef}
+                >
                   <button className="close" aria-label={locale === "de" ? "Schließen" : "Close"} onClick={() => select(null)}>
                     ×
                   </button>
@@ -216,6 +281,42 @@ export default function WorldMap({
                           </Link>
                         ))}
                       </span>
+                    </div>
+                  ) : null}
+
+                  {/* Galerie über alle Einsätze an diesem Ort. Ohne sie wäre bei
+                      mehreren Einsätzen an derselben Adresse nur der oberste
+                      Punkt erreichbar — die darunter liegenden gäbe es für den
+                      Betrachter nicht. Endlos: hinter dem letzten kommt der erste. */}
+                  {inGallery ? (
+                    <div className="popup-gallery" role="group" aria-label={labels.galleryLabel}>
+                      <button
+                        type="button"
+                        className="popup-gallery-arrow"
+                        aria-label={labels.galleryPrev}
+                        title={labels.galleryPrev}
+                        onClick={() => stepGallery(-1)}
+                      >
+                        <span aria-hidden>‹</span>
+                      </button>
+                      <span
+                        className="popup-gallery-count"
+                        aria-live="polite"
+                        aria-label={labels.galleryPosition
+                          .replace("{n}", String(galleryIndex + 1))
+                          .replace("{total}", String(gallery.length))}
+                      >
+                        {galleryIndex + 1} / {gallery.length}
+                      </span>
+                      <button
+                        type="button"
+                        className="popup-gallery-arrow"
+                        aria-label={labels.galleryNext}
+                        title={labels.galleryNext}
+                        onClick={() => stepGallery(1)}
+                      >
+                        <span aria-hidden>›</span>
+                      </button>
                     </div>
                   ) : null}
 

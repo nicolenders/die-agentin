@@ -7,6 +7,7 @@ import { rankRelatedBriefings } from "@/lib/related-briefings";
 import TalkSlidesManager from "@/components/admin/TalkSlidesManager";
 import TalkAttachments from "@/components/admin/TalkAttachments";
 import { getSlideTemplates } from "@/lib/queries/settings";
+import { RETURN_PARAM, safeReturnTo } from "@/lib/admin/return-to";
 import {
   createTalk,
   updateTalk,
@@ -20,9 +21,11 @@ export const metadata = { title: "Briefing bearbeiten · Zentrale" };
 export default async function BriefingEditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; err?: string; ok?: string }>;
+  searchParams: Promise<{ id?: string; err?: string; ok?: string; zurueck?: string }>;
 }) {
-  const { id, err, ok } = await searchParams;
+  const { id, err, ok, zurueck } = await searchParams;
+  // Wer aus einer gefilterten Liste kam, kommt auch dorthin zurück.
+  const backToList = safeReturnTo(zurueck, "/admin/briefings");
 
   const [cats, audiences, tools] = await Promise.all([
     db.taxonomy.findMany({
@@ -78,7 +81,7 @@ export default async function BriefingEditPage({
     return (
       <section>
         <div style={{ marginBottom: 12 }}>
-          <Link className="btn ghost sm" href="/admin/briefings">← Zurück</Link>
+          <Link className="btn ghost sm" href={backToList}>← Zurück</Link>
         </div>
         <p className="st">Briefing nicht gefunden.</p>
       </section>
@@ -109,7 +112,7 @@ export default async function BriefingEditPage({
   return (
     <section>
       <div style={{ marginBottom: 12 }}>
-        <Link className="btn ghost sm" href="/admin/briefings">← Zurück zur Liste</Link>
+        <Link className="btn ghost sm" href={backToList}>← Zurück zur Liste</Link>
       </div>
       <MaskBar title={isEdit ? "Briefing bearbeiten" : "Neues Briefing"} ok={ok} err={err}>
         <button className="btn solid sm" type="submit" form="talk-form">
@@ -121,6 +124,9 @@ export default async function BriefingEditPage({
           die halbe Seitenlänge gegenüber einem einspaltigen Endlosformular. */}
       <form action={isEdit ? updateTalk : createTalk} id="talk-form" className="form-2col" style={{ marginTop: 16 }}>
         {talk ? <input type="hidden" name="id" value={talk.id} /> : null}
+        {/* Der Rückweg reist mit: nach dem Speichern landet man wieder in der
+            gefilterten Liste, nicht in der vollständigen. */}
+        <input type="hidden" name={RETURN_PARAM} value={backToList} />
 
         <div className="card bracket">
           <p className="eyebrow" style={{ marginTop: 0 }}>Titel und Inhalt</p>

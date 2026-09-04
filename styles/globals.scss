@@ -801,6 +801,69 @@ h1.as-h2 {
   line-height: 1;
   cursor: pointer;
 }
+// Blättern in der Großansicht: die Galerie ist eine Reihe, keine Sammlung von
+// Einzelbildern. Ohne Pfeile müsste man für jedes Bild schließen und neu
+// öffnen. Die Pfeiltasten tun dasselbe.
+.lightbox-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(5, 1, 13, 0.55);
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(3px);
+}
+.lightbox-nav:hover {
+  border-color: var(--violet);
+  background: rgba(5, 1, 13, 0.8);
+}
+.lightbox-nav.prev {
+  left: 16px;
+}
+.lightbox-nav.next {
+  right: 16px;
+}
+// Zählwerk unter der Bildunterschrift — sagt, wo man in der Reihe steht.
+.lightbox-count {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+// Am Telefon liegen die Pfeile unten nebeneinander: an der Seite wären sie mit
+// dem Daumen kaum zu treffen und lägen über dem Bild.
+@media (max-width: 640px) {
+  .lightbox {
+    padding: 16px 12px 92px;
+  }
+  .lightbox-nav {
+    top: auto;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    transform: none;
+    width: 56px;
+    height: 56px;
+  }
+  .lightbox-nav.prev {
+    left: calc(50% - 68px);
+  }
+  .lightbox-nav.next {
+    right: calc(50% - 68px);
+  }
+  .lightbox-figure img {
+    max-height: 68vh;
+  }
+}
 
 // Kopfzeile der Bearbeiten-Masken: Titel links, Aktionen (Speichern) oben
 // rechts, Erfolgs-/Fehlermeldung in derselben Zeile links neben den Buttons.
@@ -1489,27 +1552,97 @@ ol.styled li::marker {
 }
 
 // Galerie
-.gallery {
+// Bildergalerie als justierte Zeilen (Mosaik). Jede Zeile füllt die Breite,
+// alle Bilder einer Zeile sind gleich hoch — Hoch- und Querformat mischen sich
+// ohne Löcher und ohne Anschnitt. Welche Bilder in welche Zeile gehören,
+// entscheidet `lib/media/justified.ts`; die Breiten verteilt hier Flexbox über
+// `flex-grow` im Verhältnis der Seitenverhältnisse. Die Höhe folgt daraus über
+// `aspect-ratio` an der Kachel — deshalb steht hier keine einzige Pixelhöhe.
+.mosaic {
   display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding: 6px 2px 16px;
-  scroll-snap-type: x mandatory;
+  flex-direction: column;
+  gap: 10px;
 }
-.gallery .galleryItem {
-  scroll-snap-align: start;
-  // Nicht auf die Höhe des höchsten Bildes strecken und die Mindestbreite am
-  // Bild selbst führen: Sonst ist der Kasten größer als das Bild, und der
-  // KI-Hinweis säße neben statt in der Bildecke.
-  align-self: start;
-}
-.gallery .galleryItem img {
-  min-width: 290px;
-}
-.galleryControls {
+.mosaic-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  // Muss zum GAP in components/content/Gallery.tsx passen: die Zeilenaufteilung
+  // rechnet mit diesem Abstand.
+  gap: 10px;
+  min-width: 0;
+}
+// Zeile, die nicht gestreckt wird: ein einzelnes Bild über die volle Breite
+// wäre eine Wand (ein Hochformat auf 880 px käme auf über 1000 px Höhe). Es
+// behält seine Höchsthöhe und steht mittig — links bündig sähe die Lücke
+// daneben nach Fehler aus, mittig sieht sie gewollt aus.
+.mosaic-row.short {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.mosaic-item {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--ink-3);
+  cursor: zoom-in;
+  // Der Rahmen liegt als Innenschatten über dem Bild: ein echter Rahmen würde
+  // die von Flexbox verteilte Breite verändern und die Zeile verrutschen.
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+  transition:
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+.mosaic-item > img {
+  width: 100%;
+  height: 100%;
+  // Die Kachel hat das Seitenverhältnis des Bildes — `cover` beschneidet hier
+  // also nichts, es fängt nur Rundungsreste an der Kante ab.
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+.mosaic-item:hover,
+.mosaic-item:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--violet),
+    0 10px 30px rgba(139, 92, 246, 0.28);
+  transform: translateY(-2px);
+}
+.mosaic-item:hover > img {
+  transform: scale(1.045);
+}
+.mosaic-item:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+// Platzhalter für ein fehlendes Bild bleibt eine Kachel derselben Größe.
+.mosaic-item.ph {
+  display: grid;
+  place-items: center;
+  cursor: default;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.mosaic-caption {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mosaic-item,
+  .mosaic-item > img {
+    transition: none;
+  }
+  .mosaic-item:hover {
+    transform: none;
+  }
+  .mosaic-item:hover > img {
+    transform: none;
+  }
 }
 
 // Video mit Consent (SPEC §8, §12.2)

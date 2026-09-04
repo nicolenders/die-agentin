@@ -3,6 +3,7 @@ import type { TiptapDoc, TiptapNode, TiptapMark } from "@/lib/content/schema";
 import type { AssetMap } from "@/lib/content/assets";
 import { slugify } from "@/lib/slug";
 import Gallery, { type GalleryImage } from "./Gallery";
+import { galleryLabels } from "@/lib/media/gallery-labels";
 import VideoConsent from "./VideoConsent";
 import AssetImage from "@/components/media/AssetImage";
 import { aiImageLabels } from "@/lib/media/ai-labels";
@@ -200,16 +201,20 @@ function renderNode(
       const images: GalleryImage[] = ids.map((id, i) => {
         const asset = ctx.assets[id];
         return asset
-          ? { url: asset.url, alt: asset.decorative ? "" : asset.alt, ai: asset.ai }
+          ? {
+              url: asset.url,
+              alt: asset.decorative ? "" : asset.alt,
+              ai: asset.ai,
+              width: asset.width,
+              height: asset.height,
+            }
           : { alt: `Bild ${i + 1}`, label: `Bild ${i + 1}` };
       });
       return (
         <Gallery
           key={key}
           images={images}
-          label={embedLabels(ctx.locale).imageGallery}
-          aiLabel={aiImageLabels(ctx.locale).aiGenerated}
-          aiTitle={aiImageLabels(ctx.locale).aiGeneratedImage}
+          labels={galleryLabels(ctx.locale)}
           caption={typeof node.attrs?.caption === "string" ? node.attrs.caption : undefined}
         />
       );

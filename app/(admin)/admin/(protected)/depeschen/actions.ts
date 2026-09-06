@@ -10,6 +10,7 @@ import { DISPATCH_FORMATS, CONTENT_STATUSES, isOneOf } from "@/lib/domain";
 import { FOCUS_TAG } from "@/lib/queries/records";
 import { checkName, findByName, type InlineCreateResult } from "@/lib/admin/inline-create";
 import { RETURN_PARAM, safeReturnTo, withParams } from "@/lib/admin/return-to";
+import { dispatchUrls, submitToIndexNow } from "@/lib/seo/indexnow";
 
 const LIST = "/admin/depeschen";
 const EDIT = `${LIST}/bearbeiten`;
@@ -35,6 +36,25 @@ function invalidate(): void {
   // Radar-Themen zeigen öffentlich die Anzahl verknüpfter Depeschen — deren
   // Cache muss beim Speichern einer Depesche mitgehen.
   invalidateTags([tags.dispatchList("de"), tags.dispatchList("en"), FOCUS_TAG]);
+}
+
+/**
+ * Meldet eine veröffentlichte Depesche an IndexNow.
+ *
+ * Nur bei `PUBLISHED`: einen Entwurf zu melden hieße, eine Suchmaschine auf eine
+ * Seite zu schicken, die es öffentlich nicht gibt. Der Aufruf steht vor dem
+ * `redirect()`, weil `redirect()` wirft und alles danach nicht mehr liefe. Er
+ * wirft selbst nie und ist nach vier Sekunden vorbei — das Speichern darf nicht
+ * daran hängen, ob eine Suchmaschine gerade erreichbar ist.
+ */
+async function announce(status: string, trans: TransInput[]): Promise<void> {
+  if (status !== "PUBLISHED") return;
+  await submitToIndexNow(
+    dispatchUrls({
+      de: trans.find((t) => t.locale === "de")?.slug ?? null,
+      en: trans.find((t) => t.locale === "en")?.slug ?? null,
+    }),
+  );
 }
 
 interface Common {
@@ -126,6 +146,7 @@ export async function createDispatch(formData: FormData): Promise<void> {
     redirect(withParams(editHrefWithReturn(null, list), { err: "failed" }));
   }
   invalidate();
+  await announce(c.status, trans);
   redirect(withParams(editHrefWithReturn(newId, list), { ok: "created" }));
 }
 
@@ -170,6 +191,7 @@ export async function updateDispatch(formData: FormData): Promise<void> {
     redirect(withParams(editHrefWithReturn(id, list), { err: "failed" }));
   }
   invalidate();
+  await announce(c.status, trans);
   redirect(withParams(editHrefWithReturn(id, list), { ok: "updated" }));
 }
 

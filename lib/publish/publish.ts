@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { invalidateTags, tags } from "@/lib/cache";
+import { dispatchUrls, submitToIndexNow } from "@/lib/seo/indexnow";
 
 // Veröffentlichung und Zeitsteuerung (SPEC §6). Der Job verarbeitet alles mit
 // status = SCHEDULED AND publishAt <= now. Idempotent: die Statusänderung läuft
@@ -94,6 +95,33 @@ async function publishDispatches(now: Date): Promise<string[]> {
   return published;
 }
 
+/**
+ * Meldet frisch veröffentlichte Depeschen an IndexNow.
+ *
+ * Terminierte Depeschen gehen ohne Zutun online; ohne diese Meldung erfährt eine
+ * Suchmaschine davon erst beim nächsten Crawl. Der Aufruf ist gutmütig: er wirft
+ * nie und blockiert die Veröffentlichung nicht.
+ */
+async function announcePublished(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  try {
+    const rows = await db.dispatchTranslation.findMany({
+      where: { dispatchId: { in: ids } },
+      select: { dispatchId: true, locale: true, slug: true },
+    });
+    const urls = new Set<string>();
+    for (const id of ids) {
+      const forId = rows.filter((r) => r.dispatchId === id);
+      const de = forId.find((r) => r.locale === "de")?.slug ?? null;
+      const en = forId.find((r) => r.locale === "en")?.slug ?? null;
+      for (const url of dispatchUrls({ de, en })) urls.add(url);
+    }
+    await submitToIndexNow([...urls]);
+  } catch {
+    // Die Meldung ist eine Abkürzung, kein Teil der Veröffentlichung.
+  }
+}
+
 export interface PublishResult {
   published: string[];
   publishedDispatches: string[];
@@ -146,6 +174,7 @@ export async function runScheduledPublish(now: Date = new Date()): Promise<Publi
       tags.dispatchList("en"),
       ...publishedDispatches.map((id) => tags.dispatch(id)),
     ]);
+    await announcePublished(publishedDispatches);
   }
 
   return { published, publishedDispatches };

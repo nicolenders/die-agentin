@@ -11,8 +11,23 @@ export const WEBSITE_ID = () => `${siteOrigin()}/#website`;
 
 export interface PersonInput {
   name: string;
+  /**
+   * Weitere Namen derselben Person — hier vor allem der Markenname „Die
+   * Agentin“. Ohne diese Eigenschaft gibt es im Markup keine Verbindung
+   * zwischen dem Personennamen und der Marke: eine Suchmaschine liest zwei
+   * unverbundene Zeichenketten. `alternateName` ist die Stelle, an der beides
+   * als eine Entität zusammenfällt.
+   */
+  alternateName: string[];
   jobTitle: string;
   description: string;
+  /**
+   * Abgrenzung gegen gleichnamige Entitäten. „Die Agentin“ ist im Deutschen ein
+   * Gattungsbegriff und zugleich der Titel eines Spielfilms von 2019 — beides
+   * belegt die Ergebnisliste. Dieses Feld sagt ausdrücklich, welche Entität hier
+   * gemeint ist, statt sich darauf zu verlassen, dass sie erraten wird.
+   */
+  disambiguatingDescription: string;
   sameAs: string[]; // Social/Profil-URLs
   knowsAbout: string[]; // Fachgebiete
   awards: string[];
@@ -25,8 +40,12 @@ export function personNode(p: PersonInput) {
     "@type": "Person",
     "@id": PERSON_ID(),
     name: p.name,
+    ...(p.alternateName.length ? { alternateName: p.alternateName } : {}),
     jobTitle: p.jobTitle,
     description: p.description,
+    ...(p.disambiguatingDescription
+      ? { disambiguatingDescription: p.disambiguatingDescription }
+      : {}),
     url: origin,
     ...(p.sameAs.length ? { sameAs: p.sameAs } : {}),
     ...(p.knowsAbout.length ? { knowsAbout: p.knowsAbout } : {}),
@@ -34,16 +53,41 @@ export function personNode(p: PersonInput) {
   };
 }
 
-/** WebSite-Knoten (`#website`), publisher → Person. */
-export function webSiteNode(name: string, locale: Locale) {
+/**
+ * WebSite-Knoten (`#website`), publisher → Person.
+ *
+ * `alternateName` ist hier kein Beiwerk: Der Wunschname „Die Agentin“ ist nicht
+ * eindeutig, und eine Suchmaschine, die ihn deshalb nicht vergibt, hat ohne
+ * Alternative gar nichts, worauf sie ausweichen kann — sie erfindet dann selbst
+ * einen Namen aus Titel und Domain. Die Liste steht in Präferenzreihenfolge.
+ */
+export function webSiteNode(name: string, locale: Locale, alternateName: string[] = []) {
   const origin = siteOrigin();
   return {
     "@type": "WebSite",
     "@id": WEBSITE_ID(),
     url: origin,
     name,
+    ...(alternateName.length ? { alternateName } : {}),
     inLanguage: locale === "de" ? "de-DE" : "en-US",
     publisher: { "@id": PERSON_ID() },
+  };
+}
+
+/**
+ * ProfilePage-Knoten für die Legende — die Seite, die die Person erklärt.
+ *
+ * Der Person-Knoten selbst liegt im Layout und gilt für die ganze Website. Was
+ * bisher fehlte, war die Aussage, welche Seite die maßgebliche Darstellung
+ * dieser Person ist. `mainEntity` zeigt über die stabile `@id` auf denselben
+ * Knoten, statt ihn zu wiederholen.
+ */
+export function profilePageNode(url: string, dateModified?: string | null) {
+  return {
+    "@type": "ProfilePage",
+    url,
+    mainEntity: { "@id": PERSON_ID() },
+    ...(dateModified ? { dateModified } : {}),
   };
 }
 

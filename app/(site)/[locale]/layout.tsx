@@ -15,6 +15,7 @@ import PageviewTracker from "@/components/analytics/PageviewTracker";
 import ScrollReset from "@/components/ScrollReset";
 import { getPersonInput } from "@/lib/queries/person";
 import { personNode, webSiteNode, graph } from "@/lib/seo/jsonld";
+import { SITE_ALTERNATE_NAMES } from "@/lib/brand";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -58,7 +59,10 @@ export async function generateMetadata({
       },
     },
     openGraph: {
-      siteName: "nicolenders.com",
+      // Der Markenname, nicht die Domain. `og:site_name` ist eines der Signale,
+      // aus denen Google den Site-Namen über dem Suchergebnis bildet; stand dort
+      // die Domain, konnte die Marke dort nie erscheinen.
+      siteName: dict.brand.name,
       locale: locale === "de" ? "de_DE" : "en_US",
       type: "website",
     },
@@ -81,7 +85,10 @@ export default async function LocaleLayout({
 
   // Site-weite strukturierte Daten (Phase 13.3): Person + WebSite.
   const person = await getPersonInput(typedLocale);
-  const siteJsonLd = graph([personNode(person), webSiteNode(dict.brand.name, typedLocale)]);
+  const siteJsonLd = graph([
+    personNode(person),
+    webSiteNode(dict.brand.name, typedLocale, SITE_ALTERNATE_NAMES),
+  ]);
 
   const navItems: HeaderNavItem[] = mainNav.map((item) => ({
     segment: item.segment,

@@ -43,3 +43,11 @@ export const brandViewport: Viewport = {
   ],
   colorScheme: "dark",
 };
+
+// Ausweichnamen der Website für `WebSite.alternateName` (JSON-LD).
+//
+// Der Wunschname ist „Die Agentin“. Der ist im Deutschen aber nicht eindeutig:
+// ein Gattungsbegriff, zugleich der Titel eines Spielfilms von 2019. Vergibt
+// eine Suchmaschine ihn deshalb nicht, braucht sie eine Alternative — sonst
+// bildet sie sich selbst eine aus Titel und Domain. Reihenfolge = Präferenz.
+export const SITE_ALTERNATE_NAMES = ["Nicole Enders", "nicolenders.com"];

@@ -17,6 +17,26 @@
   background-clip: text;
   color: transparent;
 }
+// Die Markenzeile über dem Hero-Titel. Sie sitzt im selben h1, ist aber kleiner
+// gesetzt — die Aussage bleibt der Titel. Der Verlauf von `.hero h1 span` (der
+// die Hervorhebung im redaktionellen Titel färbt) wird hier zurückgenommen,
+// sonst leuchtet die Markenzeile mit.
+.hero h1 .brandLine {
+  display: block;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--violet-text);
+  // Größe und Laufweite sind gegen den Eyebrow darüber abgestimmt: kleiner
+  // und weiter gesperrt las sich die Zeile wie ein zweiter Eyebrow statt wie
+  // der Auftakt der Überschrift.
+  font-size: clamp(19px, 2.4vw, 30px);
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  margin: 6px 0;
+}
 .roles {
   display: flex;
   flex-wrap: wrap;

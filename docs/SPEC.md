@@ -559,6 +559,7 @@ NEXT_PUBLIC_SITE_URL          # https://nicolenders.com
 BLOB_ACCOUNT_NAME
 BLOB_CONTAINER_MEDIA
 JOB_SHARED_SECRET             # schützt /api/jobs/run
+INDEXNOW_KEY                  # optional; leer = keine IndexNow-Meldungen
 LINKEDIN_CLIENT_ID
 LINKEDIN_CLIENT_SECRET
 FOUNDRY_ENDPOINT

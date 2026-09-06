@@ -7,6 +7,9 @@ import { getSocialLinks, getContactInfo } from "@/lib/queries/settings";
 import { getPublishedIdentities, getIdentityTools } from "@/lib/queries/identities";
 import { getRadarTopics } from "@/lib/queries/records";
 import { alternatesFor } from "@/lib/seo/alternates";
+import { profilePageNode, breadcrumbNode, graph } from "@/lib/seo/jsonld";
+import { canonicalUrl } from "@/lib/site";
+import JsonLd from "@/components/JsonLd";
 import RadarTopics from "@/components/records/RadarTopics";
 import { brandAsset } from "@/lib/brand-assets";
 import BrandImage from "@/components/BrandImage";
@@ -102,8 +105,21 @@ export default async function LegendePage({
         "From that follows the way I work: I am less interested in the demo than in the question behind it. What has to be in place for the technology to hold? Structure, permissions, governance, acceptance. A Copilot is only as good as the information architecture it sits on.",
       ];
 
+  // Die Legende ist die maßgebliche Darstellung der Person — hier steht, warum
+  // „Agentin“ zwei Bedeutungen hat. Der Person-Knoten selbst liegt im Layout und
+  // gilt für die ganze Website; `mainEntity` verweist über die stabile @id
+  // darauf, statt ihn zu wiederholen.
+  const jsonLd = graph([
+    profilePageNode(canonicalUrl(`/${locale}/legende`)),
+    breadcrumbNode([
+      { name: dict.nav.hq, url: canonicalUrl(`/${locale}`) },
+      { name: dict.nav.legende, url: canonicalUrl(`/${locale}/legende`) },
+    ]),
+  ]);
+
   return (
     <section style={{ padding: "44px 0 90px" }}>
+      <JsonLd json={jsonLd} />
       {/* Reihe 1: Kopf — links das Porträt, rechts Name/Lead/Kanäle und darunter
           die Mission (bündig mit dem Porträt). */}
       <div className={styles.heroRow}>

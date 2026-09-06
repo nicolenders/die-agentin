@@ -52,7 +52,12 @@
 .sigil {
   flex-shrink: 0;
 }
+/* Der Markenname steht im Dictionary in natürlicher Schreibweise („Die
+   Agentin“), weil derselbe String in <title>, og:site_name und JSON-LD geht.
+   Die Versalien sind eine Gestaltungsentscheidung und gehören deshalb hierher,
+   nicht in den Text. */
 .brandText b {
+  text-transform: uppercase;
   font-family: var(--display);
   font-weight: 800;
   letter-spacing: 0.13em;

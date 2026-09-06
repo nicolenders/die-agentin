@@ -2,8 +2,14 @@
 // Typ `Dictionary`; die englische Fassung muss dieselbe Form erfüllen.
 
 const de = {
+  // Der Markenname steht hier in natürlicher Schreibweise, nicht in Versalien.
+  // Sichtbar erscheint er weiterhin groß — das macht CSS (`text-transform`) in
+  // Kopf- und Fußzeile. Grund: derselbe String geht in <title>, og:site_name
+  // und die JSON-LD-Knoten. Suchmaschinen werten Versalien als Schreibweise des
+  // Namens und normalisieren sie in Ergebnislisten unterschiedlich; die
+  // natürliche Form ist das eindeutigere Signal.
   brand: {
-    name: "DIE AGENTIN",
+    name: "Die Agentin",
     domain: "NICOLENDERS.COM",
     tagline: "Microsoft AI & Modern Work. Keine losen Enden.",
   },
@@ -11,7 +17,7 @@ const de = {
   // ihre eigene Description; keine darf doppelt vorkommen, keine dynamischen
   // Zahlen (die veralten still im Suchergebnis), alle höchstens 155 Zeichen.
   meta: {
-    titleDefault: "Nicole Enders · DIE AGENTIN · Microsoft AI & Modern Work",
+    titleDefault: "Nicole Enders · Die Agentin · Microsoft AI & Modern Work",
     home: "Nicole Enders, Microsoft MVP seit 2020: Vorträge, Beratung und Umsetzung rund um Microsoft AI, Copilot Studio und Modern Work.",
     legende:
       "Wer hinter der Agentin steckt: Microsoft MVP seit 2020, Autorin, Speakerin. Mission, Arbeitsweise und das Codebuch zur Seite.",

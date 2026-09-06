@@ -88,7 +88,16 @@ export default async function HQPage({
                 {isDe ? "aktiv" : "active"}
               </span>
             </p>
-            <h1>{renderInlineFieldContent(parseRichValue(hero.headlineValue))}</h1>
+            {/* Die Marke steht als eigene Zeile in der H1, nicht im
+                redaktionell pflegbaren Titel. Grund: die H1 der Startseite ist
+                eines der Signale, aus denen Suchmaschinen den Namen einer Seite
+                bilden — bis hierher enthielt sie weder den Markennamen noch
+                Nicoles Namen. Als Teil des Rich-Text-Felds wäre die Zeile beim
+                nächsten Redigieren still verschwunden; hier ist sie strukturell. */}
+            <h1>
+              <span className={styles.brandLine}>{dict.brand.name}</span>
+              {renderInlineFieldContent(parseRichValue(hero.headlineValue))}
+            </h1>
             <p className="lead">{renderInlineFieldContent(parseRichValue(hero.leadValue))}</p>
             <div className={styles.roles}>
               {hero.roles.map((role) => (

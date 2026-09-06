@@ -5,12 +5,12 @@ import type { Dictionary } from "../index";
 
 const en: Dictionary = {
   brand: {
-    name: "DIE AGENTIN",
+    name: "Die Agentin",
     domain: "NICOLENDERS.COM",
     tagline: "Microsoft AI & Modern Work. No loose ends.",
   },
   meta: {
-    titleDefault: "Nicole Enders · DIE AGENTIN · Microsoft AI & Modern Work",
+    titleDefault: "Nicole Enders · Die Agentin · Microsoft AI & Modern Work",
     home: "Nicole Enders, Microsoft MVP since 2020: talks, advisory and delivery around Microsoft AI, Copilot Studio and Modern Work.",
     legende:
       "Who the agent is: Microsoft MVP since 2020, author and speaker. Mission, way of working and the codebook to this site.",

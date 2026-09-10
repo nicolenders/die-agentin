@@ -85,6 +85,7 @@ async function applyMigrations(): Promise<void> {
       const stdout = await runDeploy();
       console.log(`[startup-migrate] Migrationen angewendet (${attemptLabel(attempt, elapsed())}).\n${stdout}`);
       setMigrationState("applied");
+      void warmAfterStart();
       return;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -114,6 +115,35 @@ async function applyMigrations(): Promise<void> {
       noteMigrationAttempt(attempt, message);
       await sleep(backoffDelay(attempt));
     }
+  }
+}
+
+/**
+ * Cache füllen, solange die Datenbank noch wach ist.
+ *
+ * Eine frisch gestartete Revision hat einen leeren Cache. Ohne diesen Lauf
+ * zahlt der erste Leser nach jedem Deployment die volle Rechnung: Abfrage in
+ * eine womöglich schon wieder pausierte Datenbank, 30 bis 60 Sekunden warten.
+ * Der Start hat sie ohnehin gerade geweckt (Migration) — dieses Fenster wird
+ * hier genutzt (docs/decisions/0032-kosten-der-laufzeit.md).
+ *
+ * Fehlschläge sind unkritisch: dann füllt sich der Cache eben beim ersten
+ * Aufruf.
+ */
+async function warmAfterStart(): Promise<void> {
+  try {
+    const { warmSite, localBase } = await import("./lib/jobs/warmup");
+    // Kurz Luft lassen, bis der Server Anfragen annimmt.
+    await sleep(5000);
+    const result = await warmSite(localBase());
+    console.log(
+      `[startup-warmup] Cache gefüllt: ${result.warmed} Seiten, ${result.failed} Fehlversuche.`,
+    );
+  } catch (error) {
+    console.warn(
+      "[startup-warmup] Vorwärmen übersprungen:",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 

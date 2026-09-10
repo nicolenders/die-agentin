@@ -8,7 +8,8 @@ import { getReminderSettings } from "@/lib/queries/settings";
 
 // Erinnerungslauf: Welche Depeschen nähern sich ihrem Veröffentlichungsdatum,
 // und welche Einsatzberichte fehlen? Läuft im selben Takt wie die geplante
-// Veröffentlichung (alle fünf Minuten über /api/jobs/run).
+// Veröffentlichung (stündlich über /api/jobs/run, und nur dann, wenn dort
+// tatsächlich etwas fällig ist — siehe lib/jobs/tick-plan.ts).
 //
 // Je Anlass EINE Mail für alles Fällige, und je Eintrag eine Marke, damit
 // derselbe Termin nicht zweimal erinnert wird.

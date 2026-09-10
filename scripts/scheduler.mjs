@@ -2,7 +2,7 @@
 /**
  * Lokaler Scheduler für die Entwicklung. Ruft alle 5 Minuten den internen
  * Job-Endpunkt auf und veröffentlicht fällige, terminierte Beiträge (SPEC §6).
- * Produktiv übernimmt das ein Azure Container Apps Job (Cron alle 5 Minuten,
+ * Produktiv übernimmt das ein Azure Container Apps Job (Cron stündlich,
  * Bicep in M8), der denselben Endpunkt mit demselben Shared Secret aufruft.
  *
  * Nutzung:  JOB_SHARED_SECRET=… node scripts/scheduler.mjs [baseUrl]

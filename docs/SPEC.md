@@ -47,7 +47,7 @@ flowchart TB
   end
   subgraph ACA["Azure Container Apps Environment"]
     WEB["web · Next.js 16<br/>SSR + ISR + Admin + API Routes"]
-    JOB["scheduler · Container Apps Job<br/>Cron alle 5 Min."]
+    JOB["scheduler · Container Apps Job<br/>Cron stündlich"]
   end
   KV[("Key Vault")]
   SQL[("Azure SQL<br/>Free Offer, serverless")]
@@ -336,7 +336,7 @@ stateDiagram-v2
 - Jeder Inhalt startet als Entwurf, wird alle 5 Sekunden lokal und alle 30 Sekunden serverseitig gespeichert.
 - `publishAt` wird in UTC gespeichert, in der Oberfläche in `Europe/Berlin` angezeigt und bearbeitet.
 - Veröffentlichung darf nur passieren, wenn die Prüfliste grün ist: Titel, Summary, alle Bilder mit Alt-Text, mindestens die DE-Fassung vorhanden.
-- Der Job läuft alle 5 Minuten und verarbeitet alles mit `status = SCHEDULED AND publishAt <= now()`. Er ist idempotent: doppelte Ausführung darf nichts zweimal senden (Transaktion + `state`-Prüfung).
+- Der Job läuft stündlich und verarbeitet alles mit `status = SCHEDULED AND publishAt <= now()`. Er fasst die Datenbank nur an, wenn laut Terminnotiz etwas fällig ist (§14, ADR 0032). Er ist idempotent: doppelte Ausführung darf nichts zweimal senden (Transaktion + `state`-Prüfung).
 - Nach dem Veröffentlichen: Cache-Tags invalidieren, `ChannelTask`s einreihen, `AuditLog` schreiben.
 
 **Vorschau als Leser:** Der Editor rendert dieselben Komponenten wie die öffentliche Seite, in einem Container mit `preview`-Kennzeichnung, umschaltbar zwischen Desktop/Tablet/Smartphone und zwischen DE/EN. Zusätzlich eine teilbare Vorschau-URL `/preview/[token]` mit signiertem, 7 Tage gültigem Token — nützlich, um Veranstaltern vorab etwas zu zeigen.
@@ -497,18 +497,24 @@ Alles als Bicep unter `infra/`, ein Deployment pro Umgebung.
 | Ressource | SKU / Konfiguration | Kosten |
 |---|---|---|
 | Container Apps Environment | Consumption, Workload Profile „Consumption" | Umgebung selbst kostenfrei |
-| Container App `web` | 0,25 vCPU / 0,5 GiB, min 1 / max 3 Replicas | <cite index="57-1">Die ersten 180.000 vCPU-Sekunden, 360.000 GiB-Sekunden und 2 Mio. HTTP-Requests pro Monat und Subscription sind frei</cite>; darüber Idle-Rate → ca. 4–8 €/Monat |
-| Container Apps Job `scheduler` | Cron `*/5 * * * *`, 0,25 vCPU | innerhalb des Frei-Kontingents |
-| Azure SQL Database | Free Offer, General Purpose Serverless | <cite index="62-1">100.000 vCore-Sekunden, 32 GB Daten und 32 GB Backup pro Datenbank und Monat, dauerhaft</cite> → 0 € |
+| Container App `web` | 0,25 vCPU / 0,5 GiB, min 1 / max 3 Replicas, **Single-Revision** | <cite index="57-1">Die ersten 180.000 vCPU-Sekunden, 360.000 GiB-Sekunden und 2 Mio. HTTP-Requests pro Monat und Subscription sind frei</cite>; darüber Idle-Rate → ca. 4–8 €/Monat |
+| Container Apps Job `scheduler` | Cron `0 * * * *`, 0,25 vCPU | innerhalb des Frei-Kontingents |
+| Azure SQL Database | Free Offer, General Purpose Serverless, `autoPauseDelay: 15` | <cite index="62-1">100.000 vCore-Sekunden, 32 GB Daten und 32 GB Backup pro Datenbank und Monat, dauerhaft</cite> → 0 € |
 | Storage Account | Standard LRS, Container `media` (öffentlich lesend), `uploads` (privat) | < 1 €/Monat |
 | Key Vault | Standard | < 1 €/Monat |
 | Container Registry | Basic | ca. 5 €/Monat |
-| Log Analytics | 30 Tage Aufbewahrung, Cap 1 GB/Monat | im Rahmen des Frei-Kontingents |
+| Log Analytics | 30 Tage Aufbewahrung, Cap 0,5 GB/Tag | im Rahmen des Frei-Kontingents |
 | Managed Identity | User-Assigned, Zugriff auf Key Vault, Blob, SQL | 0 € |
 
 **Erwartete Gesamtkosten: 10–15 €/Monat.** Setzt man `min-replicas` auf 0, sinkt das auf unter 8 €, dafür wartet der erste Besucher nach einer Ruhephase mehrere Sekunden. Empfehlung: `min-replicas = 1`.
 
 Kostenbremse: Budget-Alert bei 25 €/Monat, Azure-SQL-Verhalten bei Erreichen des Freikontingents auf **auto-pause** stellen, nicht auf „weiter mit Kosten".
+
+**Beide teuren Dienste rechnen Laufzeit ab, nicht Zugriffe.** Aktive Revisionen mit `min-replicas: 1` laufen dauerhaft, und die serverlose Datenbank bleibt nach jeder Berührung für die Dauer des Auto-Pause-Delays online. Daraus folgen drei Regeln, ohne die die Zahlen oben nicht halten (Herleitung: `docs/decisions/0032-kosten-der-laufzeit.md`, Prüfschritte: `infra/KOSTEN.md`):
+
+1. Immer nur **eine** aktive Revision — `activeRevisionsMode: 'Single'`.
+2. Der Job-Tick fasst die Datenbank nur an, wenn tatsächlich etwas zu tun ist. Wovon er das ableitet, steht außerhalb der Datenbank.
+3. Was ein Leser auslöst, erreicht die Datenbank nicht: Öffentliche Seiten kommen aus dem getaggten, vorgewärmten Cache, Reichweitenzahlen werden gesammelt und in festen Fenstern gebündelt geschrieben.
 
 **Domain und TLS:** Custom Domain `nicolenders.com` und `www` auf die Container App, Managed Certificate (kostenfrei). `www` leitet per 301 auf die Apex-Domain.
 
@@ -524,8 +530,8 @@ flowchart LR
   PR["Pull Request"] --> CI["Workflow: validate<br/>lint · typecheck · test · build<br/>e2e · axe · npm audit"]
   CI -->|grün| MAIN[main]
   MAIN --> DEPLOY["Workflow: AutoDeployTrigger<br/>Image bauen → Container App<br/>→ Umgebungsvariablen setzen"]
-  DEPLOY --> LIVE["Neue Revision<br/>Traffic 100 %"]
-  LIVE -.->|bei Bedarf| RB["Workflow: rollback<br/>Traffic-Switch auf ältere Revision"]
+  DEPLOY --> LIVE["Neue Revision<br/>alte wird deaktiviert"]
+  LIVE -.->|bei Bedarf| RB["Workflow: rollback<br/>ältere Revision kopieren"]
 ```
 
 | Workflow | Datei | Auslöser |

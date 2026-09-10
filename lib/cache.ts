@@ -47,24 +47,51 @@ export function reviveDates<T>(value: T): T {
   return out as T;
 }
 
+/** Sicherheitsnetz-Frist des Caches: 24 Stunden.
+ *
+ *  Vorher stand hier eine Stunde. Das war teuer und langsam zugleich: Nach
+ *  Ablauf erreicht der nächste Seitenaufruf wieder die Datenbank — und die ist
+ *  serverlos und pausiert. Der Leser wartete dann auf das Aufwachen (30–60 s),
+ *  und die Datenbank blieb danach für die Dauer des Auto-Pause-Delays online,
+ *  bezahlt. Bei zwei Dutzend gecachten Zugriffen ergab das rund um die Uhr eine
+ *  wache Datenbank, ausgelöst allein durch das Ablaufen des Caches.
+ *
+ *  Die Frist ist ohnehin nur das Netz: Beim Veröffentlichen und bei jeder
+ *  Änderung im Adminbereich wird gezielt über Tags invalidiert, und der
+ *  Job-Lauf wärmt anschließend nach (lib/jobs/warmup.ts). Siehe
+ *  docs/decisions/0032-kosten-der-laufzeit.md. */
+const CACHE_TTL_SECONDS = 86_400;
+
 /**
  * Wrappt eine Datenbankabfrage in einen getaggten Cache. Der erste Aufruf nach
  * einer Invalidierung erreicht die DB, alle weiteren werden aus dem Cache
- * bedient. `revalidate` als zusätzliche Sicherheitsnetz-Frist (1 h). Das Ergebnis
- * wird nach dem Cache rehydriert, damit `Date`-Felder auch bei einem Cache-
- * Treffer echte `Date`-Objekte bleiben (siehe `reviveDates`).
+ * bedient. Das Ergebnis wird nach dem Cache rehydriert, damit `Date`-Felder
+ * auch bei einem Cache-Treffer echte `Date`-Objekte bleiben (siehe
+ * `reviveDates`).
  */
 export function cachedQuery<A extends unknown[], R>(
   fn: (...args: A) => Promise<R>,
   keyParts: string[],
   cacheTags: string[],
 ): (...args: A) => Promise<R> {
-  const cached = unstable_cache(fn, keyParts, { tags: cacheTags, revalidate: 3600 });
+  const cached = unstable_cache(fn, keyParts, { tags: cacheTags, revalidate: CACHE_TTL_SECONDS });
   return async (...args: A): Promise<R> => reviveDates(await cached(...args));
 }
 
 /** Invalidiert eine Liste von Cache-Tags. Next 16 verlangt ein Cache-Profil;
- *  „max" reicht, da wir gezielt beim Veröffentlichen invalidieren. */
+ *  „max" reicht, da wir gezielt beim Veröffentlichen invalidieren.
+ *
+ *  Nebenwirkung mit Absicht: Jede Invalidierung verwirft auch die Terminnotiz
+ *  des Jobs. Wer einen Beitrag ändert, kann einen Termin verschoben haben —
+ *  der nächste Tick sieht dann selbst in der Datenbank nach, statt einer
+ *  veralteten Notiz zu glauben (lib/jobs/tick-plan.ts). Der Import ist
+ *  absichtlich dynamisch: die Blob-Ablage soll nicht in jedem Modulgraphen
+ *  landen, der nur invalidieren will. */
 export function invalidateTags(cacheTags: string[]): void {
   for (const tag of cacheTags) revalidateTag(tag, "max");
+  void import("@/lib/jobs/schedule-hint")
+    .then((m) => m.clearScheduleHint())
+    .catch(() => {
+      // Bleibt die Notiz liegen, verfällt sie spätestens nach sechs Stunden.
+    });
 }

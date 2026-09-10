@@ -119,7 +119,9 @@ Testabdeckung. Die Aufteilung folgt dem Zweck, nicht der Technik:
 3. Gerendert wird serverseitig. `"use client"` steht nur dort, wo Interaktion es
    erzwingt (Karte, Filter, Mobilmenü, Editor).
 4. `PageviewTracker` schickt einen Beacon an `/api/track`; die Antwort ist immer
-   204 und blockiert nichts.
+   204 und blockiert nichts. Der Aufruf wird gesammelt, nicht sofort
+   geschrieben — sonst weckte jeder einzelne Besucher die pausierte Datenbank
+   (ADR 0032).
 
 ### 5.2 Nicole veröffentlicht einen Beitrag
 
@@ -130,9 +132,20 @@ Testabdeckung. Die Aufteilung folgt dem Zweck, nicht der Technik:
 
 ### 5.3 Terminierte Veröffentlichung
 
-Ein Container-Apps-Job ruft alle 5 Minuten `POST /api/jobs/run` mit einem Shared
-Secret (Vergleich in konstanter Zeit). Der Aufruf weckt zugleich die pausierte
-Instanz.
+Ein Container-Apps-Job ruft stündlich `POST /api/jobs/run` mit einem Shared
+Secret (Vergleich in konstanter Zeit).
+
+Der Tick ist zweistufig (ADR 0032): Zuerst entscheidet er **ohne Datenbank**, ob
+etwas zu tun ist — anhand einer Terminnotiz, die der letzte vollständige Lauf
+außerhalb der Datenbank hinterlassen hat. Nur wenn ein Termin fällig ist, ein
+Sammelfenster ansteht oder die Notiz fehlt bzw. veraltet ist, wird die Datenbank
+geweckt. Dann passiert alles auf einmal: veröffentlichen, erinnern, gesammelte
+Seitenaufrufe schreiben, den nächsten Termin notieren und den Cache vorwärmen.
+
+Das Vorwärmen ist die Gegenleistung dafür, dass die Datenbank schlafen darf:
+Öffentliche Seiten kommen aus dem getaggten Cache, der nach jedem Container-Start
+und nach jedem vollständigen Lauf gefüllt wird — ein Leser wartet nie auf das
+Aufwachen der Datenbank.
 
 ---
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Einmaliger Job-Tick für den Azure Container Apps Job (Cron alle 5 Minuten).
+ * Einmaliger Job-Tick für den Azure Container Apps Job (Cron stündlich).
  * Ruft den internen Endpunkt /api/jobs/run genau EINMAL auf und beendet sich
  * dann (im Gegensatz zu scripts/scheduler.mjs, das lokal dauerhaft läuft).
  * Ein Cron-Job-Container muss nach getaner Arbeit terminieren.

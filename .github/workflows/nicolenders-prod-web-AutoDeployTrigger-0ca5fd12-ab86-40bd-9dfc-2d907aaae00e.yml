@@ -38,10 +38,20 @@ jobs:
           subscription-id: ${{ secrets.NICOLENDERSPRODWEB_AZURE_SUBSCRIPTION_ID }}
 
       # Single-Revision-Modus erzwingen, bevor eine neue Revision entsteht.
-      # Der Modus steht in infra/main.bicep, aber dieser Workflow deployt kein
-      # Bicep — ohne diesen Schritt bliebe die teure Einstellung bestehen, bis
-      # jemand von Hand ein Template-Deployment fährt. Der Aufruf ist idempotent
-      # und erzeugt selbst keine Revision.
+      #
+      # Beim ersten Lauf (10.09.2026) meldete dieser Schritt „bereits single" —
+      # die laufende App stand also nie im Mehrfach-Modus, obwohl das Template
+      # ihn vorsah. Das Bicep beschreibt den laufenden Stand nicht (die
+      # Infrastruktur wurde von Hand angelegt, siehe infra/KOSTEN.md). Genau
+      # deshalb bleibt der Schritt: Er ist die einzige Stelle, die den Modus
+      # tatsächlich prüft, kostet drei Sekunden und erzeugt keine Revision.
+      #
+      # Ein zweiter Schritt, der übrig gebliebene aktive Revisionen deaktiviert,
+      # stand hier ebenfalls — und hat sich beim ersten Lauf selbst widerlegt:
+      # Er lief, während die eben erzeugte Revision noch hochfuhr, hielt sie
+      # deshalb für eine alte und deaktivierte sie. Im Single-Modus räumt
+      # Container Apps ohnehin selbst auf. Die Befehle für einen einmaligen
+      # Aufräumlauf von Hand stehen in infra/KOSTEN.md.
       - name: Single-Revision-Modus sicherstellen
         run: |
           set -euo pipefail
@@ -121,26 +131,3 @@ jobs:
               "SMTP_FROM=${{ vars.SMTP_FROM }}" \
               "SMTP_USER=${{ secrets.SMTP_USER }}" \
               "SMTP_PASSWORD=secretref:smtp-password"
-
-      # Aufräumen: Im Mehrfach-Modus sind über die Zeit Revisionen aktiv
-      # geblieben, die niemand mehr braucht — jede mit einem dauerhaft
-      # laufenden Replica. Der Modus-Wechsel oben deaktiviert sie nicht
-      # rückwirkend, deshalb hier: alles deaktivieren außer der Revision, die
-      # gerade ausliefert. Schlägt der Schritt fehl, ist das Deployment
-      # trotzdem gültig — deshalb `continue-on-error`.
-      - name: Alte aktive Revisionen deaktivieren
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-          CURRENT=$(az containerapp show -n nicolenders-prod-web -g nicolenders-rg \
-            --query "properties.latestReadyRevisionName" -o tsv)
-          echo "Aktive Revision: $CURRENT"
-          for REV in $(az containerapp revision list \
-                -n nicolenders-prod-web -g nicolenders-rg \
-                --query "[?properties.active].name" -o tsv); do
-            if [ "$REV" != "$CURRENT" ]; then
-              echo "Deaktiviere $REV"
-              az containerapp revision deactivate \
-                -n nicolenders-prod-web -g nicolenders-rg --revision "$REV" -o none
-            fi
-          done

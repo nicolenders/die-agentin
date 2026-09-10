@@ -139,3 +139,37 @@ Ob das Free Offer für diese Subscription in West Europe überhaupt gilt, lässt
 sich nur im Portal bzw. per CLI feststellen. Die Prüfschritte stehen in
 `infra/KOSTEN.md`. Ergebnis offen — die Maßnahmen oben wirken unabhängig davon,
 weil sie die Online-Zeit senken statt auf ein Freikontingent zu setzen.
+
+---
+
+## Nachtrag, 10.09.2026 — nach dem ersten Deployment
+
+Der erste Lauf nach dem Merge hat zwei Punkte oben widerlegt. Sie bleiben
+stehen, damit die Herleitung nachvollziehbar ist; hier steht, was tatsächlich
+gilt.
+
+**Ursache 1 galt nur für das Template.** Der neue Prüfschritt im Deploy-Workflow
+meldete „Revisionsmodus ist bereits 'single'". Die laufende Container App stand
+also nie im Mehrfach-Modus — die Umstellung im Bicep verhindert einen künftigen
+Fehler, sie hat keinen bestehenden behoben. Der teure Posten ist allein die
+Datenbank.
+
+**`infra/main.bicep` beschreibt nicht den laufenden Stand.** Die Infrastruktur
+wurde von Hand angelegt (die Container App trägt ein Benutzerkonto als
+Ersteller, kein Deployment). Damit wirkt keine Template-Änderung von selbst:
+`autoPauseDelay: 15` und der stündliche Cron müssen per CLI gesetzt werden
+(`infra/KOSTEN.md`, „Sofort, von Hand"). Das ist die eigentliche Lehre aus
+diesem Tag — ein Template, das niemand ausrollt, ist Dokumentation, keine
+Konfiguration.
+
+**Der automatische Aufräumschritt ist wieder entfernt.** Er sollte übrig
+gebliebene aktive Revisionen deaktivieren, fragte dafür
+`latestReadyRevisionName` ab und lief, während die eben erzeugte Revision noch
+hochfuhr. Die Antwort war deshalb die *vorherige* Revision — und der Schritt
+deaktivierte die neue. Im Single-Modus räumt Container Apps ohnehin selbst auf;
+der Schritt hätte nur den einmaligen Altbestand aufräumen sollen und war die
+Automatisierung nicht wert.
+
+Unberührt davon bleibt alles, was die Datenbank betrifft: der zweistufige
+Job-Tick, die gesammelten Seitenaufrufe, die gecachte Sitemap, die Cache-Frist
+und das Vorwärmen. Das war und ist der Teil, der die 127,58 EUR erklärt.

@@ -26,21 +26,31 @@ export function isBlobConfigured(): boolean {
 
 // Ein Client pro Prozess. DefaultAzureCredential nutzt in Produktion die
 // user-assigned Managed Identity (über AZURE_CLIENT_ID), lokal z. B. `az login`.
-let containerClient: ContainerClient | null = null;
+const containerClients = new Map<string, ContainerClient>();
 
-function getContainerClient(): ContainerClient {
-  if (containerClient) return containerClient;
+/**
+ * Client für einen beliebigen Container desselben Kontos. Neben `media` nutzt
+ * der Job-Takt den privaten Container `uploads` für seine Terminnotiz
+ * (lib/jobs/schedule-hint.ts) — dieselben Zugangsdaten, andere Ablage.
+ */
+export function getBlobContainerClient(container: string): ContainerClient {
+  const existing = containerClients.get(container);
+  if (existing) return existing;
   const account = process.env.BLOB_ACCOUNT_NAME;
   if (!account) {
     throw new Error("BLOB_ACCOUNT_NAME ist nicht gesetzt.");
   }
-  const container = process.env.BLOB_CONTAINER_MEDIA ?? "media";
   const credential = new DefaultAzureCredential({
     managedIdentityClientId: process.env.AZURE_CLIENT_ID,
   });
   const service = new BlobServiceClient(`https://${account}.blob.core.windows.net`, credential);
-  containerClient = service.getContainerClient(container);
-  return containerClient;
+  const client = service.getContainerClient(container);
+  containerClients.set(container, client);
+  return client;
+}
+
+function getContainerClient(): ContainerClient {
+  return getBlobContainerClient(process.env.BLOB_CONTAINER_MEDIA ?? "media");
 }
 
 /**

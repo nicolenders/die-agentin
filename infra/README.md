@@ -18,6 +18,10 @@ Zeitbedarf: ~30 Minuten. Voraussetzung: eine Azure-Subscription.
 >   `infra/main.json` per Formular ausrollen.
 > - **Terminal (az-Befehle)** → **[MANUELL.md](./MANUELL.md)**.
 > - **Bicep direkt** → dieses Dokument.
+>
+> `infra/main.json` ist das kompilierte Bicep (`az bicep build -f infra/main.bicep
+> --outfile infra/main.json`). Wer `main.bicep` ändert, baut es neu — sonst rollt
+> das Portal-Formular eine alte Fassung aus.
 
 > Nichts davon wurde in dieser Umsetzung real ausgeführt (kein Azure-Zugang).
 > Prüfe den Bicep-Plan vor dem ersten Deployment mit `what-if` (Schritt 5).
@@ -247,18 +251,25 @@ Anmeldung nach dem Umzug fehl.
 
 ## Rollback
 
-Ein Rollback ist ein **Traffic-Switch** auf eine ältere Revision (kein Redeploy):
+Die App läuft im **Single-Revision-Modus** (ADR 0032) — es ist also immer genau
+eine Revision aktiv. Ein Rollback erzeugt aus einer alten Revision eine neue und
+macht sie zur aktiven; kein Build, kein Push, keine Ausfallzeit:
 
 ```bash
 az containerapp revision list -n nicolenders-prod-web -g nicolenders-rg \
   --query "[].{name:name,created:properties.createdTime,active:properties.active}" -o table
-az containerapp ingress traffic set -n nicolenders-prod-web -g nicolenders-rg \
-  --revision-weight <alte-revision>=100
+az containerapp revision copy -n nicolenders-prod-web -g nicolenders-rg \
+  --from-revision <alte-revision>
 ```
 
-Bequemer: Actions → **„Rollback (Traffic auf eine ältere Revision)"** →
-Run workflow, Revisionsname eintragen. Der Workflow listet die vorhandenen
-Revisionen vorher auf und prüft, ob es die gewählte gibt.
+Bequemer: Actions → **„Rollback (auf eine ältere Revision)"** → Run workflow,
+Revisionsname eintragen. Der Workflow listet die vorhandenen Revisionen vorher
+auf und prüft, ob es die gewählte gibt.
+
+Warum kein Traffic-Switch mehr: Der setzt den Mehrfach-Modus voraus, und in dem
+bleibt jede je erzeugte Revision aktiv — mit `minReplicas: 1` also dauerhaft
+laufend und abgerechnet. Das war der größte Posten auf der Azure-Rechnung, siehe
+`infra/KOSTEN.md`.
 
 ---
 
@@ -268,15 +279,20 @@ Revisionen vorher auf und prüft, ob es die gewählte gibt.
 |---|---|---|
 | Container Registry (Basic) | Image-Ablage | ~5 €/Monat |
 | Managed Identity | ACR-Pull, Blob-Zugriff | 0 € |
-| Log Analytics (Cap 1 GB) | Logs | im Frei-Kontingent |
-| Storage (media/uploads) | Bilder | < 1 €/Monat |
-| Azure SQL (Free, serverless) | Datenbank, `AutoPause` | 0 € |
+| Log Analytics (Cap 0,5 GB/Tag) | Logs | im Frei-Kontingent |
+| Storage (media/uploads) | Bilder, Terminnotiz des Jobs | < 1 €/Monat |
+| Azure SQL (serverless, `autoPauseDelay: 15`) | Datenbank | 0 € im Free Offer, sonst nach Online-Zeit |
 | Container Apps Environment | Laufzeitumgebung | kostenfrei |
-| Container App `web` | die Anwendung (min 1/max 3) | ~4–8 €/Monat |
-| Container Apps Job `scheduler` | Cron alle 5 Min. (`job-once.mjs`) | im Frei-Kontingent |
+| Container App `web` | die Anwendung (Single-Revision, min 1/max 3) | ~4–8 €/Monat |
+| Container Apps Job `scheduler` | Cron stündlich (`job-once.mjs`) | im Frei-Kontingent |
 | Budget-Alarm (optional) | Kostenbremse | 0 € |
 
 **Erwartete Gesamtkosten: ~10–15 €/Monat** (SPEC §14).
+
+Bei Azure SQL zählt die **Online-Zeit**, nicht die Zahl der Abfragen: Eine
+Stunde kostet bei 0,5 vCore rund 0,24 €. Was die Datenbank weckt und was nicht,
+steht in `docs/decisions/0032-kosten-der-laufzeit.md`; die Prüfschritte für das
+Free Offer und die laufenden Kosten in **`infra/KOSTEN.md`**.
 
 ## Bewusste Vereinfachungen (ggü. SPEC §13/§14)
 

@@ -202,7 +202,7 @@
         },
         "retentionInDays": 30,
         "workspaceCapping": {
-          "dailyQuotaGb": 1
+          "dailyQuotaGb": 0.5
         }
       }
     },
@@ -292,7 +292,7 @@
         "tier": "GeneralPurpose"
       },
       "properties": {
-        "autoPauseDelay": 60,
+        "autoPauseDelay": 15,
         "minCapacity": "[json('0.5')]",
         "useFreeLimit": true,
         "freeLimitExhaustionBehavior": "AutoPause"
@@ -347,17 +347,11 @@
       "properties": {
         "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', format('{0}-{1}-env', parameters('baseName'), parameters('environmentName')))]",
         "configuration": {
-          "activeRevisionsMode": "Multiple",
+          "activeRevisionsMode": "Single",
           "ingress": {
             "external": true,
             "targetPort": 3000,
-            "transport": "auto",
-            "traffic": [
-              {
-                "latestRevision": true,
-                "weight": 100
-              }
-            ]
+            "transport": "auto"
           },
           "registries": [
             {
@@ -517,7 +511,7 @@
           "triggerType": "Schedule",
           "replicaTimeout": 120,
           "scheduleTriggerConfig": {
-            "cronExpression": "*/5 * * * *",
+            "cronExpression": "0 * * * *",
             "parallelism": 1,
             "replicaCompletionCount": 1
           },

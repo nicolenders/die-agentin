@@ -2,6 +2,12 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { normalizePath } from "@/lib/analytics/path";
+import {
+  bufferPageview,
+  takeBufferedPageviews,
+  returnBufferedPageviews,
+  type BufferedPageview,
+} from "@/lib/analytics/buffer";
 
 export { normalizePath } from "@/lib/analytics/path";
 
@@ -66,18 +72,59 @@ export async function recordPageview(opts: { rawPath: string; headers: Headers }
     .update(`${salt()}|${ip ?? "unknown"}|${dayStr}`)
     .digest("hex");
 
+  // Nicht sofort schreiben, sondern sammeln: Der Schreibzugriff würde die
+  // pausierte, serverlose Datenbank wecken und für die Dauer des
+  // Auto-Pause-Delays wachhalten — ein einzelner Besucher hätte damit eine
+  // Viertelstunde Rechenzeit ausgelöst. Der Job schreibt gebündelt weg
+  // (lib/jobs/tick-plan.ts, docs/decisions/0032-kosten-der-laufzeit.md).
+  bufferPageview({
+    day,
+    path: norm.path,
+    locale: norm.locale,
+    section: norm.section,
+    country: country.slice(0, 2).toUpperCase() || "XX",
+    visitorHash,
+  });
+}
+
+/**
+ * Schreibt die gesammelten Aufrufe in einem Rutsch weg. Aufrufer ist der
+ * Job-Tick, und zwar nur dann, wenn die Datenbank ohnehin geweckt wird.
+ *
+ * Schlägt das Schreiben fehl, kommen die Einträge zurück in den Zwischen-
+ * speicher — der nächste Lauf versucht es erneut, statt die Zahlen zu verlieren.
+ */
+export async function flushPageviews(): Promise<number> {
+  const entries = takeBufferedPageviews();
+  if (entries.length === 0) return 0;
   try {
-    await db.pageview.create({
-      data: {
-        day,
-        path: norm.path,
-        locale: norm.locale,
-        section: norm.section,
-        country: country.slice(0, 2).toUpperCase() || "XX",
-        visitorHash,
-      },
-    });
-  } catch {
-    // Zählung ist „best effort" — ein DB-Fehler darf den Seitenaufruf nie stören.
+    await db.pageview.createMany({ data: entries });
+    return entries.length;
+  } catch (error) {
+    // `createMany` ist beim SQL-Server-Connector nicht in jeder Konstellation
+    // verfügbar. Dann eben einzeln — es geht um eine Handvoll Zeilen je Lauf.
+    console.warn(
+      "[analytics] Sammelschreiben fehlgeschlagen, schreibe einzeln:",
+      error instanceof Error ? error.message : error,
+    );
+    return writeOneByOne(entries);
   }
+}
+
+/**
+ * Einzeln schreiben. Was nach einem Fehler übrig ist, geht zurück in den
+ * Zwischenspeicher — der nächste Lauf nimmt es erneut, statt es zu verlieren.
+ */
+async function writeOneByOne(entries: BufferedPageview[]): Promise<number> {
+  let written = 0;
+  for (let i = 0; i < entries.length; i += 1) {
+    try {
+      await db.pageview.create({ data: entries[i]! });
+      written += 1;
+    } catch {
+      returnBufferedPageviews(entries.slice(i));
+      return written;
+    }
+  }
+  return written;
 }

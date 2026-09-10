@@ -37,6 +37,24 @@ jobs:
           tenant-id: ${{ secrets.NICOLENDERSPRODWEB_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.NICOLENDERSPRODWEB_AZURE_SUBSCRIPTION_ID }}
 
+      # Single-Revision-Modus erzwingen, bevor eine neue Revision entsteht.
+      # Der Modus steht in infra/main.bicep, aber dieser Workflow deployt kein
+      # Bicep — ohne diesen Schritt bliebe die teure Einstellung bestehen, bis
+      # jemand von Hand ein Template-Deployment fährt. Der Aufruf ist idempotent
+      # und erzeugt selbst keine Revision.
+      - name: Single-Revision-Modus sicherstellen
+        run: |
+          set -euo pipefail
+          MODE=$(az containerapp show -n nicolenders-prod-web -g nicolenders-rg \
+            --query "properties.configuration.activeRevisionsMode" -o tsv)
+          if [ "${MODE,,}" != "single" ]; then
+            echo "Revisionsmodus ist '$MODE' — stelle auf 'single' um."
+            az containerapp revision set-mode \
+              -n nicolenders-prod-web -g nicolenders-rg --mode single
+          else
+            echo "Revisionsmodus ist bereits 'single'."
+          fi
+
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
@@ -103,3 +121,26 @@ jobs:
               "SMTP_FROM=${{ vars.SMTP_FROM }}" \
               "SMTP_USER=${{ secrets.SMTP_USER }}" \
               "SMTP_PASSWORD=secretref:smtp-password"
+
+      # Aufräumen: Im Mehrfach-Modus sind über die Zeit Revisionen aktiv
+      # geblieben, die niemand mehr braucht — jede mit einem dauerhaft
+      # laufenden Replica. Der Modus-Wechsel oben deaktiviert sie nicht
+      # rückwirkend, deshalb hier: alles deaktivieren außer der Revision, die
+      # gerade ausliefert. Schlägt der Schritt fehl, ist das Deployment
+      # trotzdem gültig — deshalb `continue-on-error`.
+      - name: Alte aktive Revisionen deaktivieren
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          CURRENT=$(az containerapp show -n nicolenders-prod-web -g nicolenders-rg \
+            --query "properties.latestReadyRevisionName" -o tsv)
+          echo "Aktive Revision: $CURRENT"
+          for REV in $(az containerapp revision list \
+                -n nicolenders-prod-web -g nicolenders-rg \
+                --query "[?properties.active].name" -o tsv); do
+            if [ "$REV" != "$CURRENT" ]; then
+              echo "Deaktiviere $REV"
+              az containerapp revision deactivate \
+                -n nicolenders-prod-web -g nicolenders-rg --revision "$REV" -o none
+            fi
+          done

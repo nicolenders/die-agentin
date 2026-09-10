@@ -1,14 +1,20 @@
-# Rollback per Traffic-Switch (SPEC §15). Manuell gestartet, kein Redeploy und
-# kein Neubau: der Traffic wandert auf eine ältere, bereits vorhandene Revision.
+# Rollback auf eine ältere Revision (SPEC §15). Manuell gestartet, kein Neubau:
+# die App bekommt die Konfiguration einer bereits vorhandenen Revision zurück.
 #
-# Ersetzt `pipelines/rollback.yml` aus der Azure-DevOps-Zeit.
+# Warum kein Traffic-Switch mehr: Die Container App läuft im Single-Revision-
+# Modus (infra/main.bicep). Im Mehrfach-Modus blieb jede je erzeugte Revision
+# aktiv und hielt wegen `minReplicas: 1` dauerhaft ein Replica am Laufen — das
+# war der größte Posten auf der Azure-Rechnung. Im Single-Modus ist immer genau
+# eine Revision aktiv; `az containerapp revision copy` erzeugt aus der alten
+# Revision eine neue und macht sie zur aktiven. Das ist derselbe Vorgang wie ein
+# Deployment, nur mit altem Inhalt: kein Build, kein Push, keine Ausfallzeit.
 #
 # Revisionsnamen anzeigen:
 #   az containerapp revision list -n nicolenders-prod-web -g nicolenders-rg \
 #     --query "[].{name:name, active:properties.active, created:properties.createdTime}" -o table
-# Der Workflow listet sie auch selbst auf, bevor er umschaltet.
+# Der Workflow listet sie auch selbst auf, bevor er zurückrollt.
 
-name: Rollback (Traffic auf eine ältere Revision)
+name: Rollback (auf eine ältere Revision)
 
 on:
   workflow_dispatch:
@@ -46,17 +52,19 @@ jobs:
             --query "[].{name:name, active:properties.active, created:properties.createdTime}" \
             -o table
 
-      - name: Traffic auf die gewählte Revision schalten
+      - name: Gewählte Revision wieder aktivieren
         env:
           REVISION: ${{ inputs.revision }}
         run: |
           set -euo pipefail
-          # Erst prüfen, ob es die Revision überhaupt gibt — sonst liefe der
-          # Traffic-Switch ins Leere und die Seite bliebe auf der kaputten
-          # Version.
+          # Erst prüfen, ob es die Revision überhaupt gibt — sonst liefe das
+          # Rollback ins Leere und die Seite bliebe auf der kaputten Version.
           az containerapp revision show \
             -n nicolenders-prod-web -g nicolenders-rg --revision "$REVISION" -o none
-          az containerapp ingress traffic set \
+          az containerapp revision copy \
             -n nicolenders-prod-web -g nicolenders-rg \
-            --revision-weight "$REVISION=100"
-          echo "Rollback aktiv: 100 % Traffic auf $REVISION."
+            --from-revision "$REVISION"
+          az containerapp show \
+            -n nicolenders-prod-web -g nicolenders-rg \
+            --query "properties.latestReadyRevisionName" -o tsv
+          echo "Rollback aktiv: neue Revision aus $REVISION erzeugt und aktiv."

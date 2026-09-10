@@ -3,6 +3,7 @@ import { locales } from "@/lib/i18n/config";
 import { getPublishedDispatches } from "@/lib/queries/dispatches";
 import { getPublishedIdentities } from "@/lib/queries/identities";
 import { db } from "@/lib/db";
+import { cachedQuery, tags } from "@/lib/cache";
 import { siteOrigin } from "@/lib/site";
 
 const SITE = siteOrigin();
@@ -42,7 +43,30 @@ const SECTIONS = [
   "barrierefreiheit",
 ];
 
+/**
+ * Die Sitemap wird gecacht wie jeder andere öffentliche Zugriff — und aus
+ * demselben Grund: Ohne Cache berührte jeder Crawler-Besuch die Datenbank
+ * (allein `assertDatabaseReachable` ist eine Abfrage) und weckte die pausierte,
+ * serverlose Instanz. Suchmaschinen holen die Sitemap regelmäßig; das hat sie
+ * dauerhaft wachgehalten. Invalidiert wird über dieselben Tags, die auch die
+ * Listenseiten verwenden — eine neue Depesche steht also sofort drin.
+ */
+const buildSitemap = cachedQuery(
+  buildSitemapEntries,
+  ["sitemap"],
+  [
+    tags.dispatchList("de"),
+    tags.dispatchList("en"),
+    tags.identityList("de"),
+    tags.identityList("en"),
+  ],
+);
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  return buildSitemap();
+}
+
+async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   await assertDatabaseReachable();
 
   const entries: MetadataRoute.Sitemap = [];

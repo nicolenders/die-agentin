@@ -126,7 +126,10 @@ resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   properties: {
     sku: { name: 'PerGB2018' }
     retentionInDays: 30
-    workspaceCapping: { dailyQuotaGb: 1 }
+    // 0,5 GB/Tag statt 1 GB. Der tatsächliche Anfall liegt bei einer Handvoll
+    // Container-Logs weit darunter; der Deckel ist die Notbremse, falls eine
+    // Schleife ins Protokoll läuft.
+    workspaceCapping: { dailyQuotaGb: json('0.5') }
   }
 }
 
@@ -190,9 +193,22 @@ resource sqlDb 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   tags: tags
   sku: { name: 'GP_S_Gen5_1', tier: 'GeneralPurpose' }
   properties: {
-    autoPauseDelay: 60
+    // 15 Minuten ist das Minimum seit Oktober 2024 (vorher 60). Die Rechnung
+    // ist einfach: Serverless kostet, solange die Datenbank online ist, und
+    // jede Berührung hält sie für die Dauer dieser Verzögerung wach. Mit 60
+    // Minuten kostete ein einzelner Zugriff eine volle Stunde Rechenzeit.
+    autoPauseDelay: 15
     minCapacity: json('0.5')
+    // ACHTUNG, vor dem nächsten Deployment prüfen (siehe infra/KOSTEN.md):
+    // Die Region des Free Offer wird je Subscription EINMAL festgelegt und gilt
+    // danach für alle Free-Datenbanken; sie ist nicht änderbar. Liegt diese
+    // Datenbank in einer anderen Region, greift `useFreeLimit` nicht und die
+    // Datenbank läuft zum vollen Serverless-Tarif — ohne Fehlermeldung.
     useFreeLimit: true
+    // Bleibt bei AutoPause (SPEC §14): lieber ein Ausfall mit klarer Ursache
+    // als eine stille Rechnung. Trägt aber nur, solange der Verbrauch mit
+    // Abstand unter 100.000 vCore-Sekunden/Monat bleibt — bei 0,5 vCore sind
+    // das rund 55 Stunden Online-Zeit im Monat.
     freeLimitExhaustionBehavior: 'AutoPause'
   }
 }
@@ -243,14 +259,27 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
   properties: {
     managedEnvironmentId: caEnv.id
     configuration: {
-      // Multiple-Revisions für Rollback per Traffic-Switch; die jeweils neueste
-      // Revision erhält automatisch 100 % Traffic (SPEC §15).
-      activeRevisionsMode: 'Multiple'
+      // Single-Revision: Container Apps deaktiviert die vorherige Revision
+      // automatisch, sobald die neue bereit ist — ohne Ausfall.
+      //
+      // Vorher stand hier 'Multiple'. Das war der teuerste Buchstabe im
+      // Repository: im Mehrfach-Modus bleibt JEDE je erzeugte Revision aktiv,
+      // bis sie jemand von Hand deaktiviert, und jede aktive Revision hält
+      // wegen `minReplicas: 1` dauerhaft ein Replica am Laufen. Der Deploy-
+      // Workflow erzeugt pro Push auf main zwei bis drei Revisionen
+      // (Image-Update, `secret set`, `update --set-env-vars`) — die Rechnung
+      // wuchs also mit jedem Merge. Inaktive Revisionen kosten nichts.
+      //
+      // Preis dieser Umstellung: Rollback läuft nicht mehr über einen
+      // Traffic-Switch, sondern über `az containerapp revision copy`
+      // (.github/workflows/rollback.yml, SPEC §15).
+      activeRevisionsMode: 'Single'
       ingress: {
         external: true
         targetPort: 3000
         transport: 'auto'
-        traffic: [ { latestRevision: true, weight: 100 } ]
+        // Kein `traffic`-Block: im Single-Modus bekommt die jeweils aktive
+        // Revision zwingend 100 %.
       }
       registries: [ { server: acr.properties.loginServer, identity: identity.id } ]
       secrets: commonSecrets
@@ -292,7 +321,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// ---- Scheduler Job (Cron alle 5 Minuten) -----------------------------------
+// ---- Scheduler Job (Cron stündlich) ----------------------------------------
 resource schedulerJob 'Microsoft.App/jobs@2024-03-01' = {
   name: '${baseName}-${environmentName}-scheduler'
   location: location
@@ -308,7 +337,13 @@ resource schedulerJob 'Microsoft.App/jobs@2024-03-01' = {
       triggerType: 'Schedule'
       replicaTimeout: 120
       scheduleTriggerConfig: {
-        cronExpression: '*/5 * * * *'
+        // Stündlich zur vollen Stunde statt alle 5 Minuten. 288 Ticks am Tag
+        // haben die serverlose Datenbank rund um die Uhr wachgehalten; sie kam
+        // nie auf die Ruhezeit, die das Pausieren voraussetzt. Der Tick selbst
+        // ist inzwischen datenbankfrei, solange nichts fällig ist
+        // (lib/jobs/tick-plan.ts) — die Veröffentlichungsgenauigkeit bleibt bei
+        // einer Stunde.
+        cronExpression: '0 * * * *'
         parallelism: 1
         replicaCompletionCount: 1
       }

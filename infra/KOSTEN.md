@@ -9,6 +9,38 @@ und was noch von Hand geprüft werden muss.
 
 ---
 
+## Nachtrag vom 10.09.2026 — was das erste Deployment gezeigt hat
+
+Zwei Annahmen aus dem Befund unten haben sich beim ersten Lauf nach dem Merge
+als falsch erwiesen. Beides steht hier, weil es die Reihenfolge der Maßnahmen
+ändert.
+
+**1. Die laufende Container App stand längst auf `single`.**
+Der neue Prüfschritt im Deploy-Workflow meldete „Revisionsmodus ist bereits
+'single'". Der Mehrfach-Modus stand also nur im Template, nicht im laufenden
+Betrieb — Ursache 1 unten war eine Zeitbombe für das nächste
+Template-Deployment, aber nicht der Grund für die bisherige Rechnung. Der teure
+Posten ist und bleibt die Datenbank.
+
+**2. `infra/main.bicep` beschreibt nicht den laufenden Stand.**
+Die Infrastruktur wurde seinerzeit von Hand angelegt (die Container App trägt
+als Ersteller ein Benutzerkonto, kein Deployment). Damit wirkt **keine**
+Template-Änderung von selbst — weder `autoPauseDelay: 15` noch der neue
+Scheduler-Cron. Beides muss von Hand gesetzt werden; die Befehle stehen unter
+„Sofort, von Hand".
+
+**3. Der automatische Aufräumschritt ist wieder raus.**
+Er sollte übrig gebliebene aktive Revisionen deaktivieren, lief aber, während
+die eben erzeugte Revision noch hochfuhr: `latestReadyRevisionName` zeigte noch
+auf die vorherige, also hielt der Schritt die neue für eine alte und
+deaktivierte sie (`nicolenders-prod-web--0000101`). Ausgeliefert wurde danach
+`--0000100` — dieselbe Image-Fassung, nur ohne die im Schritt davor gesetzten
+Umgebungsvariablen; deren Werte waren unverändert, deshalb ist nichts kaputt
+gegangen. Im Single-Modus räumt Container Apps ohnehin selbst auf. Für einen
+einmaligen Aufräumlauf von Hand stehen die Befehle weiter unten.
+
+---
+
 ## Der Befund in einem Satz
 
 Beide teuren Dienste rechnen **Laufzeit** ab, nicht Zugriffe — und die
@@ -16,7 +48,7 @@ Konfiguration sorgte dafür, dass beide rund um die Uhr liefen.
 
 | # | Ursache | Wirkung | Behoben durch |
 |---|---|---|---|
-| 1 | `activeRevisionsMode: 'Multiple'` und `minReplicas: 1` | Jede je erzeugte Revision blieb aktiv und hielt ein Replica am Laufen. Zwei bis drei neue je Push auf `main`. | `'Single'` in `main.bicep`, dazu ein Aufräumschritt im Deploy-Workflow |
+| 1 | `activeRevisionsMode: 'Multiple'` **im Template** | Wäre das Template je ausgerollt worden, wäre jede erzeugte Revision aktiv geblieben und hätte ein Replica am Laufen gehalten — zwei bis drei neue je Push auf `main`. Die laufende App stand tatsächlich auf `single` (siehe Nachtrag), hier ist also nichts geflossen. | `'Single'` in `main.bicep`, dazu ein Prüfschritt im Deploy-Workflow |
 | 2 | Scheduler-Cron `*/5 * * * *` bei `autoPauseDelay: 60` | 288 Weckrufe am Tag; die serverlose Datenbank kam nie in eine Ruhephase. | Cron `0 * * * *`, `autoPauseDelay: 15`, und ein Tick, der ohne Datenbank entscheidet, ob er sie überhaupt braucht |
 | 3 | Reichweiten-Erfassung schrieb bei jedem Seitenaufruf sofort in die Datenbank | Ein einzelner Besucher weckte sie für die Dauer des Auto-Pause-Delays. | Seitenaufrufe werden gesammelt und in Sammelfenstern gebündelt geschrieben |
 | 4 | `app/sitemap.ts` prüfte bei jedem Aufruf per `SELECT 1` die Erreichbarkeit | Jeder Crawler-Besuch weckte die Datenbank. | Sitemap wird gecacht wie jeder andere öffentliche Zugriff |
@@ -56,37 +88,42 @@ unterscheiden (siehe „Prüfen", Punkt 2).
 
 ## Sofort, von Hand (wirkt ohne Deployment)
 
-Die Änderungen an `main.bicep` wirken erst bei einem Template-Deployment — der
-laufende Deploy-Workflow rollt nur das Image aus. Diese drei Schritte ändern den
-teuersten Teil sofort:
+`main.bicep` beschreibt den laufenden Stand nicht (siehe Nachtrag). Diese
+Befehle sind deshalb keine Bequemlichkeit, sondern der einzige Weg, auf dem die
+Änderungen wirklich ankommen — **die beiden Datenbank-Befehle zuerst, sie sind
+die eigentliche Kostenbremse**:
 
 ```bash
-# 1. Wie viele Revisionen laufen gerade wirklich?
-az containerapp revision list -n nicolenders-prod-web -g nicolenders-rg \
-  --query "[?properties.active].{name:name, created:properties.createdTime, replicas:properties.replicas}" \
-  -o table
-
-# 2. Auf Single-Revision umstellen (erzeugt selbst keine Revision)
-az containerapp revision set-mode -n nicolenders-prod-web -g nicolenders-rg --mode single
-
-# 3. Alles deaktivieren außer der Revision, die gerade ausliefert
-CURRENT=$(az containerapp show -n nicolenders-prod-web -g nicolenders-rg \
-  --query "properties.latestReadyRevisionName" -o tsv)
-for REV in $(az containerapp revision list -n nicolenders-prod-web -g nicolenders-rg \
-      --query "[?properties.active].name" -o tsv); do
-  [ "$REV" = "$CURRENT" ] && continue
-  echo "Deaktiviere $REV"
-  az containerapp revision deactivate -n nicolenders-prod-web -g nicolenders-rg --revision "$REV"
-done
-```
-
-Schritt 2 und 3 erledigt der Deploy-Workflow ab jetzt bei jedem Lauf selbst.
-
-Die Datenbank-Einstellungen ebenfalls sofort, ohne Template-Deployment:
-
-```bash
+# 1. Auto-Pause-Delay von 60 auf 15 Minuten. Jede Berührung der Datenbank
+#    kostet ab jetzt eine Viertelstunde Online-Zeit statt einer vollen Stunde.
 SQL_SERVER=$(az sql server list -g nicolenders-rg --query "[0].name" -o tsv)
 az sql db update -g nicolenders-rg -s "$SQL_SERVER" -n nicolendersdb --auto-pause-delay 15
+
+# 2. Scheduler-Takt von fünf Minuten auf stündlich.
+#    Erst den Namen des Jobs holen — er muss nicht dem Template entsprechen.
+az containerapp job list -g nicolenders-rg --query "[].{name:name, cron:properties.configuration.scheduleTriggerConfig.cronExpression}" -o table
+az containerapp job update -n <job-name> -g nicolenders-rg --cron-expression "0 * * * *"
+```
+
+Weniger dringend, weil der zweistufige Tick den Takt ohnehin entschärft: Ein
+Tick ohne fälligen Termin fasst die Datenbank gar nicht mehr an. Der stündliche
+Cron spart nur noch die Container-Starts des Jobs.
+
+**Aufräumen (einmalig, nur falls nötig).** Der Deploy-Workflow prüft den
+Revisionsmodus, deaktiviert aber nichts mehr von selbst — der Versuch hat sich
+beim ersten Lauf an einer noch startenden Revision verschluckt (siehe Nachtrag).
+Falls die Liste mehr als eine aktive Revision zeigt, von Hand:
+
+```bash
+# Was läuft gerade wirklich?
+az containerapp revision list -n nicolenders-prod-web -g nicolenders-rg \
+  --query "[?properties.active].{name:name, created:properties.createdTime, traffic:properties.trafficWeight}" \
+  -o table
+
+# Alles deaktivieren, was keinen Traffic bekommt — die ausliefernde Revision
+# bleibt. Vorher die Ausgabe oben lesen; eine gerade startende Revision hat
+# ebenfalls kein Traffic-Gewicht und darf nicht mitdeaktiviert werden.
+az containerapp revision deactivate -n nicolenders-prod-web -g nicolenders-rg --revision <name>
 ```
 
 ---
@@ -156,7 +193,7 @@ Vor- und Folgemonat.
 | Posten | Vorher | Erwartet |
 |---|---|---|
 | Azure SQL | 127,58 EUR | 1–2 h Online-Zeit am Tag → etwa 7–12 EUR, im Free Offer 0 EUR |
-| Container App `web` | ein Replica je jemals erzeugter Revision | ein Replica → 4–8 EUR |
+| Container App `web` | ein Replica (die App stand bereits auf Single) | unverändert 4–8 EUR |
 | Container Registry (Basic) | ~5 EUR | unverändert ~5 EUR |
 | Rest (Storage, Logs, Identity) | < 1 EUR | unverändert |
 

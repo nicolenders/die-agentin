@@ -89,6 +89,9 @@ erDiagram
   Post ||--o{ ChannelTask : "wird verteilt als"
   Dossier ||--o{ DossierTranslation : hat
   Dossier }o--|| Taxonomy : kategorisiert
+  EventSeries ||--o{ EventEdition : "fand statt als"
+  EventSeries ||--o{ Mission : "klammert"
+  EventEdition ||--o{ Mission : "Rahmen von"
   Mission ||--o{ MissionTranslation : hat
   Mission ||--o{ MissionPhoto : zeigt
   Mission ||--o{ TalkDelivery : "Ort von"
@@ -163,22 +166,46 @@ model Dossier {
 }
 // DossierTranslation analog zu PostTranslation (+ tocEnabled)
 
+model EventSeries {                  // die wiederkehrende Veranstaltung
+  id         String  @id @default(cuid())
+  name       String
+  matchKey   String  @unique         // normalisierter Name, erkennt Dubletten
+  slug       String  @unique
+  organizer  String?
+  websiteUrl String? @db.NVarChar(2048)   // Stammdatum, Vorlage für neue Einsätze
+  editions   EventEdition[]
+  missions   Mission[]
+}
+
+model EventEdition {                 // Historieneintrag: wann sie stattfand
+  id        String    @id @default(cuid())
+  seriesId  String
+  label     String                   // in der Regel das Jahr
+  startDate DateTime?
+  endDate   DateTime?
+  missions  Mission[]
+  @@unique([seriesId, label])
+}
+
 model Mission {
   id           String        @id @default(cuid())
-  eventName    String
+  eventName    String                       // Name, wie er DAMALS galt
   city         String
   countryCode  String        @db.Char(2)
   lat          Float
   lon          Float
-  startDate    DateTime
+  startDate    DateTime                     // der eigene Einsatztag
   endDate      DateTime?
   status       MissionStatus @default(PLANNED)
-  eventUrl     String?       @db.NVarChar(2048)
+  eventUrl     String?       @db.NVarChar(2048)  // Adresse, wie sie DAMALS galt
   contentStatus ContentStatus @default(DRAFT)
+  eventSeriesId  String?                    // optionale Klammer über die Jahre
+  eventEditionId String?                    // optionaler Rahmen dieser Ausgabe
   translations MissionTranslation[]
   photos       MissionPhoto[]
   deliveries   TalkDelivery[]
   @@index([startDate])
+  @@index([eventSeriesId])
 }
 
 model MissionTranslation {
@@ -305,7 +332,7 @@ Alle öffentlichen Routen liegen unter `/[locale]`, `de` ist Standard und wird n
 | `/[locale]/dossiers` | Übersicht nach Kategorie |
 | `/[locale]/dossiers/[slug]` | Dossier mit TOC, Galerie, Video |
 | `/[locale]/einsaetze` | Weltkarte, Jahresfilter, Liste als Tabelle |
-| `/[locale]/einsaetze/[slug]` | Einsatzakte: Veranstaltung, Briefing, Fotos |
+| `/[locale]/einsaetze/[slug]` | Einsatzakte: Veranstaltung, Briefing, Fotos, weitere Einsätze bei derselben Veranstaltung |
 | `/[locale]/briefings` | Vortragskatalog nach Kategorie, Sprachverfügbarkeit |
 | `/[locale]/briefings/[slug]` | Vortragsdetail, wo und in welcher Sprache gehalten |
 | `/[locale]/publikationen` | Bücher und weitere Veröffentlichungen |
@@ -313,6 +340,7 @@ Alle öffentlichen Routen liegen unter `/[locale]`, `de` ist Standard und wird n
 | `/[locale]/legende` | Über mich, Mission, Säulen, Kontakt |
 | `/[locale]/impressum`, `/datenschutz`, `/barrierefreiheit` | Rechtstexte |
 | `/feed.xml`, `/feed.en.xml`, `/sitemap.xml`, `/robots.txt` | Maschinenlesbares |
+| `/admin/veranstaltungen` | Stammdaten der wiederkehrenden Veranstaltungen samt Ausgaben-Chronik |
 | `/admin/**` | Redaktion, komplett `noindex`, nur mit Rolle Admin |
 
 **Slugs** werden je Sprache gepflegt und beim ersten Veröffentlichen eingefroren. Eine pflegbare Weiterleitungstabelle gibt es nicht mehr (ADR 0024): Wo eine Adresse einmal umziehen muss, steht die Regel im Code (`lib/seo/legacy-redirects.ts`, `next.config.ts`) und muss von niemandem nachgetragen werden.

@@ -20,6 +20,7 @@ import { getShareTemplates, getShareProfiles } from "@/lib/queries/settings";
 import { renderShareText, sharePublicPath } from "@/lib/share";
 import { DEFAULT_PAGE_SIZE, pageWindow, paginate, parsePage } from "@/lib/admin/pagination";
 import { RETURN_PARAM, editHref } from "@/lib/admin/return-to";
+import { editionRange } from "@/lib/events/naming";
 import { deleteMission } from "./actions";
 
 export const metadata = { title: "Einsätze · Zentrale" };
@@ -40,6 +41,8 @@ interface Filter {
   ort: "" | "vorort" | "online";
   /** Jahr als Text; leer = alle Jahre. */
   jahr: string;
+  /** Kennung der Veranstaltung; leer = alle. */
+  veranstaltung: string;
 }
 
 export default async function EinsaetzeAdminPage({
@@ -52,15 +55,17 @@ export default async function EinsaetzeAdminPage({
     status?: string;
     ort?: string;
     jahr?: string;
+    veranstaltung?: string;
     seite?: string;
   }>;
 }) {
-  const { ok, err, q, status, ort, jahr, seite } = await searchParams;
+  const { ok, err, q, status, ort, jahr, veranstaltung, seite } = await searchParams;
   const filter: Filter = {
     q: (q ?? "").trim(),
     status: parseMissionListStatus(status),
     ort: ort === "online" || ort === "vorort" ? ort : "",
     jahr: /^\d{4}$/.test(jahr ?? "") ? (jahr as string) : "",
+    veranstaltung: (veranstaltung ?? "").trim(),
   };
   const requestedPage = parsePage(seite);
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
@@ -70,6 +75,7 @@ export default async function EinsaetzeAdminPage({
   let matching = 0;
   let grandTotal = 0;
   let years: number[] = [];
+  let seriesOptions: { id: string; name: string }[] = [];
   let dbError = false;
   try {
     const loaded = await load(base, templates, filter, requestedPage);
@@ -77,12 +83,18 @@ export default async function EinsaetzeAdminPage({
     matching = loaded.matching;
     grandTotal = loaded.grandTotal;
     years = loaded.years;
+    seriesOptions = loaded.seriesOptions;
   } catch {
     dbError = true;
   }
 
   const page = paginate(matching, requestedPage);
-  const isFiltered = filter.q !== "" || filter.status !== "" || filter.ort !== "" || filter.jahr !== "";
+  const isFiltered =
+    filter.q !== "" ||
+    filter.status !== "" ||
+    filter.ort !== "" ||
+    filter.jahr !== "" ||
+    filter.veranstaltung !== "";
 
   /** Blätter-Link, der die Filter mitnimmt. */
   const pageHref = (target: number) => {
@@ -91,6 +103,7 @@ export default async function EinsaetzeAdminPage({
     if (filter.status) params.set("status", filter.status);
     if (filter.ort) params.set("ort", filter.ort);
     if (filter.jahr) params.set("jahr", filter.jahr);
+    if (filter.veranstaltung) params.set("veranstaltung", filter.veranstaltung);
     if (target > 1) params.set("seite", String(target));
     const query = params.toString();
     return `/admin/einsaetze${query ? `?${query}` : ""}`;
@@ -144,6 +157,20 @@ export default async function EinsaetzeAdminPage({
             ))}
           </select>
         </label>
+        {/* Nach Veranstaltung filtern: der Blick auf „alles, was ich bei
+            dieser Konferenz je gemacht habe". Gepflegt werden Veranstaltungen
+            unter „Veranstaltungen". */}
+        {seriesOptions.length > 0 ? (
+          <label className="f">
+            Veranstaltung
+            <select className="f" name="veranstaltung" defaultValue={filter.veranstaltung} style={{ minWidth: 180 }}>
+              <option value="">Alle</option>
+              {seriesOptions.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <button className="btn solid sm" type="submit">Filtern</button>
         {isFiltered ? <Link className="btn ghost sm" href="/admin/einsaetze">Zurücksetzen</Link> : null}
         {!dbError ? (
@@ -191,7 +218,18 @@ export default async function EinsaetzeAdminPage({
               const pub = PUBLICATION[m.contentStatus] ?? PUBLICATION.DRAFT;
               return (
                 <tr key={m.id}>
-                  <td><b>{m.eventName}</b></td>
+                  <td>
+                    <b>{m.eventName}</b>
+                    {m.series ? (
+                      <>
+                        <br />
+                        <Link className="meta" href={`/admin/einsaetze?veranstaltung=${m.series.id}`}>
+                          {m.series.name}
+                        </Link>
+                        {m.edition ? <span className="meta"> · {m.edition}</span> : null}
+                      </>
+                    ) : null}
+                  </td>
                   <td className="meta">
                     {m.talk ? (
                       <Link href={`/admin/briefings/bearbeiten?id=${m.talk.id}`}>{m.talk.title}</Link>
@@ -276,6 +314,7 @@ async function load(
             },
           }
         : {}),
+      ...(filter.veranstaltung ? { eventSeriesId: filter.veranstaltung } : {}),
       ...(filter.q
         ? {
             OR: [
@@ -298,6 +337,8 @@ async function load(
     include: {
       translations: { select: { locale: true, slug: true } },
       identities: { select: { codenameDe: true, codenameEn: true, roleDe: true, roleEn: true } },
+      eventSeries: { select: { id: true, name: true } },
+      eventEdition: { select: { label: true, startDate: true, endDate: true } },
       deliveries: {
         take: 1,
         orderBy: { heldOn: "desc" },
@@ -310,9 +351,10 @@ async function load(
 
   // Auswahl der Jahre aus dem GESAMTEN Bestand, nicht aus der gefilterten
   // Seite: sonst verschwindet das Jahr, mit dem man gerade gefiltert hat.
-  const [grandTotal, allDates] = await Promise.all([
+  const [grandTotal, allDates, seriesOptions] = await Promise.all([
     db.mission.count(),
     db.mission.findMany({ select: { startDate: true }, orderBy: { startDate: "desc" } }),
+    db.eventSeries.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   const years = [...new Set(allDates.map((m) => m.startDate.getUTCFullYear()))].sort((a, b) => b - a);
   const rows = missions.map((m) => {
@@ -351,6 +393,14 @@ async function load(
     return {
       id: m.id,
       eventName: m.eventName,
+      series: m.eventSeries,
+      // Die Ausgabe zeigt ihren Zeitraum, nicht nur ihre Bezeichnung: „2026"
+      // allein sagt nichts, „2026 · 12.03.2026 – 14.03.2026" schon.
+      edition: m.eventEdition
+        ? [m.eventEdition.label, editionRange(m.eventEdition.startDate, m.eventEdition.endDate, "de")]
+            .filter(Boolean)
+            .join(" · ")
+        : null,
       city: m.city,
       countryCode: m.countryCode,
       isOnline: m.isOnline,
@@ -365,5 +415,5 @@ async function load(
       share,
     };
   });
-  return { rows, matching, grandTotal, years };
+  return { rows, matching, grandTotal, years, seriesOptions };
 }

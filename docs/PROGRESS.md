@@ -1146,3 +1146,37 @@ Video. Meistens will man dort ohnehin nur scrollen.
 - Nachgemessen bei 1912×905, 1440×900, 768×1000 und 380×800: Kacheln einer Reihe
   gleich hoch, „Aufnahme ansehen" auf gemeinsamer Grundlinie, kein Link im Link,
   kein waagerechter Überlauf — auch bei aufgeklapptem Filter.
+
+## Veranstaltungen: Einsätze bei derselben Konferenz gehören zusammen (07.09.2026)
+
+Wiederkehrende Veranstaltungen sind jetzt eine eigene Entität (`EventSeries`)
+mit einer Chronik ihrer Ausgaben (`EventEdition`). Die Entscheidung samt
+Abgrenzung steht in `docs/decisions/0032-veranstaltung-als-eigene-entitaet.md`.
+
+- **Stammdaten unter `/admin/veranstaltungen`:** Name, Veranstalter, Website und
+  die Ausgaben mit Zeitraum. Dazu das Gegenstück zur unscharfen
+  Namenserkennung — zwei Veranstaltungen lassen sich zusammenführen, Einsätze
+  und Ausgaben ziehen mit um.
+- **In der Einsatzmaske** wird die Veranstaltung ausgewählt oder direkt neu
+  angelegt. Sie belegt Name und Adresse vor, überschreibt aber nichts, was
+  schon dasteht. Wer die Adresse ändert, kann sie mit einem Haken (vorbelegt)
+  in die Stammdaten übernehmen: nach vorn wirksam, alte Einsätze behalten ihre.
+- **Der Zeitraum der Veranstaltung** wird an der Ausgabe gepflegt, nicht am
+  Einsatz — mehrere Auftritte derselben Ausgabe teilen ihn sich. Der eigene
+  Einsatztag bleibt, wo er war.
+- **Filter nach Veranstaltung** in der Admin-Einsatzliste und öffentlich in der
+  Einsatzliste (Knopf am Namen: „alle Einsätze dort"). Die Einsatzakte zeigt
+  den Block „Diese Veranstaltung" mit Veranstalter, Website und den weiteren
+  veröffentlichten Einsätzen.
+- **Bestand:** Die Migration ordnet nichts zu. `npm run db:backfill-events
+  -- --dry-run` zeigt, was zusammenfiele; ohne `--dry-run` wird es
+  geschrieben. Standardmäßig entstehen nur Veranstaltungen mit mehr als einem
+  Einsatz, `--all` nimmt auch Einzelauftritte. Ausgaben legt das Skript nicht
+  an — ein Einsatztag ist nicht der Zeitraum einer Konferenz.
+
+### Braucht Input von Nicole
+
+- Nach dem Backfill einmal durch `/admin/veranstaltungen` gehen: Namen glätten
+  (das Skript nimmt den jüngsten Einsatznamen ohne Jahreszahl), falsch
+  Zusammengefasstes trennen (Zuordnung in der Einsatzmaske ändern), getrennt
+  Angelegtes zusammenführen.

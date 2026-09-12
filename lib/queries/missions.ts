@@ -7,6 +7,7 @@ import { missionTalkLanguage } from "@/lib/mission-language";
 import type { Locale } from "@/lib/i18n/config";
 import type { MissionStatus } from "@/lib/domain";
 import { extractYouTubeId } from "@/lib/video/youtube";
+import { editionRange } from "@/lib/events/naming";
 
 export interface MissionListItem {
   id: string;
@@ -39,6 +40,11 @@ export interface MissionListItem {
   language: string | null;
   /** Länge des Auftritts in Minuten. */
   durationMin: number | null;
+  /**
+   * Wiederkehrende Veranstaltung, zu der dieser Einsatz gehört. Über sie
+   * gehören Einsätze sichtbar zusammen — dieselbe Konferenz, viele Jahre.
+   */
+  series: { id: string; slug: string; name: string } | null;
 }
 
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
@@ -49,6 +55,7 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       banner: true,
       identities: { orderBy: { sortOrder: "asc" } },
       tools: { select: { slug: true, name: true }, orderBy: { sortOrder: "asc" } },
+      eventSeries: { select: { id: true, slug: true, name: true } },
       deliveries: {
         take: 1,
         orderBy: { heldOn: "desc" },
@@ -87,6 +94,7 @@ async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListI
       briefing: delivery && talkTitle ? { id: delivery.talkId, title: talkTitle } : null,
       language: missionTalkLanguage(m.sessionLanguage, delivery?.language),
       durationMin: m.durationMin,
+      series: m.eventSeries,
       bannerAi: m.banner?.source === "AI",
       bannerUrl: m.banner ? assetUrl(m.banner.blobPath) : null,
       bannerAlt:
@@ -149,6 +157,26 @@ export interface MissionDetail {
   attendeesOnsite: number | null;
   attendeesRemote: number | null;
   onDemandViews: number | null;
+  /** Die wiederkehrende Veranstaltung — Stammdaten, wie sie heute gelten. */
+  series: { slug: string; name: string; organizer: string | null; websiteUrl: string | null } | null;
+  /**
+   * Zeitraum der Veranstaltung, zu der dieser Einsatz gehörte — nicht der
+   * Einsatztag. Leer, wenn keine Ausgabe hinterlegt ist.
+   */
+  eventPeriod: string | null;
+  /**
+   * Weitere veröffentlichte Einsätze bei derselben Veranstaltung, jüngste
+   * zuerst. Verlinkt wird nur, wo es auch eine freigegebene Akte gibt.
+   */
+  siblings: {
+    id: string;
+    slug: string | null;
+    eventName: string;
+    city: string;
+    isOnline: boolean;
+    startDate: Date;
+    linkable: boolean;
+  }[];
 }
 
 function parseCoSpeakers(json: string | null): { name: string; url: string | null }[] {
@@ -174,6 +202,8 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
           photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
           deliveries: { include: { talk: { include: { translations: true } } }, orderBy: { heldOn: "desc" }, take: 1 },
           identities: { orderBy: { sortOrder: "asc" } },
+          eventSeries: true,
+          eventEdition: true,
           videos: {
             orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
             include: { coverAsset: true, translations: true },
@@ -194,6 +224,20 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
     ? pickTranslation(delivery.talk.translations, locale)?.translation.title ?? null
     : null;
   const talkLanguage = missionTalkLanguage(mission.sessionLanguage, delivery?.language);
+
+  // Die Geschwister-Einsätze: dieselbe Veranstaltung, andere Jahre. Nur
+  // veröffentlichte — was im Entwurf steht, gehört noch niemandem.
+  const siblingRows = mission.eventSeriesId
+    ? await db.mission.findMany({
+        where: {
+          eventSeriesId: mission.eventSeriesId,
+          contentStatus: "PUBLISHED",
+          NOT: { id: mission.id },
+        },
+        orderBy: { startDate: "desc" },
+        include: { translations: true },
+      })
+    : [];
 
   return {
     id: mission.id,
@@ -242,6 +286,29 @@ async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionD
     attendeesOnsite: mission.attendeesOnsite,
     attendeesRemote: mission.attendeesRemote,
     onDemandViews: mission.onDemandViews,
+    series: mission.eventSeries
+      ? {
+          slug: mission.eventSeries.slug,
+          name: mission.eventSeries.name,
+          organizer: mission.eventSeries.organizer,
+          websiteUrl: mission.eventSeries.websiteUrl,
+        }
+      : null,
+    eventPeriod: mission.eventEdition
+      ? editionRange(mission.eventEdition.startDate, mission.eventEdition.endDate, locale) || null
+      : null,
+    siblings: siblingRows.map((sibling) => {
+      const picked = pickTranslation(sibling.translations, locale);
+      return {
+        id: sibling.id,
+        slug: picked?.translation.slug ?? null,
+        eventName: sibling.eventName,
+        city: sibling.city,
+        isOnline: sibling.isOnline,
+        startDate: sibling.startDate,
+        linkable: sibling.caseFilePublic && Boolean(picked?.translation.slug),
+      };
+    }),
   };
 }
 

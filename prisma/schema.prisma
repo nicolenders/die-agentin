@@ -489,6 +489,7 @@ model MediaAsset {
   identityOgs        Identity[]      @relation("IdentityOg")
   toolIcons          Tool[]          @relation("ToolIcon")
   dispatchHeroes     Dispatch[]      @relation("DispatchHero")
+  dispatchImages     DispatchImage[]
   resumePortraits    ResumeProfile[] @relation("ResumePortrait")
 }
 
@@ -678,9 +679,25 @@ model Dispatch {
   // Radar-Themen (Aufklärung), zu denen diese Depesche gehört. Öffentlich sind
   // die Radar-Punkte anklickbar und filtern die Depeschenliste darauf.
   focusTopics  FocusTopic[]          @relation("DispatchFocusTopics")
+  // Bilder-Pool: einmal gepflegt, in den Texten beider Sprachen einfügbar.
+  // Alt-Texte kommen je Sprache aus dem MediaAsset (ADR 0033).
+  images       DispatchImage[]
 
   @@index([status, publishAt])
   @@index([format])
+}
+
+model DispatchImage {
+  id         String @id @default(cuid())
+  dispatchId String
+  assetId    String
+  sortOrder  Int    @default(0)
+
+  dispatch Dispatch   @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  asset    MediaAsset @relation(fields: [assetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([dispatchId, assetId])
+  @@index([dispatchId, sortOrder])
 }
 
 model DispatchTranslation {

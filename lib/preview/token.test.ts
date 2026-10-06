@@ -30,4 +30,16 @@ describe("preview/token", () => {
     expect(verifyPreviewToken("nonsense", 1)).toBeNull();
     expect(verifyPreviewToken("a.b.c", 1)).toBeNull();
   });
+
+  it("kennt Depeschen als eigene Art", () => {
+    const token = createPreviewToken("dispatch", "d1", 1000);
+    expect(verifyPreviewToken(token, 2000)?.kind).toBe("dispatch");
+  });
+
+  it("weist eine korrekt signierte, aber unbekannte Art ab", async () => {
+    const { createHmac } = await import("node:crypto");
+    const body = Buffer.from(JSON.stringify({ kind: "admin", id: "x", exp: 9e15 })).toString("base64url");
+    const mac = createHmac("sha256", "test-secret-for-preview").update(body).digest("base64url");
+    expect(verifyPreviewToken(`${body}.${mac}`, 1)).toBeNull();
+  });
 });

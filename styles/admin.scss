@@ -923,3 +923,74 @@ a.st:focus-visible {
   margin: 6px 0 0;
   min-height: 1.2em;
 }
+
+// Bilder-Pool der Depesche (ADR 0033) — in der Maske und im Einfüge-Dialog.
+// Gleich hohe Karten, Aktionen auf gemeinsamer Grundlinie (CLAUDE.md): Der
+// Textkörper wächst, die Knöpfe schiebt `margin-top: auto` nach unten.
+.pool-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+.pool-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 8px;
+
+  img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 3px;
+  }
+  > .btn,
+  .pool-card-actions {
+    margin-top: auto;
+  }
+}
+.pool-card-text {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.pool-card-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pool-card-actions {
+  display: flex;
+  gap: 4px;
+
+  .btn:last-child {
+    margin-left: auto;
+  }
+}
+
+// Pool-Bild im Editor: das Bild selbst statt Platzhalter, mit Unterschrift.
+.rich-field .rich-image {
+  margin: 12px 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 260px;
+    margin-bottom: 4px;
+    border-radius: 3px;
+  }
+  &.ProseMirror-selectednode {
+    outline: 2px solid var(--violet);
+  }
+}

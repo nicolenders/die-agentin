@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth/guard";
+import { ForbiddenError, requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { invalidateTags, tags } from "@/lib/cache";
 import { slugify } from "@/lib/slug";
@@ -11,6 +11,9 @@ import { FOCUS_TAG } from "@/lib/queries/records";
 import { checkName, findByName, type InlineCreateResult } from "@/lib/admin/inline-create";
 import { RETURN_PARAM, safeReturnTo, withParams } from "@/lib/admin/return-to";
 import { dispatchUrls, submitToIndexNow } from "@/lib/seo/indexnow";
+import { imageRows, parseImageIds } from "@/lib/dispatches/images";
+import { createPreviewToken } from "@/lib/preview/token";
+import { siteOrigin } from "@/lib/site";
 
 const LIST = "/admin/depeschen";
 const EDIT = `${LIST}/bearbeiten`;
@@ -139,6 +142,9 @@ export async function createDispatch(formData: FormData): Promise<void> {
         focusTopics: { connect: ids(formData, "focusTopicIds").map((id) => ({ id })) },
         // Admin-verfasste Übersetzungen gelten als geprüft (öffentlich sichtbar).
         translations: { create: trans.map((t) => ({ ...t, state: "REVIEWED" })) },
+        images: {
+          create: parseImageIds(formData.getAll("imageIds")).map((assetId, sortOrder) => ({ assetId, sortOrder })),
+        },
       },
     });
     newId = created.id;
@@ -186,6 +192,9 @@ export async function updateDispatch(formData: FormData): Promise<void> {
       }),
       db.dispatchTranslation.deleteMany({ where: { dispatchId: id } }),
       db.dispatchTranslation.createMany({ data: trans.map((t) => ({ ...t, dispatchId: id, state: "REVIEWED" })) }),
+      // Bilder-Pool (ADR 0033): Reihenfolge ist die des Formulars.
+      db.dispatchImage.deleteMany({ where: { dispatchId: id } }),
+      db.dispatchImage.createMany({ data: imageRows(id, parseImageIds(formData.getAll("imageIds"))) }),
     ]);
   } catch {
     redirect(withParams(editHrefWithReturn(id, list), { err: "failed" }));
@@ -210,6 +219,23 @@ export async function deleteDispatch(formData: FormData): Promise<void> {
   if (failed) redirect(withParams(list, { err: "failed" }));
   invalidate();
   redirect(withParams(list, { ok: "deleted" }));
+}
+
+/**
+ * Teilbarer, sieben Tage gültiger Vorschau-Link (ADR 0033). Wer ihn hat, sieht
+ * den jeweils gespeicherten Stand — auch spätere Änderungen, solange der Link
+ * gilt. Gebunden an die ID aus der Maske aufgerufen.
+ */
+export async function createDispatchPreviewLink(id: string): Promise<{ url?: string; error?: string }> {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: error.message };
+    throw error;
+  }
+  const exists = await db.dispatch.count({ where: { id } }).catch(() => 0);
+  if (!exists) return { error: "Depesche nicht gefunden. Erst speichern, dann den Link erzeugen." };
+  return { url: `${siteOrigin()}/preview/${createPreviewToken("dispatch", id)}` };
 }
 
 // ---------------------------------------------------------------------------

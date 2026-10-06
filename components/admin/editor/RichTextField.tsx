@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import { buildExtensions } from "@/lib/editor/extensions";
+import { buildExtensions, type PoolPreview } from "@/lib/editor/extensions";
 import { parseRichValue } from "@/lib/content/rich";
 import type { TiptapDoc } from "@/lib/content/schema";
+import type { PoolImage } from "@/lib/dispatches/images";
+import PoolImagePicker from "./PoolImagePicker";
 
 // Formular-taugliches Rich-Text-Feld (SPEC §4). Ersetzt einfache <textarea> für
 // Fließtext. Der Editor speichert TipTap-JSON in ein verstecktes Input mit dem
@@ -49,6 +51,8 @@ export default function RichTextField({
   minimal = false,
   ariaLabel,
   onChange,
+  imagePool,
+  poolLocale = "de",
 }: {
   /** Name des versteckten Inputs für Server-Action-Formulare. */
   name?: string;
@@ -58,12 +62,30 @@ export default function RichTextField({
   ariaLabel?: string;
   /** Für kontrollierte Nutzung (z. B. MissionForm): erhält das JSON bei Änderung. */
   onChange?: (value: string) => void;
+  /**
+   * Bilder-Pool (Depeschen, ADR 0033). Ist er gesetzt, kann der Text Bilder
+   * aus dem Pool enthalten; ohne ihn bleibt das Feld reiner Fließtext.
+   */
+  imagePool?: PoolImage[];
+  /** Sprache dieses Feldes — für Alt-Text-Hinweise im Pool-Dialog. */
+  poolLocale?: "de" | "en";
 }) {
-  const initialDoc: TiptapDoc = parseRichValue(defaultValue);
+  const withImages = imagePool !== undefined;
+  const initialDoc: TiptapDoc = parseRichValue(defaultValue, withImages ? "fieldImages" : "field");
   const [json, setJson] = useState<string>(() => JSON.stringify(initialDoc));
+  const [picking, setPicking] = useState(false);
+  // Die Map lebt so lange wie der Editor und wird fortgeschrieben, wenn der
+  // Pool wächst — der Bild-Block liest beim Zeichnen daraus (extensions.ts).
+  const [previews] = useState(
+    () => new Map<string, PoolPreview>((imagePool ?? []).map((i) => [i.id, { url: i.url }])),
+  );
+  useEffect(() => {
+    for (const img of imagePool ?? []) previews.set(img.id, { url: img.url });
+  }, [imagePool, previews]);
+  const closePicker = useCallback(() => setPicking(false), []);
 
   const editor = useEditor({
-    extensions: buildExtensions("field"),
+    extensions: buildExtensions(withImages ? "fieldImages" : "field", withImages ? { imagePool: previews } : {}),
     content: initialDoc,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
@@ -104,6 +126,7 @@ export default function RichTextField({
                 const url = window.prompt("Link-URL");
                 if (url) editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
               }, editor.isActive("link"))}
+              {withImages ? btn(editor, "▣", "Bild aus dem Pool einfügen", () => setPicking(true)) : null}
             </>
           ) : null}
         </div>
@@ -111,6 +134,22 @@ export default function RichTextField({
 
       <EditorContent editor={editor} />
       {name ? <input type="hidden" name={name} value={json} readOnly /> : null}
+      {picking && editor && imagePool ? (
+        <PoolImagePicker
+          pool={imagePool}
+          locale={poolLocale}
+          onClose={closePicker}
+          onInsert={(img, caption) => {
+            previews.set(img.id, { url: img.url });
+            editor
+              .chain()
+              .focus()
+              .insertContent({ type: "image", attrs: { assetId: img.id, caption: caption || null } })
+              .run();
+            setPicking(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

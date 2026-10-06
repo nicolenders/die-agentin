@@ -1,5 +1,5 @@
 import { sanitizeDocument } from "./sanitize";
-import { emptyDoc, isTiptapDoc, type TiptapDoc, type TiptapNode } from "./schema";
+import { emptyDoc, isTiptapDoc, type ContentContext, type TiptapDoc, type TiptapNode } from "./schema";
 
 // Adapter für formularbasierte Rich-Text-Felder. Neue Werte werden als
 // TipTap-JSON gespeichert; ältere (Plain-Text-)Werte werden beim Lesen als
@@ -30,14 +30,19 @@ function plainToDoc(text: string): TiptapDoc {
 /**
  * Liest einen gespeicherten Feldwert als bereinigtes Rich-Text-Dokument.
  * TipTap-JSON wird geparst und bereinigt; alles andere als Plain-Text verpackt.
+ * `context` ist "field" oder — bei Feldern mit Bilder-Pool — "fieldImages";
+ * sonst gingen eingefügte Bilder beim nächsten Öffnen der Maske verloren.
  */
-export function parseRichValue(value: string | null | undefined): TiptapDoc {
+export function parseRichValue(
+  value: string | null | undefined,
+  context: Extract<ContentContext, "field" | "fieldImages"> = "field",
+): TiptapDoc {
   if (!value) return emptyDoc();
   const trimmed = value.trim();
   if (trimmed.startsWith("{")) {
     try {
       const parsed: unknown = JSON.parse(trimmed);
-      if (isTiptapDoc(parsed)) return sanitizeDocument(parsed, "field");
+      if (isTiptapDoc(parsed)) return sanitizeDocument(parsed, context);
     } catch {
       // kein gültiges JSON → als Plain-Text behandeln
     }

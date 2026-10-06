@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { cachedQuery, tags } from "@/lib/cache";
 import { pickTranslation } from "@/lib/content/pick";
@@ -5,6 +6,7 @@ import { identityDisplayName } from "@/lib/identities";
 import { toHeroImage, type HeroImage } from "@/lib/media/hero";
 import type { Locale } from "@/lib/i18n/config";
 import type { DispatchFormat } from "@/lib/domain";
+import { isPublic } from "@/lib/visibility";
 
 // Datenzugriff für Depeschen (Phase 3). Sichtbarkeitsregel (SPEC §6 / Phase 4):
 // status = PUBLISHED UND publishedAt <= now. Zukünftig terminierte bleiben
@@ -118,25 +120,22 @@ export interface DispatchDetail {
   contentLocale: Locale;
 }
 
-async function loadDispatchBySlug(locale: Locale, slug: string, nowMs: number): Promise<DispatchDetail | null> {
-  const translation = await db.dispatchTranslation.findFirst({
-    where: { slug, dispatch: { status: "PUBLISHED" } },
-    include: {
-      dispatch: {
-        include: {
-          translations: true,
-          heroAsset: true,
-          identities: { orderBy: { sortOrder: "asc" } },
-          topics: { orderBy: { sortOrder: "asc" } },
-        },
-      },
-    },
-  });
-  if (!translation) return null;
-  const d = translation.dispatch;
-  if (d.publishedAt && d.publishedAt.getTime() > nowMs) return null;
-  const reviewed = d.translations.filter((t) => t.state === "REVIEWED");
-  const picked = pickTranslation(reviewed, locale);
+const detailInclude = {
+  translations: true,
+  heroAsset: true,
+  identities: { orderBy: { sortOrder: "asc" } },
+  topics: { orderBy: { sortOrder: "asc" } },
+} satisfies Prisma.DispatchInclude;
+
+type DetailRow = Prisma.DispatchGetPayload<{ include: typeof detailInclude }>;
+
+/** Baut die Detailansicht aus einer Zeile und den in Frage kommenden Übersetzungen. */
+function toDispatchDetail(
+  d: DetailRow,
+  candidates: DetailRow["translations"],
+  locale: Locale,
+): DispatchDetail | null {
+  const picked = pickTranslation(candidates, locale);
   if (!picked) return null;
   return {
     id: d.id,
@@ -157,6 +156,45 @@ async function loadDispatchBySlug(locale: Locale, slug: string, nowMs: number): 
     fallback: picked.fallback,
     contentLocale: picked.contentLocale,
   };
+}
+
+async function loadDispatchBySlug(locale: Locale, slug: string, nowMs: number): Promise<DispatchDetail | null> {
+  const translation = await db.dispatchTranslation.findFirst({
+    where: { slug, dispatch: { status: "PUBLISHED" } },
+    include: { dispatch: { include: detailInclude } },
+  });
+  if (!translation) return null;
+  const d = translation.dispatch;
+  if (d.publishedAt && d.publishedAt.getTime() > nowMs) return null;
+  return toDispatchDetail(d, d.translations.filter((t) => t.state === "REVIEWED"), locale);
+}
+
+/** Depesche in der Vorschau: zusätzlich der Status, den die Seite nicht zeigt. */
+export interface DispatchPreview extends DispatchDetail {
+  status: string;
+  /** Ist die Depesche schon öffentlich sichtbar (zentrale Regel, lib/visibility)? */
+  live: boolean;
+  /** Sprachen, für die es überhaupt einen Text gibt. */
+  locales: Locale[];
+}
+
+/**
+ * Lädt eine Depesche für die Vorschau (ADR 0033) — unabhängig von Status und
+ * Veröffentlichungsdatum und ohne Cache: Wer gerade gespeichert hat, will genau
+ * diesen Stand sehen. Aufrufer sind ausschließlich die Admin-Vorschau und der
+ * signierte Vorschau-Link; beide prüfen vorher die Berechtigung.
+ */
+export async function getDispatchPreview(id: string, locale: Locale): Promise<DispatchPreview | null> {
+  try {
+    const d = await db.dispatch.findUnique({ where: { id }, include: detailInclude });
+    if (!d) return null;
+    const detail = toDispatchDetail(d, d.translations, locale);
+    if (!detail) return null;
+    const locales = d.translations.map((t) => t.locale).filter((l): l is Locale => l === "de" || l === "en");
+    return { ...detail, status: d.status, live: isPublic(d.status, d.publishedAt), locales };
+  } catch {
+    return null;
+  }
 }
 
 export async function getDispatchBySlug(locale: Locale, slug: string): Promise<DispatchDetail | null> {

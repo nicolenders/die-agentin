@@ -8,6 +8,7 @@ import MissionVideos, { type LinkedVideo } from "@/components/admin/MissionVideo
 import { extractYouTubeId, youtubeWatchUrl } from "@/lib/video/youtube";
 import { recordingWorthImporting, type VideoChoice } from "@/lib/video/mission-videos";
 import { safeReturnTo } from "@/lib/admin/return-to";
+import { listEventSeriesOptions, type EventSeriesOption } from "@/lib/queries/event-series";
 import { addMissionVideo, linkMissionVideo, unlinkMissionVideo } from "../actions";
 
 export const metadata = { title: "Einsatz bearbeiten · Zentrale" };
@@ -46,6 +47,7 @@ export default async function EinsatzBearbeitenPage({
     decks: { locale: string; fileName: string; bytes: number; blobPath: string }[];
   }[] = [];
   let categories: { id: string; name: string }[] = [];
+  let eventSeries: EventSeriesOption[] = [];
   let allTools: { id: string; name: string }[] = [];
   let linkedVideos: LinkedVideo[] = [];
   let videoChoices: VideoChoice[] = [];
@@ -62,6 +64,10 @@ export default async function EinsatzBearbeitenPage({
     endDate: "",
     status: "PLANNED",
     eventUrl: "",
+    eventSeriesId: "",
+    eventEditionId: "",
+    editionStart: "",
+    editionEnd: "",
     talkId: "",
     language: "de",
     durationMin: "",
@@ -74,13 +80,15 @@ export default async function EinsatzBearbeitenPage({
   };
 
   try {
-    const [missions, talkRows, catRows, toolRows] = await Promise.all([
+    const [missions, talkRows, catRows, toolRows, seriesRows] = await Promise.all([
       db.mission.findMany({ select: { lat: true, lon: true } }),
       db.talk.findMany({ include: { translations: true, tools: { select: { id: true } }, slideDecks: true } }),
       db.taxonomy.findMany({ where: { kind: "TALK" }, orderBy: { sortOrder: "asc" }, select: { id: true, nameDe: true } }),
       db.tool.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
+      listEventSeriesOptions(),
     ]);
     existingPins = missions;
+    eventSeries = seriesRows;
     talks = talkRows.map((t) => ({
       id: t.id,
       // Ein Briefing „gibt es" in einer Sprache, sobald dort ein Titel steht —
@@ -108,6 +116,7 @@ export default async function EinsatzBearbeitenPage({
         where: { id },
         include: {
           translations: true,
+          eventEdition: true,
           photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
           deliveries: { take: 1, orderBy: { heldOn: "desc" } },
           banner: true,
@@ -147,6 +156,12 @@ export default async function EinsatzBearbeitenPage({
           endDate: mission.endDate ? mission.endDate.toISOString().slice(0, 10) : "",
           status: mission.status,
           eventUrl: mission.eventUrl ?? "",
+          eventSeriesId: mission.eventSeriesId ?? "",
+          eventEditionId: mission.eventEditionId ?? "",
+          // Der Zeitraum kommt aus der Ausgabe, nicht aus dem Einsatz — er
+          // gehört der Veranstaltung.
+          editionStart: mission.eventEdition?.startDate?.toISOString().slice(0, 10) ?? "",
+          editionEnd: mission.eventEdition?.endDate?.toISOString().slice(0, 10) ?? "",
           talkId: delivery?.talkId ?? "",
           // Sprache am Einsatz hat Vorrang; die Zuordnung ist der Rückfall für Altdaten.
           language: missionTalkLanguage(mission.sessionLanguage, delivery?.language) ?? "de",
@@ -228,6 +243,7 @@ export default async function EinsatzBearbeitenPage({
         talks={talks}
         categories={categories}
         allTools={allTools}
+        eventSeries={eventSeries}
         isEdit={Boolean(id)}
         backToList={backToList}
         videos={

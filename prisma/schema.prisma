@@ -159,6 +159,19 @@ model Mission {
   onDemandViews   Int?
   bannerAssetId   String?
   banner          MediaAsset? @relation("MissionBanner", fields: [bannerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // Klammer um wiederkehrende Auftritte: dieselbe Konferenz, viele Jahre. Die
+  // Zuordnung ist optional — ein einmaliger Auftritt braucht keine Veranstaltung.
+  // `eventName` und `eventUrl` bleiben trotzdem am Einsatz stehen: sie halten
+  // fest, wie die Veranstaltung DAMALS hieß und wohin sie DAMALS verwies. Wird
+  // die Adresse in den Stammdaten später korrigiert, bleiben alte Einsätze, wie
+  // sie waren.
+  eventSeriesId   String?
+  eventSeries     EventSeries?  @relation(fields: [eventSeriesId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // Die Ausgabe ist der Historieneintrag der Veranstaltung: wann sie in diesem
+  // Jahr stattfand. Sie gehört der Veranstaltung, nicht dem Einsatz — mehrere
+  // Einsätze derselben Ausgabe teilen sie sich.
+  eventEditionId  String?
+  eventEdition    EventEdition? @relation(fields: [eventEditionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -174,6 +187,8 @@ model Mission {
 
   @@index([startDate])
   @@index([contentStatus])
+  @@index([eventSeriesId])
+  @@index([eventEditionId])
 }
 
 // Aufgabe „Einsatzbericht schreiben" zu genau einem Einsatz. Sie steht im
@@ -228,6 +243,60 @@ model MissionPhoto {
   asset   MediaAsset @relation(fields: [assetId], references: [id])
 
   @@index([missionId, sortOrder])
+}
+
+// ---------------------------------------------------------------------------
+// Veranstaltungen
+// ---------------------------------------------------------------------------
+
+// Die Veranstaltung als eigene Entität: „TechDay" gibt es einmal, die Auftritte
+// dort viele Male. Sie trägt genau die Angaben, die über die Jahre gleich
+// bleiben — Name, Veranstalter, Website. Alles Jahresabhängige steht in der
+// Ausgabe, alles Einsatzabhängige am Einsatz.
+model EventSeries {
+  id String @id @default(cuid())
+  // Anzeigename, so wie die Veranstaltung heute heißt.
+  name String
+  // Normalisierter Name für die Dublettenprüfung: „TechDay 2024" und
+  // „TechDay 2025" ergeben denselben Schlüssel. Eindeutig, damit dieselbe
+  // Veranstaltung nicht zweimal entsteht — die Regel steht in
+  // lib/events/naming.ts, nicht in der Datenbank.
+  matchKey String @unique
+  // Nur für Filterlinks und Anker — die Veranstaltung hat (noch) keine eigene
+  // öffentliche Seite.
+  slug       String  @unique
+  organizer  String?
+  // Stammdatum, aus dem ein neuer Einsatz seine Adresse übernimmt.
+  websiteUrl String? @db.NVarChar(2048)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  editions EventEdition[]
+  missions Mission[]
+
+  @@index([name])
+}
+
+// Eine Ausgabe ist ein Historieneintrag der Veranstaltung: wann sie stattfand.
+// Sie steht bewusst NICHT am Einsatz — sonst müsste jeder Auftritt derselben
+// Konferenz dieselben Daten noch einmal tragen.
+model EventEdition {
+  id       String @id @default(cuid())
+  seriesId String
+  // Bezeichnung der Ausgabe, in der Regel das Jahr („2026"). Je Veranstaltung
+  // eindeutig, damit die Liste eine Chronik bleibt und keine Sammlung von
+  // Dubletten.
+  label     String
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  series   EventSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  missions Mission[]
+
+  @@unique([seriesId, label])
+  @@index([seriesId, startDate])
 }
 
 // ---------------------------------------------------------------------------

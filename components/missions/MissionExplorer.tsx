@@ -37,6 +37,8 @@ export interface ExplorerMission {
   /** Vortragssprache dieses Einsatzes („de"/„en"). */
   language: string | null;
   durationMin: number | null;
+  /** Wiederkehrende Veranstaltung, zu der der Einsatz gehört. */
+  series: { slug: string; name: string } | null;
 }
 
 export interface ExplorerIdentity {
@@ -56,6 +58,10 @@ export interface ExplorerLabels {
   onlineToggle: string;
   toolLabel: string;
   toolClear: string;
+  /** Filter „nur diese Veranstaltung": Beschriftung, Abwahl, Aufruf in der Liste. */
+  seriesLabel: string;
+  seriesClear: string;
+  seriesShowAll: string;
   all: string;
   reset: string;
   missionsWord: string;
@@ -113,6 +119,7 @@ interface FilterState {
   ids: string[];
   showOnline: boolean;
   werkzeug: string; // Werkzeug-Slug oder "" (kein Werkzeug-Filter)
+  veranstaltung: string; // Slug der Veranstaltung oder "" (alle)
   /** Kartenausschnitt (Welt/Kontinent/DACH) — filtert auch die Liste. */
   view: string;
 }
@@ -126,6 +133,7 @@ const DEFAULT_STATE: FilterState = {
   ids: [],
   showOnline: true,
   werkzeug: "",
+  veranstaltung: "",
   view: "welt",
 };
 
@@ -137,6 +145,7 @@ function readFromSearch(search: string): FilterState | null {
     !p.has("q") &&
     !p.has("online") &&
     !p.has("werkzeug") &&
+    !p.has("veranstaltung") &&
     !p.has("ansicht")
   ) {
     return null;
@@ -147,6 +156,7 @@ function readFromSearch(search: string): FilterState | null {
     ids: (p.get("identitaet") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     showOnline: p.get("online") !== "0",
     werkzeug: p.get("werkzeug") ?? "",
+    veranstaltung: p.get("veranstaltung") ?? "",
     view: p.get("ansicht") ?? "welt",
   };
 }
@@ -162,6 +172,7 @@ function readFromStore(): FilterState | null {
       ids: Array.isArray(parsed.ids) ? parsed.ids.filter((x): x is string => typeof x === "string") : [],
       showOnline: parsed.showOnline !== false,
       werkzeug: typeof parsed.werkzeug === "string" ? parsed.werkzeug : "",
+      veranstaltung: typeof parsed.veranstaltung === "string" ? parsed.veranstaltung : "",
       view: typeof parsed.view === "string" ? parsed.view : "welt",
     };
   } catch {
@@ -227,6 +238,7 @@ export default function MissionExplorer({
     if (state.ids.length) p.set("identitaet", state.ids.join(","));
     if (!state.showOnline) p.set("online", "0");
     if (state.werkzeug) p.set("werkzeug", state.werkzeug);
+    if (state.veranstaltung) p.set("veranstaltung", state.veranstaltung);
     if (state.view && state.view !== "welt") p.set("ansicht", state.view);
     // Auch die Auswahl steht in der URL — so lässt sich ein Einsatz samt
     // geöffnetem Popup verlinken (genau das nutzt die Startseite).
@@ -264,9 +276,20 @@ export default function MissionExplorer({
           matchesYear(m.year, m.future, selection, currentYear) &&
           (state.ids.length === 0 || m.identitySlugs.some((s) => state.ids.includes(s))) &&
           (!state.werkzeug || m.tools.some((t) => t.slug === state.werkzeug)) &&
+          (!state.veranstaltung || m.series?.slug === state.veranstaltung) &&
           (!needle || `${m.eventName} ${m.city} ${m.countryCode}`.toLowerCase().includes(needle)),
       ),
-    [missions, activeView, state.showOnline, state.ids, state.werkzeug, selection, currentYear, needle],
+    [
+      missions,
+      activeView,
+      state.showOnline,
+      state.ids,
+      state.werkzeug,
+      state.veranstaltung,
+      selection,
+      currentYear,
+      needle,
+    ],
   );
 
   // Fällt der ausgewählte Einsatz durch einen Filter heraus, gilt er als nicht
@@ -279,6 +302,25 @@ export default function MissionExplorer({
     setSelectedId(id);
     if (id) mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+
+  // Wie oft eine Veranstaltung im Bestand vorkommt. Erst ab dem zweiten Einsatz
+  // ist „alle Einsätze dort" eine sinnvolle Auskunft.
+  const seriesCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const m of missions) {
+      if (m.series) counts.set(m.series.slug, (counts.get(m.series.slug) ?? 0) + 1);
+    }
+    return counts;
+  }, [missions]);
+
+  // Anzeigename des aktiven Veranstaltungsfilters (aus den Einsätzen, sonst der Slug).
+  const veranstaltungName = useMemo(() => {
+    if (!state.veranstaltung) return "";
+    for (const m of missions) {
+      if (m.series?.slug === state.veranstaltung) return m.series.name;
+    }
+    return state.veranstaltung;
+  }, [missions, state.veranstaltung]);
 
   // Anzeigename des aktiven Werkzeug-Filters (aus den Einsätzen, sonst der Slug).
   const werkzeugName = useMemo(() => {
@@ -323,6 +365,7 @@ export default function MissionExplorer({
     state.ids.length === 0 &&
     state.showOnline &&
     state.werkzeug === "" &&
+    state.veranstaltung === "" &&
     state.view === "welt";
 
   /** Ausschnitt wechseln. Das Popup schließt: der Pin liegt evtl. außerhalb. */
@@ -374,6 +417,17 @@ export default function MissionExplorer({
               )
               : null}
         </span>
+        {state.veranstaltung ? (
+          <button
+            type="button"
+            className="chip sm"
+            aria-pressed="true"
+            onClick={() => set({ veranstaltung: "" })}
+            title={labels.seriesClear}
+          >
+            {labels.seriesLabel}: {veranstaltungName} ✕
+          </button>
+        ) : null}
         {state.werkzeug ? (
           <button
             type="button"
@@ -532,6 +586,28 @@ export default function MissionExplorer({
                   ) : (
                     m.eventName
                   )}
+                  {/* Gehört der Einsatz zu einer wiederkehrenden Veranstaltung,
+                      führt ein Knopf zu allen Auftritten dort — die Klammer,
+                      die sonst nur in der Akte sichtbar wäre. */}
+                  {m.series && (seriesCounts.get(m.series.slug) ?? 0) > 1 ? (
+                    <>
+                      <br />
+                      <button
+                        type="button"
+                        className="chip sm"
+                        aria-pressed={state.veranstaltung === m.series.slug}
+                        onClick={() =>
+                          set({
+                            veranstaltung: state.veranstaltung === m.series!.slug ? "" : m.series!.slug,
+                          })
+                        }
+                        title={labels.seriesShowAll}
+                        aria-label={`${labels.seriesShowAll}: ${m.series.name}`}
+                      >
+                        {m.series.name} · {seriesCounts.get(m.series.slug)}
+                      </button>
+                    </>
+                  ) : null}
                 </td>
                 <td role="cell" data-label={labels.colBriefing}>
                   {m.briefing ? (

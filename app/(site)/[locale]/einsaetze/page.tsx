@@ -62,6 +62,7 @@ export default async function EinsaetzePage({
     tools: m.tools,
     briefing: m.briefing,
     language: m.language,
+    series: m.series ? { slug: m.series.slug, name: m.series.name } : null,
     durationMin: m.durationMin,
   }));
 
@@ -102,6 +103,11 @@ export default async function EinsaetzePage({
           moreYears: isDe ? "weitere Jahre" : "more years",
           onlineToggle: isDe ? "Online-Events" : "Online events",
           toolLabel: isDe ? "Werkzeug" : "Tool",
+          seriesLabel: isDe ? "Veranstaltung" : "Event",
+          seriesClear: isDe ? "Filter aufheben" : "Clear filter",
+          seriesShowAll: isDe
+            ? "Alle Einsätze bei dieser Veranstaltung zeigen"
+            : "Show all missions at this event",
           toolClear: isDe ? "Werkzeug-Filter entfernen" : "Clear tool filter",
           all: isDe ? "Alle" : "All",
           reset: isDe ? "Zurücksetzen" : "Reset",

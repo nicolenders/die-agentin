@@ -14,6 +14,8 @@ import { formatMb, pickForLanguage } from "@/lib/slide-templates";
 import { deckUrl, type TalkDeck } from "@/components/admin/TalkSlidesManager";
 import FormTabs, { type FormTabDef } from "@/components/admin/FormTabs";
 import { isSelectableForMission, selectableTalks } from "@/lib/briefings/archive";
+import { NEW_EDITION } from "@/lib/events/link";
+import type { EventSeriesOption } from "@/lib/queries/event-series";
 import {
   saveMission,
   type SaveMissionInput,
@@ -42,6 +44,13 @@ export interface MissionFormInitial {
   endDate: string;
   status: string;
   eventUrl: string;
+  /** Zugeordnete Veranstaltung, leer = keine. */
+  eventSeriesId: string;
+  /** Zugeordnete Ausgabe der Veranstaltung, leer = keine. */
+  eventEditionId: string;
+  /** Zeitraum der Veranstaltung (nicht des Einsatzes), als `YYYY-MM-DD`. */
+  editionStart: string;
+  editionEnd: string;
   talkId: string;
   language: string;
   /** Länge des Auftritts in Minuten, als Text fürs Eingabefeld. */
@@ -84,6 +93,7 @@ export default function MissionForm({
   talks,
   categories = [],
   allTools = [],
+  eventSeries = [],
   isEdit = false,
   videos,
   backToList = "/admin/einsaetze",
@@ -106,6 +116,8 @@ export default function MissionForm({
   }[];
   categories?: { id: string; name: string }[];
   allTools?: { id: string; name: string }[];
+  /** Veranstaltungen samt ihren Ausgaben — Auswahl und Vorbelegung. */
+  eventSeries?: EventSeriesOption[];
   isEdit?: boolean;
   /**
    * Der Bereich „Videos zu diesem Einsatz". Kommt als fertiger Baustein von der
@@ -130,6 +142,20 @@ export default function MissionForm({
   const [endDate, setEndDate] = useState(initial.endDate);
   const [status, setStatus] = useState(initial.status || "PLANNED");
   const [eventUrl, setEventUrl] = useState(initial.eventUrl);
+  // Veranstaltung: die Klammer über die Jahre. Die Auswahl belegt Name und
+  // Adresse vor, überschreibt aber nichts, was schon dasteht.
+  const [seriesId, setSeriesId] = useState(initial.eventSeriesId);
+  const [showNewSeries, setShowNewSeries] = useState(false);
+  const [newSeriesName, setNewSeriesName] = useState("");
+  const [newSeriesOrganizer, setNewSeriesOrganizer] = useState("");
+  // Vorbelegt nur beim NEUEN Einsatz: Dort ist die eingetragene Adresse die
+  // jüngste Auskunft und gehört in die Stammdaten. Beim Nacharbeiten eines
+  // alten Einsatzes wäre genau das falsch — die Adresse von 2021 würde die
+  // aktuelle überschreiben. Dann muss der Haken bewusst gesetzt werden.
+  const [syncWebsite, setSyncWebsite] = useState(!isEdit);
+  const [editionId, setEditionId] = useState(initial.eventEditionId);
+  const [editionStart, setEditionStart] = useState(initial.editionStart);
+  const [editionEnd, setEditionEnd] = useState(initial.editionEnd);
   const [talkId, setTalkId] = useState(initial.talkId);
   // Länge dieses Auftritts. Beim Wählen eines Briefings aus dessen Vorgabe
   // übernommen, danach frei änderbar — dieselbe Session dauert nicht überall gleich.
@@ -168,6 +194,33 @@ export default function MissionForm({
   const [saving, setSaving] = useState(false);
 
   const [cx, cy] = project(projection, lon, lat);
+
+  // Die gewählte Veranstaltung samt ihren Ausgaben. Solange eine neue angelegt
+  // wird, gibt es noch keine Ausgaben zur Auswahl.
+  const selectedSeries = eventSeries.find((x) => x.id === seriesId) ?? null;
+  const editionOptions = showNewSeries ? [] : (selectedSeries?.editions ?? []);
+  const hasEvent = showNewSeries ? newSeriesName.trim().length > 0 : Boolean(selectedSeries);
+
+  /** Veranstaltung wechseln: leere Felder werden vorbelegt, gefüllte bleiben. */
+  function chooseSeries(id: string) {
+    const previous = selectedSeries;
+    const next = eventSeries.find((x) => x.id === id) ?? null;
+    setSeriesId(id);
+    setEditionId("");
+    setEditionStart("");
+    setEditionEnd("");
+    if (!next) return;
+    if (!eventName.trim() || eventName.trim() === previous?.name) setEventName(next.name);
+    if (!eventUrl.trim() || eventUrl.trim() === previous?.websiteUrl) setEventUrl(next.websiteUrl ?? "");
+  }
+
+  /** Ausgabe wechseln: die hinterlegten Daten kommen mit, „neu" startet leer. */
+  function chooseEdition(id: string) {
+    setEditionId(id);
+    const found = editionOptions.find((e) => e.id === id);
+    setEditionStart(found?.startDate ?? "");
+    setEditionEnd(found?.endDate ?? "");
+  }
 
   // Zwei Filter auf die Briefing-Auswahl:
   //  1. Sprache — angeboten wird, was es in der gewählten Vortragssprache gibt,
@@ -280,6 +333,15 @@ export default function MissionForm({
       en: enEnabled ? enText : null,
       photoAssetIds: photos.map((p) => p.id),
       toolIds,
+      event: {
+        seriesId: showNewSeries ? "" : seriesId,
+        newSeriesName: showNewSeries ? newSeriesName : "",
+        newSeriesOrganizer: showNewSeries ? newSeriesOrganizer : "",
+        syncWebsite,
+        editionId,
+        editionStart,
+        editionEnd,
+      },
       material: {
         slidesFilePath: material.slidesFilePath || null,
         slidesFileName: material.slidesFileName || null,
@@ -433,10 +495,137 @@ export default function MissionForm({
 
             <div className="card bracket">
               <p className="eyebrow">Einsatzdaten</p>
-              <label className="f">Veranstaltung</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="f" style={{ margin: 0 }} htmlFor="mission-series">
+                  Veranstaltung (wiederkehrend)
+                </label>
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  style={{ marginLeft: "auto" }}
+                  onClick={() => {
+                    setShowNewSeries((v) => !v);
+                    setNewSeriesName("");
+                    setNewSeriesOrganizer("");
+                  }}
+                >
+                  {showNewSeries ? "Abbrechen" : "+ Neue Veranstaltung"}
+                </button>
+              </div>
+              {showNewSeries ? (
+                <>
+                  <input
+                    className="f"
+                    value={newSeriesName}
+                    placeholder="Name der Veranstaltung, z. B. TechDay"
+                    aria-label="Name der neuen Veranstaltung"
+                    onChange={(e) => {
+                      setNewSeriesName(e.target.value);
+                      // Der Einsatz erbt den Namen, solange dort nichts Eigenes steht.
+                      if (!eventName.trim() || eventName === newSeriesName) setEventName(e.target.value);
+                    }}
+                  />
+                  <input
+                    className="f"
+                    value={newSeriesOrganizer}
+                    placeholder="Veranstalter (optional)"
+                    aria-label="Veranstalter der neuen Veranstaltung"
+                    onChange={(e) => setNewSeriesOrganizer(e.target.value)}
+                  />
+                  <p className="meta" style={{ marginTop: 4 }}>
+                    Gibt es die Veranstaltung schon — Jahreszahlen zählen nicht mit —, wird der
+                    Einsatz der vorhandenen zugeordnet statt eine zweite anzulegen.
+                  </p>
+                </>
+              ) : (
+                <select
+                  className="f"
+                  id="mission-series"
+                  value={seriesId}
+                  onChange={(e) => chooseSeries(e.target.value)}
+                >
+                  <option value="">— keine —</option>
+                  {eventSeries.map((x) => (
+                    <option key={x.id} value={x.id}>{x.name}</option>
+                  ))}
+                </select>
+              )}
+              <label className="f">Veranstaltungsname für diesen Einsatz</label>
               <input className="f" value={eventName} onChange={(e) => setEventName(e.target.value)} />
+              <p className="meta" style={{ marginTop: -4 }}>
+                Steht so in der Einsatzakte — also ruhig mit Jahreszahl, wenn die Veranstaltung
+                damals so hieß.
+              </p>
               <label className="f">Website der Veranstaltung (optional)</label>
               <input className="f" placeholder="https://…" value={eventUrl} onChange={(e) => setEventUrl(e.target.value)} />
+              {hasEvent ? (
+                <>
+                  {selectedSeries?.websiteUrl && selectedSeries.websiteUrl !== eventUrl.trim() ? (
+                    <p className="meta" style={{ marginTop: -4 }}>
+                      In den Stammdaten steht: {selectedSeries.websiteUrl}
+                    </p>
+                  ) : null}
+                  <label className="f" style={{ display: "flex", alignItems: "flex-start", gap: 8, fontWeight: 400 }}>
+                    <input
+                      type="checkbox"
+                      checked={syncWebsite}
+                      onChange={(e) => setSyncWebsite(e.target.checked)}
+                    />
+                    <span>
+                      Adresse auch in die Stammdaten der Veranstaltung übernehmen. Bereits erfasste
+                      Einsätze behalten ihre eigene Adresse.
+                    </span>
+                  </label>
+                </>
+              ) : null}
+              {hasEvent ? (
+                <>
+                  <label className="f" htmlFor="mission-edition">Ausgabe der Veranstaltung (optional)</label>
+                  <select
+                    className="f"
+                    id="mission-edition"
+                    value={editionId}
+                    onChange={(e) => chooseEdition(e.target.value)}
+                  >
+                    <option value="">— keine —</option>
+                    {editionOptions.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.label}
+                        {e.startDate ? ` · ab ${e.startDate}` : ""}
+                      </option>
+                    ))}
+                    <option value={NEW_EDITION}>+ Neue Ausgabe</option>
+                  </select>
+                  {editionId ? (
+                    <>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <label className="f" style={{ flex: "1 1 160px" }}>
+                          Veranstaltung von
+                          <input
+                            className="f"
+                            type="date"
+                            value={editionStart}
+                            onChange={(e) => setEditionStart(e.target.value)}
+                          />
+                        </label>
+                        <label className="f" style={{ flex: "1 1 160px" }}>
+                          Veranstaltung bis
+                          <input
+                            className="f"
+                            type="date"
+                            value={editionEnd}
+                            onChange={(e) => setEditionEnd(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                      <p className="meta" style={{ marginTop: -4 }}>
+                        Das ist der Zeitraum der Veranstaltung, nicht dein Einsatztag. Er gehört der
+                        Veranstaltung — andere Einsätze derselben Ausgabe zeigen ihn ebenfalls.
+                      </p>
+                    </>
+                  ) : null}
+                </>
+              ) : null}
               <label className="f">Sprache des Vortrags</label>
               <select className="f" value={language} onChange={(e) => setLanguage(e.target.value)}>
                 <option value="de">Deutsch</option>

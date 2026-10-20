@@ -24,6 +24,7 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/terminkalender", label: "Terminkalender", icon: "plan", section: "Neuigkeiten" },
   { href: "/admin/aufgaben", label: "Aufgaben", icon: "task" },
   { href: "/admin/einsaetze", label: "Einsätze", icon: "mission" },
+  { href: "/admin/veranstaltungen", label: "Veranstaltungen", icon: "event" },
   { href: "/admin/briefings", label: "Briefings", icon: "briefing" },
   { href: "/admin/depeschen", label: "Depeschen", icon: "dispatch" },
   { href: "/admin/aufklaerung", label: "Aufklärung (Radar)", icon: "radar" },

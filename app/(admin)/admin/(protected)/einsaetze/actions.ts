@@ -9,6 +9,7 @@ import { invalidateTags, tags } from "@/lib/cache";
 import { MISSION_STATUSES, SESSION_TYPES, isOneOf } from "@/lib/domain";
 import { serializeRichValue } from "@/lib/content/rich";
 import { ensureMissionReportTask } from "@/lib/missions/ensure-report-task";
+import { resolveEventLink } from "@/lib/events/link";
 import type { Locale } from "@/lib/i18n/config";
 import { extractYouTubeId } from "@/lib/video/youtube";
 import { saveVideoPublication } from "@/lib/video/save";
@@ -50,6 +51,12 @@ function parseCoSpeakers(raw: string | null | undefined): string | null {
   return list.length ? JSON.stringify(list) : null;
 }
 
+/** `YYYY-MM-DD` aus der Maske zu einem UTC-Tag; alles andere zu `null`. */
+function day(value: string | null | undefined): Date | null {
+  const raw = value?.trim() ?? "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00Z`) : null;
+}
+
 /** Negative oder unlesbare Zahlen werden zu „nicht gepflegt". */
 function count(value: number | null | undefined): number | null {
   if (value == null || !Number.isFinite(value) || value < 0) return null;
@@ -74,6 +81,25 @@ function materialData(m: MissionMaterialInput | undefined) {
   };
 }
 
+/**
+ * Zuordnung des Einsatzes zu einer Veranstaltung. Die Veranstaltung ist die
+ * Klammer über die Jahre, die Ausgabe ihr Historieneintrag — beides optional,
+ * beides zusammen mit dem Einsatz gespeichert, aber NICHT am Einsatz.
+ */
+export interface MissionEventInput {
+  /** Bestehende Veranstaltung; leer heißt „keine Zuordnung". */
+  seriesId?: string | null;
+  /** Neu anzulegende Veranstaltung, direkt aus der Einsatzmaske heraus. */
+  newSeriesName?: string | null;
+  newSeriesOrganizer?: string | null;
+  /** Die Adresse dieses Einsatzes zusätzlich in die Stammdaten schreiben. */
+  syncWebsite?: boolean;
+  /** Bestehende Ausgabe, `neu` für eine neue, leer für keine. */
+  editionId?: string | null;
+  editionStart?: string | null; // YYYY-MM-DD
+  editionEnd?: string | null;
+}
+
 export interface SaveMissionInput {
   missionId?: string;
   eventName: string;
@@ -96,6 +122,7 @@ export interface SaveMissionInput {
   photoAssetIds: string[];
   toolIds?: string[];
   material?: MissionMaterialInput;
+  event?: MissionEventInput;
   intent: "draft" | "publish" | "archive";
 }
 
@@ -146,8 +173,26 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
       : null;
   const startDate = new Date(`${input.startDate || "2026-01-01"}T00:00:00Z`);
   const endDate = input.endDate ? new Date(`${input.endDate}T00:00:00Z`) : null;
+  const editionStart = day(input.event?.editionStart);
+  const editionEnd = day(input.event?.editionEnd);
+  if (editionStart && editionEnd && editionEnd < editionStart) {
+    return { ok: false, error: "Das Ende der Veranstaltung liegt vor ihrem Beginn." };
+  }
 
   try {
+    // Veranstaltung und Ausgabe zuerst: Ihre Kennungen gehören mit in den
+    // Einsatz, und ein Fehler hier soll den Einsatz nicht halb gespeichert
+    // zurücklassen.
+    const eventLink = await resolveEventLink({
+      seriesId: input.event?.seriesId,
+      newSeriesName: input.event?.newSeriesName,
+      newSeriesOrganizer: input.event?.newSeriesOrganizer,
+      websiteUrl: input.eventUrl,
+      syncWebsite: input.event?.syncWebsite,
+      editionId: input.event?.editionId,
+      editionStart,
+      editionEnd,
+    });
     const mission = await db.mission.upsert({
       // Neuer Datensatz: nicht existierender Lookup-Wert → sicherer create-Zweig.
       where: { id: input.missionId ?? `new-${randomUUID()}` },
@@ -165,6 +210,8 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         status,
         contentStatus,
         eventUrl: input.eventUrl || null,
+        eventSeriesId: eventLink.eventSeriesId,
+        eventEditionId: eventLink.eventEditionId,
         bannerAssetId: input.bannerAssetId || null,
         tools: { connect: (input.toolIds ?? []).map((id) => ({ id })) },
         sessionLanguage: talkLanguage,
@@ -184,6 +231,8 @@ export async function saveMission(input: SaveMissionInput): Promise<SaveMissionR
         status,
         contentStatus,
         eventUrl: input.eventUrl || null,
+        eventSeriesId: eventLink.eventSeriesId,
+        eventEditionId: eventLink.eventEditionId,
         bannerAssetId: input.bannerAssetId || null,
         tools: { set: (input.toolIds ?? []).map((id) => ({ id })) },
         sessionLanguage: talkLanguage,

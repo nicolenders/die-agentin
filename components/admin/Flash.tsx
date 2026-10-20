@@ -66,6 +66,11 @@ export const FLASH_MESSAGES: Record<string, string> = {
     "Aus keiner Zeile ließ sich eine YouTube-Adresse lesen. Erwartet wird eine Adresse je Zeile, z. B. https://www.youtube.com/watch?v=…",
   "video-too-many": "Zu viele Zeilen auf einmal. Bitte in Blöcken von höchstens 100 Videos einfügen.",
   failed: "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+  duplicate:
+    "Diese Veranstaltung gibt es schon — Jahreszahlen und Ausgabe-Zusätze zählen dabei nicht mit. Nutze die vorhandene oder gib ihr einen unterscheidbaren Namen.",
+  "edition-range": "Das Ende der Veranstaltung liegt vor ihrem Beginn. Nichts wurde gespeichert.",
+  "edition-duplicate":
+    "Diese Bezeichnung gibt es bei der Veranstaltung schon. Vergib eine andere, etwa „2026 (Herbst)“.",
 };
 
 export default function Flash({ ok, err }: { ok?: string; err?: string }) {

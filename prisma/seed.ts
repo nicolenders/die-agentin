@@ -39,6 +39,9 @@ async function reset() {
   await db.missionPhoto.deleteMany();
   await db.missionTranslation.deleteMany();
   await db.mission.deleteMany();
+  // Erst die Einsätze, dann die Veranstaltungen: Die Einsätze zeigen darauf.
+  await db.eventEdition.deleteMany();
+  await db.eventSeries.deleteMany();
   await db.publicationTranslation.deleteMany();
   await db.publication.deleteMany();
   await db.certification.deleteMany();
@@ -138,6 +141,9 @@ async function main() {
   // --- Missionen (Einsätze) -------------------------------------------------
   const missions = [
     { id: "m-linz", eventName: "Experts Live Austria", city: "Linz", countryCode: "AT", lat: 48.31, lon: 14.29, start: "2026-06-02", status: "DONE", url: "https://example.org/experts-live" },
+    // Zweiter Auftritt bei derselben Veranstaltung — daran zeigt sich die
+    // Klammer „Veranstaltung" in Adminbereich und Einsatzakte.
+    { id: "m-linz-2025", eventName: "Experts Live Austria 2025", city: "Linz", countryCode: "AT", lat: 48.31, lon: 14.29, start: "2025-06-03", status: "DONE", url: "https://example.org/experts-live-2025" },
     { id: "m-salzburg", eventName: "Infinity 365", city: "Salzburg", countryCode: "AT", lat: 47.81, lon: 13.04, start: "2026-06-04", status: "DONE", url: "https://example.org/infinity365" },
     { id: "m-wien", eventName: "Cloud Summit Austria", city: "Wien", countryCode: "AT", lat: 48.21, lon: 16.37, start: "2026-09-12", status: "PLANNED", url: "https://example.org/cloud-summit" },
     { id: "m-amsterdam", eventName: "ESPC", city: "Amsterdam", countryCode: "NL", lat: 52.37, lon: 4.9, start: "2026-01-28", status: "DONE", url: null },
@@ -163,6 +169,44 @@ async function main() {
     });
   }
 
+  // --- Veranstaltungen ------------------------------------------------------
+  // Die Stammdaten stehen einmal; jeder Einsatz behält daneben seinen eigenen
+  // Namen und seine eigene Adresse — so, wie die Veranstaltung damals hieß.
+  const expertsLive = await db.eventSeries.create({
+    data: {
+      id: "es-experts-live-at",
+      name: "Experts Live Austria",
+      // Normalisierter Vergleichsschlüssel (lib/events/naming.ts): ohne
+      // Jahreszahlen, klein geschrieben.
+      matchKey: "experts live austria",
+      slug: "experts-live-austria",
+      organizer: "Experts Live Community Austria",
+      websiteUrl: "https://example.org/experts-live",
+    },
+  });
+  const editions = await Promise.all(
+    [
+      { label: "2026", start: "2026-06-02", end: "2026-06-03", missionId: "m-linz" },
+      { label: "2025", start: "2025-06-03", end: "2025-06-04", missionId: "m-linz-2025" },
+    ].map(async (e) => {
+      const edition = await db.eventEdition.create({
+        data: {
+          seriesId: expertsLive.id,
+          label: e.label,
+          startDate: new Date(`${e.start}T00:00:00Z`),
+          endDate: new Date(`${e.end}T00:00:00Z`),
+        },
+      });
+      return { editionId: edition.id, missionId: e.missionId };
+    }),
+  );
+  for (const { editionId, missionId } of editions) {
+    await db.mission.update({
+      where: { id: missionId },
+      data: { eventSeriesId: expertsLive.id, eventEditionId: editionId },
+    });
+  }
+
   // Einsatzakte Linz (DE + EN) als Beispiel mit zwei Textbereichen.
   await db.missionTranslation.createMany({
     data: [
@@ -180,6 +224,14 @@ async function main() {
         slug: "experts-live-austria-linz-en",
         eventText: "Experts Live Austria brings the Austrian Microsoft community together in Linz once a year. Around 400 attendees, eight parallel tracks.",
         talkText: "A Copilot Studio chatbot combined with a Teams assistant on Microsoft Foundry. Live demo with a real ticket backend.",
+        state: "REVIEWED",
+      },
+      {
+        missionId: "m-linz-2025",
+        locale: "de",
+        slug: "experts-live-austria-linz-2025",
+        eventText: "Experts Live Austria 2025 in Linz — dieselbe Veranstaltung, ein Jahr früher.",
+        talkText: "Governance für Copilot Studio: Wer darf was bauen, und wer räumt hinterher auf?",
         state: "REVIEWED",
       },
       {

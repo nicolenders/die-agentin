@@ -62,6 +62,7 @@ export default async function EinsatzaktePage({
   // abgerufen —, weil ein Webinar mit 40 im Raum und 900 online sonst wie eine
   // kleine Runde aussieht.
   const facts = [
+    mission.eventPeriod ? `${isDe ? "Veranstaltung" : "Event"}: ${mission.eventPeriod}` : null,
     mission.sessionType ? { KEYNOTE: "Keynote", SESSION: "Session", WORKSHOP: "Workshop", PANEL: "Panel" }[mission.sessionType] ?? mission.sessionType : null,
     talkLanguageLabel(mission.sessionLanguage, locale),
     mission.durationMin ? formatDuration(mission.durationMin, locale) : null,
@@ -222,6 +223,62 @@ export default async function EinsatzaktePage({
                 />
               </div>
             ) : null}
+          </>
+        ) : null}
+
+        {/* Wiederkehrende Veranstaltung: Der Auftritt steht nicht allein, und
+            genau das soll man sehen. Verlinkt wird nur, wo es auch eine
+            freigegebene Akte gibt — der Rest steht als Zeile da. */}
+        {mission.series ? (
+          <>
+            <h3 style={{ marginTop: 38 }}>
+              {isDe ? "Diese Veranstaltung" : "This event"}
+            </h3>
+            <div className="card bracket">
+              <p style={{ margin: 0 }}>
+                <b>{mission.series.name}</b>
+                {mission.series.organizer ? (
+                  <span className="meta"> · {mission.series.organizer}</span>
+                ) : null}
+              </p>
+              {mission.series.websiteUrl ? (
+                <p className="meta" style={{ marginTop: 4 }}>
+                  <a href={mission.series.websiteUrl} target="_blank" rel="noopener noreferrer">
+                    {dict.common.openEventSite}
+                  </a>
+                </p>
+              ) : null}
+              {mission.siblings.length > 0 ? (
+                <>
+                  <p className="eyebrow" style={{ marginTop: 16 }}>
+                    {isDe ? "Weitere Einsätze dort" : "More missions there"}
+                  </p>
+                  <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+                    {mission.siblings.map((sibling) => (
+                      <li key={sibling.id} style={{ marginBottom: 4 }}>
+                        {sibling.linkable && sibling.slug ? (
+                          <Link href={`/${locale}/einsaetze/${sibling.slug}`}>{sibling.eventName}</Link>
+                        ) : (
+                          sibling.eventName
+                        )}
+                        <span className="meta">
+                          {" · "}
+                          {formatDate(sibling.startDate, locale)}
+                          {" · "}
+                          {sibling.isOnline ? (isDe ? "Online" : "Online") : sibling.city}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="meta" style={{ marginTop: 12, marginBottom: 0 }}>
+                  {isDe
+                    ? "Bisher der einzige veröffentlichte Einsatz bei dieser Veranstaltung."
+                    : "So far the only published mission at this event."}
+                </p>
+              )}
+            </div>
           </>
         ) : null}
 

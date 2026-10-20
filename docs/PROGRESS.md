@@ -1151,7 +1151,7 @@ Video. Meistens will man dort ohnehin nur scrollen.
 
 Wiederkehrende Veranstaltungen sind jetzt eine eigene Entität (`EventSeries`)
 mit einer Chronik ihrer Ausgaben (`EventEdition`). Die Entscheidung samt
-Abgrenzung steht in `docs/decisions/0032-veranstaltung-als-eigene-entitaet.md`.
+Abgrenzung steht in `docs/decisions/0034-veranstaltung-als-eigene-entitaet.md`.
 
 - **Stammdaten unter `/admin/veranstaltungen`:** Name, Veranstalter, Website und
   die Ausgaben mit Zeitraum. Dazu das Gegenstück zur unscharfen

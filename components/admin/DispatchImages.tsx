@@ -44,11 +44,30 @@ function fromMediaItem(item: MediaItem): PoolImage {
 }
 
 /** Verwaltung des Pools im Register „Stammdaten". */
-export function DispatchImagesField({ usage }: { usage: Record<string, string[]> }) {
+export function DispatchImagesField({
+  usage,
+  available = true,
+}: {
+  usage: Record<string, string[]>;
+  /** false, wenn der Pool serverseitig nicht lesbar war (Migration fehlt). */
+  available?: boolean;
+}) {
   const { pool, setPool } = usePool();
   const [picking, setPicking] = useState(false);
   const closePicker = useCallback(() => setPicking(false), []);
   const full = pool.length >= MAX_DISPATCH_IMAGES;
+
+  // Ohne lesbaren Pool kein Marker `imagesManaged`: Das Speichern lässt den Pool
+  // dann unberührt, statt am fehlenden Schema zu scheitern.
+  if (!available) {
+    return (
+      <p className="meta" role="status" style={{ marginTop: 0 }}>
+        Bilder-Pool gerade nicht verfügbar: Die Datenbank-Migration für die Depeschen-Bilder ist noch
+        nicht angewandt. Text und Stammdaten lassen sich normal speichern. Nach dem nächsten Neustart
+        der App erneut öffnen.
+      </p>
+    );
+  }
 
   function add(item: MediaItem) {
     setPool((prev) => (prev.some((p) => p.id === item.id) ? prev : [...prev, fromMediaItem(item)]));
@@ -69,6 +88,7 @@ export function DispatchImagesField({ usage }: { usage: Record<string, string[]>
 
   return (
     <div>
+      <input type="hidden" name="imagesManaged" value="1" />
       {pool.map((img) => (
         <input key={img.id} type="hidden" name="imageIds" value={img.id} />
       ))}

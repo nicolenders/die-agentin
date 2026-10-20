@@ -87,3 +87,20 @@ Sprache um; fehlt EN, erscheint derselbe Hinweis wie öffentlich.
 - Ungespeicherte Änderungen sieht die Vorschau nicht. Eine Live-Vorschau aus
   dem Formular heraus hätte einen zweiten Render-Pfad gebraucht; erst speichern,
   dann ansehen ist der einfachere Weg.
+
+## Nachtrag 20.10.2026 — Der Pool darf die Maske nicht mitreißen
+
+Nach dem Deploy ließ sich keine Depesche mehr öffnen: Die Maske lud den Pool in
+derselben Abfrage wie die Depesche, und solange die Migration
+`20261006120000_dispatch_images` in Produktion nicht angewandt war, warf diese
+Abfrage. Code und Schema kamen im selben Deploy — entgegen der Regel „erst
+Spalte, dann Code" aus CLAUDE.md.
+
+Seitdem gilt:
+
+- Der Pool wird getrennt gelesen (`lib/queries/dispatch-images.ts`). Ist die
+  Tabelle nicht lesbar, ist er `null`; die Maske bleibt bedienbar und sagt, dass
+  der Pool gerade fehlt.
+- Die Maske setzt den Marker `imagesManaged` nur, wenn sie den Pool angeboten
+  hat. Ohne Marker fasst das Speichern den Pool nicht an (`readPoolIds`).
+- Mediathek und Löschschutz lesen den Pool ebenfalls fehlertolerant.

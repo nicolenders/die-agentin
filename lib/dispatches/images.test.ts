@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MAX_DISPATCH_IMAGES,
   imageRows,
+  readPoolIds,
   lacksEnglishAlt,
   parseImageIds,
   toPoolImage,
@@ -17,6 +18,23 @@ describe("dispatches/images", () => {
     it("kappt bei der Obergrenze", () => {
       const many = Array.from({ length: MAX_DISPATCH_IMAGES + 5 }, (_, i) => `id${i}`);
       expect(parseImageIds(many)).toHaveLength(MAX_DISPATCH_IMAGES);
+    });
+  });
+
+  describe("readPoolIds", () => {
+    const form = (entries: [string, string][]) => {
+      const fd = new FormData();
+      for (const [k, v] of entries) fd.append(k, v);
+      return fd;
+    };
+
+    it("lässt den Pool unberührt, wenn die Maske ihn nicht angeboten hat", () => {
+      expect(readPoolIds(form([["imageIds", "a"]]))).toBeNull();
+    });
+
+    it("liest den Pool mit Marker — auch leer, als „alle entfernt“", () => {
+      expect(readPoolIds(form([["imagesManaged", "1"], ["imageIds", "a"], ["imageIds", "a"]]))).toEqual(["a"]);
+      expect(readPoolIds(form([["imagesManaged", "1"]]))).toEqual([]);
     });
   });
 

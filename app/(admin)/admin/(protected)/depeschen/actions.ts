@@ -11,7 +11,7 @@ import { FOCUS_TAG } from "@/lib/queries/records";
 import { checkName, findByName, type InlineCreateResult } from "@/lib/admin/inline-create";
 import { RETURN_PARAM, safeReturnTo, withParams } from "@/lib/admin/return-to";
 import { dispatchUrls, submitToIndexNow } from "@/lib/seo/indexnow";
-import { imageRows, parseImageIds } from "@/lib/dispatches/images";
+import { imageRows, readPoolIds } from "@/lib/dispatches/images";
 import { createPreviewToken } from "@/lib/preview/token";
 import { siteOrigin } from "@/lib/site";
 
@@ -131,6 +131,8 @@ export async function createDispatch(formData: FormData): Promise<void> {
     redirect(withParams(editHrefWithReturn(null, list), { err: "missing-fields" }));
   }
 
+  // Nur, wenn die Maske den Pool angeboten hat (lib/dispatches/images).
+  const pool = readPoolIds(formData);
   let newId: string | null = null;
   try {
     const created = await db.dispatch.create({
@@ -142,9 +144,7 @@ export async function createDispatch(formData: FormData): Promise<void> {
         focusTopics: { connect: ids(formData, "focusTopicIds").map((id) => ({ id })) },
         // Admin-verfasste Übersetzungen gelten als geprüft (öffentlich sichtbar).
         translations: { create: trans.map((t) => ({ ...t, state: "REVIEWED" })) },
-        images: {
-          create: parseImageIds(formData.getAll("imageIds")).map((assetId, sortOrder) => ({ assetId, sortOrder })),
-        },
+        ...(pool?.length ? { images: { create: pool.map((assetId, sortOrder) => ({ assetId, sortOrder })) } } : {}),
       },
     });
     newId = created.id;
@@ -177,6 +177,7 @@ export async function updateDispatch(formData: FormData): Promise<void> {
     // Kann der Vorzustand nicht gelesen werden, bleibt die Erinnerung stehen.
   }
 
+  const pool = readPoolIds(formData);
   try {
     await db.$transaction([
       db.dispatch.update({
@@ -192,9 +193,14 @@ export async function updateDispatch(formData: FormData): Promise<void> {
       }),
       db.dispatchTranslation.deleteMany({ where: { dispatchId: id } }),
       db.dispatchTranslation.createMany({ data: trans.map((t) => ({ ...t, dispatchId: id, state: "REVIEWED" })) }),
-      // Bilder-Pool (ADR 0033): Reihenfolge ist die des Formulars.
-      db.dispatchImage.deleteMany({ where: { dispatchId: id } }),
-      db.dispatchImage.createMany({ data: imageRows(id, parseImageIds(formData.getAll("imageIds"))) }),
+      // Bilder-Pool (ADR 0033): Reihenfolge ist die des Formulars. Nur, wenn
+      // die Maske ihn angeboten hat — sonst bliebe das Speichern am Schema hängen.
+      ...(pool
+        ? [
+            db.dispatchImage.deleteMany({ where: { dispatchId: id } }),
+            db.dispatchImage.createMany({ data: imageRows(id, pool) }),
+          ]
+        : []),
     ]);
   } catch {
     redirect(withParams(editHrefWithReturn(id, list), { err: "failed" }));

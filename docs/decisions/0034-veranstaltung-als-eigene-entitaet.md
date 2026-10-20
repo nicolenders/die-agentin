@@ -1,7 +1,8 @@
-# 0032 — Die Veranstaltung als eigene Entität, der Einsatz behält seine Momentaufnahme
+# 0034 — Die Veranstaltung als eigene Entität, der Einsatz behält seine Momentaufnahme
 
 **Datum:** 07.09.2026
 **Status:** angenommen
+**Nummer:** ursprünglich als 0032 eingereicht; umnummeriert, weil 0032 parallel an „Kosten der Laufzeit“ vergeben wurde.
 
 ---
 

@@ -9,7 +9,8 @@ import {
   DispatchImagePoolProvider,
   DispatchImagesField,
 } from "@/components/admin/DispatchImages";
-import { toPoolImage, usageByLocale } from "@/lib/dispatches/images";
+import { usageByLocale } from "@/lib/dispatches/images";
+import { loadDispatchPool } from "@/lib/queries/dispatch-images";
 import AssetPickerField from "@/components/admin/AssetPickerField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { assetUrl } from "@/lib/media/url";
@@ -49,12 +50,13 @@ export default async function DispatchEditPage({
             topics: { select: { id: true } },
             focusTopics: { select: { id: true } },
             heroAsset: true,
-            images: { orderBy: { sortOrder: "asc" }, include: { asset: true } },
           },
         })
       : Promise.resolve(null),
   ]);
   if (id && !dispatch) notFound();
+  // Getrennt geladen: Fehlt die Pool-Tabelle, bleibt die Maske trotzdem offen.
+  const pool = await loadDispatchPool(dispatch?.id ?? null);
   const isNew = !dispatch;
 
   const de = dispatch?.translations.find((t) => t.locale === "de");
@@ -63,7 +65,6 @@ export default async function DispatchEditPage({
   const topicOpts = topics.map((t) => ({ id: t.id, name: t.nameDe }));
   const focusOpts = focusTopics.map((t) => ({ id: t.id, name: t.titleDe }));
   const action = isNew ? createDispatch : updateDispatch;
-  const pool = dispatch?.images.map((i) => toPoolImage(i.asset)) ?? [];
   const usage = Object.fromEntries(usageByLocale(dispatch?.translations ?? []));
 
   const stammdaten = (
@@ -142,7 +143,7 @@ export default async function DispatchEditPage({
       </div>
       <div>
         <label className="f">Bilder für den Text (DE und EN)</label>
-        <DispatchImagesField usage={usage} />
+        <DispatchImagesField usage={usage} available={pool !== null} />
       </div>
     </div>
   );
@@ -182,7 +183,7 @@ export default async function DispatchEditPage({
         {/* Der Rückweg überlebt das Speichern: die Maske bleibt stehen, der
             Link „Alle Depeschen" führt danach weiter in die gefilterte Liste. */}
         <input type="hidden" name={RETURN_PARAM} value={backToList} />
-        <DispatchImagePoolProvider initial={pool}>
+        <DispatchImagePoolProvider initial={pool ?? []}>
           <div className="card bracket"><FormTabs tabs={tabs} /></div>
         </DispatchImagePoolProvider>
         <div style={{ marginTop: 18, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>

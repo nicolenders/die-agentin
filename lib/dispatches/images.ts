@@ -38,6 +38,17 @@ export function parseImageIds(values: readonly unknown[]): string[] {
   return out;
 }
 
+/**
+ * Pool aus dem Formular — oder `null`, wenn die Maske den Pool gar nicht
+ * angeboten hat (Tabelle nicht lesbar, lib/queries/dispatch-images). Erkennbar
+ * am Marker `imagesManaged`. Ohne ihn bleibt der Pool beim Speichern
+ * unberührt; ein leerer Pool MIT Marker heißt dagegen „alle entfernt".
+ */
+export function readPoolIds(formData: Pick<FormData, "get" | "getAll">): string[] | null {
+  if (String(formData.get("imagesManaged") ?? "") !== "1") return null;
+  return parseImageIds(formData.getAll("imageIds"));
+}
+
 /** Zeilen für `DispatchImage.createMany` in der gegebenen Reihenfolge. */
 export function imageRows(
   dispatchId: string,

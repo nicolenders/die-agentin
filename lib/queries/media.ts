@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { loadAllPoolAssignments } from "@/lib/queries/dispatch-images";
 import { assetUrl } from "@/lib/media/url";
 import { toMediaSource, type MediaSource } from "@/lib/media/source";
 import { collectAssetIds } from "@/lib/content/assets";
@@ -132,12 +133,19 @@ export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
       db.homeContent.findMany({ select: { heroAssetId: true } }),
       db.dispatch.findMany({
         select: {
+          id: true,
           heroAssetId: true,
-          images: { select: { assetId: true } },
           translations: { select: { locale: true, title: true, bodyJson: true } },
         },
       }),
     ]);
+
+  // Getrennt und fehlertolerant geladen (lib/queries/dispatch-images): Fehlt die
+  // Pool-Tabelle, soll nicht die ganze Mediathek ausfallen.
+  const poolByDispatch = new Map<string, string[]>();
+  for (const p of await loadAllPoolAssignments()) {
+    poolByDispatch.set(p.dispatchId, [...(poolByDispatch.get(p.dispatchId) ?? []), p.assetId]);
+  }
 
   const usage = new Map<string, MediaUsage[]>();
   const add = (id: string | null | undefined, u: MediaUsage) => {
@@ -177,7 +185,7 @@ export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
   for (const d of dispatches) {
     const title = deTitle(d.translations, "Depesche");
     add(d.heroAssetId, { type: "Depesche", label: title });
-    for (const img of d.images) add(img.assetId, { type: "Depesche", label: title });
+    for (const assetId of poolByDispatch.get(d.id) ?? []) add(assetId, { type: "Depesche", label: title });
     for (const t of d.translations) {
       const doc = parseDoc(t.bodyJson);
       if (doc) for (const id of collectAssetIds(doc)) add(id, { type: "Depesche", label: title });

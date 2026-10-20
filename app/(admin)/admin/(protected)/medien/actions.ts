@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
+import { countPoolUses } from "@/lib/queries/dispatch-images";
 import { toMediaSource } from "@/lib/media/source";
 import { isLocale } from "@/lib/i18n/config";
 import { slideTemplateKeys } from "@/lib/slide-templates";
@@ -113,7 +114,7 @@ export async function deleteAsset(formData: FormData): Promise<void> {
     db.post.count({ where: { heroAssetId: id } }),
     db.publication.count({ where: { coverAssetId: id } }),
     // Bilder-Pool einer Depesche (ADR 0033): ebenfalls kein Kaskadenlöschen.
-    db.dispatchImage.count({ where: { assetId: id } }),
+    countPoolUses(id),
   ]);
   if (inGalleries + asHero + asCover + inDispatchPools > 0) redirect(`${LIST}?err=asset-in-use`);
 

@@ -51,6 +51,25 @@ describe("DispatchImages", () => {
     expect(hiddenValues(container, "imageIds")).toEqual(["a1"]);
   });
 
+  it("setzt ohne lesbaren Pool keinen Marker — Speichern lässt den Pool dann in Ruhe", () => {
+    const { container } = render(
+      <DispatchImagePoolProvider initial={[]}>
+        <DispatchImagesField usage={{}} available={false} />
+      </DispatchImagePoolProvider>,
+    );
+    expect(hiddenValues(container, "imagesManaged")).toEqual([]);
+    expect(screen.getByRole("status").textContent).toMatch(/nicht verfügbar/);
+  });
+
+  it("markiert einen angebotenen Pool, auch wenn er leer ist", () => {
+    const { container } = render(
+      <DispatchImagePoolProvider initial={[]}>
+        <DispatchImagesField usage={{}} />
+      </DispatchImagePoolProvider>,
+    );
+    expect(hiddenValues(container, "imagesManaged")).toEqual(["1"]);
+  });
+
   it("fügt ein Pool-Bild mit Bildunterschrift in den Text ein", async () => {
     const { container } = render(
       <DispatchImagePoolProvider initial={pool}>

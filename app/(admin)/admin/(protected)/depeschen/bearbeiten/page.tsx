@@ -3,7 +3,13 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import Flash from "@/components/admin/Flash";
 import FormTabs, { type FormTabDef } from "@/components/admin/FormTabs";
-import RichTextField from "@/components/admin/editor/RichTextField";
+import PreviewLinkButton from "@/components/admin/PreviewLinkButton";
+import {
+  DispatchBodyField,
+  DispatchImagePoolProvider,
+  DispatchImagesField,
+} from "@/components/admin/DispatchImages";
+import { toPoolImage, usageByLocale } from "@/lib/dispatches/images";
 import AssetPickerField from "@/components/admin/AssetPickerField";
 import CategoryMultiSelect from "@/components/admin/CategoryMultiSelect";
 import { assetUrl } from "@/lib/media/url";
@@ -14,6 +20,7 @@ import { RETURN_PARAM, safeReturnTo } from "@/lib/admin/return-to";
 import {
   createDispatch,
   createFocusTopicInline,
+  createDispatchPreviewLink,
   createTopicInline,
   updateDispatch,
 } from "../actions";
@@ -42,6 +49,7 @@ export default async function DispatchEditPage({
             topics: { select: { id: true } },
             focusTopics: { select: { id: true } },
             heroAsset: true,
+            images: { orderBy: { sortOrder: "asc" }, include: { asset: true } },
           },
         })
       : Promise.resolve(null),
@@ -55,6 +63,8 @@ export default async function DispatchEditPage({
   const topicOpts = topics.map((t) => ({ id: t.id, name: t.nameDe }));
   const focusOpts = focusTopics.map((t) => ({ id: t.id, name: t.titleDe }));
   const action = isNew ? createDispatch : updateDispatch;
+  const pool = dispatch?.images.map((i) => toPoolImage(i.asset)) ?? [];
+  const usage = Object.fromEntries(usageByLocale(dispatch?.translations ?? []));
 
   const stammdaten = (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -130,6 +140,10 @@ export default async function DispatchEditPage({
         <label className="f">Hero-Bild (optional)</label>
         <AssetPickerField name="heroAssetId" initialAssetId={dispatch?.heroAssetId ?? null} initialUrl={dispatch?.heroAsset ? assetUrl(dispatch.heroAsset.blobPath) : null} aspectRatio="16 / 9" emptyHint="Kein Bild" />
       </div>
+      <div>
+        <label className="f">Bilder für den Text (DE und EN)</label>
+        <DispatchImagesField usage={usage} />
+      </div>
     </div>
   );
 
@@ -138,7 +152,7 @@ export default async function DispatchEditPage({
       <label className="f">Titel (DE) *<input className="f" name="deTitle" defaultValue={de?.title ?? ""} required /></label>
       <label className="f">Slug (DE)<input className="f" name="deSlug" defaultValue={de?.slug ?? ""} placeholder="aus Titel" /></label>
       <label className="f">Kurzfassung (DE)<textarea className="f" name="deSummary" defaultValue={de?.summary ?? ""} rows={2} /></label>
-      <div><label className="f">Text (DE)</label><RichTextField name="deBody" defaultValue={de?.bodyJson ?? null} ariaLabel="Text DE" /></div>
+      <div><label className="f">Text (DE)</label><DispatchBodyField name="deBody" defaultValue={de?.bodyJson ?? null} ariaLabel="Text DE" locale="de" /></div>
     </div>
   );
 
@@ -148,7 +162,7 @@ export default async function DispatchEditPage({
       <label className="f">Titel (EN)<input className="f" name="enTitle" defaultValue={en?.title ?? ""} /></label>
       <label className="f">Slug (EN)<input className="f" name="enSlug" defaultValue={en?.slug ?? ""} placeholder="aus Titel" /></label>
       <label className="f">Kurzfassung (EN)<textarea className="f" name="enSummary" defaultValue={en?.summary ?? ""} rows={2} /></label>
-      <div><label className="f">Text (EN)</label><RichTextField name="enBody" defaultValue={en?.bodyJson ?? null} ariaLabel="Text EN" /></div>
+      <div><label className="f">Text (EN)</label><DispatchBodyField name="enBody" defaultValue={en?.bodyJson ?? null} ariaLabel="Text EN" locale="en" /></div>
     </div>
   );
 
@@ -168,12 +182,32 @@ export default async function DispatchEditPage({
         {/* Der Rückweg überlebt das Speichern: die Maske bleibt stehen, der
             Link „Alle Depeschen" führt danach weiter in die gefilterte Liste. */}
         <input type="hidden" name={RETURN_PARAM} value={backToList} />
-        <div className="card bracket"><FormTabs tabs={tabs} /></div>
-        <div style={{ marginTop: 18, display: "flex", gap: 12, alignItems: "center" }}>
+        <DispatchImagePoolProvider initial={pool}>
+          <div className="card bracket"><FormTabs tabs={tabs} /></div>
+        </DispatchImagePoolProvider>
+        <div style={{ marginTop: 18, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <button className="btn solid" type="submit">{isNew ? "Anlegen" : "Speichern"}</button>
           <span className="meta">Titel (DE) ist Pflicht. Öffentlich sichtbar bei Status PUBLISHED und Datum in der Vergangenheit.</span>
         </div>
       </form>
+      {/* Vorschau außerhalb des Formulars: Der Link-Knopf soll nie absenden. */}
+      {dispatch ? (
+        <div className="card" style={{ marginTop: 18, display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <a className="btn ghost sm" href={`/preview/depesche/${dispatch.id}?lang=de`} target="_blank" rel="noopener">
+            Vorschau DE ↗
+          </a>
+          <a className="btn ghost sm" href={`/preview/depesche/${dispatch.id}?lang=en`} target="_blank" rel="noopener">
+            Vorschau EN ↗
+          </a>
+          <PreviewLinkButton create={createDispatchPreviewLink.bind(null, dispatch.id)} />
+          <span className="meta" style={{ flexBasis: "100%" }}>
+            Die Vorschau zeigt den gespeicherten Stand so, wie er veröffentlicht aussähe — erst speichern,
+            dann ansehen. Der teilbare Link gilt sieben Tage und braucht keine Anmeldung.
+          </span>
+        </div>
+      ) : (
+        <p className="meta" style={{ marginTop: 18 }}>Nach dem ersten Speichern gibt es hier eine Vorschau.</p>
+      )}
     </section>
   );
 }

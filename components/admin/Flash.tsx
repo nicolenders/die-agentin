@@ -44,7 +44,7 @@ export const FLASH_MESSAGES: Record<string, string> = {
     "Einsatzbericht noch nicht vollständig: Veranstaltung und Vortrag brauchen Text. Erst ergänzen, dann abhaken.",
   "lead-days-range": "Vorlauf muss zwischen 1 und 90 Tagen liegen. Nichts wurde gespeichert.",
   "alt-required": "Alt-Text ist Pflicht (außer das Bild ist dekorativ).",
-  "asset-in-use": "Bild wird noch verwendet: erst aus Beitrag/Einsatz entfernen.",
+  "asset-in-use": "Bild wird noch verwendet: erst aus Beitrag, Einsatz oder Depesche entfernen.",
   "document-in-use": "Datei ist noch einem Einsatz zugeordnet: dort erst entfernen.",
   "audience-in-use": "Zielgruppe ist noch zugeordnet: erst umhängen oder Briefings ändern.",
   "merge-self": "Quelle und Ziel sind dasselbe. Nichts wurde geändert.",

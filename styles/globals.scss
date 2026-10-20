@@ -1694,6 +1694,41 @@ ol.styled li::marker {
   font-size: 14.5px;
 }
 
+// Band über der Depeschen-Vorschau (ADR 0033): sagt, dass dies nicht die
+// öffentliche Seite ist, und trägt Sprachumschalter und Rückweg.
+.preview-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid var(--violet);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--violet-text);
+  margin-bottom: 24px;
+
+  a {
+    color: var(--violet-text);
+  }
+}
+.preview-band-langs {
+  display: flex;
+  gap: 10px;
+
+  a.active {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+.preview-band-edit {
+  margin-left: auto;
+}
+
 // Fallback-Hinweis, wenn EN fehlt (SPEC §8)
 .lang-fallback {
   border: 1px solid var(--warn);

@@ -5,7 +5,9 @@
 // "field" ist der schlanke Kontext für formularbasierte Rich-Text-Felder
 // (Kurztexte wie Vortragsinhalt, Legenden, Rechtstexte, Hero-Headline). Er
 // erlaubt nur einfache Formatierung — keine Bild-/Galerie-/Video-Blöcke.
-export type ContentContext = "post" | "dossier" | "mission" | "field";
+// "fieldImages" ist derselbe schlanke Kontext plus Bild-Block — für Felder mit
+// Bilder-Pool wie den Text einer Depesche (ADR 0033).
+export type ContentContext = "post" | "dossier" | "mission" | "field" | "fieldImages";
 
 export type MarginSide = "left" | "right";
 export type ImageLayout = "full" | "left" | "right";
@@ -54,6 +56,7 @@ const EXTRA_NODES: Record<ContentContext, readonly string[]> = {
   dossier: ["gallery", "video", "videoGallery", "toc"],
   mission: ["gallery"],
   field: [],
+  fieldImages: [],
 };
 
 // Schlanke Node-Menge für den "field"-Kontext: nur Fließtext-Formatierung.
@@ -82,6 +85,7 @@ export const ALLOWED_MARKS = new Set([
 /** Menge der in einem Kontext erlaubten Node-Typen. */
 export function allowedNodesFor(context: ContentContext): Set<string> {
   if (context === "field") return new Set<string>(FIELD_NODES);
+  if (context === "fieldImages") return new Set<string>([...FIELD_NODES, "image"]);
   return new Set<string>([...BASE_NODES, ...EXTRA_NODES[context]]);
 }
 

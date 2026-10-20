@@ -131,7 +131,11 @@ export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
       db.legendContent.findMany({ select: { portraitAssetId: true } }),
       db.homeContent.findMany({ select: { heroAssetId: true } }),
       db.dispatch.findMany({
-        select: { heroAssetId: true, translations: { select: { locale: true, title: true, bodyJson: true } } },
+        select: {
+          heroAssetId: true,
+          images: { select: { assetId: true } },
+          translations: { select: { locale: true, title: true, bodyJson: true } },
+        },
       }),
     ]);
 
@@ -173,6 +177,7 @@ export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
   for (const d of dispatches) {
     const title = deTitle(d.translations, "Depesche");
     add(d.heroAssetId, { type: "Depesche", label: title });
+    for (const img of d.images) add(img.assetId, { type: "Depesche", label: title });
     for (const t of d.translations) {
       const doc = parseDoc(t.bodyJson);
       if (doc) for (const id of collectAssetIds(doc)) add(id, { type: "Depesche", label: title });

@@ -66,3 +66,24 @@ describe("serializeRichValue", () => {
     expect(richValueToPlain(out)).toBe("Inhalt");
   });
 });
+
+describe("parseRichValue mit Bilder-Pool", () => {
+  const withImage = JSON.stringify({
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "Vorher" }] },
+      { type: "image", attrs: { assetId: "a1", caption: "Bühne" } },
+      { type: "gallery", attrs: { assetIds: ["a2"] } },
+    ],
+  });
+
+  it("verwirft Bilder im schlanken Feld-Kontext", () => {
+    expect(parseRichValue(withImage).content.map((n) => n.type)).toEqual(["paragraph"]);
+  });
+
+  it("behält Bilder im Kontext fieldImages, aber keine Galerien", () => {
+    const doc = parseRichValue(withImage, "fieldImages");
+    expect(doc.content.map((n) => n.type)).toEqual(["paragraph", "image"]);
+    expect(doc.content[1]?.attrs?.assetId).toBe("a1");
+  });
+});

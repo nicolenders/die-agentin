@@ -6,8 +6,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const DEFAULT_TTL_MS = 7 * 24 * 3600 * 1000;
 
-interface PreviewPayload {
-  kind: "post" | "dossier" | "mission";
+const PREVIEW_KINDS: readonly PreviewPayload["kind"][] = ["post", "dossier", "mission", "dispatch"];
+
+export interface PreviewPayload {
+  kind: "post" | "dossier" | "mission" | "dispatch";
   id: string;
   exp: number; // Ablauf als Unix-ms
 }
@@ -54,9 +56,7 @@ export function verifyPreviewToken(
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as PreviewPayload;
     if (typeof payload.exp !== "number" || payload.exp < now) return null;
-    if (payload.kind !== "post" && payload.kind !== "dossier" && payload.kind !== "mission") {
-      return null;
-    }
+    if (!PREVIEW_KINDS.includes(payload.kind)) return null;
     return payload;
   } catch {
     return null;

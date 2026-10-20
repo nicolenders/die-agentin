@@ -86,7 +86,39 @@ function blockAtom(name: string, label: (attrs: Record<string, unknown>) => stri
   });
 }
 
-const ImageNode = blockAtom("image", (a) => `Bild${a.caption ? `: ${a.caption}` : ""}`);
+const imageLabel = (a: Record<string, unknown>) => `Bild${a.caption ? `: ${a.caption}` : ""}`;
+const ImageNode = blockAtom("image", imageLabel);
+
+/** Was der Editor von einem Pool-Bild zum Anzeigen braucht. */
+export interface PoolPreview {
+  url: string;
+}
+
+/**
+ * Bild-Block für Felder mit Bilder-Pool (Depeschen, ADR 0033). Zeigt im Editor
+ * das Bild selbst statt eines Platzhalters, damit man sieht, welches der
+ * Pool-Bilder an der Stelle steht. `pool` ist eine Map, die der Aufrufer
+ * fortschreibt — so kennt auch ein Editor, der vor dem Hinzufügen eines Bildes
+ * entstand, dessen URL.
+ */
+const PoolImageNode = ImageNode.extend<{ pool: Map<string, PoolPreview> }>({
+  addOptions() {
+    return { pool: new Map<string, PoolPreview>() };
+  },
+  renderHTML({ HTMLAttributes, node }) {
+    const assetId = node.attrs.assetId;
+    const hit = typeof assetId === "string" ? this.options.pool.get(assetId) : undefined;
+    if (!hit) {
+      return ["div", mergeAttributes(HTMLAttributes, { "data-type": "image", class: "ph" }), imageLabel(node.attrs)];
+    }
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { "data-type": "image", class: "rich-image" }),
+      ["img", { src: hit.url, alt: "" }],
+      ["span", {}, imageLabel(node.attrs)],
+    ];
+  },
+});
 const GalleryNode = blockAtom(
   "gallery",
   (a) => `Galerie (${Array.isArray(a.assetIds) ? a.assetIds.length : 0} Bilder)`,
@@ -100,10 +132,14 @@ const TocNode = blockAtom("toc", () => "Inhaltsverzeichnis");
  * Baut die Erweiterungsliste für einen Kontext. Galerie/Video/TOC nur, wo
  * erlaubt (SPEC §4).
  */
-export function buildExtensions(context: ContentContext): Extensions {
+export function buildExtensions(
+  context: ContentContext,
+  options: { imagePool?: Map<string, PoolPreview> } = {},
+): Extensions {
   // Schlanker Feld-Editor: nur Fließtext-Formatierung + Akzent, keine Blöcke.
-  if (context === "field") {
-    return [
+  // Mit Bilder-Pool zusätzlich der Bild-Block — sonst nichts.
+  if (context === "field" || context === "fieldImages") {
+    const field: Extensions = [
       StarterKit.configure({
         heading: { levels: [2, 3] },
         codeBlock: false,
@@ -111,6 +147,8 @@ export function buildExtensions(context: ContentContext): Extensions {
       }),
       Highlight,
     ];
+    if (options.imagePool) field.push(PoolImageNode.configure({ pool: options.imagePool }));
+    return field;
   }
 
   const base: Extensions = [

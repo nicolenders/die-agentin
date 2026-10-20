@@ -4,6 +4,9 @@ import { db } from "@/lib/db";
 import { pickTranslation } from "@/lib/content/pick";
 import ContentArticle from "@/components/content/ContentArticle";
 import { formatDate } from "@/lib/format";
+import { getDispatchPreview } from "@/lib/queries/dispatches";
+import { isLocale, type Locale } from "@/lib/i18n/config";
+import DispatchPreview from "@/components/preview/DispatchPreview";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +15,26 @@ export const dynamic = "force-dynamic";
 // vorab etwas zu zeigen — ohne Anmeldung, aber nicht auffindbar.
 export default async function PreviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }) {
   const { token } = await params;
   const payload = verifyPreviewToken(token);
-  if (!payload || payload.kind !== "post") notFound();
+  if (!payload) notFound();
+
+  // Depeschen (ADR 0033): derselbe Rahmen wie in der Admin-Vorschau, nur ohne
+  // Rückweg in die Maske — wer den Link hat, ist nicht angemeldet.
+  if (payload.kind === "dispatch") {
+    const { lang } = await searchParams;
+    const locale: Locale = isLocale(lang) ? lang : "de";
+    const d = await getDispatchPreview(payload.id, locale);
+    if (!d) notFound();
+    return <DispatchPreview d={d} locale={locale} basePath={`/preview/${token}`} />;
+  }
+
+  if (payload.kind !== "post") notFound();
 
   const post = await db.post.findUnique({
     where: { id: payload.id },

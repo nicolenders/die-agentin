@@ -108,12 +108,14 @@ export async function deleteAsset(formData: FormData): Promise<void> {
 
   // Verwendete Bilder nicht löschen (Galerie-Zuordnung erlaubt kein
   // Kaskadenlöschen; Hero/Cover würden still entfernt). Erst dort lösen.
-  const [inGalleries, asHero, asCover] = await Promise.all([
+  const [inGalleries, asHero, asCover, inDispatchPools] = await Promise.all([
     db.missionPhoto.count({ where: { assetId: id } }),
     db.post.count({ where: { heroAssetId: id } }),
     db.publication.count({ where: { coverAssetId: id } }),
+    // Bilder-Pool einer Depesche (ADR 0033): ebenfalls kein Kaskadenlöschen.
+    db.dispatchImage.count({ where: { assetId: id } }),
   ]);
-  if (inGalleries + asHero + asCover > 0) redirect(`${LIST}?err=asset-in-use`);
+  if (inGalleries + asHero + asCover + inDispatchPools > 0) redirect(`${LIST}?err=asset-in-use`);
 
   let failed = false;
   try {

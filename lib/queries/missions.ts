@@ -8,6 +8,25 @@ import type { Locale } from "@/lib/i18n/config";
 import type { MissionStatus } from "@/lib/domain";
 import { extractYouTubeId } from "@/lib/video/youtube";
 import { editionRange } from "@/lib/events/naming";
+import { isMissingSchemaError } from "@/lib/db-schema";
+import type { Prisma } from "@prisma/client";
+
+// Veranstaltungen (EventSeries/EventEdition) kamen im selben Deploy wie ihre
+// Tabellen und die Spalten `Mission.eventSeriesId`/`eventEditionId`. Ist die
+// Migration in Produktion nicht angewandt, scheitert jede Abfrage, die diese
+// Spalten liest — und die öffentliche Einsatzliste war leer (ADR 0035). Die
+// Lesewege hier fallen deshalb auf eine Abfrage ohne Veranstaltung zurück:
+// Einsätze bleiben sichtbar, nur die Veranstaltungs-Klammer fehlt.
+const EVENT_COLUMNS = { eventSeriesId: true, eventEditionId: true } as const;
+const EVENT_MIGRATION = "20260914120000_event_series";
+
+function warnMissingEventSchema(where: string, error: unknown): void {
+  console.error(
+    `[missions] ${where}: Veranstaltungs-Schema fehlt — Migration ${EVENT_MIGRATION} angewandt? ` +
+      "Einsätze werden ohne Veranstaltung geladen.",
+    error,
+  );
+}
 
 export interface MissionListItem {
   id: string;
@@ -47,22 +66,38 @@ export interface MissionListItem {
   series: { id: string; slug: string; name: string } | null;
 }
 
+const LIST_INCLUDE = {
+  translations: true,
+  banner: true,
+  identities: { orderBy: { sortOrder: "asc" } },
+  tools: { select: { slug: true, name: true }, orderBy: { sortOrder: "asc" } },
+  deliveries: {
+    take: 1,
+    orderBy: { heldOn: "desc" },
+    include: { talk: { include: { translations: true } } },
+  },
+} satisfies Prisma.MissionInclude;
+
+async function findListMissions() {
+  try {
+    return await db.mission.findMany({
+      orderBy: { startDate: "desc" },
+      include: { ...LIST_INCLUDE, eventSeries: { select: { id: true, slug: true, name: true } } },
+    });
+  } catch (error) {
+    if (!isMissingSchemaError(error)) throw error;
+    warnMissingEventSchema("Einsatzliste", error);
+    const rows = await db.mission.findMany({
+      orderBy: { startDate: "desc" },
+      omit: EVENT_COLUMNS,
+      include: LIST_INCLUDE,
+    });
+    return rows.map((m) => ({ ...m, eventSeries: null }));
+  }
+}
+
 async function loadMissions(locale: Locale, nowMs: number): Promise<MissionListItem[]> {
-  const missions = await db.mission.findMany({
-    orderBy: { startDate: "desc" },
-    include: {
-      translations: true,
-      banner: true,
-      identities: { orderBy: { sortOrder: "asc" } },
-      tools: { select: { slug: true, name: true }, orderBy: { sortOrder: "asc" } },
-      eventSeries: { select: { id: true, slug: true, name: true } },
-      deliveries: {
-        take: 1,
-        orderBy: { heldOn: "desc" },
-        include: { talk: { include: { translations: true } } },
-      },
-    },
-  });
+  const missions = await findListMissions();
   return missions.map((m) => {
     const picked = pickTranslation(m.translations, locale);
     const delivery = m.deliveries[0];
@@ -115,7 +150,10 @@ export async function getMissions(locale: Locale): Promise<MissionListItem[]> {
   );
   try {
     return await run(locale);
-  } catch {
+  } catch (error) {
+    // Leer anzeigen statt Fehlerseite — aber nie stumm: Eine leere Liste ohne
+    // Protokolleintrag hat die Ursache am 20.10.2026 versteckt.
+    console.error("[missions] Einsatzliste konnte nicht geladen werden:", error);
     return [];
   }
 }
@@ -192,28 +230,39 @@ function parseCoSpeakers(json: string | null): { name: string; url: string | nul
   }
 }
 
+const DETAIL_INCLUDE = {
+  translations: true,
+  photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
+  deliveries: { include: { talk: { include: { translations: true } } }, orderBy: { heldOn: "desc" }, take: 1 },
+  identities: { orderBy: { sortOrder: "asc" } },
+  videos: {
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: { coverAsset: true, translations: true },
+  },
+} satisfies Prisma.MissionInclude;
+
+async function findMissionBySlug(slug: string) {
+  try {
+    const row = await db.missionTranslation.findFirst({
+      where: { slug },
+      include: { mission: { include: { ...DETAIL_INCLUDE, eventSeries: true, eventEdition: true } } },
+    });
+    return row?.mission ?? null;
+  } catch (error) {
+    if (!isMissingSchemaError(error)) throw error;
+    warnMissingEventSchema("Einsatzakte", error);
+    const row = await db.missionTranslation.findFirst({
+      where: { slug },
+      include: { mission: { omit: EVENT_COLUMNS, include: DETAIL_INCLUDE } },
+    });
+    if (!row) return null;
+    return { ...row.mission, eventSeriesId: null, eventSeries: null, eventEdition: null };
+  }
+}
+
 async function loadMissionBySlug(locale: Locale, slug: string): Promise<MissionDetail | null> {
-  const translation = await db.missionTranslation.findFirst({
-    where: { slug },
-    include: {
-      mission: {
-        include: {
-          translations: true,
-          photos: { include: { asset: true }, orderBy: { sortOrder: "asc" } },
-          deliveries: { include: { talk: { include: { translations: true } } }, orderBy: { heldOn: "desc" }, take: 1 },
-          identities: { orderBy: { sortOrder: "asc" } },
-          eventSeries: true,
-          eventEdition: true,
-          videos: {
-            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-            include: { coverAsset: true, translations: true },
-          },
-        },
-      },
-    },
-  });
-  if (!translation) return null;
-  const mission = translation.mission;
+  const mission = await findMissionBySlug(slug);
+  if (!mission) return null;
   if (mission.contentStatus !== "PUBLISHED") return null;
 
   const picked = pickTranslation(mission.translations, locale);
@@ -316,7 +365,8 @@ export async function getMissionBySlug(locale: Locale, slug: string): Promise<Mi
   const run = cachedQuery(loadMissionBySlug, ["mission", locale, slug], [tags.missionList(locale)]);
   try {
     return await run(locale, slug);
-  } catch {
+  } catch (error) {
+    console.error("[missions] Einsatzakte konnte nicht geladen werden:", error);
     return null;
   }
 }

@@ -49,3 +49,22 @@ und das Container-Protokoll (`[startup-migrate]`).
   Migrationskette.
 - Für künftige Schemaänderungen gilt weiter CLAUDE.md: erst Spalte deployen,
   dann den Code, der sie liest.
+
+## Nachtrag 08.11.2026 — Stand von Hand herstellen
+
+`scripts/sql/repair-event-series-dispatch-images.sql` stellt beide Migrationen
+(`20260914120000_event_series`, `20261006120000_dispatch_images`) idempotent
+her und trägt sie in `_prisma_migrations` ein; ein fehlgeschlagener Eintrag wird
+als zurückgerollt markiert (sonst P3009). Es bricht ohne Änderung ab, wenn eine
+frühere Migration fehlt oder eine andere fehlgeschlagen ist.
+
+Geprüft gegen SQL Server 2022 (Container) in vier Lagen — nichts angewandt,
+fehlgeschlagener Eintrag, halb angelegte Tabelle, alles schon angewandt —, je
+zweimal hintereinander. Danach meldet `prisma migrate deploy` „No pending
+migrations", und `prisma migrate diff` gegen eine regulär migrierte Datenbank
+ist leer.
+
+Nebenbefund: Die originale Migrationskette läuft auf einer leeren SQL-Server-
+Datenbank fehlerfrei durch. Die Ursache für den Stillstand in Produktion liegt
+also im Lauf dort (Start, Sperre, Eintrag in `_prisma_migrations`), nicht im
+SQL der Migration.

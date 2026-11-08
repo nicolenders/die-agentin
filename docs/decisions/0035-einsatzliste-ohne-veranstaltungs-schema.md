@@ -68,3 +68,24 @@ Nebenbefund: Die originale Migrationskette läuft auf einer leeren SQL-Server-
 Datenbank fehlerfrei durch. Die Ursache für den Stillstand in Produktion liegt
 also im Lauf dort (Start, Sperre, Eintrag in `_prisma_migrations`), nicht im
 SQL der Migration.
+
+## Nachtrag 08.11.2026 — Die Kette steht seit August
+
+Der erste Lauf des Skripts gegen Produktion brach in der Vorbedingung ab:
+`20260824120000_resume_portrait` ist dort nicht angewandt. Diese Migration trägt
+einen älteren Zeitstempel als 0905/0912/0913, wurde aber erst nach ihnen
+gemergt (#84). Prisma wendet eine solche nachgereichte Migration grundsätzlich
+an (lokal geprüft) — in Produktion ist sie offenbar gescheitert, und der
+fehlgeschlagene Eintrag blockiert seitdem jeden `migrate deploy` (P3009).
+Damit fehlen seit Ende August auch das Bewerbungsfoto des Lebenslaufs und
+alles, was danach kam.
+
+Das Skript stellt deshalb jetzt alle drei Migrationen her. Zusätzlich geprüft:
+fehlgeschlagener Eintrag für `resume_portrait`, Spalte vorhanden ohne
+Fremdschlüssel, Migration nur nicht eingetragen — jeweils zweimal, danach
+„No pending migrations" und kein Unterschied zu einer regulär migrierten
+Datenbank.
+
+Lehre: Eine Migration bekommt den Zeitstempel ihres Merges, nicht den ihres
+Entwurfs. Wer einen älteren Zeitstempel hinter bereits ausgelieferte setzt,
+riskiert genau diese Lage.

@@ -1,11 +1,17 @@
 -- ===========================================================================
--- Reparatur: Migrationen 20260914120000_event_series und
--- 20261006120000_dispatch_images von Hand herstellen (ADR 0035).
+-- Reparatur: Migrationen 20260824120000_resume_portrait,
+-- 20260914120000_event_series und 20261006120000_dispatch_images von Hand
+-- herstellen (ADR 0035).
+--
+-- resume_portrait trägt einen älteren Zeitstempel als die bereits
+-- angewandten Migrationen 0905/0912/0913, wurde aber erst danach gemergt. In
+-- Produktion steht sie nicht als angewandt in _prisma_migrations; ein
+-- fehlgeschlagener Eintrag dort blockiert seitdem jeden `migrate deploy`.
 --
 -- Was das Skript tut
 --   1. Prüft, dass alle früheren Migrationen angewandt sind. Sonst Abbruch,
 --      ohne etwas zu ändern.
---   2. Legt die Tabellen, Spalten, Indizes und Fremdschlüssel beider
+--   2. Legt die Tabellen, Spalten, Indizes und Fremdschlüssel der drei
 --      Migrationen an — jedes Objekt einzeln und nur, wenn es fehlt.
 --   3. Bringt die Buchführung von Prisma (_prisma_migrations) in Ordnung:
 --      ein fehlgeschlagener Eintrag wird als zurückgerollt markiert, ein
@@ -36,7 +42,7 @@ SET XACT_ABORT ON;
 SELECT N'vorher' AS [phase], [migration_name], [started_at], [finished_at], [rolled_back_at],
        LEFT([logs], 400) AS [logs]
   FROM [dbo].[_prisma_migrations]
- WHERE [migration_name] IN (N'20260914120000_event_series', N'20261006120000_dispatch_images')
+ WHERE [migration_name] IN (N'20260824120000_resume_portrait', N'20260914120000_event_series', N'20261006120000_dispatch_images')
     OR ([finished_at] IS NULL AND [rolled_back_at] IS NULL)
  ORDER BY [migration_name], [started_at];
 
@@ -77,7 +83,6 @@ INSERT INTO @expected ([name]) VALUES
     (N'20260818160000_speaker_format_duration_unit'),
     (N'20260821120000_prompt_workbench'),
     (N'20260822120000_admin_umbau'),
-    (N'20260824120000_resume_portrait'),
     (N'20260905120000_mission_report_reminders'),
     (N'20260912120000_talk_attachments'),
     (N'20260913120000_publication_mission');
@@ -100,14 +105,21 @@ END;
 SELECT @msg = STRING_AGG(CAST([migration_name] AS NVARCHAR(MAX)), N', ')
   FROM [dbo].[_prisma_migrations]
  WHERE [finished_at] IS NULL AND [rolled_back_at] IS NULL
-   AND [migration_name] NOT IN (N'20260914120000_event_series', N'20261006120000_dispatch_images');
+   AND [migration_name] NOT IN (N'20260824120000_resume_portrait', N'20260914120000_event_series', N'20261006120000_dispatch_images');
 IF @msg IS NOT NULL
 BEGIN
     SET @msg = LEFT(N'Abbruch, nichts geändert: Weitere fehlgeschlagene Migrationen in _prisma_migrations: ' + @msg, 2048);
     THROW 50002, @msg, 1;
 END;
 
--- --- 2. Migration 20260914120000_event_series ------------------------------
+-- --- 2a. Migration 20260824120000_resume_portrait ---------------------------
+IF COL_LENGTH(N'dbo.ResumeProfile', N'portraitAssetId') IS NULL
+    EXEC(N'ALTER TABLE [dbo].[ResumeProfile] ADD [portraitAssetId] NVARCHAR(1000)');
+
+IF OBJECT_ID(N'[dbo].[ResumeProfile_portraitAssetId_fkey]', N'F') IS NULL
+    EXEC(N'ALTER TABLE [dbo].[ResumeProfile] ADD CONSTRAINT [ResumeProfile_portraitAssetId_fkey] FOREIGN KEY ([portraitAssetId]) REFERENCES [dbo].[MediaAsset]([id]) ON DELETE SET NULL ON UPDATE NO ACTION');
+
+-- --- 2b. Migration 20260914120000_event_series ------------------------------
 IF OBJECT_ID(N'[dbo].[EventSeries]', N'U') IS NULL
     EXEC(N'CREATE TABLE [dbo].[EventSeries] (
         [id] NVARCHAR(1000) NOT NULL,
@@ -201,6 +213,7 @@ IF OBJECT_ID(N'[dbo].[DispatchImage_assetId_fkey]', N'F') IS NULL
 -- Migration.
 DECLARE @done TABLE ([name] NVARCHAR(250) NOT NULL, [checksum] VARCHAR(64) NOT NULL);
 INSERT INTO @done ([name], [checksum]) VALUES
+    (N'20260824120000_resume_portrait', '642b2d2a14bf61d2cc2efda9f37b82422a7a621b69708e26977940b506eacabc'),
     (N'20260914120000_event_series',    'aa851852aae1348afd7ba1dbe6b87da6305e803ad9634a3b8271ad9ea5df975e'),
     (N'20261006120000_dispatch_images', '839886dfa45d3093a1a4bec39e7a1017b2409ffcc53934b66c3a85873f73010a');
 
@@ -235,16 +248,18 @@ END CATCH;
 -- --- 5. Stand nachher ------------------------------------------------------
 SELECT N'nachher' AS [phase], [migration_name], [started_at], [finished_at], [rolled_back_at]
   FROM [dbo].[_prisma_migrations]
- WHERE [migration_name] IN (N'20260914120000_event_series', N'20261006120000_dispatch_images')
+ WHERE [migration_name] IN (N'20260824120000_resume_portrait', N'20260914120000_event_series', N'20261006120000_dispatch_images')
  ORDER BY [migration_name], [started_at];
 
 SELECT N'objekte' AS [phase], o.[name], o.[type_desc]
   FROM sys.objects AS o
  WHERE o.[name] IN (N'EventSeries', N'EventEdition', N'DispatchImage',
                     N'EventEdition_seriesId_fkey', N'Mission_eventSeriesId_fkey', N'Mission_eventEditionId_fkey',
-                    N'DispatchImage_dispatchId_fkey', N'DispatchImage_assetId_fkey')
+                    N'DispatchImage_dispatchId_fkey', N'DispatchImage_assetId_fkey',
+                    N'ResumeProfile_portraitAssetId_fkey')
 UNION ALL
-SELECT N'objekte', N'Mission.' + c.[name], N'COLUMN'
+SELECT N'objekte', OBJECT_NAME(c.[object_id]) + N'.' + c.[name], N'COLUMN'
   FROM sys.columns AS c
- WHERE c.[object_id] = OBJECT_ID(N'[dbo].[Mission]') AND c.[name] IN (N'eventSeriesId', N'eventEditionId')
+ WHERE (c.[object_id] = OBJECT_ID(N'[dbo].[Mission]') AND c.[name] IN (N'eventSeriesId', N'eventEditionId'))
+    OR (c.[object_id] = OBJECT_ID(N'[dbo].[ResumeProfile]') AND c.[name] = N'portraitAssetId')
 ORDER BY 2;
